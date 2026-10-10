@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+const rows = JSON.parse(fs.readFileSync(new URL('../fixtures/trenches-solana-runners-2026-09-29.json', import.meta.url),'utf8'));
+const median = xs => { const a=[...xs].sort((x,y)=>x-y); const n=a.length; return n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2; };
+const under = n => rows.filter(x=>x.signalMarketCap<=n).length;
+console.log(`Public successful-runner benchmark (Solana, ${rows.length} records)`);
+console.log(`Median signal market cap: $${Math.round(median(rows.map(x=>x.signalMarketCap))).toLocaleString()}`);
+console.log(`Median observed peak multiple: ${median(rows.map(x=>x.peakMultiple)).toFixed(2)}x`);
+console.log(`Signals <= $100k MC: ${under(100000)}/${rows.length}`);
+console.log(`Signals <= $250k MC: ${under(250000)}/${rows.length}`);
+console.log(`Signals <= $300k MC: ${under(300000)}/${rows.length}`);
+console.log('\nImportant: this is a survivor-selected runner list, not a complete set of all alerts.');
+console.log('It can benchmark discovery timing/market-cap range, but CANNOT estimate strategy precision or expected return.');

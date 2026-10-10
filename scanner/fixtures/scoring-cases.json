@@ -1,0 +1,76 @@
+[
+  {
+    "name": "Synthetic early breakout",
+    "now": 1760000180000,
+    "previous": {
+      "observedAt": 1760000120000,
+      "volume": {"m5": 11000},
+      "txns": {"m5": {"buys": 24, "sells": 12}}
+    },
+    "current": {
+      "mint": "BREAKOUT",
+      "firstSeenAt": 1760000000000,
+      "pairCreatedAt": 1760000000000,
+      "observedAt": 1760000180000,
+      "marketCap": 72000,
+      "liquidityUsd": 26000,
+      "txns": {"m5": {"buys": 71, "sells": 28}},
+      "volume": {"m5": 29000},
+      "priceChange": {"m5": 34},
+      "organicScore": 74,
+      "holderCount": 238,
+      "socialCount": 2,
+      "mintAuthority": null,
+      "freezeAuthority": null,
+      "top10Pct": 18.5,
+      "auditIsSus": false,
+      "boostsActive": 0
+    }
+  },
+  {
+    "name": "Synthetic manipulated launch",
+    "now": 1760000180000,
+    "current": {
+      "mint": "RISKY",
+      "firstSeenAt": 1760000000000,
+      "pairCreatedAt": 1760000000000,
+      "observedAt": 1760000180000,
+      "marketCap": 51000,
+      "liquidityUsd": 1800,
+      "txns": {"m5": {"buys": 46, "sells": 0}},
+      "volume": {"m5": 12000},
+      "priceChange": {"m5": 260},
+      "organicScore": 8,
+      "holderCount": 29,
+      "socialCount": 1,
+      "mintAuthority": "CREATOR",
+      "freezeAuthority": "CREATOR",
+      "top10Pct": 72,
+      "auditIsSus": true,
+      "boostsActive": 200
+    }
+  },
+  {
+    "name": "Synthetic ordinary token",
+    "now": 1760001200000,
+    "current": {
+      "mint": "ORDINARY",
+      "firstSeenAt": 1760000000000,
+      "pairCreatedAt": 1760000000000,
+      "observedAt": 1760001200000,
+      "marketCap": 210000,
+      "liquidityUsd": 41000,
+      "txns": {"m5": {"buys": 12, "sells": 11}},
+      "volume": {"m5": 2500},
+      "priceChange": {"m5": 2},
+      "organicScore": 42,
+      "holderCount": 82,
+      "socialCount": 1,
+      "mintAuthority": null,
+      "freezeAuthority": null,
+      "top10Pct": 31,
+      "auditIsSus": false,
+      "boostsActive": 0
+    }
+  }
+]

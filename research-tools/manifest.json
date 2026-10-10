@@ -1,0 +1,15 @@
+{
+  "version": "1.1.0",
+  "files": {
+    "paper_model.py": "fddcbb712bbc1d8e3edd71472ea5121f97b74970eeb0e133831b13170b8cf18f",
+    "radar_research.py": "70b9c8ccce411b2c7a4089f020029dd56eaa6bc175969d7299edb3670bc4ae34",
+    "research_analysis.py": "0af3e87c10d88f9605845a72ab25d5043159391fffbf60f22c652ba3ae6cbed9",
+    "test_research.py": "6e0368e69873a1caa3a35a17cbc1a67ff94a711db1b2782611cedd9c2512bdca",
+    "test_analysis.py": "3f868de521cb71428c2bfcc6c59c4ebbad14c5d7d88b888e228a50caf0383b15",
+    "install.py": "5c871ace04c1f5e749dc9ab238684001b2d6a20c2859ac949db7f3224edfec39",
+    "run-now.sh": "197e33b66653730f59e9e6a0a91203aa37fce4c36e3c6f43e32507753e6d7279",
+    "README.md": "c920c3ca1c850a9b8eceef87ee68058c8a18dc0cb91210768af6736f9072c8ea",
+    "RULES.md": "94bcca41d5f6ff73a07119144036c16c8940275d6d52764d28669f7fa7d3c831",
+    "ROADMAP.md": "791f0cb3dfd7169f4c2aa306b6a84f320bbe87c9978e075304ce62de2e918530"
+  }
+}

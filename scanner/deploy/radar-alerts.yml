@@ -1,0 +1,23 @@
+groups:
+  - name: solana_radar
+    rules:
+      - alert: RadarUnreachable
+        expr: up{job="solana_radar"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: 'Radar cannot be reached by the independent monitor'}
+      - alert: RadarNoFreshMarket
+        expr: radar_ready == 0
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: 'Radar has no fresh market data or an unhealthy worker loop'}
+      - alert: RadarQueueLag
+        expr: radar_oldest_attempt_age_seconds > 90
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: 'Candidate revisit lag exceeds the proposed target'}
+      - alert: RadarNotificationBacklog
+        expr: radar_notifications_pending > 10
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: 'Telegram notification backlog is growing'}
