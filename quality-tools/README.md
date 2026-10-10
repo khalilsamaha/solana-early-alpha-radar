@@ -1,9 +1,15 @@
 # Research quality helpers
 
-The report-2 update adds actual checkpoint delays, same-time versus earlier signals, follow-up-policy groups, common complete cohorts and matched endpoint price comparisons. Historical links without a comparison entry price stay unavailable.
+Report 3 preserves `shadowSummary` and `evidenceAnalysis`, and adds:
 
-Run verify.mjs with the running project environment loaded, or run run-report.sh from the existing host project directory. The helper uses a bounded read-only database snapshot and can optionally read an existing quote export. It does not request quotes, notify or trade.
+- `joinedEvidence`: exact Fast30 entry/quote joins, validated atomic quantities, separate clocks, routes and unavailable cases. Quote changes are not fills or net profit. Legacy exports without source identity are provisional.
+- `entryShadows`: independent known-liquidity and capped-prior-rise comparisons, with selected/excluded/unknown groups. Persisted registration separates forward observations from exploratory history. No entry rules or notification behavior change.
+- `missingDiagnostics`: recorded checkpoint attempt evidence; missing historical details remain unknown.
 
-The compact shadowSummary remains available; detailed results are in evidenceAnalysis. Eventual-link and complete-path groups use hindsight and must not become entry filters. Old and new follow-up policies are grouped separately.
+From the running project directory use `bash ~/apps/solana-radar-dev/quality-tools/run-evidence.sh --hours 12`. It exports the existing observer 0.6.0 ledger and a bounded scanner snapshot into two private reports, without requesting quotes. See `docs/EVIDENCE-UPDATE.md` for installation, provenance, limitations and rollback.
 
-Offline tests: python3 -m unittest discover -p 'test_*.py'
+`run-report.sh [QUOTE_REPORT.json.gz]` remains supported. `quality_report.py --shadow-report OLD_REPORT --quotes QUOTE_REPORT --output NEW_REPORT` performs an offline replay. The output must not exist. Original summary fields remain compatible, but consumers should accept `research-quality-report-3`.
+
+Reports are not independent samples: deduplicate overlapping exports. Eventual-link and complete-path groups are hindsight diagnostics, not entry filters. Keep sampling policies and forward/exploratory periods separate. Unknown data, missing observations and quote failures remain explicit.
+
+Tests: `python3 -m unittest discover -p 'test_*.py'`.

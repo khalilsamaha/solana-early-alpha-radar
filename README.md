@@ -2,14 +2,14 @@
 
 Private research system for discovering Solana tokens, recording paper signals and observing walletless route quotes. It does not execute trades.
 
-This repository imports the deployed source captured on **2026-10-09 at 21:59 UTC**. The original hashes are preserved in SOURCE-REVIEW-MANIFEST.json. Subsequent changes are reviewed separately; see docs/FAST30-UPDATE.md for the follow-up and sampling update.
+This repository imports the deployed source captured on **2026-10-09 at 21:59 UTC**. The original hashes are preserved in SOURCE-REVIEW-MANIFEST.json. Subsequent changes are reviewed separately; see docs/FAST30-UPDATE.md for the deployed follow-up and sampling update, and docs/EVIDENCE-UPDATE.md for the subsequent evidence diagnostics update.
 
 | Directory | Component |
 | --- | --- |
 | `scanner/` | Scanner 0.2.9, dashboard and SQLite evidence store; includes memory, worker and research-quality patches |
 | `quote-observer/` | Walletless quote observer 0.6.0, separate evidence ledger |
 | `research-tools/` | Research collector and scenario analysis 1.1.0 |
-| `quality-tools/` | Fast30 timing, coverage and matched-endpoint reports |
+| `quality-tools/` | Fast30 timing, coverage, joined price/quote reports and registered shadow comparisons |
 | `docs/` | Current roadmap, import provenance and development workflow |
 
 Start with [development instructions](docs/DEVELOPMENT.md), [current roadmap](docs/ROADMAP.md) and [import review](docs/IMPORT-REVIEW.md). Component READMEs are preserved historical documentation; they may describe earlier deployment layouts.

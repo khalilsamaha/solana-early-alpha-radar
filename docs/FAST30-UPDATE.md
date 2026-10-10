@@ -1,5 +1,7 @@
 # Fast30 follow-up and quote sampling update
 
+Historical deployment guide for commit `a55e567a11ba8baa0f308a71061ebd4892183b8a`. If that release is already installed, use [the evidence update](EVIDENCE-UPDATE.md) from the newer checkout.
+
 The 2026-10-10 report showed 352 entries, but only 67.4% of mature entries had usable five-minute price evidence. Entries later linked to the existing early cohort had 91.3% coverage versus 32.6% without a link. This update addresses uneven observation and exposes actual timing; it does not optimize the entry rule on that sample.
 
 ## Behavior and limits
