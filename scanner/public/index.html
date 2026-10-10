@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Solana Early Alpha Radar</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <p class="eyebrow">LIVE RESEARCH / PAPER SIGNALS</p>
+        <h1>Solana Early Alpha Radar</h1>
+        <p class="sub">Detect abnormal early activity, score it, record every alert, and measure what happens afterward.</p>
+      </div>
+      <div class="status" id="refreshState" data-state="stale"><span class="dot"></span><span id="clock">Waiting for data</span></div>
+    </header>
+
+    <p id="refreshNotice" role="status" aria-live="polite">Waiting for dashboard data.</p>
+    <section class="panel"><div class="panel-head"><div><h2>Backend health</h2><p id="serviceState">Connecting…</p></div><div class="controls"><input id="accessToken" type="password" placeholder="Dashboard token" aria-label="Dashboard access token" autocomplete="off"><button id="connect">Connect</button></div></div><p id="authMessage" role="status"></p><div class="metrics" id="providerHealth"></div></section>
+    <p id="statisticsFreshness" role="status">Statistics summary is warming up.</p>
+    <section class="metrics" id="metrics"></section>
+    <section class="panel">
+      <div class="panel-head"><div><h2>Paper results</h2><p>Checkpoint price changes, not executed returns. Sampled peaks are not exits. Fees, slippage and trading availability are not modeled.</p></div><label>Entry cohort <select id="resultCohort"><option value="all">All retained entries</option><option value="v029">New v0.2.9 entries</option><option value="v028">New v0.2.8 entries</option><option value="v027">New v0.2.7 entries</option><option value="v026">New v0.2.6 entries</option><option value="v025">New v0.2.5 entries</option><option value="current">New v0.2.4 entries</option></select></label></div>
+      <p id="resultScope"></p><div class="table-wrap"><table><thead><tr><th>Checkpoint</th><th>Observed</th><th>Median change</th><th>Above entry</th><th>Loss ≥50%</th><th>Sampled peak ≥2× / checkpoint ≥2×</th><th>Missing / gapped</th><th>Pending / overdue / invalid</th></tr></thead><tbody id="resultRows"></tbody></table></div>
+    </section>
+    <section class="panel" aria-labelledby="qualificationTitle">
+      <h2 id="qualificationTitle">Signal qualification · shadow comparison</h2>
+      <p id="qualificationScope">Waiting for qualification results.</p>
+      <div class="table-wrap"><table><thead><tr><th>Shadow decision</th><th>Entries</th><th>Horizon</th><th>Observed</th><th>Median</th><th>Mean</th><th>Above entry / loss ≥50%</th><th>Missing / gapped</th><th>Pending / overdue</th></tr></thead><tbody id="qualificationRows"></tbody></table></div>
+    </section>
+    <section class="panel" aria-labelledby="researchTitle">
+      <div class="panel-head"><div><h2 id="researchTitle">Short-window research</h2><p id="researchMode">Waiting for research status.</p></div></div>
+      <p class="research-note">Experimental observations use received market updates over approximately 30, 60 and 120 seconds. They do not predict peaks. Baseline alert rules remain unchanged. These cohorts have different eligibility rules and are not a controlled A/B test.</p>
+      <div class="table-wrap"><table><thead><tr><th>Cohort</th><th>Checkpoint</th><th>Entries</th><th>Observed</th><th>Median change</th><th>Above entry</th><th>Gapped / missing</th><th>Pending / overdue</th></tr></thead><tbody id="researchRows"></tbody></table></div>
+      <p class="research-note">Gapped and missing observations are excluded from these medians. Prices are sampled, with no simulated fills, fees or slippage. Results cover entries created by the current research version only. Older research events remain in the ledger.</p>
+      <h3>Token follow-up across pools</h3>
+      <p class="research-note">Separate research view for the exact same Solana mint. An alternate pool requires at least two observations 15 seconds apart, recent market changes, reported liquidity ≥$5,000 and ≥15 transactions in 5m. Provider data does not verify a migration or a tradable exit. The original-pool table above is unchanged.</p>
+      <div class="table-wrap"><table><thead><tr><th>Cohort</th><th>Checkpoint</th><th>Original / alternate pool</th><th>Median quoted change</th><th>Gapped / missing</th><th>Pending / overdue</th></tr></thead><tbody id="continuityRows"></tbody></table></div>
+      <p class="research-note">Medians exclude missing and gapped follow-ups. Alternate-pool prices are not executed returns; fees, slippage and route availability are not modeled.</p>
+      <details class="research-ledger"><summary>Recent research events</summary><div id="researchEvents" class="cards"></div></details>
+    </section>
+    <p id="actionStatus" role="status" aria-live="polite"></p>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div><h2>Early candidates</h2><p>Sorted by radar score. Scores are experimental until enough paper outcomes accumulate. Open a token by its Solana mint; platform availability may vary.</p></div>
+        <div class="controls"><input id="search" type="search" placeholder="Symbol or contract" aria-label="Search candidates"><label><input id="activeOnly" type="checkbox" checked /> Active only</label><button id="refresh">Refresh</button></div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Token</th><th>Activity score / qualification</th><th>Age</th><th>Market cap</th><th>Liquidity</th><th>5m flow</th><th>Organic</th><th>Holders</th><th>Top 10 accounts</th><th>Risk</th><th>Alert eligibility / timeline</th></tr></thead>
+        <tbody id="candidates"></tbody>
+      </table></div>
+    </section>
+
+    <div class="grid">
+      <section class="panel"><div class="panel-head"><div><h2>Alert ledger</h2><p>First entry and score upgrades; notification delivery is monitored separately.</p></div></div><div id="alerts" class="cards"></div></section>
+      <section class="panel"><div class="panel-head"><div><h2>Scanner status</h2><p>Source connectivity and enrichment errors.</p></div></div><div id="statusLog" class="log"></div></section>
+    </div>
+
+    <section class="panel"><div class="panel-head"><div><h2>Paper checkpoints</h2><p>Price ratios, sampled observations. Missing and gapped results remain visible. *Age without a launch timestamp means time since discovery.</p></div></div><div class="table-wrap"><table><thead><tr><th>Token</th><th>Checkpoint</th><th>Status</th><th>Price ratio</th><th>Coverage</th><th>Lateness</th></tr></thead><tbody id="outcomes"></tbody></table></div><p id="buckets"></p></section>
+    <footer>Backend health checks do not verify this browser or cloud backups. No automatic trades. A high score is a research signal, not evidence that a token is safe or will appreciate.</footer>
+  </main>
+  <dialog id="mintDialog" aria-labelledby="mintDialogTitle">
+    <h2 id="mintDialogTitle">Copy Solana mint</h2><p>Select the complete address below and copy it into the platform search.</p>
+    <input id="mintValue" type="text" readonly aria-label="Full Solana mint address" spellcheck="false" />
+    <button id="closeMintDialog" type="button">Close</button>
+  </dialog>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

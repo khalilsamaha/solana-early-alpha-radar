@@ -1,0 +1,40 @@
+{
+  "inputSha256": {
+    "radar-auto-quotes-20261009T102442Z-3949048.json.gz": "6e34ab919c7533c417b03e4d52bb2eddd6c43586d05cf460613933e981452265",
+    "radar-research-gap-source-20261009T101541Z-adyQdL.json.gz": "cf1a317b15662f97534ff7e1f687f7d03639ccac09f5ae97bc29fe0477f9c561"
+  },
+  "quoteProbes": 101,
+  "matched": 9,
+  "baseline120": {
+    "states": {
+      "sell-quote-returned": 57
+    },
+    "invalidTimings": 0,
+    "admitted": 57,
+    "quotedReturns": 57,
+    "withoutQuotedReturn": 0,
+    "meanQuotedChangePct": -4.904019298245614,
+    "medianQuotedChangePct": -3.7082,
+    "positive": 26,
+    "lossAtLeast50": 7,
+    "meanExcludingBestPct": -8.643982142857142
+  },
+  "early120": {
+    "states": {
+      "sell-quote-returned": 40,
+      "sell-quote-failed": 3,
+      "not-sampled-buy-failed": 1
+    },
+    "invalidTimings": 0,
+    "admitted": 44,
+    "quotedReturns": 40,
+    "withoutQuotedReturn": 4,
+    "meanQuotedChangePct": -8.3233625,
+    "medianQuotedChangePct": -10.7823,
+    "positive": 12,
+    "lossAtLeast50": 7,
+    "meanExcludingBestPct": -15.45207435897436
+  },
+  "noxClockDifferenceMs": 28999,
+  "originalInputsPreserved": true
+}

@@ -1,0 +1,14 @@
+# Example only. Run the monitor outside the radar process, ideally outside its host.
+# Provide /run/secrets/radar_token via the monitor's own secret management.
+scrape_configs:
+  - job_name: solana_radar
+    scrape_interval: 30s
+    scheme: https
+    metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials_file: /run/secrets/radar_token
+    static_configs:
+      - targets: ['YOUR_PRIVATE_OR_HTTPS_RADAR_HOST']
+rule_files:
+  - /etc/prometheus/radar-alerts.yml

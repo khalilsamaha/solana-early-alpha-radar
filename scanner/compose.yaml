@@ -1,0 +1,36 @@
+services:
+  radar:
+    build: .
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    environment:
+      DATA_DIR: /app/data
+      DASHBOARD_HOST: 0.0.0.0
+      DASHBOARD_PORT: 8787
+    ports:
+      - '127.0.0.1:8787:8787'
+    volumes:
+      - radar_data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    stop_grace_period: 35s
+    healthcheck:
+      test: ['CMD', 'node', 'scripts/healthcheck.js']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+volumes:
+  radar_data:

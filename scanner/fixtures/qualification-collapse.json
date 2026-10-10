@@ -1,0 +1,58 @@
+{
+  "note": "Recorded v0.2.8 input; local research metrics exported by evidence-check-1. Pool identity restored from entry because numeric-only export omitted it.",
+  "at": 1791058800637,
+  "score": 85,
+  "candidate": {
+    "mint": "7HFj8NQS2Pfq7aD2s3gjhniTKSxZm15m3WQRPTukbMpz",
+    "symbol": "Mr Beast",
+    "priceUsd": 7.872e-05,
+    "pairAddress": "43hZns6DZf2dY1yG1Tp4zgdP1GWWJNiZtQ8257HGHBwG",
+    "liquidityUsd": 23714.89,
+    "marketCap": 78723,
+    "organicScore": 0,
+    "holderCount": 2535,
+    "top10Pct": 20.8333,
+    "marketObservedAt": 1791058800120,
+    "stale": false
+  },
+  "research": {
+    "stage": "deteriorating",
+    "metrics": {
+      "at": 1791058800120,
+      "ready": true,
+      "sampleCount": 12,
+      "lastChangedAt": 1791058800120,
+      "unchangedForMs": 0,
+      "receiveAgeMs": 0,
+      "r30": {
+        "spanMs": 31997,
+        "samples": 3,
+        "changedSamples": 3,
+        "returnPct": -82.01918684330745,
+        "volumeDeltaPerMinute": 35161.75891489827,
+        "transactionsDeltaPerMinute": 817.5766478107323,
+        "liquidityChangePct": -59.602599482147724
+      },
+      "r60": {
+        "spanMs": 64461,
+        "samples": 5,
+        "changedSamples": 5,
+        "returnPct": -81.55144129364894,
+        "volumeDeltaPerMinute": 17934.797784707032,
+        "transactionsDeltaPerMinute": 780.9373109321916,
+        "liquidityChangePct": -59.061042573260615
+      },
+      "r120": {
+        "spanMs": 128864,
+        "samples": 9,
+        "changedSamples": 9,
+        "returnPct": -79.86185725249425,
+        "volumeDeltaPerMinute": 9646.309287310653,
+        "transactionsDeltaPerMinute": 921.902160417184,
+        "liquidityChangePct": -57.15847841528811
+      },
+      "drawdownPct": -82.03149965761241,
+      "pairAddress": "43hZns6DZf2dY1yG1Tp4zgdP1GWWJNiZtQ8257HGHBwG"
+    }
+  }
+}

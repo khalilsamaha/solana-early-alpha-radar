@@ -1,0 +1,8 @@
+.env
+.env.*
+data
+backups
+*.sqlite*
+.git
+node_modules
+upload
