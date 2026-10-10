@@ -5,9 +5,9 @@ import {DatabaseSync} from 'node:sqlite';
 import {fileURLToPath} from 'node:url';
 import {observe,requestQuote,address,USDC,pause} from './quote-check.mjs';
 import {entryFeatures, FEATURE_CAPTURE, ACTIVITY_SHADOW} from './entry-features.mjs';
-export const VERSION='quote-observer-0.5.0';
+export const VERSION='quote-observer-0.6.0';
 export const LIMITS={pollMs:2000,maxSignalAgeMs:15000,oneActive:true,admissionsPerHour:6,admissionsPer24h:144,requestsPerAdmission:5,spacingMs:10000,retentionDays:7};
-export const SAMPLING={id:'cohort-budgets-v2',perCohortHour:3,perCohortDay:72,minimumCohortSpacingMs:1200000,borrowing:false};
+export const SAMPLING={id:'three-cohort-budgets-v3',cohorts:['baseline','early-activity','fast30-shadow'],perCohortHour:2,perCohortDay:48,minimumCohortSpacingMs:1800000,borrowing:false};
 export function samplingCapacity(s,now,recent=[]){
   const own=recent.filter(r=>r.cohort===s.cohort&&r.at>now-86400000);
   const latest=own.length?Math.max(...own.map(r=>r.at)):null;
@@ -33,6 +33,9 @@ export function signalRecord(row){
     const parts=String(r.id).split(':');
     if(parts.length!==3||Number(parts[1])!==r.at)return {error:'later-alert'};
     cohort='baseline';
+  }else if(row.kind==='fast-shadow-entries'){
+    if(r.cohort!=='fast30-shadow'||r.version!=='fast30-shadow-1'||r.ruleId!=='fast30-shadow-1')return {error:'unsupported-version'};
+    cohort='fast30-shadow';
   }else{
     if(r.cohort!=='early-activity')return {error:'other-cohort'};
     if(r.version!=='research-0.2.9')return {error:'unsupported-version'};
@@ -43,7 +46,7 @@ export function signalRecord(row){
   const q=r.qualification||{},m=q.metrics||{},inputs=r.evidence?.inputs||{};
   return {eventId:short(r.id),entryId:short(r.id),seq:row.seq,cohort,mint,signalAt:r.at,
     originalPool:address(c.pairAddress||r.pairAddress)?c.pairAddress||r.pairAddress:null,
-    entryPriceUsd:numeric(c.priceUsd??r.priceUsd),symbol:short(c.symbol),
+    entryPriceUsd:numeric(c.priceUsd??r.priceUsd),symbol:short(c.symbol||r.symbol),
     ...entryFeatures(r),basis:'entry record only; no later enrichment'};
 }
 export function admission(s,{now,busy,blockedUntil=0,halted=false,recent=[],sameMint=false,nextRequestAt=0}){
@@ -73,7 +76,7 @@ const put=(db,k,v)=>db.prepare('INSERT INTO meta VALUES(?,?) ON CONFLICT(k) DO U
 export function sourceRows(source,cursor){
   // Indexed, bounded statements finish before any network request. Never hold a read transaction during a watch.
   const rows=[];
-  for(const kind of ['alerts','research-entries'])rows.push(...source.prepare("SELECT seq,kind,at,CASE WHEN length(data)<=32768 THEN data ELSE '{}' END AS data FROM events INDEXED BY events_kind_seq WHERE kind=? AND seq>? ORDER BY seq LIMIT 200").all(kind,cursor[kind]));
+  for(const kind of ['alerts','research-entries','fast-shadow-entries']){if(!Number.isSafeInteger(cursor[kind]))continue;rows.push(...source.prepare("SELECT seq,kind,at,CASE WHEN length(data)<=32768 THEN data ELSE '{}' END AS data FROM events INDEXED BY events_kind_seq WHERE kind=? AND seq>? ORDER BY seq LIMIT 200").all(kind,cursor[kind]));}
   return rows.sort((a,b)=>a.seq-b.seq);
 }
 export function recover(db,now){
@@ -92,8 +95,14 @@ export class Observer {
     if(!get(this.db,'featureCaptureRegistration'))put(this.db,'featureCaptureRegistration',{id:FEATURE_CAPTURE,registeredAt:n,shadow:ACTIVITY_SHADOW});
     if(!get(this.db,'cursor')){
       const max=this.source.prepare('SELECT coalesce(max(seq),0) AS n FROM events').get().n;
-      put(this.db,'cursor',{'alerts':max,'research-entries':max});put(this.db,'registeredAt',n);
+      put(this.db,'cursor',{'alerts':max,'research-entries':max,'fast-shadow-entries':max});put(this.db,'registeredAt',n);
       this.db.prepare('INSERT INTO incidents VALUES(?,?,?)').run(n,'registration','Start at current event tail; pre-existing signals not sampled');
+    }
+    const cursor=get(this.db,'cursor');
+    if(!Number.isSafeInteger(cursor['fast-shadow-entries'])){
+      cursor['fast-shadow-entries']=this.source.prepare('SELECT coalesce(max(seq),0) AS n FROM events').get().n;
+      put(this.db,'cursor',cursor);put(this.db,'fastFeedRegistration',{at:n,startSeq:cursor['fast-shadow-entries']});
+      this.db.prepare('INSERT INTO incidents VALUES(?,?,?)').run(n,'fast-feed-registration','New feed starts at tail; existing cursors and budgets preserved');
     }
     recover(this.db,n);
     this.db.prepare('INSERT INTO incidents VALUES(?,?,?)').run(n,'observer-start',JSON.stringify({previousPollAt:get(this.db,'lastPollAt'),note:'Events retained during downtime are classified by age; pruned events cannot be recovered'}));

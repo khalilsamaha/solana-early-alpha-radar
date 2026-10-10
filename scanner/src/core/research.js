@@ -187,9 +187,11 @@ export class Research {
     this.fast.drop(mint,now);this.states.delete(mint);
   }
   pending(mint) {return Boolean(this.config.researchEnabled&&this.states.get(mint)?.positions.some(p=>Object.keys(p.horizons).length<4));}
+  trackingPending(mint) {return this.pending(mint)||Boolean(this.config.researchEnabled&&this.fast.trackedPending(mint));}
   focusTier(c,now) {
     if(!this.config.researchEnabled)return null;
     if(this.pending(c.mint))return 0;
+    if(this.fast.trackedPending(c.mint))return 0.5;
     if(c.inactive)return null;
     if(c.stale||!c.pairAddress||!(c.priceUsd>0)||!c.marketObservedAt||now-c.marketObservedAt>this.config.freshMs||severe(c))return null;
     const tx=(c.txns?.m5?.buys||0)+(c.txns?.m5?.sells||0);

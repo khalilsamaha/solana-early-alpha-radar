@@ -1,0 +1,51 @@
+{
+  "version": "fast-followup-1",
+  "changed": {
+    "src/core/fast-shadow.js": {
+      "before": "7c235ba7d3628db2605deff125dfb6d6f5f0fceea0cffbe64323900bd0e670e8",
+      "after": "aa2b7408a1a2b86895cfec9be7696d0d570d32b08265bd16f3f522841160d1f3"
+    },
+    "src/core/research.js": {
+      "before": "f112cde90cbb6ffef506b99e074796499544a79f9cbee07c6bc4bf26d1a0f80c",
+      "after": "303c2037bde4113caf6e9a6110026607713ba5450eca5497f22a2fd2a59ff536"
+    },
+    "src/core/radar.js": {
+      "before": "72ce6ab87b3b650a045f06a2c3feffc0e778c9cb65716aa85931dcd972ecd80e",
+      "after": "29384f434a5a1ef0574c4b2ff3132468d236eb95a7ed456d2ced188a23e349c0"
+    }
+  },
+  "dependencies": {
+    "src/benchmark.js": "7eaaa5ffe83447a6387494382b32d70b9654adf5949b242cb7f98ac2cb8e0dd2",
+    "src/config.js": "f83a32af773c87974a10973a3ecb713fdadbc063fabf4406b6dbc41cd89bc88a",
+    "src/demo.js": "e4d27fd7e5f3de64b0056ff4c55d94c436cea829829e56cd1deb771e79af0dfc",
+    "src/index.js": "ec3b1afbdf15b0fe164d9f93fabd8c16c91164795ecf7d71bcb88019488a1878",
+    "src/server/server.js": "755fec4d872c8ed18dba6ac51055eb6ecffb53f8b2a73c6f89203146c1cfa227",
+    "src/core/paper.js": "6badbae20c93e421a767067e6cae724693fd83f7f64e4c58a8095289c93abfd5",
+    "src/core/http.js": "0b5f4daa99fc77a22ad1b2844149e20581e6ff1e2f20ae6a73919994ef7fc2f0",
+    "src/core/storage.js": "0cf3619f2e25531a88b52c93d76763afee928dfce80dbe486dcb7d8ddca7282c",
+    "src/core/scoring.js": "aaa40f3ebef6183a07d7158219a10fcaa0295f8995127e64ddb9f8110ab0b086",
+    "src/core/notifications.js": "82862d342dc887adc43642cce4c9ff1f89c8feb6367cd9348153c3ccd51d4871",
+    "src/core/decision.js": "4bdc0b713630ebd5771de0f6e3c7a134e320d63032c1b7c28d337f1cd0160fe6",
+    "src/core/stats-worker.js": "ba28ef7b1d146e9e7a605b7f9d4a2a7e2751f289ddc297482af817ed25cefebd",
+    "src/core/outcome-summary.js": "8cda55eb4ec7ddd4a35abd345e1c966218fd32268724a8f8d65d28536550f077",
+    "src/core/qualification.js": "fcab3bfd8fb900a561b28e247b2840c99df6609e91039fe482781941f07130f3",
+    "src/core/stats-service.js": "a947609dda2d5e78433aba64f2af40d7387097665c31ef48eed249a232dbea5c",
+    "src/core/observation-quality.js": "fe1713810d3e8f73866e65717ce57b24e476ed2de60439464acff88b9be0c45d",
+    "src/core/exit.js": "eaecb3b053ce912f11d8d40075a51a05889b41f8a2c79f24e02fced2a0ccecad",
+    "src/core/health.js": "ee8af1dda5adbc7e8c19c6214b638a4f0933541f388685c643a57696d4a66f9c",
+    "src/core/stats-memory.js": "0078f0b6b88366e154287ebcd29728fd81592abf10ec14e08bb702ec9a455252",
+    "src/core/momentum.js": "dc71aa6ac5c569e07eb58b897a68850128943a11a7f75e281503080bb8dd76c1",
+    "src/core/continuity.js": "3da1862cba96140b3ea2a17310824cd409f6224190ab868aab8a5f6c54b4607a",
+    "src/adapters/dexscreener.js": "692b0600d1517badb5934c54a3f842e3c8ed6786f5c8c6c34fed102b6d123ed3",
+    "src/adapters/helius.js": "dc9e31fe540a484296eb4b38911a64d835470e9cfd811dec13442eb06fd60ce4",
+    "src/adapters/jupiter.js": "d27326fb73fbd408206a94e2d1a93e57e60417d1ccfdbc6bc19f223b0c56ed62",
+    "src/adapters/pumpportal.js": "759e679ab94342ab78250ced82089612482b33ee246973d3753756e2a05b82ed",
+    "src/adapters/telegram.js": "1ea83724a7e782407cee6cfad324462424e9b930d6aa6cec282a208821d63bb1",
+    "public/refresh-loop.js": "9404a78db4954484e106076e1de0e53417502b09aa4cbe0c42ff7dcf5b3a3383",
+    "public/token-links.js": "c7fd47b11828e94abb9883b315e417d9a10024a4a703e0268471aca2de2b9ec6",
+    "public/styles.css": "ee0fcd71e1fd7b620bb8e3afc6ab285568411d7008703a6e395ea171fb37a986",
+    "public/index.html": "6b6342e707beef06ffbccc0d23d0f41dc8416ac49d2a6d71f0aead31a084706d",
+    "public/app.js": "e9ade885a2fcb6824957e2852d9c5ee3820b62f12d77a469a6b45fbf68c628f8",
+    "package.json": "5ebac88f894750a129999b83e78f1a32abac0807f41e37cc8fcbe05f760ae2c1"
+  }
+}

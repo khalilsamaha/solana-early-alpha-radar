@@ -21,3 +21,8 @@ python3 scripts/check-source.py
   cd quality-tools
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd deployment
+  python3 -m unittest discover -p 'test_*.py'
+)

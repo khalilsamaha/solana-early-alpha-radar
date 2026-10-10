@@ -8,6 +8,7 @@ const object=x=>x&&typeof x==='object'&&!Array.isArray(x)?x:{};
 const numeric=x=>typeof x==='number'&&Number.isFinite(x)?x:null;
 const short=x=>typeof x==='string'?x.slice(0,96):null;
 export function entryFeatures(row){
+  if(row.cohort==='fast30-shadow')return fastFeatures(row);
   const c=object(row.candidate),q=object(row.qualification),m=object(q.metrics);
   const inputs=object(object(row.evidence).inputs),features={},sources={};
   function num(key,raw,source,nonnegative=false){
@@ -33,4 +34,22 @@ export function entryFeatures(row){
   for(const key of ['securityCheckedAt','marketObservedAt','jupiterCheckedAt'])ages[key]=features[key]===null?null:row.at-features[key];
   return {features,featureCapture:{version:FEATURE_CAPTURE,signalAt:row.at,sources,ageAtSignalMs:ages,
     note:'Immutable event fields only. Recorded values and request timestamps do not establish current liquidity, organic activity, safety or executable depth.'}};
+}
+
+function fastFeatures(row){
+ const security=object(row.security),quality=object(row.quality),decision=object(row.decision);
+ const mapped={...row,candidate:{liquidityUsd:row.liquidityUsd,top10Pct:security.top10Pct},
+  qualification:{metrics:{return30sPct:decision.return30sPct,lastIntervalReturnPct:decision.lastIntervalReturnPct}},
+  security:security.status,evidence:{inputs:{securityCheckedAt:security.checkedAt,marketObservedAt:quality.lastObservedAt}}};
+ delete mapped.cohort;
+ const result=entryFeatures(mapped);
+ result.featureCapture.version='fast-entry-features-1';
+ result.featureCapture.sources.liquidityUsd.source='liquidityUsd';
+ result.featureCapture.sources.top10Pct.source='security.top10Pct';
+ result.featureCapture.sources.return30sPct.source='decision.return30sPct';
+ result.featureCapture.sources.lastIntervalReturnPct.source='decision.lastIntervalReturnPct';
+ result.featureCapture.sources.securityCheckedAt.source='security.checkedAt';
+ result.featureCapture.sources.marketObservedAt.source='quality.lastObservedAt';
+ result.followup=row.followup||{policy:'legacy-unprioritized',admitted:false};
+ return result;
 }

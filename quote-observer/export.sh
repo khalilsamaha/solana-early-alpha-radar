@@ -4,7 +4,7 @@ umask 077
 output="$PWD/radar-auto-quotes-$(date -u +%Y%m%dT%H%M%SZ)-$$.json.gz"
 tmp="$(mktemp "$PWD/.radar-quotes-export-XXXXXX")"
 trap 'rm -f "$tmp"' EXIT
-sudo python3 -E -s /usr/local/lib/solana-radar-quotes/0.5.0/manage.py export "$@" > "$tmp"
+sudo python3 -E -s /usr/local/lib/solana-radar-quotes/0.6.0/manage.py export "$@" > "$tmp"
 python3 - "$tmp" <<'PY'
 import gzip,json,sys
 with gzip.open(sys.argv[1],'rt') as f:r=json.load(f)

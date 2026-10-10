@@ -19,14 +19,14 @@ def read_report(config, hours=24, status=False):
         probes=[{'state':s,'count':n} for s,n in db.execute('SELECT state,count(*) FROM probes WHERE at>=? GROUP BY state',(cutoff,))]
         capacity={}
         sampling=meta.get('samplingRegistration') or {}
-        if sampling.get('id')=='cohort-budgets-v2':
+        if sampling.get('id') in ('cohort-budgets-v2','three-cohort-budgets-v3'):
             recent=list(db.execute('SELECT p.at,s.cohort FROM probes p LEFT JOIN signals s ON s.seq=p.seq WHERE p.at>? ORDER BY p.at',(now-86400000,)))
-            for cohort in ('baseline','early-activity'):
+            for cohort in sampling.get('cohorts',('baseline','early-activity')):
                 own=[at for at,c in recent if c==cohort];hour=[at for at in own if at>now-3600000]
                 ready=now
-                if own:ready=max(ready,own[-1]+1200000)
-                if len(hour)>=3:ready=max(ready,hour[-3]+3600000)
-                if len(own)>=72:ready=max(ready,own[-72]+86400000)
+                if own:ready=max(ready,own[-1]+sampling.get('minimumCohortSpacingMs',1200000))
+                if len(hour)>=sampling.get('perCohortHour',3):ready=max(ready,hour[-sampling.get('perCohortHour',3)]+3600000)
+                if len(own)>=sampling.get('perCohortDay',72):ready=max(ready,own[-sampling.get('perCohortDay',72)]+86400000)
                 capacity[cohort]={'hourUsed':len(hour),'dayUsed':len(own),'cohortBudgetOpensAt':ready,
                   'note':'Includes legacy admissions; global budget, busy, freshness and provider checks also apply.'}
         result={'format':'quote-observer-report-0.2.0','capturedAt':now,'windowStartAt':cutoff,'registeredAt':meta.get('registeredAt'),'limits':meta.get('limits'),'observerVersion':meta.get('version'),'samplingRegistration':meta.get('samplingRegistration'),'previousSamplingRegistration':meta.get('previousSamplingRegistration'),

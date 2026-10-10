@@ -2,7 +2,8 @@
 """Read-only shadow report and offline fixed-quantity quote movements."""
 import argparse,collections,datetime,gzip,json,math,os,signal,sqlite3,statistics,subprocess,time
 from pathlib import Path
-VERSION='research-quality-report-1'
+VERSION='research-quality-report-2'
+from timing_analysis import analyze_timing
 def finite(v):return isinstance(v,(int,float)) and not isinstance(v,bool) and math.isfinite(v)
 def load(p):
  with (gzip.open(p,'rb') if str(p).endswith('.gz') else open(p,'rb')) as f:raw=f.read(48*1024*1024+1)
@@ -28,6 +29,8 @@ def capture(path,hours=24,budget=10):
   db.set_progress_handler(lambda:int(time.monotonic()>deadline),1000);db.execute('BEGIN')
   reg=db.execute("SELECT data FROM kv WHERE key='fast-shadow-registration'").fetchone()
   result['registration']=json.loads(reg[0]) if reg else None
+  followup=db.execute("SELECT data FROM kv WHERE key='fast-followup-registration'").fetchone()
+  result['followupRegistration']=json.loads(followup[0]) if followup else None
   for kind,cap in [('fast-shadow-entries',3000),('fast-shadow-outcomes',12000),('fast-shadow-links',6000)]:
    result[kind]=[]
    for raw,size_bytes in db.execute('SELECT CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data END,length(CAST(data AS BLOB)) FROM events INDEXED BY events_at WHERE kind=? AND at>=? AND at<=? ORDER BY at LIMIT ?',(kind,now-hours*3600000,now,cap+1)):
@@ -110,7 +113,7 @@ def main():
  if not a.project and not a.quotes:p.error('Supply project and/or quotes')
  report={'format':VERSION,'capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat()}
  if a.project:
-  data=capture(live_database(a.project),a.hours);report['shadowCapture']=data;report['shadowSummary']=shadow_summary(data)
+  data=capture(live_database(a.project),a.hours);report['shadowCapture']=data;report['shadowSummary']=shadow_summary(data);report['evidenceAnalysis']=analyze_timing(data)
  if a.quotes:report['quoteMovements']=quote_movements(load(a.quotes))
  raw=json.dumps(report,allow_nan=False,separators=(',',':')).encode()
  if len(raw)>48*1024*1024:raise ValueError('Output too large')

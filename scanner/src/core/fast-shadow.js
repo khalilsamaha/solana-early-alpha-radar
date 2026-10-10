@@ -1,9 +1,10 @@
 import {observationQuality} from './observation-quality.js';
 export const FAST_VERSION='fast30-shadow-1';
+export const FOLLOWUP_POLICY='fast-followup-1';
 export const FAST_RULE=Object.freeze({id:FAST_VERSION,windowMs:30000,maxWindowSpanMs:45000,minReturnPct:10,minTransactions5m:35,
  minKnownLiquidityUsd:5000,unknownLiquidityVenue:'pumpfun',minRollingVolumeDeltaPerMinute:1000,minRollingTransactionsDeltaPerMinute:8,
  minChangedTransitions:2,cooldownMs:21600000,horizons:{'30s':30000,'60s':60000,'120s':120000,'300s':300000},toleranceMs:30000,
- maxResponseAgeMs:45000,notifications:false,changesScheduling:false});
+ maxResponseAgeMs:45000,notifications:false,changesScheduling:true});
 export function fastDecision(c,history,metrics,now,severe=false,hadDeterioration=false){
  const flow=metrics.r30,quality=observationQuality(history,now),rows=history.rows;
  const anchor=flow?rows.at(-1).at-flow.spanMs:null;
@@ -23,7 +24,7 @@ export function fastDecision(c,history,metrics,now,severe=false,hadDeterioration
   note:'Experimental observation; unknown security or liquidity remains unknown.'};
 }
 export class FastShadow {
- constructor(config,storage){this.config=config;this.storage=storage;this.states=new Map();this.entries=0;this.outcomes=0;this.links=0;this.registration=null;}
+ constructor(config,storage){this.config=config;this.storage=storage;this.states=new Map();this.entries=0;this.outcomes=0;this.links=0;this.registration=null;this.trackingAdmissions=0;this.trackingCapacityExcluded=0;}
  load(mint){
   if(!this.states.has(mint)){
    const saved=this.storage.getState(`fast-shadow:${mint}`),s={lastEntryAt:0,position:null,...saved};
@@ -33,8 +34,12 @@ export class FastShadow {
   return this.states.get(mint);
  }
  save(mint,s,now){this.storage.setState({...s,updatedAt:now},`fast-shadow:${mint}`);}
+ trackingLimit(){return Math.min(12,Math.max(0,Math.floor(Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor((this.config.maxCandidates||1000)/5)))/3)));}
+ trackedPending(mint){const p=this.states.get(mint)?.position;return Boolean(p?.followup?.admitted);}
  register(now){
   if(this.registration)return;
+  const prior=this.storage.getState('fast-followup-registration');
+  if(prior.id!==FOLLOWUP_POLICY)this.storage.setState({id:FOLLOWUP_POLICY,registeredAt:now,limit:this.trackingLimit(),changesScheduling:true,requestLimitsChanged:false},'fast-followup-registration');
   const old=this.storage.getState('fast-shadow-registration');
   this.registration=old.id===FAST_VERSION?old:{...FAST_RULE,registeredAt:now};
   if(old.id!==FAST_VERSION)this.storage.setState(this.registration,'fast-shadow-registration');
@@ -44,7 +49,10 @@ export class FastShadow {
   if(!d.eligible||s.position||now-s.lastEntryAt<FAST_RULE.cooldownMs)return {...d,admission:s.position?'tracking':now-s.lastEntryAt<FAST_RULE.cooldownMs?'cooldown':'not eligible'};
   this.register(now);
   const id=`${FAST_VERSION}:${c.mint}:${now}`;
-  const p={id,mint:c.mint,pairAddress:c.pairAddress,at:now,priceUsd:c.priceUsd,lastAt:c.marketObservedAt,horizons:{},links:{},gapped:false};
+  const used=[...this.states.values()].filter(x=>x.position?.followup?.admitted).length;
+  const followup={policy:FOLLOWUP_POLICY,admitted:used<this.trackingLimit(),limit:this.trackingLimit(),reason:used<this.trackingLimit()?'capacity admitted':'tracking capacity full'};
+  if(followup.admitted)this.trackingAdmissions++;else this.trackingCapacityExcluded++;
+  const p={id,followup,mint:c.mint,pairAddress:c.pairAddress,at:now,priceUsd:c.priceUsd,lastAt:c.marketObservedAt,horizons:{},links:{},gapped:false};
   s.position=p;s.lastEntryAt=now;
   this.storage.transaction(()=>{
    this.storage.append('fast-shadow-entries',{...p,version:FAST_VERSION,cohort:'fast30-shadow',symbol:c.symbol||null,ruleId:FAST_VERSION,
@@ -52,7 +60,7 @@ export class FastShadow {
     security:{checkedAt:c.securityCheckedAt??null,mintAuthority:c.mintAuthority??null,freezeAuthority:c.freezeAuthority??null,top10Pct:c.top10Pct??null,
      status:!c.securityCheckedAt||now-c.securityCheckedAt>this.config.securityTtlMs?'expired or unavailable':c.mintAuthority===undefined||c.freezeAuthority===undefined||!Number.isFinite(c.top10Pct)?'incomplete':'limited checks complete'},
     evidence:{basis:'provider-response-time',poolAddress:history.pair,resetReason:history.resetReason,samples:history.rows.slice(-24).map(r=>({...r}))},
-    baselineRulesChanged:false,notifications:false});this.save(c.mint,s,now);
+    baselineRulesChanged:false,notifications:false,followupPolicy:FOLLOWUP_POLICY});this.save(c.mint,s,now);
   });this.entries++;return {...d,admission:'recorded',entryId:id};
  }
  checkpoint(mint,c,now,valid,reason=null){
@@ -69,6 +77,7 @@ export class FastShadow {
     if(!reason&&!timely&&now<=due+30000)continue;
     const observed=!reason&&timely;
     this.storage.append('fast-shadow-outcomes',{id:`${p.id}:${h}`,entryId:p.id,mint,version:FAST_VERSION,at:now,entryAt:p.at,horizon:h,
+     followup:p.followup||{policy:'legacy-unprioritized',admitted:false},
      status:observed?'observed':'missing',coverage:p.gapped?'gapped':'sampled',pairAddress:p.pairAddress,
      ...(observed?{sampleAt:c.marketObservedAt,priceUsd:c.priceUsd,returnPct:(c.priceUsd/p.priceUsd-1)*100}
       :{reason:reason||'no timely original-pool observation'}),basis:'provider-response-time; no costs or fills'});
@@ -80,12 +89,13 @@ export class FastShadow {
  link(c,entryId,cohort,now){const s=this.states.get(c.mint),p=s?.position;
   if(!p||p.pairAddress!==c.pairAddress||now<p.at||now-p.at>300000||p.links[cohort])return;
   p.links[cohort]=entryId;this.storage.transaction(()=>{
-   this.storage.append('fast-shadow-links',{id:`${p.id}:${cohort}`,entryId:p.id,comparisonEntryId:entryId,cohort,mint:c.mint,pairAddress:p.pairAddress,at:now,leadMs:now-p.at,version:FAST_VERSION});
+   this.storage.append('fast-shadow-links',{id:`${p.id}:${cohort}`,entryId:p.id,comparisonEntryId:entryId,cohort,mint:c.mint,pairAddress:p.pairAddress,at:now,leadMs:now-p.at,comparisonPriceUsd:Number.isFinite(c.priceUsd)&&c.priceUsd>0?c.priceUsd:null,
+    comparisonObservedAt:c.marketObservedAt??null,followup:p.followup||{policy:'legacy-unprioritized',admitted:false},version:FAST_VERSION});
    this.save(c.mint,s,now);
   });this.links++;
  }
  sweep(now){for(const mint of this.states.keys())this.checkpoint(mint,null,now,false);}
  drop(mint,now){this.checkpoint(mint,null,now,false,'candidate left queue');this.states.delete(mint);}
  stats(){return {version:FAST_VERSION,entriesSinceRestart:this.entries,outcomesSinceRestart:this.outcomes,linksSinceRestart:this.links,
-  pending:[...this.states.values()].filter(s=>s.position).length,registeredAt:this.registration?.registeredAt??null,changesScheduling:false,notifications:false};}
+  pending:[...this.states.values()].filter(s=>s.position).length,registeredAt:this.registration?.registeredAt??null,changesScheduling:true,notifications:false,followupPolicy:FOLLOWUP_POLICY,trackingLimit:this.trackingLimit(),trackingActive:[...this.states.values()].filter(s=>s.position?.followup?.admitted).length,trackingAdmissionsSinceRestart:this.trackingAdmissions,trackingCapacityExcludedSinceRestart:this.trackingCapacityExcluded};}
 }

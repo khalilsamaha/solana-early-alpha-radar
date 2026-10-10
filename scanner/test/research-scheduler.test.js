@@ -84,3 +84,19 @@ test('focus protection leaves admission space in small candidate queues',()=>{
  assert.equal(r.researchFocus.size,2);assert.ok(r.addCandidate({mint:mint(11)}));
  assert.ok(r.candidates.has(mint(0)));assert.ok(r.candidates.has(mint(1)));assert.equal(r.candidates.size,10);
 });
+
+test('bounded fast tracking shares the existing focus limit and discovery batches, reports displacement',()=>{
+ const r=radar({researchFocusLimit:6,batchSize:8});
+ for(let i=1;i<=20;i++)r.candidates.set(mint(i),row(i));
+ // Two fast tracking reservations, consistent with the smaller focus limit.
+ for(const i of [19,20])r.research.fast.states.set(mint(i),{position:{followup:{admitted:true}}});
+ r.candidates.set(mint(30),row(30,{lastAttemptAt:0}));
+ const batch=r.selectBatch(T);
+ assert.equal(r.researchFocus.size,6);assert.equal(r.fastFocusSelected,2);assert.equal(r.fastFocusDisplaced,2);
+ assert.ok(batch.some(c=>c.mint===mint(30)));assert.ok(batch.length<=8);
+ assert.equal(r.research.fast.trackingLimit(),2);
+ // Six existing research positions retain priority. Fast reservations show as waiting.
+ for(let i=1;i<=6;i++)r.research.states.set(mint(i),{positions:[{horizons:{}}]});
+ r.selectBatch(T);assert.equal(r.fastFocusSelected,0);assert.equal(r.fastFocusAwaiting,2);
+ assert.equal(r.fastFocusDisplaced,0);
+});

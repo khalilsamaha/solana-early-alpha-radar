@@ -28,6 +28,21 @@ class ReportTests(unittest.TestCase):
             self.assertEqual(r['cohortCapacity']['early-activity']['hourUsed'],4)
             self.assertEqual(r['cohortCapacity']['early-activity']['cohortBudgetOpensAt'],now+40*60000)
             self.assertEqual(r['cohortCapacity']['baseline']['cohortBudgetOpensAt'],now)
+    def test_three_cohort_capacity_uses_new_limits_and_preserves_legacy_counts(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as d:
+            now=1800000000000
+            with sqlite3.connect(Path(d)/'observer.sqlite') as db:
+                db.executescript('CREATE TABLE meta(k TEXT,v TEXT);CREATE TABLE signals(seq INTEGER,cohort TEXT,decision TEXT,detected INTEGER,data TEXT);CREATE TABLE probes(seq INTEGER,at INTEGER,state TEXT,data TEXT);CREATE TABLE incidents(at INTEGER,kind TEXT,detail TEXT);')
+                policy={'id':'three-cohort-budgets-v3','cohorts':['baseline','early-activity','fast30-shadow'],'perCohortHour':2,'perCohortDay':48,'minimumCohortSpacingMs':1800000}
+                db.execute('INSERT INTO meta VALUES(?,?)',('samplingRegistration',json.dumps(policy)))
+                for seq,mins in enumerate([1,10]):
+                    at=now-mins*60000
+                    db.execute('INSERT INTO signals VALUES(?,?,?,?,?)',(seq,'fast30-shadow','admitted',at,'{}'))
+                    db.execute('INSERT INTO probes VALUES(?,?,?,?)',(seq,at,'complete','{}'))
+            with patch('manage.time.time',return_value=now/1000):r=read_report({'reports':d},status=True)
+            self.assertEqual(r['cohortCapacity']['fast30-shadow']['cohortBudgetOpensAt'],now+50*60000)
+            self.assertEqual(len(r['cohortCapacity']),3)
     def test_missing_database_does_not_create_empty_file(self):
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaises(RuntimeError):read_report({'reports':d})

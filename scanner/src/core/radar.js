@@ -40,7 +40,7 @@ export class Radar {
     const now=Date.now(),memory=this.candidates.get(input.mint),archived=this.storage.getState(`paper:${input.mint}`),prev=memory||(archived.paperEntry?archived:null);
     // A bounded queue exposes dropped discovery; ongoing paper entries are never evicted.
     if(!memory&&this.candidates.size>=this.config.maxCandidates) {
-      const expendable=[...this.candidates.values()].filter(x=>!tracking(x)&&!this.researchFocus.has(x.mint)&&!this.inFlight.has(x.mint)).sort((a,b)=>Number(!a.inactive)-Number(!b.inactive)||(a.lastDiscoveryAt||a.firstSeenAt)-(b.lastDiscoveryAt||b.firstSeenAt))[0];
+      const expendable=[...this.candidates.values()].filter(x=>!tracking(x)&&!this.research.fast.trackedPending(x.mint)&&!this.researchFocus.has(x.mint)&&!this.inFlight.has(x.mint)).sort((a,b)=>Number(!a.inactive)-Number(!b.inactive)||(a.lastDiscoveryAt||a.firstSeenAt)-(b.lastDiscoveryAt||b.firstSeenAt))[0];
       if(!expendable){this.droppedCandidates=(this.droppedCandidates||0)+1;return null;}
       if(!expendable.lastAttemptAt)this.evictedBeforeAttempt=(this.evictedBeforeAttempt||0)+1;
       this.research.drop(expendable.mint);this.storage.deleteCandidate(expendable.mint);this.candidates.delete(expendable.mint);this.droppedCandidates=(this.droppedCandidates||0)+1;
@@ -59,14 +59,20 @@ export class Radar {
     // checkpoints or known-liquid markets can replace discovery-only markets.
     eligible.sort((a,b)=>a.tier-b.tier||Number(this.researchFocus.has(b.c.mint))-Number(this.researchFocus.has(a.c.mint))
       ||(a.c.lastAttemptAt||0)-(b.c.lastAttemptAt||0)||(a.c.firstSeenAt||0)-(b.c.firstSeenAt||0));
+    const ordinary=eligible.filter(x=>x.tier!==0.5);
+    const limit=Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5)));
+    const next=new Set(eligible.slice(0,limit).map(x=>x.c.mint));
+    this.fastFocusDisplaced=ordinary.slice(0,limit).filter(x=>!next.has(x.c.mint)).length;
+    this.fastFocusSelected=eligible.slice(0,limit).filter(x=>x.tier===0.5).length;
+    this.fastFocusAwaiting=eligible.filter(x=>x.tier===0.5&&!next.has(x.c.mint)).length;
     this.focusEligibleCount=eligible.length;
     this.researchFocus=new Set(eligible.slice(0,Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5)))).map(x=>x.c.mint));
   }
   selectBatch(now=Date.now()) {
-    const rows=[...this.candidates.values()].filter(x=>!x.inactive||tracking(x)||this.research.pending(x.mint));
+    const rows=[...this.candidates.values()].filter(x=>!x.inactive||tracking(x)||this.research.trackingPending(x.mint));
     this.updateResearchFocus(rows,now);
     const order=(a,b)=>(a.lastAttemptAt||0)-(b.lastAttemptAt||0)||(a.firstSeenAt||0)-(b.firstSeenAt||0);
-    const active=rows.filter(x=>now-(x.lastAttemptAt||0)>=this.config.enrichIntervalMs && (this.research.pending(x.mint)||now>=(x.nextMarketAttemptAt||0)));
+    const active=rows.filter(x=>now-(x.lastAttemptAt||0)>=this.config.enrichIntervalMs && (this.research.trackingPending(x.mint)||now>=(x.nextMarketAttemptAt||0)));
     const tracked=active.filter(tracking).sort(order),fresh=active.filter(x=>!tracking(x)&&!x.lastAttemptAt).sort(order);
     const focus=active.filter(x=>!tracking(x)&&x.lastAttemptAt&&this.researchFocus.has(x.mint)).sort(order);
     const rest=active.filter(x=>!tracking(x)&&x.lastAttemptAt&&!this.researchFocus.has(x.mint)).sort(order);
@@ -94,7 +100,7 @@ export class Radar {
     const started=Date.now();base.lastAttemptAt=started;
     const times=[base.launchAt,base.firstPoolAt,base.pairCreatedAt].filter(x=>x>0);
     let tooOld=started-(times.length?Math.min(...times):base.firstSeenAt)>this.config.maxCandidateAgeMin*60000;
-    if(tooOld&&!tracking(base)&&!this.research.pending(mint)){base.inactive=true;recordDecision(this.storage,base,this.config,started);this.save(base);return;}
+    if(tooOld&&!tracking(base)&&!this.research.trackingPending(mint)){base.inactive=true;recordDecision(this.storage,base,this.config,started);this.save(base);return;}
     const {market}=observation,now=observation.observedAt||Date.now();
     // Merge after awaits: a discovery or metadata worker may have updated this row.
     let current={...this.candidates.get(mint)};
@@ -110,7 +116,7 @@ export class Radar {
         current.marketEmptyCount=(current.marketEmptyCount||0)+1;
         // Pending research deadlines must not inherit a five-minute empty-market backoff.
         // The ordinary scheduler and HTTP limiter still bound actual attempts.
-        current.nextMarketAttemptAt=Date.now()+(this.research.pending(mint)?this.config.enrichIntervalMs
+        current.nextMarketAttemptAt=Date.now()+(this.research.trackingPending(mint)?this.config.enrichIntervalMs
           :Math.min(300000,30000*2**Math.min(4,current.marketEmptyCount-1)));
       }
     }
@@ -311,9 +317,9 @@ export class Radar {
   }
   async stop(){this.running=false;this.health.mode='stopped';this.abort.abort();await Promise.allSettled(this.loops);await this.statisticsService?.close();}
   getHealth(){if(this.health.mode==='dashboard'){const h=this.storage.getState('health');if(h.providers)return {...h,mode:'dashboard (worker snapshot)',ready:h.ready&&Date.now()-h.lastMarketAt<this.config.freshMs&&Date.now()-h.lastLoopAt<180000};}
-    const now=Date.now(),active=[...this.candidates.values()].filter(x=>!x.inactive||tracking(x)||this.research.pending(x.mint));
+    const now=Date.now(),active=[...this.candidates.values()].filter(x=>!x.inactive||tracking(x)||this.research.trackingPending(x.mint));
     const pending=active.filter(x=>!x.lastAttemptAt);
-    return {...this.health.snapshot(this.config,this.storage.notificationStats()),scannerVersion:'0.2.9',statisticsReader:statisticsHealth(),statisticsWorker:this.statisticsService?.health()||null,research:{...this.research.stats(now),focus:{limit:Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5))),eligible:this.focusEligibleCount,selected:this.researchFocus.size,
+    return {...this.health.snapshot(this.config,this.storage.notificationStats()),scannerVersion:'0.2.9',statisticsReader:statisticsHealth(),statisticsWorker:this.statisticsService?.health()||null,research:{...this.research.stats(now),focus:{limit:Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5))),eligible:this.focusEligibleCount,selected:this.researchFocus.size,fastSelected:this.fastFocusSelected||0,fastAwaitingCapacity:this.fastFocusAwaiting||0,ordinaryDisplaced:this.fastFocusDisplaced||0,
       ready:[...this.researchFocus].filter(m=>{const v=this.research.describe(m,now);return v?.metrics?.ready&&v.stage!=='data unavailable';}).length}},droppedCandidates:this.droppedCandidates||0,
     decisionTrace:{writtenSinceRestart:this.storage.decisionEventsWritten||0,retentionDays:this.config.snapshotDays},
     storageWrites:this.storage.writeStats?.()||null,
