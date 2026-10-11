@@ -2,6 +2,31 @@ import {observationQuality} from './observation-quality.js';
 export const FAST_VERSION='fast30-shadow-1';
 export const FOLLOWUP_POLICY='fast-followup-1';
 export const EVIDENCE_VERSION='fast-evidence-1';
+export const PATH_VERSION='pool-timing-evidence-1';
+export const EXIT_PROTOCOL=Object.freeze({id:'fixed-short-exits-1',primaryOffsetMs:30000,
+ comparisonOffsetsMs:[60000,120000],maximumScheduleDelayMs:5000,requestAllowanceMs:8000,
+ additionalProceedsHaircutBps:[0,100,300],basis:'Fixed quantity quote observations; no trades, stop simulation or best-exit selection'});
+const PATH_LIMIT=8;
+function recordPath(p,c,now,valid){
+ const path=p.pathEvidence||={version:PATH_VERSION,startedAt:now,partialHistory:now>p.at,points:[],droppedPoints:0,firstAlternate:null};
+ if(!valid||!c||c.marketAttemptStatus==='error'||c.marketAttemptStatus==='no-usable-market'||c.mint!==p.mint
+  ||typeof c.pairAddress!=='string'||!c.pairAddress||!Number.isFinite(c.priceUsd)||c.priceUsd<=0
+  ||!Number.isFinite(c.marketObservedAt)||c.marketObservedAt<p.at||c.marketObservedAt>now||now-c.marketObservedAt>45000)return;
+ const last=path.points.at(-1);
+ if(last&&c.marketObservedAt<=last.sampleAt)return;
+ const point={pairAddress:c.pairAddress,sampleAt:c.marketObservedAt,recordedAt:now,priceUsd:c.priceUsd,
+  liquidityUsd:Number.isFinite(c.liquidityUsd)?c.liquidityUsd:null};
+ if(c.pairAddress!==p.pairAddress&&!path.firstAlternate)path.firstAlternate={...point};
+ path.points.push(point);
+ if(path.points.length>PATH_LIMIT){path.points.shift();path.droppedPoints++;}
+}
+function pathOutcome(p,h){
+ const path=p.pathEvidence,due=p.at+FAST_RULE.horizons[h];
+ const alternate=path.points.find(x=>x.pairAddress!==p.pairAddress&&x.sampleAt>=due&&x.recordedAt<=due+FAST_RULE.toleranceMs);
+ return {...path,points:path.points.map(x=>({...x})),firstAlternate:path.firstAlternate?{...path.firstAlternate}:null,
+  alternateAtCheckpoint:alternate?{...alternate}:null,
+  note:'Bounded received observations; alternate pools do not replace original-pool outcomes or establish migration, freshness or execution.'};
+}
 export const SHADOW_RULES=Object.freeze([
  {id:'known-liquidity-5000-v1',field:'liquidityUsd',operator:'gte',threshold:5000},
  {id:'return30-at-most-50-v1',field:'return30sPct',operator:'lte',threshold:50}
@@ -54,11 +79,11 @@ export function fastDecision(c,history,metrics,now,severe=false,hadDeterioration
   note:'Experimental observation; unknown security or liquidity remains unknown.'};
 }
 export class FastShadow {
- constructor(config,storage){this.config=config;this.storage=storage;this.states=new Map();this.entries=0;this.outcomes=0;this.links=0;this.registration=null;this.evidenceRegistration=null;this.trackingAdmissions=0;this.trackingCapacityExcluded=0;}
+ constructor(config,storage){this.config=config;this.storage=storage;this.states=new Map();this.entries=0;this.outcomes=0;this.links=0;this.registration=null;this.evidenceRegistration=null;this.exitRegistration=null;this.trackingAdmissions=0;this.trackingCapacityExcluded=0;}
  load(mint){
   if(!this.states.has(mint)){
    const saved=this.storage.getState(`fast-shadow:${mint}`),s={lastEntryAt:0,position:null,...saved};
-   if(s.position){s.position.gapped=true;s.position.restartObserved=true;delete s.position.diagnostics;}
+   if(s.position){s.position.gapped=true;s.position.restartObserved=true;delete s.position.diagnostics;delete s.position.pathEvidence;}
    this.states.set(mint,s);
   }
   return this.states.get(mint);
@@ -68,6 +93,9 @@ export class FastShadow {
  trackedPending(mint){const p=this.states.get(mint)?.position;return Boolean(p?.followup?.admitted);}
  register(now){
   if(this.registration)return;
+  const exit=this.storage.getState('fixed-short-exits-registration');
+  this.exitRegistration=exit.id===EXIT_PROTOCOL.id?exit:{...EXIT_PROTOCOL,registeredAt:now};
+  if(exit.id!==EXIT_PROTOCOL.id)this.storage.setState(this.exitRegistration,'fixed-short-exits-registration');
   const evidence=this.storage.getState('fast-evidence-registration');
   this.evidenceRegistration=evidence.id===EVIDENCE_VERSION?evidence:{id:EVIDENCE_VERSION,registeredAt:now,rules:SHADOW_RULES,
    purpose:'Prospective Fast30 shadow comparisons only; no admission, notification or trading changes'};
@@ -87,6 +115,7 @@ export class FastShadow {
   const followup={policy:FOLLOWUP_POLICY,admitted:used<this.trackingLimit(),limit:this.trackingLimit(),reason:used<this.trackingLimit()?'capacity admitted':'tracking capacity full'};
   if(followup.admitted)this.trackingAdmissions++;else this.trackingCapacityExcluded++;
   const p={id,followup,mint:c.mint,pairAddress:c.pairAddress,at:now,priceUsd:c.priceUsd,lastAt:c.marketObservedAt,horizons:{},links:{},gapped:false,diagnostics:{version:EVIDENCE_VERSION,startedAt:now,partialHistory:false,windows:{},lastAttempt:null}};
+  recordPath(p,c,now,true);
   const entryFeatures={liquidityUsd:Number.isFinite(c.liquidityUsd)?c.liquidityUsd:null,return30sPct:d.return30sPct,
    lastIntervalReturnPct:d.lastIntervalReturnPct,transactions5m:(c.txns?.m5?.buys||0)+(c.txns?.m5?.sells||0),
    volume5mUsd:Number.isFinite(c.volume?.m5)?c.volume.m5:null,dexId:c.dexId||null};
@@ -104,6 +133,7 @@ export class FastShadow {
  }
  checkpoint(mint,c,now,valid,reason=null){
   const s=this.states.get(mint),p=s?.position;if(!p)return;
+  recordPath(p,c,now,valid);
   attemptEvidence(p,c,now,valid);
   const usable=valid&&c?.pairAddress===p.pairAddress&&Number.isFinite(c.priceUsd)&&c.priceUsd>0&&c.marketObservedAt>p.lastAt&&c.marketObservedAt<=now;
   if(now-p.lastAt>45000)p.gapped=true;
@@ -119,6 +149,7 @@ export class FastShadow {
     this.storage.append('fast-shadow-outcomes',{id:`${p.id}:${h}`,entryId:p.id,mint,version:FAST_VERSION,at:now,entryAt:p.at,horizon:h,
      followup:p.followup||{policy:'legacy-unprioritized',admitted:false},
      ...diagnosticOutcome(p,h,now,reason,observed),
+     pathEvidence:pathOutcome(p,h),
      status:observed?'observed':'missing',coverage:p.gapped?'gapped':'sampled',pairAddress:p.pairAddress,
      ...(observed?{sampleAt:c.marketObservedAt,priceUsd:c.priceUsd,returnPct:(c.priceUsd/p.priceUsd-1)*100}
       :{reason:reason||'no timely original-pool observation'}),basis:'provider-response-time; no costs or fills'});
@@ -137,6 +168,6 @@ export class FastShadow {
  }
  sweep(now){for(const mint of this.states.keys())this.checkpoint(mint,null,now,false);}
  drop(mint,now){this.checkpoint(mint,null,now,false,'candidate left queue');this.states.delete(mint);}
- stats(){return {evidenceVersion:EVIDENCE_VERSION,evidenceRegisteredAt:this.evidenceRegistration?.registeredAt??null,version:FAST_VERSION,entriesSinceRestart:this.entries,outcomesSinceRestart:this.outcomes,linksSinceRestart:this.links,
+ stats(){return {pathEvidenceVersion:PATH_VERSION,fixedExitProtocol:this.exitRegistration?.id??null,fixedExitRegisteredAt:this.exitRegistration?.registeredAt??null,evidenceVersion:EVIDENCE_VERSION,evidenceRegisteredAt:this.evidenceRegistration?.registeredAt??null,version:FAST_VERSION,entriesSinceRestart:this.entries,outcomesSinceRestart:this.outcomes,linksSinceRestart:this.links,
   pending:[...this.states.values()].filter(s=>s.position).length,registeredAt:this.registration?.registeredAt??null,changesScheduling:true,notifications:false,followupPolicy:FOLLOWUP_POLICY,trackingLimit:this.trackingLimit(),trackingActive:[...this.states.values()].filter(s=>s.position?.followup?.admitted).length,trackingAdmissionsSinceRestart:this.trackingAdmissions,trackingCapacityExcludedSinceRestart:this.trackingCapacityExcluded};}
 }

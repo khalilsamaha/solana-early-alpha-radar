@@ -1,0 +1,51 @@
+{
+  "release": "pool-timing-evidence-1",
+  "baseCommit": "fdf7199e3391f04ae7b179aef46f2236b511ec20",
+  "scannerVersion": "0.2.9",
+  "quoteObserver": "0.6.0",
+  "reportFormat": "research-quality-report-4",
+  "exitProtocol": "fixed-short-exits-1",
+  "validation": {
+    "testsPassed": 362,
+    "scannerJS": 177,
+    "scannerPython": 11,
+    "observerJS": 58,
+    "observerPython": 28,
+    "researchPython": 49,
+    "qualityPython": 30,
+    "deploymentPython": 9,
+    "historicalEntries": 516,
+    "historicalQuoteCases": 67,
+    "allSevenPriorReportSectionsUnchanged": true,
+    "actualInstallIdempotencyRollbackVerified": true,
+    "originalScannerFilesRestored": 83,
+    "scannerEventToReportIntegrationPassed": true
+  },
+  "operationalScope": {
+    "productionFilesChanged": [
+      "src/core/fast-shadow.js"
+    ],
+    "extraProviderRequests": false,
+    "extraPerPollDatabaseWrites": false,
+    "extraNotificationSending": false,
+    "executesTrades": false,
+    "notes": "Bounded additional bytes on existing events/state; one scanner restart required."
+  },
+  "changedFileHashes": {
+    "README.md": "7ce8794eac43718be4b99ff610769dceed93f19c9ef7372abb141615f1bbdbb5",
+    "deployment/install-pool-exits.py": "7ccb71feaa71695d2908ea038ad5d5e825413133630b6d39889701e11734c3c3",
+    "deployment/pool-exit-manifest.json": "fd8a277cd333c6144606de9354650917f5b48b71be519fc087d5cbdfc83f2a7c",
+    "deployment/test_pool_exit_install.py": "3ecce2b182ddb6e75479bb2579e4c3a84a909eb002601814fcab46eeb6d7e984",
+    "deployment/verify-pool-exits.mjs": "933ba764104d3f0d12bb8e92edb7a1ade29cb68521645b8e298a7aa95b3d00b2",
+    "docs/POOL-EXIT-UPDATE.md": "0ee4c645bd1e06a3a5518e86968b95091e59adfd611367c2dbf14b2472d31cb4",
+    "docs/PROJECT-HISTORY.md": "f7e501b906bf15f126d5ec59c23fe0f16dfca738211846e7f130af91c3f28a01",
+    "docs/ROADMAP.md": "eb45dbf9828d0ead99ebfe76442350e3a547815424d92a69272093b493d3dbb9",
+    "quality-tools/README.md": "753bad2f9fc6d8c074dc550e2c26b85a6b4269bcac1bd3435469254837a40de2",
+    "quality-tools/fixed_exits.py": "0ae678567c21e8b273294ce0e52a6daa8fc5959c3ab33f118b315c7e60752c70",
+    "quality-tools/path_analysis.py": "10cf08fab0e4870c7bc80e51b12f47ffed283fd4b23066e97efd9b1d5a255605",
+    "quality-tools/quality_report.py": "e3cd2476d3b31219ab712365c3153e660c24ef4d55ff8a2b7dfc8d210ac42902",
+    "quality-tools/test_path_exits.py": "904f81ca4fd5bd0c88b5c3e513a6706829fe99434ff21253471349d6fd329aae",
+    "scanner/src/core/fast-shadow.js": "02fd90598efd607bbddfa7ea6b44d0b848cec755d2df53a8faea3e16cc2313da",
+    "scanner/test/pool-timing.test.js": "1292745f0470f9e012e544c12d03b65aa1fc450dc9e4fc962ed1191a27ec12e8"
+  }
+}

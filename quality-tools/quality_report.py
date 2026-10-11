@@ -2,10 +2,12 @@
 """Read-only shadow report and offline fixed-quantity quote movements."""
 import argparse,collections,datetime,gzip,json,math,os,signal,sqlite3,statistics,subprocess,time
 from pathlib import Path
-VERSION='research-quality-report-3'
+VERSION='research-quality-report-4'
 from timing_analysis import analyze_timing
 from joined_analysis import join_quotes
 from entry_shadows import entry_shadows, missing_diagnostics
+from path_analysis import path_analysis
+from fixed_exits import fixed_exits
 def finite(v):return isinstance(v,(int,float)) and not isinstance(v,bool) and math.isfinite(v)
 def load(p):
  with (gzip.open(p,'rb') if str(p).endswith('.gz') else open(p,'rb')) as f:raw=f.read(48*1024*1024+1)
@@ -35,6 +37,8 @@ def capture(path,hours=24,budget=10):
   result['followupRegistration']=json.loads(followup[0]) if followup else None
   evidence=db.execute("SELECT data FROM kv WHERE key='fast-evidence-registration'").fetchone()
   result['evidenceRegistration']=json.loads(evidence[0]) if evidence else None
+  exits=db.execute("SELECT data FROM kv WHERE key='fixed-short-exits-registration'").fetchone()
+  result['fixedExitRegistration']=json.loads(exits[0]) if exits else None
   for kind,cap in [('fast-shadow-entries',3000),('fast-shadow-outcomes',12000),('fast-shadow-links',6000)]:
    result[kind]=[]
    for raw,size_bytes in db.execute('SELECT CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data END,length(CAST(data AS BLOB)) FROM events INDEXED BY events_at WHERE kind=? AND at>=? AND at<=? ORDER BY at LIMIT ?',(kind,now-hours*3600000,now,cap+1)):
@@ -127,6 +131,8 @@ def main():
   report['missingDiagnostics']=missing_diagnostics(data)
   if quotes is not None:report['joinedEvidence']=join_quotes(data,quotes)
   report['entryShadows']=entry_shadows(data,report.get('joinedEvidence'))
+  report['pathEvidence']=path_analysis(data,report.get('joinedEvidence'))
+  if quotes is not None:report['fixedExits']=fixed_exits(data,quotes,report['joinedEvidence'])
  if quotes is not None:report['quoteMovements']=quote_movements(quotes)
  raw=json.dumps(report,allow_nan=False,separators=(',',':')).encode()
  if len(raw)>48*1024*1024:raise ValueError('Output too large')
@@ -139,6 +145,8 @@ def main():
  print(json.dumps(report['shadowSummary'] if 'shadowSummary' in report else {'quoteMovementGroups':len(report['quoteMovements']['groups'])},indent=2));print('Upload: '+str(a.output.resolve()))
  if 'joinedEvidence' in report:print('Joined source identity: '+report['joinedEvidence']['sourceIdentityState'])
  if 'entryShadows' in report:print('Entry shadow periods: '+json.dumps(dict(collections.Counter(e['period'] for e in report['entryShadows']['entries']))))
+ if 'pathEvidence' in report:print('Pool evidence: '+json.dumps(report['pathEvidence']['poolSummary']))
+ if 'fixedExits' in report:print('Fixed exit periods: '+json.dumps(dict(collections.Counter(e['period'] for e in report['fixedExits']['cases']))))
 if __name__=='__main__':
  try:main()
  except Exception as e:raise SystemExit('Quality report stopped: '+type(e).__name__+'; no complete report published.')

@@ -13,3 +13,7 @@ From the running project directory use `bash ~/apps/solana-radar-dev/quality-too
 Reports are not independent samples: deduplicate overlapping exports. Eventual-link and complete-path groups are hindsight diagnostics, not entry filters. Keep sampling policies and forward/exploratory periods separate. Unknown data, missing observations and quote failures remain explicit.
 
 Tests: `python3 -m unittest discover -p 'test_*.py'`.
+
+## Report format 4: pool and fixed-exit evidence
+
+See `../docs/POOL-EXIT-UPDATE.md`. `pathEvidence` retains legacy-unavailable states, separate alternate-pool prices, and backward-only original-pool response comparisons with explicit ages. `fixedExits` evaluates the persisted 30-second primary / 60- and 120-second comparator protocol; historical observations stay exploratory. Failures, pending, missing and late exits remain explicit. Additional proceeds haircuts are stress scenarios, not measured net profit. Existing entry-shadow registration is independent of this new exit registration.
