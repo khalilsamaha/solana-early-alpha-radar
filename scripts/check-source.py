@@ -44,7 +44,7 @@ def main():
         for line, text in enumerate(content.splitlines(), 1):
             if any(pattern.search(text) for pattern in PATTERNS):
                 failures.append(f'{name}:{line}: credential pattern; value withheld')
-    for component in ['quote-observer', 'research-tools']:
+    for component in ['quote-observer', 'research-tools', 'operations-tools']:
         manifest = json.loads((ROOT / component / 'manifest.json').read_text())
         for name, expected in manifest['files'].items():
             path = ROOT / component / name

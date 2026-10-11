@@ -12,7 +12,7 @@ This repository imports the deployed source captured on **2026-10-09 at 21:59 UT
 | `quality-tools/` | Fast30 timing, coverage, joined price/quote reports and registered shadow comparisons |
 | `docs/` | Current roadmap, import provenance and development workflow |
 
-The complete project record is in [project history](docs/PROJECT-HISTORY.md). The next evidence release is documented in [pool and fixed-exit update](docs/POOL-EXIT-UPDATE.md).
+The complete project record is in [project history](docs/PROJECT-HISTORY.md). The consolidated direction is in [edge research plan](docs/EDGE-RESEARCH-PLAN.md). The current prepared release is [launch evidence and quote backup](docs/LAUNCH-FOUNDATION-UPDATE.md).
 
 Start with [development instructions](docs/DEVELOPMENT.md), [current roadmap](docs/ROADMAP.md) and [import review](docs/IMPORT-REVIEW.md). Component READMEs are preserved historical documentation; they may describe earlier deployment layouts.
 

@@ -26,3 +26,8 @@ python3 scripts/check-source.py
   cd deployment
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd operations-tools
+  python3 -m unittest discover -p 'test_*.py'
+)

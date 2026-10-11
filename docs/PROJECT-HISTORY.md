@@ -297,3 +297,11 @@ There is no evidence-based date for funded testing. A large number of paper entr
 - See `docs/POOL-EXIT-UPDATE.md` for the current update and rollback procedure.
 
 This document records engineering progress and research findings. It is not a claim that the scanner identifies safe assets or that the current strategy is profitable.
+
+## 11 October 2026 — consolidated launch-quality direction and evidence foundation
+
+Reviewed the uploaded edge plan against current source and observed negative Fast30 outcomes. Adopted launch-feature research, explicit as-of information, frozen prospective trials and an evidence-based stop decision. Corrected quote-failure/rug conflation, dust-size sellability, exact-reconstruction claims, cost double-counting, sample-capacity assumptions and inconsistent time horizons. The consolidated decision record is `docs/EDGE-RESEARCH-PLAN.md`.
+
+Prepared the launch-foundation release: bounded immutable creation evidence independent of candidate eviction; distinct creator/trader roles; local receipt timestamps; no fabricated on-chain time or raw metadata downloads; a read-only feature-availability audit; and independent quote-ledger backup with isolated all-table restore verification and optional B2 round trip. The combined guarded installer includes the previous pool/exit patch and accepts either known source state. New tests cover retention/caps, adapter failure isolation, archive corruption, cursor preservation, cloud failure and installer rollback.
+
+This entry records development, not confirmed Kali deployment. The scanner stays 0.2.9 and the quote observer stays 0.6.0. No new admission rule, wallet, paid subscription or live order is introduced. The next substantive research step is an as-of launch-feature study after actual field availability has been audited. External alerts for the new backup and cloud retention remain explicit follow-ups.

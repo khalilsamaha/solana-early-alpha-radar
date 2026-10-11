@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync, backup } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
+import {LaunchRegistry} from './launch-registry.js';
 
 export class Storage {
   constructor(dir) {
@@ -16,7 +17,7 @@ export class Storage {
       CREATE TABLE IF NOT EXISTS kv(key TEXT PRIMARY KEY,data TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS outbox(id TEXT PRIMARY KEY, at INTEGER NOT NULL, next_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL, payload TEXT NOT NULL, last_error TEXT, delivered_at INTEGER);
       CREATE INDEX IF NOT EXISTS outbox_due ON outbox(status,next_at);`);
-    try{this.importLegacy();}catch(error){this.db.close();throw error;}
+    try{this.importLegacy();this.launchRegistry=new LaunchRegistry(this.db);}catch(error){this.db.close();throw error;}
   }
   transaction(fn) {
     if(this.inTransaction)return fn();
@@ -24,6 +25,11 @@ export class Storage {
     try { const result = fn(); this.db.exec('COMMIT');this.writes.transactions++; return result; }
     catch (error) { this.db.exec('ROLLBACK'); throw error; }
     finally {this.inTransaction=false;}
+  }
+  recordLaunch(evidence) {
+    const r=this.launchRegistry,before={retained:r.retained,lastMaintenance:r.lastMaintenance,counters:{...r.counters}};
+    try{return this.transaction(()=>r.record(evidence));}
+    catch(error){Object.assign(r,before);r.counters.errors++;throw error;}
   }
   loadCandidates() { return Object.fromEntries(this.db.prepare('SELECT mint,data FROM candidates').all().map(r=>[r.mint,JSON.parse(r.data)])); }
   saveCandidate(row) { this.writes.candidateAttempts++;const r=this.db.prepare('INSERT INTO candidates(mint,data) VALUES (?,?) ON CONFLICT(mint) DO UPDATE SET data=excluded.data WHERE candidates.data<>excluded.data').run(row.mint, JSON.stringify(row));this.writes.candidateChanged+=Number(r.changes); }

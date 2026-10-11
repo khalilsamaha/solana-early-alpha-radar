@@ -1,4 +1,5 @@
-export function startPumpPortal(apiKey,onToken,onStatus=()=>{},health) {
+import {creationEvidence} from '../core/launch-registry.js';
+export function startPumpPortal(apiKey,onToken,onStatus=()=>{},health,onCreation=()=>{}) {
   if(!apiKey){onStatus('PumpPortal disabled: missing API key');return ()=>{};}
   let ws,timer,watchdog,stopped=false,retry=1000,lastMessageAt=0;
   const connect=()=>{
@@ -12,7 +13,9 @@ export function startPumpPortal(apiKey,onToken,onStatus=()=>{},health) {
     ws.addEventListener('message',e=>{
       lastMessageAt=Date.now();
       try {
-        const row=JSON.parse(String(e.data));
+        const raw=String(e.data);
+        if(Buffer.byteLength(raw)>65536){onStatus('PumpPortal oversized message rejected');return;}
+        const row=JSON.parse(raw);
         const errors = [row.error, row.errors].flat().filter(x => x != null && x !== false && x !== '');
         if (errors.length) {
           let reason = JSON.stringify(errors);
@@ -26,8 +29,10 @@ export function startPumpPortal(apiKey,onToken,onStatus=()=>{},health) {
         }
         health?.success('pumpportal');
         if(!row.mint||!['create','migration','migrate'].includes(row.txType))return;
+        const receivedAt=Date.now(),evidence=creationEvidence(row,receivedAt);
+        if(evidence){try{onCreation(evidence);}catch{onStatus('Launch registry write failed; discovery continues');}}
         onToken({mint:row.mint,tokenName:row.name,symbol:row.symbol,creator:row.traderPublicKey||row.creator,
-          ...(row.txType==='create'?{launchAt:Date.now()}:{}),discoverySource:`pumpportal:${row.txType}`});
+          ...(row.txType==='create'?{launchAt:receivedAt}:{}),discoverySource:`pumpportal:${row.txType}`});
       }catch{onStatus('PumpPortal message rejected');}
     });
     ws.addEventListener('close',()=>{if(stopped)return;health?.failure('pumpportal','Disconnected');onStatus('PumpPortal disconnected; reconnect scheduled');schedule();});

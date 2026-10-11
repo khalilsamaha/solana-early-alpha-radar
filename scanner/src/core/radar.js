@@ -323,6 +323,7 @@ export class Radar {
       ready:[...this.researchFocus].filter(m=>{const v=this.research.describe(m,now);return v?.metrics?.ready&&v.stage!=='data unavailable';}).length}},droppedCandidates:this.droppedCandidates||0,
     decisionTrace:{writtenSinceRestart:this.storage.decisionEventsWritten||0,retentionDays:this.config.snapshotDays},
     storageWrites:this.storage.writeStats?.()||null,
+    launchRegistry:this.storage.launchRegistry?.health()||null,
     snapshotArchive:{storedSinceRestart:this.snapshotCounts.stored,skippedSinceRestart:this.snapshotCounts.skipped,
       routineIntervalMs:this.config.snapshotIntervalMs,thinMarketIntervalMs:this.config.thinSnapshotIntervalMs},
     coverage:{active:active.length,neverAttempted:pending.length,oldestFirstAttemptWaitMs:Math.max(0,...pending.map(x=>now-x.firstSeenAt)),
