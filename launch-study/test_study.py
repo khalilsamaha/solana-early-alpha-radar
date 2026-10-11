@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from analyze import analyze, distribution
-from capture import capture
+from capture import capture, CaptureError, read_outcomes
 from report import publish, read_capture
 
 T=1800000000000
@@ -161,7 +161,8 @@ class StudyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             f=self.database(Path(d)/'db')
             with self.assertRaisesRegex(ValueError,'Entry cap'):capture(f,now=T+400000,max_entries=0)
-            with self.assertRaises((TimeoutError,sqlite3.OperationalError)):capture(f,now=T+400000,budget=-0.5)
+            with self.assertRaises(CaptureError) as failure:capture(f,now=T+400000,budget=-0.5)
+            self.assertEqual(failure.exception.diagnostic['reason'],'read-deadline')
             with sqlite3.connect(f) as db:db.execute("UPDATE events SET data=? WHERE kind='fast-shadow-entries'",('x'*262145,))
             with self.assertRaisesRegex(ValueError,'cap'):capture(f,now=T+400000)
 
@@ -190,6 +191,50 @@ class StudyTests(unittest.TestCase):
             bad=root/'bad.gz';bad.write_bytes(b'invalid');missing=root/'missing.gz'
             r=subprocess.run([sys.executable,str(Path(__file__).with_name('report.py')),'--input',str(bad),'--output',str(missing)],capture_output=True,text=True)
             self.assertNotEqual(r.returncode,0);self.assertFalse(missing.exists())
+
+    def test_large_outcome_history_uses_bounded_exact_lookups(self):
+        with tempfile.TemporaryDirectory() as d:
+            f=self.database(Path(d)/'db');e=entry()
+            with sqlite3.connect(f) as db:
+                db.executemany('INSERT INTO events(kind,id,at,data) VALUES(?,?,?,?)',
+                    [('fast-shadow-outcomes','unrelated:'+str(i),T-1000,'{}') for i in range(50000)])
+                db.commit()
+                callbacks=0
+                def bounded():
+                    nonlocal callbacks
+                    callbacks+=1
+                    return int(callbacks>100)
+                db.set_progress_handler(bounded,100)
+                rows=list(read_outcomes(db,'fast-shadow-outcomes',[e['eventId']+':'+h for h in ('30s','60s','120s','300s')],T+400000))
+                self.assertEqual(len(rows),1)
+                self.assertEqual(rows[0][1],e['eventId']+':30s')
+                self.assertLess(callbacks,100)
+            c=capture(f,now=T+400000)
+            self.assertEqual(analyze(c)['cases'][0]['outcomes']['30s']['grossPriceChangePct'],50)
+
+    def test_schema_and_lock_errors_are_safe_actionable_and_release_reader(self):
+        with tempfile.TemporaryDirectory() as d:
+            f=Path(d)/'db';sqlite3.connect(f).close()
+            with self.assertRaises(CaptureError) as failure:capture(f,now=T+400000)
+            diag=failure.exception.diagnostic
+            self.assertEqual(diag['reason'],'database-schema-or-query');self.assertEqual(diag['stage'],'registration')
+            self.assertNotIn(str(f),json.dumps(diag))
+            f.unlink();self.database(f)
+            writer=sqlite3.connect(f)
+            writer.execute('BEGIN EXCLUSIVE')
+            try:
+                with self.assertRaises(CaptureError) as failure:capture(f,now=T+400000)
+                self.assertEqual(failure.exception.diagnostic['reason'],'database-busy-or-locked')
+            finally:writer.rollback();writer.close()
+            self.assertEqual(len(capture(f,now=T+400000)['entries']),1)
+
+    def test_cli_database_error_has_stage_and_never_publishes(self):
+        with tempfile.TemporaryDirectory() as d:
+            f=Path(d)/'db';sqlite3.connect(f).close();out=Path(d)/'out.gz'
+            r=subprocess.run([sys.executable,str(Path(__file__).with_name('report.py')),'--database',str(f),'--output',str(out)],capture_output=True,text=True)
+            self.assertNotEqual(r.returncode,0);self.assertFalse(out.exists())
+            self.assertIn('database-schema-or-query',r.stderr);self.assertIn('registration',r.stderr)
+            self.assertNotIn(str(f),r.stderr)
 
     def test_actual_scanner_research_producer_round_trip(self):
         with tempfile.TemporaryDirectory() as d:

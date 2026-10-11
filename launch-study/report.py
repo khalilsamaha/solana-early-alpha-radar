@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 
 from analyze import analyze
-from capture import capture
+from capture import capture, CaptureError
 
 MAX_REPORT_BYTES = 64 * 1024 * 1024
 
@@ -77,5 +77,8 @@ def main():
 if __name__ == '__main__':
     try:
         main()
+    except CaptureError as exc:
+        print('Launch study stopped: '+json.dumps(exc.diagnostic,separators=(',',':')),file=sys.stderr)
+        raise SystemExit('No partial report published. Send the diagnostic above; the scanner was not modified.')
     except Exception as exc:
         raise SystemExit('Launch study stopped (' + type(exc).__name__ + '). No partial report published; check input, caps and output permissions.')

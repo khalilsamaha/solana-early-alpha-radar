@@ -73,3 +73,9 @@ A read-only transaction can still consume CPU/I/O and briefly pin WAL history. I
 | Execution controls and funded pilot | Not ready | Demonstrated evidence plus separate execution engineering and explicit funded-trial approval |
 
 Current data do not establish a profitable edge. This development shortens the path to an informed accept/reject decision; it does not supply a real-money start date.
+
+## Collector correction — 11 October 2026
+
+The first host attempt stopped with a generic SQLite `OperationalError`, so its exact cause was not captured. Local query-plan inspection reproduced a performance defect: the combined `kind + id IN + at` outcome query can select the time-range index and scan historical outcomes for every entry. Collector `launch-study-1.0.1` instead performs four single-key equality lookups using the existing unique `(kind,id)` constraint and applies the cutoff to each returned row. It does not add an index, modify the database or extend the read budget. A regression fixture with 50,000 unrelated historical outcomes verifies bounded lookup work.
+
+SQLite failures now disclose a safe classification, read stage, elapsed seconds, entry/outcome counts and numeric error code. Timeout, lock/open/permission and schema/query failures are distinct; SQL, payloads and paths are omitted. This corrects a reproduced reader defect, but the generic host error alone does not prove that defect caused the host failure. Retry with the corrected collector; retain any new diagnostic.

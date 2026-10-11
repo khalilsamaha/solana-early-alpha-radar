@@ -2,6 +2,24 @@
 import hashlib, json, signal, sqlite3, time
 from pathlib import Path
 
+class CaptureError(RuntimeError):
+    """Bounded diagnostics only: no SQL text, payloads, credentials or paths."""
+    def __init__(self, reason, stage, elapsed, entries, outcomes, sqlite_code=None):
+        self.diagnostic={'reason':reason,'stage':stage,'elapsedSeconds':round(elapsed,3),
+            'entriesRead':entries,'outcomesRead':outcomes,'sqliteCode':sqlite_code}
+        super().__init__(reason)
+
+
+def read_outcomes(db,kind,ids,cutoff):
+    # Single equality lookup uses the existing UNIQUE(kind,id) constraint.
+    # Adding an at range to an IN query let SQLite scan all historical outcomes
+    # once per entry on databases without planner statistics.
+    sql='SELECT seq,id,at,CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data END,length(CAST(data AS BLOB)) FROM events WHERE kind=? AND id=?'
+    for key in ids:
+        row=db.execute(sql,(kind,key)).fetchone()
+        if row and row[2]<=cutoff:yield row
+
+
 ENTRY_KINDS=('fast-shadow-entries','research-entries')
 ENTRY_KEYS=('id','at','mint','cohort','version','priceUsd','pairAddress','liquidityUsd')
 OUTCOME_KEYS=('id','entryId','mint','cohort','at','entryAt','dueAt','horizon','status','coverage','sampleAt','priceUsd','returnPct','pairAddress','reasonCode')
@@ -25,6 +43,7 @@ def capture(path,hours=6,budget=10,max_entries=6000,now=None):
     path=Path(path).resolve(strict=True);identity=path.stat();now=int(time.time()*1000) if now is None else now
     start=time.monotonic();end=start+budget;wal=Path(str(path)+'-wal');wal_start=wal.stat().st_size if wal.exists() else 0
     raw_bytes=0;launch_count=0;source_hash=hashlib.sha256();db=None
+    stage='opening-database';entries=[];outcomes=[]
     def guard():
         if time.monotonic()>end:raise TimeoutError('Read budget exceeded; narrow --hours')
         if wal.exists() and wal.stat().st_size-wal_start>64*1024*1024:raise ValueError('WAL growth budget exceeded')
@@ -41,11 +60,13 @@ def capture(path,hours=6,budget=10,max_entries=6000,now=None):
         db=sqlite3.connect(path.as_uri()+'?mode=ro',uri=True,timeout=1)
         db.execute('PRAGMA query_only=ON');db.execute('PRAGMA cache_size=-4096');db.execute('PRAGMA mmap_size=0')
         db.set_progress_handler(lambda:int(time.monotonic()>end),1000);db.execute('BEGIN')
+        stage='registration'
         regrow=db.execute("SELECT CASE WHEN length(CAST(data AS BLOB))<=4096 THEN data END,length(CAST(data AS BLOB)) FROM kv WHERE key='launch-registry-registration'").fetchone()
         if not regrow:raise ValueError('No launch registration yet; wait for a creation event')
         registration=parse(*regrow,4096)
         if registration.get('version')!='launch-registry-1' or type(registration.get('registeredAt')) is not int or not 0<registration['registeredAt']<=now:raise ValueError('Invalid launch registration')
         lower=max(now-hours*3600000,registration['registeredAt']);entries=[];outcomes=[];launches=[];contexts=[]
+        stage='entry-window'
         for kind in ENTRY_KINDS:
             sql='SELECT seq,id,at,CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data END,length(CAST(data AS BLOB)) FROM events INDEXED BY events_at WHERE kind=? AND at>=? AND at<=? ORDER BY at,seq LIMIT ?'
             for seq,key,at,raw,size in db.execute(sql,(kind,lower,now,max_entries+1)):
@@ -53,6 +74,7 @@ def capture(path,hours=6,budget=10,max_entries=6000,now=None):
                 entries.append({'seq':seq,'kind':kind,'eventId':key,'eventAt':at,'data':project_entry(parse(raw,size,262144))})
         entries.sort(key=lambda r:(r['eventAt'],r['seq']))
         mints={r['data'].get('mint') for r in entries if isinstance(r['data'].get('mint'),str)}
+        stage='matched-launches'
         for mint in sorted(mints):
             guard();row=db.execute('SELECT received_at,CASE WHEN length(CAST(data AS BLOB))<=4096 THEN data END,length(CAST(data AS BLOB)) FROM launch_registry WHERE mint=?',(mint,)).fetchone()
             if row:
@@ -66,6 +88,7 @@ def capture(path,hours=6,budget=10,max_entries=6000,now=None):
         context_start=lower-86400000
         sql='SELECT mint,received_at,CASE WHEN length(CAST(data AS BLOB))<=4096 THEN data END,length(CAST(data AS BLOB)) FROM launch_registry WHERE received_at>=? AND received_at<=? ORDER BY received_at,mint LIMIT 100001'
         earliest=db.execute('SELECT min(received_at) FROM launch_registry').fetchone()[0]
+        stage='prior-launch-context'
         for mint,at,raw,size in db.execute(sql,(context_start,now)):
             launch_count+=1
             if launch_count>100000:raise ValueError('Registry row cap reached')
@@ -74,24 +97,35 @@ def capture(path,hours=6,budget=10,max_entries=6000,now=None):
             f=row.get('fields',{})
             if f.get('traderReported') in actors or f.get('metadataUriSha256') in hashes:
                 contexts.append({'mint':mint,'availableAt':at,'traderReported':f.get('traderReported'),'metadataUriSha256':f.get('metadataUriSha256')})
+        stage='exact-outcomes'
         for entry in entries:
             kind='fast-shadow-outcomes' if entry['kind']=='fast-shadow-entries' else 'research-outcomes'
             hs=('30s','60s','120s','300s') if kind=='fast-shadow-outcomes' else ('30s','1m','2m','5m')
             ids=[str(entry['eventId'])+':'+h for h in hs]
-            sql='SELECT seq,id,at,CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data END,length(CAST(data AS BLOB)) FROM events WHERE kind=? AND id IN (?,?,?,?) AND at<=? ORDER BY seq'
-            for seq,key,at,raw,size in db.execute(sql,(kind,*ids,now)):
+            guard()
+            for seq,key,at,raw,size in read_outcomes(db,kind,ids,now):
                 outcomes.append({'seq':seq,'kind':kind,'eventId':key,'eventAt':at,'data':project_outcome(parse(raw,size,262144))})
+        stage='health-summary'
         hrow=db.execute("SELECT CASE WHEN length(CAST(data AS BLOB))<=65536 THEN data END,length(CAST(data AS BLOB)) FROM kv WHERE key='health'").fetchone()
         health=parse(*hrow,65536) if hrow else {}
         health_summary={'snapshotAt':None,'readAt':now,'timestampState':'not-stored-by-scanner',
             'lastMarketAt':health.get('lastMarketAt'),'lastLoopAt':health.get('lastLoopAt'),'launchRegistry':health.get('launchRegistry')}
         guard()
+    except (sqlite3.Error,TimeoutError) as exc:
+        code=getattr(exc,'sqlite_errorcode',None)
+        base=code&255 if isinstance(code,int) else None
+        reason=('read-deadline' if isinstance(exc,TimeoutError) or (base==sqlite3.SQLITE_INTERRUPT and time.monotonic()>=end)
+            else 'database-busy-or-locked' if base in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED)
+            else 'database-open-or-permission' if base in (sqlite3.SQLITE_CANTOPEN,sqlite3.SQLITE_READONLY,sqlite3.SQLITE_PERM)
+            else 'database-schema-or-query' if base in (sqlite3.SQLITE_ERROR,sqlite3.SQLITE_SCHEMA)
+            else 'database-interrupted' if base==sqlite3.SQLITE_INTERRUPT else 'database-error')
+        raise CaptureError(reason,stage,time.monotonic()-start,len(entries),len(outcomes),code) from None
     finally:
         if db:db.close()
         signal.setitimer(signal.ITIMER_REAL,0);signal.signal(signal.SIGALRM,previous)
     current=path.stat()
     if (current.st_dev,current.st_ino)!=(identity.st_dev,identity.st_ino):raise ValueError('Scanner source replaced during capture')
-    return {'format':'launch-study-capture-1','sourceIdentity':f'{identity.st_dev}:{identity.st_ino}',
+    return {'format':'launch-study-capture-1','collectorVersion':'launch-study-1.0.1','sourceIdentity':f'{identity.st_dev}:{identity.st_ino}',
         'cutoffAt':now,'requestedWindowStartAt':now-hours*3600000,'windowStartAt':lower,'registration':registration,
         'earliestRetainedReceiptAt':earliest,'contextWindowStartAt':context_start,'contextRowsScanned':launch_count,
         'entries':entries,'outcomes':outcomes,'matchedMintLaunchRecords':launches,'relatedLaunchContext':contexts,
