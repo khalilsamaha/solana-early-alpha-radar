@@ -34,7 +34,7 @@ bash ~/apps/solana-radar-dev/launch-study/run-report.sh --hours 6
 
 Upload the `radar-launch-study-*.json.gz` path printed at the end. A short first report can validate joins immediately. Collection need not stop or wait overnight. Entries before registry registration are excluded, so the actual window can be shorter than requested. Zero matched entries is a valid coverage finding, not a performance result.
 
-The existing quote and pool/exit reports remain the execution-evidence lane. This report deliberately does not join baseline research IDs to alert IDs or extrapolate quote results to unquoted entries. The next development step can join qualified study cases to exact quote evidence with full admission/failure denominators after inspecting actual launch coverage.
+The standalone report remains focused on launch and paper evidence. The joined report is now available: see [LAUNCH-QUOTE-UPDATE.md](LAUNCH-QUOTE-UPDATE.md). It joins exact observer decisions and quotes with full admission/failure denominators, handling distinct baseline research/alert identities explicitly. It does not extrapolate quote returns to unquoted entries.
 
 To refresh feature availability using the corrected reporter:
 
@@ -67,8 +67,8 @@ A read-only transaction can still consume CPU/I/O and briefly pin WAL history. I
 | Step | State | What decides the next move |
 | --- | --- | --- |
 | Stable scanner, backups, paper/quote evidence | Deployed, initial launch/backup checks supplied | Continue sustained-health and retention monitoring |
-| As-of launch context and outcome report | Implemented and regression-tested; host report pending | Match coverage, unknown fields, pool/timing validity and group counts |
-| Candidate feature and execution comparison | Next | Inspect descriptive groups and exact quote admission/failures, without selecting a winning exit retrospectively |
+| As-of launch context and outcome report | Host export verified; offline replay matched | Match coverage, unknown fields, pool/timing validity and group counts |
+| Candidate feature and execution comparison | Joined report implemented; fresh host run pending | Inspect descriptive groups and exact quote admission/failures, without selecting a winning exit retrospectively |
 | Frozen forward trial | Not selected | Define one hypothesis, sample/dependence plan, costs, primary horizon and failure gates before evaluation |
 | Execution controls and funded pilot | Not ready | Demonstrated evidence plus separate execution engineering and explicit funded-trial approval |
 
@@ -79,3 +79,7 @@ Current data do not establish a profitable edge. This development shortens the p
 The first host attempt stopped with a generic SQLite `OperationalError`, so its exact cause was not captured. Local query-plan inspection reproduced a performance defect: the combined `kind + id IN + at` outcome query can select the time-range index and scan historical outcomes for every entry. Collector `launch-study-1.0.1` instead performs four single-key equality lookups using the existing unique `(kind,id)` constraint and applies the cutoff to each returned row. It does not add an index, modify the database or extend the read budget. A regression fixture with 50,000 unrelated historical outcomes verifies bounded lookup work.
 
 SQLite failures now disclose a safe classification, read stage, elapsed seconds, entry/outcome counts and numeric error code. Timeout, lock/open/permission and schema/query failures are distinct; SQL, payloads and paths are omitted. This corrects a reproduced reader defect, but the generic host error alone does not prove that defect caused the host failure. Retry with the corrected collector; retain any new diagnostic.
+
+### Corrected host capture confirmed
+
+The supplied `20261011T150338Z` export completed its source read in 0.283 seconds. It retained 609 study entries, of which 378 had launch context available at entry. The actual launch window was about 4 hours 53 minutes; the nominal 24-hour context lookback was partial. The companion quote export matched all 609 observer decisions, with 27 admitted watches. These findings confirm this report succeeded; they do not prove the cause of the earlier generic OperationalError.

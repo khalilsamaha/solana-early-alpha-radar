@@ -315,3 +315,12 @@ Built a standalone bounded read-only launch study while production collects. It 
 ### Launch-study first-run correction
 
 The first host report attempt failed with a generic SQLite OperationalError and published no report. Local investigation reproduced an inefficient planner choice in the outcome lookup. The reader now uses unique-key equality lookups, preserves the same 10-second read budget and cutoff semantics, and emits safe stage-specific SQLite diagnostics. Large-history, locked-database and missing-schema tests were added. The original host failure has no detailed cause recorded; successful host collection remains to be verified.
+
+
+## 11 October 2026 — launch export verified and joined report automated
+
+The corrected launch collector succeeded on Kali: the supplied report records a 0.283-second read, 609 study entries and 378 entries with prior available launch context. Its actual post-registration coverage is about 4 hours 53 minutes, so earlier-launch counts still have partial lookback. The companion quote export joins to all 609 observer decisions; 27 were admitted (eight baseline, ten early-activity, nine Fast30). This confirms successful collection and joins without assigning an unrecorded cause to the first generic failure.
+
+Implemented an offline, replayable launch/observer/paper/quote report and a one-command read-only wrapper. Identity checks handle distinct baseline IDs; common cutoffs exclude later evidence; integer fixed-quantity checks recompute quoted changes; skipped, failed, unavailable and late observations retain explicit denominators. Matched and wider quote windows remain separate, including the wider Fast30 severe loss. Twenty added tests include wrapper failure cleanup and private atomic publication. This entry records development and validation against supplied files; the fresh host wrapper run is pending.
+
+The report's primary descriptive quote horizon is 30 seconds after buy response, with 60/120-second comparators. All three matched cohorts have negative mean quoted change at 30 seconds in the supplied sample. A positive nine-watch Fast30 result at 120 seconds is exploratory, not a new exit rule or proof of profitability. Scanner, observer, provider budgets, signal rules and backup services remain unchanged. The next gate is sufficient descriptive evidence to justify a frozen prospective hypothesis, followed separately by execution engineering. See `docs/LAUNCH-QUOTE-UPDATE.md`.
