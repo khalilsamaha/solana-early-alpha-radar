@@ -64,6 +64,12 @@ class OperationsTests(unittest.TestCase):
             result=audit(file);self.assertEqual(result['receivedCreationsInWindow'],2)
             self.assertEqual(result['availability']['initialBuyReported']['present'],2);self.assertEqual(result['availability']['slotReported']['unknown'],2)
             self.assertEqual(result['creatorRoleConflicts'],2);self.assertEqual(result['reportedCreatorsWithMultipleCreationsInWindow'],1)
+            self.assertEqual(result['distinctReportedTraders'],1)
+            self.assertEqual(result['reportedTradersWithMultipleCreationsInWindow'],1)
+            self.assertEqual(result['format'],'launch-feature-audit-2')
+            self.assertIsNone(result['scannerHealthSnapshot']['snapshotAt'])
+            self.assertEqual(result['scannerHealthSnapshot']['timestampState'],'not-stored-by-scanner')
+            self.assertGreaterEqual(result['scannerHealthSnapshot']['readAt'],now)
     def test_audit_missing_registry_and_oversized_record_fail_explicitly(self):
         with tempfile.TemporaryDirectory() as d:
             f=Path(d)/'db';db=sqlite3.connect(f);db.execute('CREATE TABLE kv(key TEXT,data TEXT)');db.commit()

@@ -91,3 +91,7 @@ After enough received creations to characterize availability, select the first s
 - Pump instruction versions: https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/TRADE_V3.md
 
 These references explain capabilities and interpretation; no provider calls are made by this plan.
+
+## First available launch study
+
+The initial 38-creation audit found reported traders but no reported creators. Therefore the first implemented descriptive study uses strictly earlier retained **creation-trader** receipts and metadata URI-hash repetition, keeping the current mint, future receipts and unknown roles separate. It is not creator reputation, transaction-level accumulation, executable launch pricing or a new admission rule. See `LAUNCH-STUDY.md` and `launch-study/protocol.json`. The report compares recorded research entries, not every launch, and does not promote historical exploratory contrasts into prospective evidence.

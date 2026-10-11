@@ -31,3 +31,8 @@ python3 scripts/check-source.py
   cd operations-tools
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd launch-study
+  python3 -m unittest discover -p 'test_*.py'
+)

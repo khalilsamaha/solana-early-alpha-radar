@@ -15,7 +15,7 @@ def database(project):
 
 def audit(file,hours=24):
     file=file.resolve(strict=True);started=time.monotonic();end=started+10;now=int(time.time()*1000)
-    identity=(file.stat().st_dev,file.stat().st_ino);counts=collections.Counter();actors=collections.Counter();n=0;first=None;last=None;conflict=0;total_bytes=0
+    identity=(file.stat().st_dev,file.stat().st_ino);counts=collections.Counter();actors=collections.Counter();traders=collections.Counter();n=0;first=None;last=None;conflict=0;total_bytes=0
     wal=Path(str(file)+'-wal');wal_size=wal.stat().st_size if wal.exists() else 0
     def guard():
         if time.monotonic()>end:raise TimeoutError('Read deadline exceeded')
@@ -37,23 +37,26 @@ def audit(file,hours=24):
             # Creator role is explicit; do not silently substitute a migration actor or trader.
             actor=fields.get('creatorReported')
             if actor:actors[actor]+=1
+            if fields.get('traderReported'):traders[fields['traderReported']]+=1
             conflict+=bool(actor and fields.get('traderReported') and actor!=fields['traderReported'])
         guard()
         state=json.loads(health[0]) if health else {}
     if identity!=(file.stat().st_dev,file.stat().st_ino):raise ValueError('Source changed during capture')
-    return {'format':'launch-feature-audit-1','capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    return {'format':'launch-feature-audit-2','capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),
         'sourceIdentity':f'{identity[0]}:{identity[1]}','windowHours':hours,'registration':json.loads(registration[0]) if registration else None,
         'retainedTotal':retained,'receivedCreationsInWindow':n,'firstReceiptAt':first,'lastReceiptAt':last,
         'availability':{f:{'present':counts[f],'unknown':n-counts[f]} for f in FIELDS},
         'creatorRoleConflicts':conflict,'distinctReportedCreators':len(actors),'reportedCreatorsWithMultipleCreationsInWindow':sum(c>1 for c in actors.values()),
-        'scannerHealthSnapshot':{'at':state.get('at'),'launchRegistry':state.get('launchRegistry')},
+        'distinctReportedTraders':len(traders),'reportedTradersWithMultipleCreationsInWindow':sum(c>1 for c in traders.values()),
+        'scannerHealthSnapshot':{'snapshotAt':None,'readAt':now,'timestampState':'not-stored-by-scanner',
+            'lastMarketAt':state.get('lastMarketAt'),'lastLoopAt':state.get('lastLoopAt'),'launchRegistry':state.get('launchRegistry')},
         'readSeconds':round(time.monotonic()-started,3),
         'limitations':['Received creation events only; not all launches or the active candidate queue.',
             'No historical backfill, performance outcomes, creator verification or trading eligibility changes.',
             'Receipt timestamps are availability timestamps, not on-chain creation times.',
             'URI hash is equality evidence only; content is neither fetched nor authenticated.',
             'Thirty-day retention and a hard row cap bound stored evidence; health counters reset at restart.',
-            'Creator repetition is descriptive within this retained window; not a prior-history feature or a risk verdict.']}
+            'Creator/trader repetition is descriptive within this retained window; not a prior-history feature or a risk verdict.']}
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--project',type=Path);p.add_argument('--database',type=Path);p.add_argument('--hours',type=int,default=24);a=p.parse_args()

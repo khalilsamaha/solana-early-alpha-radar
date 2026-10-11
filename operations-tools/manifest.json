@@ -1,10 +1,10 @@
 {
-  "version": "radar-operations-1.0.0",
+  "version": "radar-operations-1.0.1",
   "files": {
     "install-backup.py": "52464e9227746f957090892a1f76f38f9d16a92bb98e8dbccf3dbbb688617a7b",
-    "launch_audit.py": "5140504f822fef95af90fc82dac4f7904e5aba20bbc1c2bc04388348d567623b",
+    "launch_audit.py": "be6617b254f71f63bd86219eb3846f945894d918b61877a1e8301d6029b248f5",
     "quote_backup.py": "3d43091193100c143f430e8a2956187de0e234d9d309eb1a3df7ca2e8bde429d",
     "run-launch-audit.sh": "c3ab380b5c7778972ce5be1e8799b5a81bdc9f9c752df83e0b02c67a0440109d",
-    "test_operations.py": "343bc73341dbe4f47bdeb641efff8823cc74174e03b94fd3a6e6d6aaf2e9b1df"
+    "test_operations.py": "1aaaf7bb6676874ec0f1a08fdb2758dca816085e89c70ef2b3350b582936b062"
   }
 }

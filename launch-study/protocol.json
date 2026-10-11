@@ -1,0 +1,13 @@
+{
+  "id": "launch-context-study-1",
+  "mode": "exploratory-descriptive",
+  "actorRole": "unverified provider-reported creation trader; not a verified creator",
+  "lookbackMs": 86400000,
+  "strictlyEarlier": true,
+  "excludeCurrentMint": true,
+  "contrasts": ["prior-received-trader-launches: zero / one-or-more / unknown", "prior-received-identical-uri-hash: zero / one-or-more / unknown"],
+  "contextStratum": "entry-time reported liquidity >= 5000 USD / below / unknown",
+  "horizonsMs": {"30s": 30000, "60s": 60000, "120s": 120000, "300s": 300000},
+  "checkpointToleranceMs": 30000,
+  "basis": "sampled original-pool gross price changes; no fees, fills, rule promotion or forward-validation claim"
+}
