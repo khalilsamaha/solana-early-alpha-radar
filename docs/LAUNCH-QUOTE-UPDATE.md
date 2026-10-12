@@ -58,3 +58,8 @@ Twenty new tests cover three-cohort identity joins, initial level-2 baseline ale
 ## Next decision
 
 We are evaluating launch features and execution evidence, before a frozen prospective strategy trial. Inspect usable group sizes, unknown fields, losses, timing and quote failures. If a feature merits testing, register one hypothesis and evaluation protocol before collecting its validation period. The present descriptive report does not change entry eligibility or select a winning exit. Execution controls and funded testing remain later stages with no justified start date.
+
+
+## Price reconciliation follow-up
+
+The fresh six-hour host export succeeded: all 911 entries joined, with 34 admitted watches. Its paper/quote discrepancies motivated the next read-only audit, documented in [PRICE-RECONCILIATION.md](PRICE-RECONCILIATION.md). The joined report now also includes `reconciliation`, and collector 1.0.2 projects existing immutable entry price history. Original joined results, rules and budgets remain unchanged. Old exports remain replayable and label omitted history explicitly.

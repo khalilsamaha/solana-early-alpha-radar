@@ -25,10 +25,26 @@ ENTRY_KEYS=('id','at','mint','cohort','version','priceUsd','pairAddress','liquid
 OUTCOME_KEYS=('id','entryId','mint','cohort','at','entryAt','dueAt','horizon','status','coverage','sampleAt','priceUsd','returnPct','pairAddress','reasonCode')
 
 
+def project_price_evidence(row):
+    # Existing immutable entry history only; no snapshot lookup or new requests.
+    ev=row.get('evidence')
+    if not isinstance(ev,dict) or not isinstance(ev.get('samples'),list):return None
+    samples=ev['samples']
+    if len(samples)>256:raise ValueError('Entry history cap exceeded')
+    projected=[]
+    for point in samples[-24:]:
+        if not isinstance(point,dict):raise ValueError('Malformed entry history')
+        projected.append({k:point[k] for k in ('at','price') if k in point})
+    return {'version':'entry-price-projection-1','basis':ev.get('basis'),'poolAddress':ev.get('poolAddress'),
+        'samples':projected,'sourceSampleCount':len(samples),'truncated':len(samples)>24}
+
+
 def project_entry(row):
     value={k:row[k] for k in ENTRY_KEYS if k in row}
     if isinstance(row.get('candidate'),dict):value['candidate']={k:row['candidate'][k] for k in ('mint','pairAddress','priceUsd','liquidityUsd') if k in row['candidate']}
     if isinstance(row.get('followup'),dict):value['followup']={k:row['followup'][k] for k in ('policy','admitted') if k in row['followup']}
+    evidence=project_price_evidence(row)
+    if evidence is not None:value['priceEvidence']=evidence
     return value
 
 
@@ -125,7 +141,7 @@ def capture(path,hours=6,budget=10,max_entries=6000,now=None):
         signal.setitimer(signal.ITIMER_REAL,0);signal.signal(signal.SIGALRM,previous)
     current=path.stat()
     if (current.st_dev,current.st_ino)!=(identity.st_dev,identity.st_ino):raise ValueError('Scanner source replaced during capture')
-    return {'format':'launch-study-capture-1','collectorVersion':'launch-study-1.0.1','sourceIdentity':f'{identity.st_dev}:{identity.st_ino}',
+    return {'format':'launch-study-capture-1','collectorVersion':'launch-study-1.0.2','sourceIdentity':f'{identity.st_dev}:{identity.st_ino}',
         'cutoffAt':now,'requestedWindowStartAt':now-hours*3600000,'windowStartAt':lower,'registration':registration,
         'earliestRetainedReceiptAt':earliest,'contextWindowStartAt':context_start,'contextRowsScanned':launch_count,
         'entries':entries,'outcomes':outcomes,'matchedMintLaunchRecords':launches,'relatedLaunchContext':contexts,
