@@ -3,6 +3,7 @@ set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 export PYTHONDONTWRITEBYTECODE=1
 python3 scripts/check-source.py
+node --test source-comparison/*.test.mjs
 (
   cd scanner
   node --test test/*.test.js
