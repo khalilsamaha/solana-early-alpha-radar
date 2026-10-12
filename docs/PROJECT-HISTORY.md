@@ -344,3 +344,10 @@ The fresh `20261012T041448Z` report covers six hours, with 876 matched decisions
 Built `feed-provenance-1` to attach bounded clocks and allowlisted HTTP cache metadata to existing DEX reads, and preserve them on new research entries/checkpoints. The joined report retains explicit absent/invalid evidence. Scoring, scheduling, provider request counts, notifications and quote policies remain fixed. Deployment needs a guarded source install and scanner rebuild; no host result is claimed here.
 
 The user also reported Backblaze reaching 100% of a daily cap. Added a read-only local backup status diagnostic that makes no cloud calls and exports no credentials. Cap category and actual backup outcomes still require host evidence. Backup timers, limits, retention and full round-trip verification are unchanged. See `FEED-PROVENANCE.md` for commands and limitations.
+
+
+## 12 October 2026 — full post-update timing window and paired audit
+
+The 07:11–13:11 Amsterdam report confirms valid timing on all 752 entries and 2,925 outcome records. Thirty-three quote watches are new relative to the earlier 06:43 report. Eleven large 30-second paper/quote disagreements survive the close-receipt, original-pool and timely-quote criteria; all have sub-second queue-to-application durations. Eight report cache MISS on both entry and checkpoint, and eight have receipts within one second. Three show positive HTTP Age. These findings narrow the investigation but do not establish provider causality or execution profitability.
+
+Added `paired-feed-audit-1`, an offline, replayable join of timing, cache, route and validated return evidence. Failed quotes, unknown histories and gapped checkpoints retain denominators. No scanner, observer, rate-budget, scoring or notification change is made. The user explicitly paused Backblaze work; no backup changes are included. See `PAIRED-FEED-AUDIT.md` for findings and commands. The current reporting work does not authorize or implement funded trades.

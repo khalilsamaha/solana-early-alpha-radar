@@ -9,6 +9,7 @@ from pathlib import Path
 from join_quotes import join
 from reconcile import reconcile
 from feed_timing import summarize as feed_summary
+from paired_feed import audit as paired_feed_audit
 from report import publish, MAX_REPORT_BYTES
 
 QUOTE_KEYS=('format','sourceIdentity','capturedAt','windowStartAt','registeredAt','observerVersion','limits',
@@ -28,9 +29,11 @@ def build(study,quotes,digests=None):
     if study.get('format')!='launch-study-report-1':raise ValueError('Unsupported study report')
     evidence={k:quotes[k] for k in QUOTE_KEYS if k in quotes}
     result=join(study['capture'],evidence)
+    reconciled=reconcile(study['capture'],evidence,result)
     return {'format':'launch-quote-report-1','studyCapture':study['capture'],'quoteEvidence':evidence,
         'inputDecompressedSha256':digests or {},'analysis':result,
-        'reconciliation':reconcile(study['capture'],evidence,result),
+        'reconciliation':reconciled,
+        'pairedFeedAudit':paired_feed_audit(study['capture'],result,reconciled),
         'feedTiming':feed_summary(study['capture'])}
 
 
@@ -62,6 +65,8 @@ def main():
     print(f"Reconciliation at 30s: paired={h['paired']}; opposite signs={h['oppositeSigns']}; large disagreements with close receipts/original pool/on-time quote={h['largeCloseOriginalPoolOnTime']}")
     print('Entry history:',audit['entryHistoryStates'],'; provider market freshness remains unverified.')
     print('Feed timing:',{g['kind']:g['states'] for g in out['feedTiming']['groups']})
+    paired=out['pairedFeedAudit']['horizons']['30000']
+    print('Paired timing at 30s:',{k:paired[k] for k in ('largeCloseOriginalPoolOnTimeWithBothTimings','largeWithBothLocalPipelinesWithin1s','largeWithBothCacheMiss','largeWithPositiveHttpAge')})
     print('Upload: '+str(a.output.absolute()))
 
 
