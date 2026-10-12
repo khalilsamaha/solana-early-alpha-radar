@@ -1,3 +1,4 @@
+import {applyFeed,FEED_VERSION} from './feed-evidence.js';
 import {summaryEvents,statisticsHealth} from './stats-memory.js';
 import {qualify,qualificationSummary} from './qualification.js';
 import {summarizeContinuity} from './continuity.js';
@@ -108,7 +109,7 @@ export class Radar {
     const fresh=market?.mint===mint&&Number.isFinite(market.priceUsd)&&market.priceUsd>0
       &&(!current.paperEntry?.pairAddress||market.pairAddress===current.paperEntry.pairAddress);
     if(fresh) {
-      current={...current,...market,marketObservedAt:now,observedAt:now,stale:false,marketEmptyCount:0,nextMarketAttemptAt:0};
+      current={...current,...market,feedEvidence:applyFeed(current,market,started),marketObservedAt:now,observedAt:now,stale:false,marketEmptyCount:0,nextMarketAttemptAt:0};
       this.health.lastMarketAt=Math.max(this.health.lastMarketAt,now);
     } else {
       current.stale=true;
@@ -319,7 +320,7 @@ export class Radar {
   getHealth(){if(this.health.mode==='dashboard'){const h=this.storage.getState('health');if(h.providers)return {...h,mode:'dashboard (worker snapshot)',ready:h.ready&&Date.now()-h.lastMarketAt<this.config.freshMs&&Date.now()-h.lastLoopAt<180000};}
     const now=Date.now(),active=[...this.candidates.values()].filter(x=>!x.inactive||tracking(x)||this.research.trackingPending(x.mint));
     const pending=active.filter(x=>!x.lastAttemptAt);
-    return {...this.health.snapshot(this.config,this.storage.notificationStats()),scannerVersion:'0.2.9',statisticsReader:statisticsHealth(),statisticsWorker:this.statisticsService?.health()||null,research:{...this.research.stats(now),focus:{limit:Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5))),eligible:this.focusEligibleCount,selected:this.researchFocus.size,fastSelected:this.fastFocusSelected||0,fastAwaitingCapacity:this.fastFocusAwaiting||0,ordinaryDisplaced:this.fastFocusDisplaced||0,
+    return {...this.health.snapshot(this.config,this.storage.notificationStats()),scannerVersion:'0.2.9',feedEvidenceVersion:FEED_VERSION,statisticsReader:statisticsHealth(),statisticsWorker:this.statisticsService?.health()||null,research:{...this.research.stats(now),focus:{limit:Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5))),eligible:this.focusEligibleCount,selected:this.researchFocus.size,fastSelected:this.fastFocusSelected||0,fastAwaitingCapacity:this.fastFocusAwaiting||0,ordinaryDisplaced:this.fastFocusDisplaced||0,
       ready:[...this.researchFocus].filter(m=>{const v=this.research.describe(m,now);return v?.metrics?.ready&&v.stage!=='data unavailable';}).length}},droppedCandidates:this.droppedCandidates||0,
     decisionTrace:{writtenSinceRestart:this.storage.decisionEventsWritten||0,retentionDays:this.config.snapshotDays},
     storageWrites:this.storage.writeStats?.()||null,

@@ -123,7 +123,7 @@ export class FastShadow {
    featureAt:now,features:entryFeatures,groups:evaluateEntryShadows(entryFeatures)};
   s.position=p;s.lastEntryAt=now;
   this.storage.transaction(()=>{
-   this.storage.append('fast-shadow-entries',{...p,version:FAST_VERSION,cohort:'fast30-shadow',symbol:c.symbol||null,ruleId:FAST_VERSION,
+   this.storage.append('fast-shadow-entries',{...p,feedEvidence:c.feedEvidence||null,version:FAST_VERSION,cohort:'fast30-shadow',symbol:c.symbol||null,ruleId:FAST_VERSION,
     shadowEvaluation,quality:d.quality,decision:d,liquidityUsd:Number.isFinite(c.liquidityUsd)?c.liquidityUsd:null,
     security:{checkedAt:c.securityCheckedAt??null,mintAuthority:c.mintAuthority??null,freezeAuthority:c.freezeAuthority??null,top10Pct:c.top10Pct??null,
      status:!c.securityCheckedAt||now-c.securityCheckedAt>this.config.securityTtlMs?'expired or unavailable':c.mintAuthority===undefined||c.freezeAuthority===undefined||!Number.isFinite(c.top10Pct)?'incomplete':'limited checks complete'},
@@ -151,7 +151,7 @@ export class FastShadow {
      ...diagnosticOutcome(p,h,now,reason,observed),
      pathEvidence:pathOutcome(p,h),
      status:observed?'observed':'missing',coverage:p.gapped?'gapped':'sampled',pairAddress:p.pairAddress,
-     ...(observed?{sampleAt:c.marketObservedAt,priceUsd:c.priceUsd,returnPct:(c.priceUsd/p.priceUsd-1)*100}
+     ...(observed?{feedEvidence:c.feedEvidence||null,sampleAt:c.marketObservedAt,priceUsd:c.priceUsd,returnPct:(c.priceUsd/p.priceUsd-1)*100}
       :{reason:reason||'no timely original-pool observation'}),basis:'provider-response-time; no costs or fills'});
     p.horizons[h]=observed?'observed':'missing';dirty=true;this.outcomes++;
    }

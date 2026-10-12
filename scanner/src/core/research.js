@@ -69,7 +69,7 @@ export class Research {
           observationBasis:'provider-response-time',evidenceHistory:this.evidence(mint,24),
           tokenFollowup:{version:CONTINUITY_VERSION,...(p.followupSamples[horizon]||{status:'missing',reason:'No timely qualified token follow-up',coverage:p.tokenGapped?'gapped':'sampled'})},
           evidence:{entryPool:p.pairAddress,lastSamePoolAt:p.lastAt,lastAttempt:p.lastAttemptEvidence||null},
-          ...(observed?{sampleAt:c.marketObservedAt,priceUsd:c.priceUsd,returnPct:(c.priceUsd/p.priceUsd-1)*100}
+          ...(observed?{feedEvidence:c.feedEvidence||null,sampleAt:c.marketObservedAt,priceUsd:c.priceUsd,returnPct:(c.priceUsd/p.priceUsd-1)*100}
             :{reasonCode,reason:forceReason||missingReasons[reasonCode]})};
         this.storage.append('research-outcomes',row);p.horizons[horizon]=row.status;dirty=true;this.checkpointCount++;
       }
@@ -82,7 +82,7 @@ export class Research {
     // At most one activity episode per six hours, plus one baseline entry.
     s.positions=s.positions.filter(p=>Object.keys(p.horizons).length<4);
     s.positions.push(p);
-    this.storage.append('research-entries',{...p,version:MOMENTUM_VERSION,candidate:publicToken(c),
+    this.storage.append('research-entries',{...p,version:MOMENTUM_VERSION,feedEvidence:c.feedEvidence||null,candidate:publicToken(c),
       baselineScore:c.score,experimentalScore:summary?.score??null,security:summary?.security??'unknown',features:summary?.metrics??null,
       qualification:qualify(c,summary,now),evidence:this.evidence(c.mint)});
     this.fast.link(c,id,cohort,now);

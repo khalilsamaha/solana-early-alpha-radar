@@ -1,0 +1,74 @@
+{
+  "id": "feed-provenance-1",
+  "changed": {
+    "src/core/http.js": {
+      "before": [
+        "0b5f4daa99fc77a22ad1b2844149e20581e6ff1e2f20ae6a73919994ef7fc2f0"
+      ],
+      "after": "aea3d0db6d1ab3ab36a7c19b18f1b0e21d1342796f6fa9ec27ff7b79e355396d"
+    },
+    "src/core/feed-evidence.js": {
+      "before": [
+        null
+      ],
+      "after": "446bba20c7a81c9997e75f406eef519697187f1d9660253182b4150f40ab7971"
+    },
+    "src/adapters/dexscreener.js": {
+      "before": [
+        "692b0600d1517badb5934c54a3f842e3c8ed6786f5c8c6c34fed102b6d123ed3"
+      ],
+      "after": "387cd4d724edf989c02b6fd7d684b1b3c823d95476ac5a86fe883ab9b99d11fc"
+    },
+    "src/core/radar.js": {
+      "before": [
+        "0003043c4e56030b9cda870346481505246a5fda427205d24c0cbab97e920dd0"
+      ],
+      "after": "fb09dc66bb26d82954ca96ca261e417465fee5d7457507a25f9530738d95d6cd"
+    },
+    "src/core/research.js": {
+      "before": [
+        "303c2037bde4113caf6e9a6110026607713ba5450eca5497f22a2fd2a59ff536"
+      ],
+      "after": "95d944d54ab58e77ca9e6c18d295d90a5c2182e560f93acdf97cf3cd50691328"
+    },
+    "src/core/fast-shadow.js": {
+      "before": [
+        "02fd90598efd607bbddfa7ea6b44d0b848cec755d2df53a8faea3e16cc2313da"
+      ],
+      "after": "4a62c4756a135a558c25ad14489283e8f400cb0af62cbadeb816af5bdbbaa42e"
+    }
+  },
+  "dependencies": {
+    "src/adapters/helius.js": "dc9e31fe540a484296eb4b38911a64d835470e9cfd811dec13442eb06fd60ce4",
+    "src/adapters/jupiter.js": "d27326fb73fbd408206a94e2d1a93e57e60417d1ccfdbc6bc19f223b0c56ed62",
+    "src/adapters/pumpportal.js": "9f2e86dcd3489711994be458489e4b3d3f584d210eaee32c094e9bfa74132aac",
+    "src/adapters/telegram.js": "1ea83724a7e782407cee6cfad324462424e9b930d6aa6cec282a208821d63bb1",
+    "src/benchmark.js": "7eaaa5ffe83447a6387494382b32d70b9654adf5949b242cb7f98ac2cb8e0dd2",
+    "src/config.js": "f83a32af773c87974a10973a3ecb713fdadbc063fabf4406b6dbc41cd89bc88a",
+    "src/core/continuity.js": "3da1862cba96140b3ea2a17310824cd409f6224190ab868aab8a5f6c54b4607a",
+    "src/core/decision.js": "4bdc0b713630ebd5771de0f6e3c7a134e320d63032c1b7c28d337f1cd0160fe6",
+    "src/core/exit.js": "eaecb3b053ce912f11d8d40075a51a05889b41f8a2c79f24e02fced2a0ccecad",
+    "src/core/health.js": "ee8af1dda5adbc7e8c19c6214b638a4f0933541f388685c643a57696d4a66f9c",
+    "src/core/launch-registry.js": "2419f77f8ff284363e7a6f5b1378ee441e2ffed89af415e54a3b1b749957c75b",
+    "src/core/momentum.js": "dc71aa6ac5c569e07eb58b897a68850128943a11a7f75e281503080bb8dd76c1",
+    "src/core/notifications.js": "82862d342dc887adc43642cce4c9ff1f89c8feb6367cd9348153c3ccd51d4871",
+    "src/core/observation-quality.js": "fe1713810d3e8f73866e65717ce57b24e476ed2de60439464acff88b9be0c45d",
+    "src/core/outcome-summary.js": "8cda55eb4ec7ddd4a35abd345e1c966218fd32268724a8f8d65d28536550f077",
+    "src/core/paper.js": "6badbae20c93e421a767067e6cae724693fd83f7f64e4c58a8095289c93abfd5",
+    "src/core/qualification.js": "fcab3bfd8fb900a561b28e247b2840c99df6609e91039fe482781941f07130f3",
+    "src/core/scoring.js": "aaa40f3ebef6183a07d7158219a10fcaa0295f8995127e64ddb9f8110ab0b086",
+    "src/core/stats-memory.js": "0078f0b6b88366e154287ebcd29728fd81592abf10ec14e08bb702ec9a455252",
+    "src/core/stats-service.js": "a947609dda2d5e78433aba64f2af40d7387097665c31ef48eed249a232dbea5c",
+    "src/core/stats-worker.js": "ba28ef7b1d146e9e7a605b7f9d4a2a7e2751f289ddc297482af817ed25cefebd",
+    "src/core/storage.js": "e401d1acd31a6cfa1e318950495a500eabe5a9e196a3344c7550f9a5a8a371a1",
+    "src/demo.js": "e4d27fd7e5f3de64b0056ff4c55d94c436cea829829e56cd1deb771e79af0dfc",
+    "src/index.js": "068777bd023b39e0fba8e7454b75b36be304588e885d3ffbce1b6a674657dc0d",
+    "src/server/server.js": "755fec4d872c8ed18dba6ac51055eb6ecffb53f8b2a73c6f89203146c1cfa227",
+    "public/app.js": "e9ade885a2fcb6824957e2852d9c5ee3820b62f12d77a469a6b45fbf68c628f8",
+    "public/index.html": "6b6342e707beef06ffbccc0d23d0f41dc8416ac49d2a6d71f0aead31a084706d",
+    "public/refresh-loop.js": "9404a78db4954484e106076e1de0e53417502b09aa4cbe0c42ff7dcf5b3a3383",
+    "public/styles.css": "ee0fcd71e1fd7b620bb8e3afc6ab285568411d7008703a6e395ea171fb37a986",
+    "public/token-links.js": "c7fd47b11828e94abb9883b315e417d9a10024a4a703e0268471aca2de2b9ec6",
+    "package.json": "5ebac88f894750a129999b83e78f1a32abac0807f41e37cc8fcbe05f760ae2c1"
+  }
+}

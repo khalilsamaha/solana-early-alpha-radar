@@ -1,6 +1,7 @@
 """Bounded, pinned read-only capture. Never reads current candidates or snapshots."""
 import hashlib, json, signal, sqlite3, time
 from pathlib import Path
+from feed_timing import project as project_feed
 
 class CaptureError(RuntimeError):
     """Bounded diagnostics only: no SQL text, payloads, credentials or paths."""
@@ -41,6 +42,8 @@ def project_price_evidence(row):
 
 def project_entry(row):
     value={k:row[k] for k in ENTRY_KEYS if k in row}
+    feed=project_feed(row.get('feedEvidence'))
+    if feed is not None:value['feedEvidence']=feed
     if isinstance(row.get('candidate'),dict):value['candidate']={k:row['candidate'][k] for k in ('mint','pairAddress','priceUsd','liquidityUsd') if k in row['candidate']}
     if isinstance(row.get('followup'),dict):value['followup']={k:row['followup'][k] for k in ('policy','admitted') if k in row['followup']}
     evidence=project_price_evidence(row)
@@ -50,6 +53,8 @@ def project_entry(row):
 
 def project_outcome(row):
     value={k:row[k] for k in OUTCOME_KEYS if k in row}
+    feed=project_feed(row.get('feedEvidence'))
+    if feed is not None:value['feedEvidence']=feed
     if isinstance(row.get('evidence'),dict):value['entryPool']=row['evidence'].get('entryPool')
     return value
 

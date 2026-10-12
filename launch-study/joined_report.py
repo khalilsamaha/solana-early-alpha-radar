@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from join_quotes import join
 from reconcile import reconcile
+from feed_timing import summarize as feed_summary
 from report import publish, MAX_REPORT_BYTES
 
 QUOTE_KEYS=('format','sourceIdentity','capturedAt','windowStartAt','registeredAt','observerVersion','limits',
@@ -29,7 +30,8 @@ def build(study,quotes,digests=None):
     result=join(study['capture'],evidence)
     return {'format':'launch-quote-report-1','studyCapture':study['capture'],'quoteEvidence':evidence,
         'inputDecompressedSha256':digests or {},'analysis':result,
-        'reconciliation':reconcile(study['capture'],evidence,result)}
+        'reconciliation':reconcile(study['capture'],evidence,result),
+        'feedTiming':feed_summary(study['capture'])}
 
 
 def main():
@@ -59,6 +61,7 @@ def main():
     audit=out['reconciliation']['summary'];h=audit['horizons']['30000']
     print(f"Reconciliation at 30s: paired={h['paired']}; opposite signs={h['oppositeSigns']}; large disagreements with close receipts/original pool/on-time quote={h['largeCloseOriginalPoolOnTime']}")
     print('Entry history:',audit['entryHistoryStates'],'; provider market freshness remains unverified.')
+    print('Feed timing:',{g['kind']:g['states'] for g in out['feedTiming']['groups']})
     print('Upload: '+str(a.output.absolute()))
 
 

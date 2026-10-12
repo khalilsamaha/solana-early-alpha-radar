@@ -335,3 +335,12 @@ The report reveals substantial paper/quote disagreement: 15 of 31 paired 30-seco
 Added reconciliation version `price-reconciliation-1` and collector `launch-study-1.0.2`. The collector projects up to 24 price/time samples already retained inside immutable entries. The audit validates reference consistency, labels unknown/conflicting clocks and compares paths after rebasing both at 30 seconds without assuming token decimals. On the supplied report, 16 of 31 paths still differ by at least 20 percentage points over the 30-to-60-second interval. Eighteen added tests verify failure handling, read-only projection and arithmetic; original joined results replay unchanged. Fresh host capture of the added history is pending. Details and exact commands: `docs/PRICE-RECONCILIATION.md`.
 
 This is measurement investigation, not new signal tuning or trade execution. Scanner, observer, request budgets, notifications and backups are unchanged; no rebuild or restart is required.
+
+
+## 12 October 2026 — feed timing development and Backblaze cap triage
+
+The fresh `20261012T041448Z` report covers six hours, with 876 matched decisions and 34 admitted watches. Entry prices match their retained histories, but 15 of 33 paired 30-second records still have large discrepancies despite close local receipts and reported original-pool quote routes. A baseline example shows a sharp quote collapse before the paper feed records a similar decline; this supports investigation of timing without proving provider lag or a root cause.
+
+Built `feed-provenance-1` to attach bounded clocks and allowlisted HTTP cache metadata to existing DEX reads, and preserve them on new research entries/checkpoints. The joined report retains explicit absent/invalid evidence. Scoring, scheduling, provider request counts, notifications and quote policies remain fixed. Deployment needs a guarded source install and scanner rebuild; no host result is claimed here.
+
+The user also reported Backblaze reaching 100% of a daily cap. Added a read-only local backup status diagnostic that makes no cloud calls and exports no credentials. Cap category and actual backup outcomes still require host evidence. Backup timers, limits, retention and full round-trip verification are unchanged. See `FEED-PROVENANCE.md` for commands and limitations.

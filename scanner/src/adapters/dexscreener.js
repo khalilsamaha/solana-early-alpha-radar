@@ -1,3 +1,4 @@
+import {attachFeed} from '../core/feed-evidence.js';
 const BASE='https://api.dexscreener.com';
 const choose=(rows,mint,preferred,locked=false)=>{
   const valid=rows.filter(p=>p?.chainId==='solana'&&p.baseToken?.address===mint&&typeof p.pairAddress==='string');
@@ -15,23 +16,25 @@ export async function getTokenPairs(candidates,http) {
       const addresses=[...new Set(group.map(c=>locked?c.paperEntry.pairAddress:c.mint))];
       const url=locked?`${BASE}/latest/dex/pairs/solana/${addresses.map(encodeURIComponent).join(',')}`
         :`${BASE}/tokens/v1/solana/${addresses.map(encodeURIComponent).join(',')}`;
-      const response=await http.json('dex',url),observedAt=Date.now();
+      let transport=null;
+      const response=await http.json('dex',url,{},e=>{transport=e;}),observedAt=Date.now();
       const rows=locked?(response?.pairs===null?[]:response?.pairs):response;
       if(!Array.isArray(rows))throw new Error('DEX batch response is not an array');
       for(const c of group) {
         const pair=choose(rows,c.mint,c.paperEntry?.pairAddress||c.pairAddress,locked);
-        result.set(c.mint,{market:pair?normalizePair(pair):null,observedAt});
+        result.set(c.mint,{market:attachFeed(pair?normalizePair(pair):null,transport,locked?'pairs-batch':'tokens-batch'),observedAt});
       }
     }
   }
   return result;
 }
 export async function getTokenPair(mint,http,pairAddress) {
-  const rows=await http.json('dex',`${BASE}/token-pairs/v1/solana/${encodeURIComponent(mint)}`);
+  let transport=null;
+  const rows=await http.json('dex',`${BASE}/token-pairs/v1/solana/${encodeURIComponent(mint)}`,{},e=>{transport=e;});
   if(!Array.isArray(rows))throw new Error('DEX pair response is not an array');
   const valid=rows.filter(p=>p.chainId==='solana'&&p.baseToken?.address===mint);
   const p=valid.find(p=>p.pairAddress===pairAddress)||valid.sort((a,b)=>(b.liquidity?.usd||0)-(a.liquidity?.usd||0))[0];
-  return p?normalizePair(p):null;
+  return attachFeed(p?normalizePair(p):null,transport,'token-pairs');
 }
 export async function getLatestProfiles(http) {
   const rows=await http.json('dex',`${BASE}/token-profiles/latest/v1`);
