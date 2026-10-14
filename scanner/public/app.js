@@ -1,3 +1,4 @@
+import {alertQualityLabel} from './alert-quality.js';
 import {tokenLinks,validSolanaAddress} from './token-links.js';
 import {createRefreshLoop} from './refresh-loop.js';
 const $=s=>document.querySelector(s);
@@ -22,7 +23,7 @@ function renderSummary(s){
  $('#resultScope').textContent=`${summary?.entries||0} unique entries · ${cohort==='v029'?'First alerts created by v0.2.9':cohort==='v028'?'First alerts created by v0.2.8':cohort==='v027'?'First alerts created by v0.2.7':cohort==='v026'?'First alerts created by v0.2.6':cohort==='v025'?'First alerts created by v0.2.5':current?'First alerts created by v0.2.4':'All retained entries; versions and market conditions may differ'}${summary?.firstEntryAt?' · first entry '+new Date(summary.firstEntryAt).toLocaleString():''}. Percentages use observed checkpoints; pending, overdue and missing counts remain separate.`;
 }
 function qualificationLabel(q) {
- return q?`<div class="tiny"><b>${esc(q.state)}</b> · shadow ${esc(q.disposition)}<br>${esc((q.reasons||[])[0]||'')}</div>`:'<div class="tiny">Qualification not recorded</div>';
+ return q?`<div class="tiny"><b>${esc(alertQualityLabel(q))}</b><br><b>${esc(q.state)}</b> · shadow ${esc(q.disposition)}<br>${esc((q.reasons||[])[0]||'')}</div>`:`<div class="tiny">${esc(alertQualityLabel(null))}</div>`;
 }
 function renderQualification(s) {
  const q=s.qualification;

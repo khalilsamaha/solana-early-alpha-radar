@@ -28,6 +28,9 @@ export function entryFeatures(row){
   features.baselineScore=numeric(row.baselineScore??object(row.scoring).score);
   features.experimentalScore=numeric(row.experimentalScore);
   features.disposition=short(q.disposition);
+  features.qualificationVersion=q.version==='qualification-1'?q.version:null;
+  features.qualificationMode=q.mode==='shadow'?q.mode:null;
+  features.qualificationAt=Number.isSafeInteger(q.at)&&q.at>0&&q.at<=row.at?q.at:null;
   features.historyReady=typeof q.historyReady==='boolean'?q.historyReady:null;
   features.dexId=short(c.dexId);
   const ages={};

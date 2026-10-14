@@ -5,7 +5,7 @@ export {errorEvidence} from './error-evidence.mjs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
-export const VERSION='radar-quote-transport-0.3.0';
+export const VERSION='radar-quote-transport-0.4.0';
 export const USDC='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 export const SOL='So11111111111111111111111111111111111111112';
 export const ENDPOINT='https://api.jup.ag/swap/v2/order';
@@ -36,6 +36,8 @@ export function urlFor(inputMint,outputMint,inAmount){
 }
 const numeric=x=>typeof x==='number'&&Number.isFinite(x)?x:null;
 const text=(x,n=96)=>typeof x==='string'?x.slice(0,n):null;
+const nonnegative=x=>numeric(x)!==null&&x>=0?x:null;
+const atomicOrZero=x=>typeof x==='string'&&/^(0|[1-9][0-9]{0,19})$/.test(x)&&BigInt(x)<=U64?x:null;
 export function parseQuote(b,inputMint,outputMint,inAmount){
   if(!b||typeof b!=='object'||Array.isArray(b))return {status:'invalid-response'};
   if(b.transaction)return {status:'unexpected-transaction-rejected'};
@@ -45,6 +47,10 @@ export function parseQuote(b,inputMint,outputMint,inAmount){
   if(b.swapMode!==undefined&&b.swapMode!=='ExactIn')return {status:'unexpected-swap-mode'};
   if(!Array.isArray(b.routePlan)||!b.routePlan.length)return {status:'no-route-evidence'};
   return {status:'quoted',inputMint,outputMint,inAmount,outAmount:b.outAmount,
+    pricingEvidenceVersion:'quote-pricing-1',
+    inUsdValue:nonnegative(b.inUsdValue),outUsdValue:nonnegative(b.outUsdValue),swapUsdValue:nonnegative(b.swapUsdValue),
+    platformFee:{amountAtomic:atomicOrZero(b.platformFee?.amount),feeBps:nonnegative(b.platformFee?.feeBps),
+      feeMint:address(b.platformFee?.feeMint)?b.platformFee.feeMint:null},
     minimumOutAmount:amount(b.otherAmountThreshold)?b.otherAmountThreshold:null,
     priceImpactPercentagePoints:numeric(b.priceImpact),legacyPriceImpactRatio:text(b.priceImpactPct),
     feeBps:numeric(b.feeBps),feeMint:address(b.feeMint)?b.feeMint:null,
@@ -52,7 +58,9 @@ export function parseQuote(b,inputMint,outputMint,inAmount){
     rentFeeLamports:numeric(b.rentFeeLamports),slippageBps:numeric(b.slippageBps),router:text(b.router),
     routePlan:b.routePlan.slice(0,12).map(r=>({pool:address(r?.swapInfo?.ammKey)?r.swapInfo.ammKey:null,
       label:text(r?.swapInfo?.label,48),inputMint:address(r?.swapInfo?.inputMint)?r.swapInfo.inputMint:null,
-      outputMint:address(r?.swapInfo?.outputMint)?r.swapInfo.outputMint:null,percent:numeric(r?.percent)})),
+      outputMint:address(r?.swapInfo?.outputMint)?r.swapInfo.outputMint:null,percent:numeric(r?.percent),
+      inputAtomic:atomicOrZero(r?.swapInfo?.inAmount),outputAtomic:atomicOrZero(r?.swapInfo?.outAmount),
+      bps:nonnegative(r?.bps),usdValue:nonnegative(r?.usdValue)})),
     routePlanTruncated:b.routePlan.length>12,transactionRequested:false,executionVerified:false};
 }
 export function usdcChange(out,input){

@@ -5,7 +5,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {fileURLToPath} from 'node:url';
 import {observe,requestQuote,address,USDC,pause} from './quote-check.mjs';
 import {entryFeatures, FEATURE_CAPTURE, ACTIVITY_SHADOW} from './entry-features.mjs';
-export const VERSION='quote-observer-0.6.0';
+export const VERSION='quote-observer-0.7.0';
 export const LIMITS={pollMs:2000,maxSignalAgeMs:15000,oneActive:true,admissionsPerHour:6,admissionsPer24h:144,requestsPerAdmission:5,spacingMs:10000,retentionDays:7};
 export const SAMPLING={id:'three-cohort-budgets-v3',cohorts:['baseline','early-activity','fast30-shadow'],perCohortHour:2,perCohortDay:48,minimumCohortSpacingMs:1800000,borrowing:false};
 export function samplingCapacity(s,now,recent=[]){

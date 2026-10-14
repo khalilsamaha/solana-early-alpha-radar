@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Return only the observer program to the installed 0.5.0 version; retain its ledger."""
+"""Return only the observer program to the installed 0.6.0 version; retain its ledger."""
 import hashlib,json,os,re,shutil,subprocess
 from pathlib import Path
 import install
@@ -14,18 +14,18 @@ def main():
     current=install.unit(node,database)
     if install.CONFIG.is_symlink() or install.UNIT.is_symlink() or install.CONFIG.read_text()!=expected or install.UNIT.read_text()!=current:
         raise RuntimeError('Current configuration differs; preserved')
-    old=install.DEST.parent/'0.5.0'
+    old=install.DEST.parent/'0.6.0'
     if old.is_symlink():raise RuntimeError('Refusing symlink program directory')
     manifest=json.loads((old/'manifest.json').read_text())
-    if manifest.get('version')!='0.5.0':raise RuntimeError('Expected installed 0.5.0 manifest')
+    if manifest.get('version')!='0.6.0':raise RuntimeError('Expected installed 0.6.0 manifest')
     for name,sha in manifest['files'].items():
         p=old/name
         if Path(name).name!=name or p.is_symlink() or hashlib.sha256(p.read_bytes()).hexdigest()!=sha:raise RuntimeError('Previous payload verification failed')
     active=subprocess.run(['systemctl','is-active','--quiet',install.UNIT.name],timeout=10).returncode==0
     if active:install.run(['systemctl','stop',install.UNIT.name])
     try:
-        install.write(install.CONFIG,expected.replace('0.6.0','0.5.0').encode(),0o600)
-        install.write(install.UNIT,current.replace('0.6.0','0.5.0').encode(),0o644)
+        install.write(install.CONFIG,expected.replace('0.7.0','0.6.0').encode(),0o600)
+        install.write(install.UNIT,current.replace('0.7.0','0.6.0').encode(),0o644)
         install.run(['systemctl','daemon-reload'])
         if active:install.run(['systemctl','start',install.UNIT.name])
     except Exception:
@@ -33,7 +33,7 @@ def main():
         install.run(['systemctl','daemon-reload'])
         if active:install.run(['systemctl','start',install.UNIT.name])
         raise
-    print('Observer program returned to 0.5.0. Ledger, cursor and sampling budgets retained; scanner unchanged.')
+    print('Observer program returned to 0.6.0. Ledger, cursor and sampling budgets retained; scanner unchanged.')
 
 if __name__=='__main__':
     try:main()

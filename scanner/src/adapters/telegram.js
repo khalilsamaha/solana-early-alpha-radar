@@ -1,4 +1,5 @@
 import {tokenLinks} from '../../public/token-links.js';
+import {alertQualityLabel} from '../../public/alert-quality.js';
 export function alertButtons(alert) {
   const links=tokenLinks(alert.candidate);
   if(!links.length)return undefined;
@@ -12,11 +13,12 @@ export function formatAlert(alert) {
   const c=alert.candidate,s=alert.scoring;
   return [
     `RADAR ${alert.qualification?alert.qualification.state.toUpperCase():alert.type==='exit'?'DETERIORATION':'BASELINE OBSERVATION'} — ${c.symbol||c.tokenName||'UNKNOWN'}`,
+    alertQualityLabel(alert.qualification),
     ...(alert.qualification?[`Shadow rule: ${alert.qualification.disposition.toUpperCase()} · baseline alert retained for comparison`,...alert.qualification.reasons,`History ready: ${alert.qualification.historyReady?'yes':'no'}`]:[]),
     `Signal ID: ${alert.id}`,`Observed: ${new Date(alert.at).toISOString()}`,
     `Activity score: ${s.score}/100 | age: ${s.metrics.ageMin.toFixed(1)}m`,
     `Network: Solana | Mint: ${c.mint}`,`Price: $${c.priceUsd??'unknown'} | MC: $${Math.round(c.marketCap||0).toLocaleString()}`,
-    `Liquidity: $${Math.round(c.liquidityUsd||0).toLocaleString()}`,
+    `Liquidity: ${Number.isFinite(c.liquidityUsd)&&c.liquidityUsd>=0?'$'+Math.round(c.liquidityUsd).toLocaleString():'unknown'}`,
     `5m flow: ${s.metrics.buys5m} buys / ${s.metrics.sells5m} sells`,
     `Organic: ${c.organicScore??'unknown'} | Top 10 token accounts: ${Number.isFinite(c.top10Pct)?c.top10Pct.toFixed(1)+'%':'unknown'}`,
     ...(alert.marketContext?[`Research stage: ${alert.marketContext.stage}`,`Drawdown from recorded peak: ${Number.isFinite(alert.marketContext.metrics?.drawdownPct)?alert.marketContext.metrics.drawdownPct.toFixed(1)+'%':'unavailable'}`,`Experimental score: ${alert.marketContext.score??'warming up'} (separate from baseline score)`]:[]),
