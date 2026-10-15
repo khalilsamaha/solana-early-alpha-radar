@@ -10,6 +10,7 @@
 rclone.conf
 heartbeat-url
 node_modules/
+.venv-research-ml/
 __pycache__/
 *.py[cod]
 data/

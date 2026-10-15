@@ -1,0 +1,37 @@
+name: Offline ML regression checks
+on:
+  push:
+    paths:
+      - 'research-ml/**'
+      - 'research-dataset/**'
+      - 'qualification-review/**'
+      - 'launch-study/**'
+      - '.github/workflows/research-ml.yml'
+  pull_request:
+    paths:
+      - 'research-ml/**'
+      - 'research-dataset/**'
+      - 'qualification-review/**'
+      - 'launch-study/**'
+      - '.github/workflows/research-ml.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  benchmark-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install isolated research dependencies
+        run: |
+          python3 -m venv /tmp/radar-ml-venv
+          /tmp/radar-ml-venv/bin/python -m pip install -r research-ml/requirements.txt
+      - name: Offline benchmark regression tests
+        run: /tmp/radar-ml-venv/bin/python -m unittest discover -s research-ml -p 'test_*.py'
