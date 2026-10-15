@@ -5,6 +5,7 @@ export PYTHONDONTWRITEBYTECODE=1
 python3 scripts/check-source.py
 node --test source-comparison/*.test.mjs
 (cd qualification-review && python3 -m unittest discover -p 'test_*.py')
+(cd research-dataset && python3 -m unittest discover -p 'test_*.py')
 (
   cd scanner
   node --test test/*.test.js
