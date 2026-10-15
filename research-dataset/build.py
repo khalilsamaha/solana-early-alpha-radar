@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / 'qualification-review'))
 from review import build as review, number, stamp, qualification, describe
 from join_quotes import COHORTS, OFFSETS, IDENTITY_FIELDS
 from report import publish
+from entry_context import context as supplemental_context
 
 VERSION = 'research-dataset-1'
 MAX_BYTES = 64 * 1024 * 1024
@@ -41,7 +42,7 @@ def read(path):
 
 
 def identity(signal):
-    return {k: signal.get(k) for k in (*IDENTITY_FIELDS, 'features', 'featureCapture', 'followup')}
+    return {k: signal.get(k) for k in (*IDENTITY_FIELDS, 'features', 'featureCapture', 'followup', 'entryContext')}
 
 
 def merge(reports):
@@ -281,7 +282,7 @@ def build(reports, test_start=None):
                'qualificationVersion': qversion, 'disposition': disposition, 'decision': s.get('decision', 'unknown'),
                'entrySchemaVerified': schema, 'invalidQualificationTimestamp': future_q,
                'predictors': features, 'missingPredictors': [k for k, v in features.items() if v is None],
-               'entryConditions': cond, 'targets': {str(h): target(case, p, h) for h in OFFSETS}, 'split': 'not-assigned'}
+               'supplementalEntryContext': supplemental_context(s), 'entryConditions': cond, 'targets': {str(h): target(case, p, h) for h in OFFSETS}, 'split': 'not-assigned'}
         rows.append(row)
         key = '/'.join((row['samplingPolicy'], row['cohort'], qversion, disposition, cond['bucket']))
         buckets[key].append(row)
@@ -295,6 +296,7 @@ def build(reports, test_start=None):
                            'recorded': {k: sum(r['predictors'][k] is not None for r in sample) for k in (*NUMERIC, *(a + 'AgeMs' for a in AGES), 'historyReady', 'disposition', 'security')}}
     return {'format': VERSION, 'sourceIdentity': merged['sourceIdentity'], 'capturedAt': merged['capturedAt'],
             'merge': merge_info, 'summary': summarize(rows), 'deferBreakdown': {k: summarize(v) for k, v in sorted(buckets.items())},
+            'supplementalContextCoverage': {c: dict(collections.Counter(r['supplementalEntryContext']['state'] for r in rows if r['cohort']==c)) for c in COHORTS},
             'featureAvailability': missing, 'pricingAudit': audits, 'splitAudit': split, 'rows': rows,
             'mlReadiness': {'state': 'dataset-and-validation-foundation', 'modelTrained': False, 'liveUseAllowed': False,
                             'newPricingWatches': sum(any(e['state'] == 'available' for e in a['exits']) for a in audits),
@@ -347,6 +349,7 @@ def main():
         result['historyCapture'] = history_index
     publish(args.output, result)
     print('Unique eligible signals:', result['summary']['signals'], '; watches:', result['summary']['admitted'])
+    print('Supplemental entry context:', json.dumps(result['supplementalContextCoverage'],sort_keys=True))
     print('New pricing watches:', result['mlReadiness']['newPricingWatches'])
     print('ML: dataset prepared; no model trained or activated.')
     for f in result['splitAudit']['folds']:

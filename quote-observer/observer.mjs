@@ -1,11 +1,12 @@
 // Separate, walletless signal observer. Scanner database is opened read-only.
+import {readEntryContext,ENTRY_CONTEXT_VERSION} from './entry-context.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import {fileURLToPath} from 'node:url';
 import {observe,requestQuote,address,USDC,pause} from './quote-check.mjs';
 import {entryFeatures, FEATURE_CAPTURE, ACTIVITY_SHADOW} from './entry-features.mjs';
-export const VERSION='quote-observer-0.7.0';
+export const VERSION='quote-observer-0.8.0';
 export const LIMITS={pollMs:2000,maxSignalAgeMs:15000,oneActive:true,admissionsPerHour:6,admissionsPer24h:144,requestsPerAdmission:5,spacingMs:10000,retentionDays:7};
 export const SAMPLING={id:'three-cohort-budgets-v3',cohorts:['baseline','early-activity','fast30-shadow'],perCohortHour:2,perCohortDay:48,minimumCohortSpacingMs:1800000,borrowing:false};
 export function samplingCapacity(s,now,recent=[]){
@@ -47,7 +48,7 @@ export function signalRecord(row){
   return {eventId:short(r.id),entryId:short(r.id),seq:row.seq,cohort,mint,signalAt:r.at,
     originalPool:address(c.pairAddress||r.pairAddress)?c.pairAddress||r.pairAddress:null,
     entryPriceUsd:numeric(c.priceUsd??r.priceUsd),symbol:short(c.symbol||r.symbol),
-    ...entryFeatures(r),basis:'entry record only; no later enrichment'};
+    ...entryFeatures(r),entryContext:readEntryContext(r.entryContext,{at:r.at,mint,pairAddress:c.pairAddress||r.pairAddress}),basis:'entry record only; no later enrichment'};
 }
 export function admission(s,{now,busy,blockedUntil=0,halted=false,recent=[],sameMint=false,nextRequestAt=0}){
   if(s.error)return s.error;
@@ -92,6 +93,7 @@ export class Observer {
     const old=get(this.db,'sourceIdentity');if(old&&old!==identity)throw Error('Source database changed; preserve reports and review cursor before reinstalling');
     put(this.db,'sourceIdentity',identity);put(this.db,'limits',LIMITS);put(this.db,'version',VERSION);const n=this.now();
     if(get(this.db,'samplingRegistration')?.id!==SAMPLING.id){const prior=get(this.db,'samplingRegistration');if(prior)put(this.db,'previousSamplingRegistration',prior);const reg={...SAMPLING,registeredAt:n};put(this.db,'samplingRegistration',reg);this.db.prepare('INSERT INTO incidents VALUES(?,?,?)').run(n,'sampling-registration',JSON.stringify(reg));}
+    if(!get(this.db,'entryContextRegistration'))put(this.db,'entryContextRegistration',{id:ENTRY_CONTEXT_VERSION,registeredAt:n,changesAdmissions:false});
     if(!get(this.db,'featureCaptureRegistration'))put(this.db,'featureCaptureRegistration',{id:FEATURE_CAPTURE,registeredAt:n,shadow:ACTIVITY_SHADOW});
     if(!get(this.db,'cursor')){
       const max=this.source.prepare('SELECT coalesce(max(seq),0) AS n FROM events').get().n;

@@ -17,7 +17,7 @@ test('quality distinguishes initial, repeated, price-only and value-only changes
 test('fast track fires at 30 seconds, existing early track at 60 and linked lead is explicit',t=>{
  const {r,storage}=setup(t);for(let i=0;i<=4;i++)feed(r,i);
  const f=storage.readJsonl('fast-shadow-entries'),e=storage.readJsonl('research-entries');
- assert.equal(f.length,1);assert.equal(f[0].at,T+30000);assert.equal(e[0].at,T+60000);
+ assert.equal(f.length,1);assert.equal(f[0].entryContext.derived.transactions5m,122);assert.equal(f[0].entryContext.clocks.securityCheckedAt.at,T);assert.equal(f[0].at,T+30000);assert.equal(e[0].at,T+60000);
  assert.equal(storage.readJsonl('fast-shadow-links')[0].leadMs,30000);assert.deepEqual(storage.notificationStats(),{});
  assert.equal(r.pending(mint),true);assert.equal(storage.getState('fast-shadow-registration').id,FAST_RULE.id);
 });

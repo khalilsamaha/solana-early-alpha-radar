@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {entryFeatures,FEATURE_CAPTURE} from './entry-features.mjs';
-import {signalRecord} from './observer.mjs';
+import {captureEntryContext} from './entry-context.mjs';
+import {signalRecord,admission} from './observer.mjs';
 const at=1800000000000;
 const mint='So11111111111111111111111111111111111111112';
 test('baseline immutable feature capture preserves zeros, sources and ages',()=>{
@@ -38,4 +39,14 @@ test('signal parsing adds features without changing cohort, identity or admissio
  assert.equal(s.seq,4);assert.equal(s.entryId,raw.id);assert.equal(s.cohort,'baseline');
  assert.equal(s.features.disposition,'defer');assert.equal(s.features.holderCount,42);
  assert.equal(s.featureCapture.version,FEATURE_CAPTURE);
+});
+
+test('supplemental context does not change legacy features or admission; validates signal identity',()=>{
+ const r={id:`${mint}:${at}:1`,at,engineVersion:'0.2.9',candidate:{mint,pairAddress:mint},qualification:{metrics:{}}};
+ const wrap=x=>signalRecord({kind:'alerts',seq:5,at,data:JSON.stringify(x)});
+ const old=wrap(r);r.entryContext=captureEntryContext({mint,pairAddress:mint,volume:{m5:200},txns:{m5:{buys:10,sells:10}},securityCheckedAt:at-100},at,{securityTtlMs:300000});
+ const fresh=wrap(r);assert.deepEqual(fresh.features,old.features);assert.deepEqual(fresh.featureCapture,old.featureCapture);
+ assert.equal(fresh.entryContext.data.derived.averageReportedTradeUsd,10);
+ const opts={now:at,busy:false};assert.equal(admission(fresh,opts),admission(old,opts));
+ r.entryContext.pairAddress='wrong';assert.equal(wrap(r).entryContext.state,'invalid');
 });

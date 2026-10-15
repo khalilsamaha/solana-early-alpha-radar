@@ -57,7 +57,7 @@ def build(report):
         if seq not in signals:signals[seq]={**s,'decision':'admitted'};recovered+=1
         else:
             a=signals[seq]
-            if any(a.get(k)!=s.get(k) for k in IDENTITY_FIELDS) or a.get('features')!=s.get('features') or a.get('featureCapture')!=s.get('featureCapture'):
+            if any(a.get(k)!=s.get(k) for k in IDENTITY_FIELDS) or a.get('features')!=s.get('features') or a.get('featureCapture')!=s.get('featureCapture') or a.get('entryContext')!=s.get('entryContext'):
                 raise ValueError('Signal/probe entry evidence mismatch')
             if a.get('decision')!='admitted':raise ValueError('Probe attached to nonadmitted signal')
     groups={};cases=[]

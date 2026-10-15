@@ -95,3 +95,7 @@ The historical example split has only 7 baseline, 7 early-activity and 8 Fast30 
 ## Operational scope and rollback
 
 This release only adds offline files and extends repository checks. It does not update the installed scanner or observer, change their request budgets, access wallets or modify Backblaze. Analysis consumes bounded host CPU/memory while running. To stop using it, stop invoking the script; no production rollback is needed. Existing reports are immutable and remain available.
+
+## Supplemental entry context (15 October 2026)
+
+Observer 0.8.0 exports optional `entryContext`. The dataset validates its identity, clocks, missing-value states and numeric bounds into `supplementalEntryContext`, with counts in `supplementalContextCoverage`. Existing `predictors` and model inputs remain unchanged; supplemental fields require a separately frozen future protocol. Source exports containing conflicting context fail validation. Use the coordinated deployment in `../docs/ENTRY-CONTEXT-UPDATE.md` before running this checkout’s exporter. Historical captures remain supported.

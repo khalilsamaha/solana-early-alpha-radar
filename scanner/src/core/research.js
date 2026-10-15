@@ -1,3 +1,4 @@
+import {captureEntryContext} from './entry-context.js';
 import {observationQuality} from './observation-quality.js';
 import {FastShadow} from './fast-shadow.js';
 import {qualify} from './qualification.js';
@@ -82,7 +83,7 @@ export class Research {
     // At most one activity episode per six hours, plus one baseline entry.
     s.positions=s.positions.filter(p=>Object.keys(p.horizons).length<4);
     s.positions.push(p);
-    this.storage.append('research-entries',{...p,version:MOMENTUM_VERSION,feedEvidence:c.feedEvidence||null,candidate:publicToken(c),
+    this.storage.append('research-entries',{...p,entryContext:captureEntryContext(c,now,this.config),version:MOMENTUM_VERSION,feedEvidence:c.feedEvidence||null,candidate:publicToken(c),
       baselineScore:c.score,experimentalScore:summary?.score??null,security:summary?.security??'unknown',features:summary?.metrics??null,
       qualification:qualify(c,summary,now),evidence:this.evidence(c.mint)});
     this.fast.link(c,id,cohort,now);

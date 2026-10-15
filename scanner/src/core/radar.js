@@ -1,3 +1,4 @@
+import {captureEntryContext,ENTRY_CONTEXT_VERSION} from './entry-context.js';
 import {applyFeed,FEED_VERSION} from './feed-evidence.js';
 import {summaryEvents,statisticsHealth} from './stats-memory.js';
 import {qualify,qualificationSummary} from './qualification.js';
@@ -239,6 +240,7 @@ export class Radar {
     recordDecision(this.storage,candidate,this.config,now,'alert');
     const alert={id:`${candidate.mint}:${candidate.paperEntry.at}:${level}`,at:now,level,type:'signal',engineVersion:'0.2.9',decisionTimeline:{...candidate.decisionTimeline},
       candidate:Object.fromEntries(['mint','symbol','tokenName','priceUsd','marketCap','liquidityUsd','organicScore','holderCount','top10Pct','pairAddress'].map(k=>[k,candidate[k]])),scoring};
+    alert.entryContext=captureEntryContext(candidate,now,this.config);
     alert.marketContext=this.research.describe(candidate.mint,now);
     alert.qualification=qualify(candidate,alert.marketContext,now);
     alert.evidence={...this.research.evidence(candidate.mint),inputs:{
@@ -320,7 +322,7 @@ export class Radar {
   getHealth(){if(this.health.mode==='dashboard'){const h=this.storage.getState('health');if(h.providers)return {...h,mode:'dashboard (worker snapshot)',ready:h.ready&&Date.now()-h.lastMarketAt<this.config.freshMs&&Date.now()-h.lastLoopAt<180000};}
     const now=Date.now(),active=[...this.candidates.values()].filter(x=>!x.inactive||tracking(x)||this.research.trackingPending(x.mint));
     const pending=active.filter(x=>!x.lastAttemptAt);
-    return {...this.health.snapshot(this.config,this.storage.notificationStats()),scannerVersion:'0.2.9',feedEvidenceVersion:FEED_VERSION,statisticsReader:statisticsHealth(),statisticsWorker:this.statisticsService?.health()||null,research:{...this.research.stats(now),focus:{limit:Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5))),eligible:this.focusEligibleCount,selected:this.researchFocus.size,fastSelected:this.fastFocusSelected||0,fastAwaitingCapacity:this.fastFocusAwaiting||0,ordinaryDisplaced:this.fastFocusDisplaced||0,
+    return {...this.health.snapshot(this.config,this.storage.notificationStats()),scannerVersion:'0.2.9',feedEvidenceVersion:FEED_VERSION,entryContextVersion:ENTRY_CONTEXT_VERSION,statisticsReader:statisticsHealth(),statisticsWorker:this.statisticsService?.health()||null,research:{...this.research.stats(now),focus:{limit:Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5))),eligible:this.focusEligibleCount,selected:this.researchFocus.size,fastSelected:this.fastFocusSelected||0,fastAwaitingCapacity:this.fastFocusAwaiting||0,ordinaryDisplaced:this.fastFocusDisplaced||0,
       ready:[...this.researchFocus].filter(m=>{const v=this.research.describe(m,now);return v?.metrics?.ready&&v.stage!=='data unavailable';}).length}},droppedCandidates:this.droppedCandidates||0,
     decisionTrace:{writtenSinceRestart:this.storage.decisionEventsWritten||0,retentionDays:this.config.snapshotDays},
     storageWrites:this.storage.writeStats?.()||null,

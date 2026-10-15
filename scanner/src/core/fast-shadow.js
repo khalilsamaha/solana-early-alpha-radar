@@ -1,3 +1,4 @@
+import {captureEntryContext} from './entry-context.js';
 import {observationQuality} from './observation-quality.js';
 export const FAST_VERSION='fast30-shadow-1';
 export const FOLLOWUP_POLICY='fast-followup-1';
@@ -123,7 +124,7 @@ export class FastShadow {
    featureAt:now,features:entryFeatures,groups:evaluateEntryShadows(entryFeatures)};
   s.position=p;s.lastEntryAt=now;
   this.storage.transaction(()=>{
-   this.storage.append('fast-shadow-entries',{...p,feedEvidence:c.feedEvidence||null,version:FAST_VERSION,cohort:'fast30-shadow',symbol:c.symbol||null,ruleId:FAST_VERSION,
+   this.storage.append('fast-shadow-entries',{...p,entryContext:captureEntryContext(c,now,this.config),feedEvidence:c.feedEvidence||null,version:FAST_VERSION,cohort:'fast30-shadow',symbol:c.symbol||null,ruleId:FAST_VERSION,
     shadowEvaluation,quality:d.quality,decision:d,liquidityUsd:Number.isFinite(c.liquidityUsd)?c.liquidityUsd:null,
     security:{checkedAt:c.securityCheckedAt??null,mintAuthority:c.mintAuthority??null,freezeAuthority:c.freezeAuthority??null,top10Pct:c.top10Pct??null,
      status:!c.securityCheckedAt||now-c.securityCheckedAt>this.config.securityTtlMs?'expired or unavailable':c.mintAuthority===undefined||c.freezeAuthority===undefined||!Number.isFinite(c.top10Pct)?'incomplete':'limited checks complete'},
