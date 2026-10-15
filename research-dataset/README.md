@@ -11,7 +11,17 @@ cd ~/apps/solana-early-alpha-radar
 bash ~/apps/solana-radar-dev/research-dataset/run.sh
 ```
 
-No installer, rebuild or service restart is required. This reads the observer's retained ledger through its existing export command, then performs analysis as the normal host user. It requests the last 72 hours, publishes a private source export and a private compressed analysis, and prints their paths. Upload `radar-research-dataset-*.json.gz`; retain the source for follow-up. The source exporter may stop at its existing byte/row caps; it never silently samples or publishes a partial export.
+No installer, rebuild or service restart is required. This reads the observer's retained ledger through its existing export command, then performs analysis as the normal host user. It defaults to the last **24 hours**, publishes a private source export and a private compressed analysis, and prints their paths. Upload `radar-research-dataset-*.json.gz`; retain the source for follow-up. The source exporter may stop at its existing byte/row caps; it never silently samples or publishes a partial export.
+
+The initial 72-hour default exceeded the deployed export cap on October 15. The observer enforces a combined 32 MiB raw-data cap and a 20,000-row cap per table; its generic error does not identify which one was reached. This wrapper keeps those limits intact and accepts an explicit window of 1..72 hours:
+
+```bash
+bash ~/apps/solana-radar-dev/research-dataset/run.sh --hours 24
+# Only if that export also reaches a cap:
+bash ~/apps/solana-radar-dev/research-dataset/run.sh --hours 12
+```
+
+The selected window is printed, and no automatic narrowing or partial report is allowed. Retain successive source exports and combine overlapping windows with the command below. Three exports of the latest 24 hours taken at the same time do not recover three historical days; the current exporter has no historical end-time option. A larger bounded historical capture needs a separate implementation.
 
 To use already exported files or merge overlapping windows without touching the running service:
 
@@ -80,7 +90,7 @@ The 19:53 and 20:39 UTC source exports were merged without changing their conten
 
 These three watches verify capture, not strategy quality. Liquidity is recorded for 40/40 baseline watches, 3/48 early-activity watches and 4/47 Fast30 watches across the merged sample. Pooling these cohorts and treating unknowns as zero would hide important data limitations.
 
-The historical example split has only 7 baseline, 7 early-activity and 8 Fast30 training rows. No model was fitted on that small split. Collect the retained 72-hour export to assess the available history rather than waiting for another arbitrary overnight checkpoint.
+The historical example split has only 7 baseline, 7 early-activity and 8 Fast30 training rows. No model was fitted on that small split. The initial 72-hour collection attempt reached an export cap. Use bounded exports and merge retained source files to assess available history; a shorter window does not establish ML readiness.
 
 ## Operational scope and rollback
 
