@@ -21,7 +21,7 @@ bash ~/apps/solana-radar-dev/research-dataset/run.sh --hours 24
 bash ~/apps/solana-radar-dev/research-dataset/run.sh --hours 12
 ```
 
-The selected window is printed, and no automatic narrowing or partial report is allowed. Retain successive source exports and combine overlapping windows with the command below. Three exports of the latest 24 hours taken at the same time do not recover three historical days; the current exporter has no historical end-time option. A larger bounded historical capture needs a separate implementation.
+The selected window is printed, and no automatic narrowing or partial report is allowed. Three exports of the latest 24 hours taken at the same time do not recover three historical days. For a single consistent capture of retained historical windows, or verified **local** quote-ledger backups, use the new [historical capture instructions](HISTORY.md). The installed observer exporter remains unchanged.
 
 To use already exported files or merge overlapping windows without touching the running service:
 

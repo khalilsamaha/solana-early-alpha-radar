@@ -55,8 +55,8 @@ def merge(reports):
     duplicate_signals = duplicate_probes = 0
     for r in sorted(reports, key=lambda r: r['capturedAt']):
         review(r)  # Validate each export at its own cutoff before merging.
-        start, end = r.get('windowStartAt'), r['capturedAt']
-        if not stamp(start) or start > end:
+        start, end = r.get('windowStartAt'), r.get('entryWindowEndAt', r['capturedAt'])
+        if not stamp(start) or not stamp(end) or start > end or end > r['capturedAt']:
             raise ValueError('Invalid export window')
         windows.append([start, end])
         for s in r['signals']:
@@ -70,9 +70,13 @@ def merge(reports):
             seq = p['signal']['seq']
             if seq in probes:
                 old = probes[seq]
-                fixed = lambda x: {k: v for k, v in x.items() if k not in ('state', 'finishedAt', 'observations')}
+                # A running watch gains request counters and derived timing fields.
+                # Existing contract fields and recorded observations cannot change.
+                contract = ('format', 'mode', 'mint', 'baseMint', 'inputAtomic', 'hypotheticalInputUsdc',
+                            'samplingPolicy', 'signal', 'limits', 'maxRequests', 'sampling')
                 prefix = p.get('observations', [])[:len(old.get('observations', []))]
-                if (fixed(old) != fixed(p) or prefix != old.get('observations', [])
+                if (any(old[k] != p.get(k) for k in contract if k in old)
+                        or prefix != old.get('observations', [])
                         or (old.get('finishedAt') is not None and old != p)):
                     raise ValueError('Conflicting or revised probe evidence')
                 duplicate_probes += 1
@@ -80,7 +84,7 @@ def merge(reports):
         if len(signals) > 20000 or len(probes) > 20000:
             raise ValueError('Merged row cap exceeded; narrow input windows')
     merged = {'format': 'quote-observer-report-0.2.0', 'sourceIdentity': next(iter(sources)),
-              'windowStartAt': min(w[0] for w in windows), 'capturedAt': max(w[1] for w in windows),
+              'windowStartAt': min(w[0] for w in windows), 'capturedAt': max(r['capturedAt'] for r in reports),
               'signals': list(signals.values()), 'probes': list(probes.values())}
     coverage = []
     for start, end in sorted(windows):
@@ -311,14 +315,20 @@ def build(reports, test_start=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--input', type=Path, action='append', required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument('--input', type=Path, action='append')
+    source.add_argument('--history-dir', type=Path)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--test-start', help='Explicit timezone-aware ISO timestamp; optional split audit only')
     args = parser.parse_args()
-    if len(args.input) > 16:
+    if args.input and len(args.input) > 16:
         raise ValueError('Input count cap exceeded')
     reports, provenance, total = [], [], 0
-    for path in args.input:
+    history_index = None
+    if args.history_dir:
+        from history import load_capture
+        reports, provenance, history_index = load_capture(args.history_dir)
+    for path in args.input or []:
         data, meta = read(path)
         total += meta['bytes']
         if total > MAX_TOTAL_BYTES:
@@ -333,6 +343,8 @@ def main():
         boundary = int(value.timestamp() * 1000)
     result = build(reports, boundary)
     result['inputs'] = provenance
+    if history_index is not None:
+        result['historyCapture'] = history_index
     publish(args.output, result)
     print('Unique eligible signals:', result['summary']['signals'], '; watches:', result['summary']['admitted'])
     print('New pricing watches:', result['mlReadiness']['newPricingWatches'])
