@@ -50,3 +50,15 @@ test('supplemental context does not change legacy features or admission; validat
  const opts={now:at,busy:false};assert.equal(admission(fresh,opts),admission(old,opts));
  r.entryContext.pairAddress='wrong';assert.equal(wrap(r).entryContext.state,'invalid');
 });
+
+test('observer validates per-field receipt provenance without changing existing admission features',()=>{
+ const candidate={mint,pairAddress:mint,organicScore:12,holderCount:20,metadataProvenance:{version:'metadata-provenance-1',fields:{organicScore:{value:12,source:'jupiter:recent',receivedAt:at-100,appliedAt:at-99}}}};
+ const raw={id:`${mint}:${at}:1`,at,engineVersion:'0.2.9',candidate,entryContext:captureEntryContext(candidate,at)};
+ const wrap=()=>signalRecord({kind:'alerts',seq:7,at,data:JSON.stringify(raw)});
+ const s=wrap();assert.equal(s.entryContext.data.metadataProvenance.fields.organicScore.ageMs,100);
+ assert.equal(s.entryContext.data.metadataProvenance.fields.holderCount.state,'not-recorded');
+ const features=structuredClone(s.features);raw.entryContext.metadataProvenance.fields.organicScore.ageMs=1;
+ const invalid=wrap();assert.equal(invalid.entryContext.data.metadataProvenance.fields.organicScore.state,'invalid');
+ assert.deepEqual(invalid.features,features);
+ delete raw.entryContext.metadataProvenance;assert.equal(wrap().entryContext.data.metadataProvenance,undefined);
+});

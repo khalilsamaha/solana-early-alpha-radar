@@ -21,3 +21,7 @@ Current paired evidence audit: [PAIRED-FEED-AUDIT.md](PAIRED-FEED-AUDIT.md). Cur
 ## 15 October 2026 update
 
 The first offline ML benchmark is complete but does not demonstrate an edge. Next: consistent supplemental entry context, a frozen forward benchmark and a dry-run execution/reconciliation harness. See [entry context deployment](ENTRY-CONTEXT-UPDATE.md) and [real-money gates](REAL-MONEY-GATES-20261015.md). No live trading or ML activation.
+
+## 16 October 2026 update
+
+Consistent entry context was verified on all 802 new signals in the supplied post-update window. Twenty-five quote watches still show poor results and two watches with repeated provider-reported reverse-quote failures; capture success is not a strategy pass. Added per-field metadata provenance, a failure-aware offline exit-availability review and idempotent observer installation. See [deployment and validation](METADATA-PROVENANCE-UPDATE.md). Next: validate new provenance, freeze the richer-feature comparison protocol, and develop a dry-run execution/reconciliation harness. No funded pilot or model activation is approved by these results.

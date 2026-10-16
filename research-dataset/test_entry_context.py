@@ -37,3 +37,18 @@ class ContextTests(unittest.TestCase):
   with self.assertRaisesRegex(ValueError,'immutable'):merge([q,other])
   q['probes'][0]['signal']['entryContext']['state']='invalid'
   with self.assertRaises(ValueError):build([q])
+
+class MetadataTests(unittest.TestCase):
+ def test_metadata_ages_are_per_field_and_never_replace_dedicated_check_clock(self):
+  s=ContextTests().signal();d=s['entryContext']['data'];at=s['signalAt']
+  for key,v in [('organicScore',12),('holderCount',20)]:d['values'][key]={'value':v,'state':'recorded'}
+  d['metadataProvenance']={'version':'metadata-provenance-1','fields':{
+   'organicScore':{'state':'recorded','value':12,'source':'jupiter:recent','receivedAt':at-100,'appliedAt':at-99,'ageMs':100},
+   'holderCount':{'state':'recorded','value':20,'source':'jupiter:top-organic','receivedAt':at-200,'appliedAt':at-199,'ageMs':200}}}
+  out=context(s);self.assertIsNone(out['predictors']['jupiterCheckedAtAgeMs'])
+  self.assertEqual(out['metadataProvenance']['fields']['organicScore']['ageMs'],100)
+  self.assertEqual(out['metadataProvenance']['fields']['holderCount']['ageMs'],200)
+  for mutate in [lambda x:x.update(value=13),lambda x:x.update(receivedAt=at+1),lambda x:x.update(ageMs=0),lambda x:x.update(source='other'),lambda x:x.update(source={'unexpected':'shape'})]:
+   bad=copy.deepcopy(s);mutate(bad['entryContext']['data']['metadataProvenance']['fields']['organicScore'])
+   self.assertEqual(context(bad)['metadataProvenance']['fields']['organicScore']['state'],'invalid')
+   self.assertEqual(context(bad)['state'],'recorded')

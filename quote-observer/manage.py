@@ -30,7 +30,7 @@ def read_report(config, hours=24, status=False):
                 capacity[cohort]={'hourUsed':len(hour),'dayUsed':len(own),'cohortBudgetOpensAt':ready,
                   'note':'Includes legacy admissions; global budget, busy, freshness and provider checks also apply.'}
         result={'format':'quote-observer-report-0.2.0','capturedAt':now,'windowStartAt':cutoff,'registeredAt':meta.get('registeredAt'),'limits':meta.get('limits'),'observerVersion':meta.get('version'),'samplingRegistration':meta.get('samplingRegistration'),'previousSamplingRegistration':meta.get('previousSamplingRegistration'),
-          'cohortCapacity':capacity,'entryContextRegistration':meta.get('entryContextRegistration'),'featureCaptureRegistration':meta.get('featureCaptureRegistration'),
+          'cohortCapacity':capacity,'entryContextRegistration':meta.get('entryContextRegistration'),'metadataProvenanceRegistration':meta.get('metadataProvenanceRegistration'),'featureCaptureRegistration':meta.get('featureCaptureRegistration'),
           'lastPollAt':meta.get('lastPollAt'),'lastPollAgeSeconds':(now-meta['lastPollAt'])/1000 if meta.get('lastPollAt') else None,
           'halted':meta.get('halted'),'blockedUntil':meta.get('blockedUntil'),'signalCounts':counts,'probeCounts':probes,
           'limitations':['Quotes are not fills or proof of profitability.','Sampling policy is recorded per signal/probe; each policy must be analyzed separately.',

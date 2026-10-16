@@ -1,3 +1,4 @@
+import {metadataAt,readMetadata} from './metadata-provenance.js';
 // Bounded, immutable entry evidence. No requests, scoring, or safety verdicts.
 export const ENTRY_CONTEXT_VERSION='entry-context-1';
 const defs={liquidityUsd:['liquidityUsd'],organicScore:['organicScore'],top10Pct:['top10Pct'],
@@ -28,6 +29,7 @@ export function captureEntryContext(c,at,config={}){
  for(const key of ['mintAuthority','freezeAuthority'])authorities[key]=c[key]===null?false:typeof c[key]==='string'&&c[key].length>0?true:null;
  return {version:ENTRY_CONTEXT_VERSION,signalAt:at,mint:label(c.mint),pairAddress:label(c.pairAddress),
  values,derived:derived(values),clocks,authorities,
+ metadataProvenance:metadataAt(c.metadataProvenance,{organicScore:c.organicScore,holderCount:c.holderCount},at),
  concentrationMethod:c.concentrationMethod==='top10-token-accounts-unadjusted'?c.concentrationMethod:null,
  dexId:label(c.dexId),basis:'scanner-candidate-at-signal; response times are not trade timestamps'};
 }
@@ -52,6 +54,7 @@ export function readEntryContext(raw,{at,mint,pairAddress}){
  }
  return {state:'recorded',data:{version:ENTRY_CONTEXT_VERSION,signalAt:at,mint,pairAddress,values,
  derived:derived(values),clocks,authorities,
+ ...(raw.metadataProvenance===undefined?{}:{metadataProvenance:readMetadata(raw.metadataProvenance,{organicScore:values.organicScore.value,holderCount:values.holderCount.value},at)}),
  concentrationMethod:raw.concentrationMethod==='top10-token-accounts-unadjusted'?raw.concentrationMethod:null,
  dexId:label(raw.dexId),basis:'scanner-candidate-at-signal; response times are not trade timestamps'}};
 }

@@ -46,4 +46,23 @@ def context(signal):
         if k not in authorities or (authorities[k] is not None and type(authorities[k]) is not bool): return invalid
         out[k+'Active']=authorities[k]
     return {'state':'recorded','version':'entry-context-1','predictors':out,'valueStates':states,'clockStates':clock_states,
+            **({'metadataProvenance':metadata(d['metadataProvenance'],out,at)} if 'metadataProvenance' in d else {}),
             'basis':'Supplemental entry-time context only; stale values remain labelled; no safety verdict or model activation.'}
+
+
+def metadata(raw,values,at):
+    if raw is None:return None
+    fields={};sources={'jupiter:recent','jupiter:top-organic','jupiter:search'}
+    for key in ('organicScore','holderCount'):
+        item=raw.get('fields',{}).get(key) if isinstance(raw,dict) and isinstance(raw.get('fields'),dict) else None
+        out={'state':'invalid','value':None,'source':None,'receivedAt':None,'appliedAt':None,'ageMs':None}
+        if isinstance(raw,dict) and raw.get('version')=='metadata-provenance-1' and isinstance(item,dict):
+            value,received,applied,age=(item.get(x) for x in ('value','receivedAt','appliedAt','ageMs'))
+            if item.get('state') in ('not-recorded','invalid') and all(item.get(x) is None for x in ('value','source','receivedAt','appliedAt','ageMs')):
+                out['state']=item['state']
+            elif (item.get('state')=='recorded' and num(value) and (key!='holderCount' or integer(value))
+                  and value==values.get(key) and isinstance(item.get('source'),str) and item['source'] in sources and integer(received) and integer(applied)
+                  and 0<received<=applied<=at and num(age) and age==at-received):
+                out={'state':'recorded','value':value,'source':item['source'],'receivedAt':received,'appliedAt':applied,'ageMs':age}
+        fields[key]=out
+    return {'version':'metadata-provenance-1' if isinstance(raw,dict) and raw.get('version')=='metadata-provenance-1' else None,'fields':fields}

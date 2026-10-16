@@ -1,4 +1,4 @@
-# Solana Radar quote observer 0.8.0
+# Solana Radar quote observer 0.9.0
 
 Walletless prospective quote observation for baseline, early-activity and Fast30 shadow signals. No signing, wallet access, transactions, notifications or automatic exits.
 
@@ -12,18 +12,18 @@ Existing feed cursors and completed evidence are preserved during this upgrade. 
 
 ## Install from reviewed checkout
 
-See `../docs/ENTRY-CONTEXT-UPDATE.md` for the coordinated scanner and observer procedure. The observer installer itself does not rebuild the scanner.
+See `../docs/METADATA-PROVENANCE-UPDATE.md` for the coordinated scanner and observer procedure. The observer installer itself does not rebuild the scanner.
 
 ```bash
 sudo python3 quote-observer/install.py --project "$HOME/apps/solana-early-alpha-radar" --enable-service
-sudo python3 -E -s /usr/local/lib/solana-radar-quotes/0.8.0/manage.py status
+sudo python3 -E -s /usr/local/lib/solana-radar-quotes/0.9.0/manage.py status
 ```
 
 The installer verifies the manifest, runs offline tests, checks managed configurations and snapshots the existing ledger before restarting. Modified configurations stop installation. A running watch may become interrupted; it is never reconstructed. Scanner data, source identity and cursor are retained. This update does not change the SQLite schema or sampling policy.
 
 ## Export and interpretation
 
-Run `bash /path/to/checkout/quote-observer/export.sh --hours 24` from the host project. Report format remains `quote-observer-report-0.2.0`; runtime version is 0.8.0. `cohortCapacity` includes all three cohorts. Exit evidence groups by policy and cohort. Existing qualification shadow rules apply only to baseline and early-activity; Fast30 is evaluated through its own price/quote reports.
+Run `bash /path/to/checkout/quote-observer/export.sh --hours 24` from the host project. Report format remains `quote-observer-report-0.2.0`; runtime version is 0.9.0. `cohortCapacity` includes all three cohorts. Exit evidence groups by policy and cohort. Existing qualification shadow rules apply only to baseline and early-activity; Fast30 is evaluated through its own price/quote reports.
 
 Offsets are relative to buy-response time; request and response timestamps are preserved. Quotes are not fills. Failed or skipped signals are not zero returns. Deduplicate exports using source identity plus sequence number. Observer retention is seven days; scanner backups do not cover this separate ledger.
 
@@ -35,10 +35,16 @@ Entry features also preserve qualification version, shadow mode and an entry-tim
 
 ## Rollback
 
-`sudo python3 quote-observer/rollback.py` verifies the installed 0.7.0 payload and returns the observer program/configuration to it. The current ledger and three-cohort sampling policy stay intact. New entry context already stored remains in historical records; the old program does not capture it for subsequent signals.
+`sudo python3 quote-observer/rollback.py` verifies the installed 0.8.0 payload and returns the observer program/configuration to it. The current ledger and three-cohort sampling policy stay intact. New entry context already stored remains in historical records; the old program continues supplemental entry-context capture, but does not validate the new metadata receipt extension.
 
 `replay-results.json` is a preserved historical 0.5.0 reporting fixture, not a current performance report.
 
-## Supplemental entry context in 0.8.0
+## Supplemental entry context retained from 0.8.0
 
 All three cohorts retain validated `entryContext` from immutable new scanner events. Missing/invalid context is explicit. Existing features, feature-capture registration, qualification and admission rules remain unchanged. Context is supplemental and does not retrospectively enrich old records or enter the existing ML model. See the coordinated update document for source mapping and verification.
+
+## Metadata provenance in 0.9.0
+
+Organic score and holder count each retain their own allowed Jupiter source, local response receipt time, application time and age at signal. These are not provider measurement timestamps or freshness approvals. Missing provenance stays explicit. The dedicated search timestamp, scoring, polling, budgets and existing model inputs remain unchanged.
+
+Repeating installation of this exact verified release while its managed service is running skips the restart and ledger snapshot. Modified payload/configuration still stops installation; an inactive service can still be started.

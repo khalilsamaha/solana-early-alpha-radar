@@ -17,7 +17,7 @@ output="$PWD/radar-research-dataset-$stamp.json.gz"
 temp="$(mktemp "$PWD/.research-dataset-XXXXXX")"
 trap 'rm -f -- "$temp"' EXIT
 printf 'Requested export window: last %s hours (no automatic narrowing).\n' "$hours"
-if ! sudo python3 -E -s /usr/local/lib/solana-radar-quotes/0.8.0/manage.py export --hours "$hours" > "$temp"; then
+if ! sudo python3 -E -s /usr/local/lib/solana-radar-quotes/0.9.0/manage.py export --hours "$hours" > "$temp"; then
   echo 'No source or dataset report published. If the exporter reported a cap, rerun with an explicitly smaller --hours value, such as 12.' >&2
   exit 1
 fi

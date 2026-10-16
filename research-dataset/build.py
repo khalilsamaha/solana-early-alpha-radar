@@ -16,6 +16,7 @@ from review import build as review, number, stamp, qualification, describe
 from join_quotes import COHORTS, OFFSETS, IDENTITY_FIELDS
 from report import publish
 from entry_context import context as supplemental_context
+from exit_availability import classify as classify_exit, review as exit_review
 
 VERSION = 'research-dataset-1'
 MAX_BYTES = 64 * 1024 * 1024
@@ -282,6 +283,8 @@ def build(reports, test_start=None):
                'qualificationVersion': qversion, 'disposition': disposition, 'decision': s.get('decision', 'unknown'),
                'entrySchemaVerified': schema, 'invalidQualificationTimestamp': future_q,
                'predictors': features, 'missingPredictors': [k for k, v in features.items() if v is None],
+               'buyQuoteState':case['buy']['state'] if case else 'not-admitted',
+               'exitAvailability': {str(h):classify_exit(case,p,h) for h in (30000,120000)},
                'supplementalEntryContext': supplemental_context(s), 'entryConditions': cond, 'targets': {str(h): target(case, p, h) for h in OFFSETS}, 'split': 'not-assigned'}
         rows.append(row)
         key = '/'.join((row['samplingPolicy'], row['cohort'], qversion, disposition, cond['bucket']))
@@ -297,6 +300,7 @@ def build(reports, test_start=None):
     return {'format': VERSION, 'sourceIdentity': merged['sourceIdentity'], 'capturedAt': merged['capturedAt'],
             'merge': merge_info, 'summary': summarize(rows), 'deferBreakdown': {k: summarize(v) for k, v in sorted(buckets.items())},
             'supplementalContextCoverage': {c: dict(collections.Counter(r['supplementalEntryContext']['state'] for r in rows if r['cohort']==c)) for c in COHORTS},
+            'exitAvailabilityReview': exit_review(rows),
             'featureAvailability': missing, 'pricingAudit': audits, 'splitAudit': split, 'rows': rows,
             'mlReadiness': {'state': 'dataset-and-validation-foundation', 'modelTrained': False, 'liveUseAllowed': False,
                             'newPricingWatches': sum(any(e['state'] == 'available' for e in a['exits']) for a in audits),
@@ -351,6 +355,8 @@ def main():
     print('Unique eligible signals:', result['summary']['signals'], '; watches:', result['summary']['admitted'])
     print('Supplemental entry context:', json.dumps(result['supplementalContextCoverage'],sort_keys=True))
     print('New pricing watches:', result['mlReadiness']['newPricingWatches'])
+    for g in result['exitAvailabilityReview']['groups']:
+        print('Exit availability:',g['cohort'],g['metadataVersion'],'30s',g['horizons']['30000']['states'],'120s',g['horizons']['120000']['states'])
     print('ML: dataset prepared; no model trained or activated.')
     for f in result['splitAudit']['folds']:
         print(f['cohort'], 'train:', f['trainRows'], 'test:', f['testRows'], 'mint overlap:', f['mintOverlap'])

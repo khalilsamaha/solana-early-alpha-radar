@@ -7,14 +7,14 @@ import install,rollback
 class InstallTests(unittest.TestCase):
     def fixture(self,root):
         bundle=root/'bundle';bundle.mkdir();(bundle/'payload').write_text('known')
-        manifest={'version':'0.8.0','files':{'payload':hashlib.sha256(b'known').hexdigest()}}
+        manifest={'version':'0.9.0','files':{'payload':hashlib.sha256(b'known').hexdigest()}}
         (bundle/'manifest.json').write_text(json.dumps(manifest))
         project=root/'project';project.mkdir();(project/'package.json').write_text('{"version":"0.2.9"}')
         data=root/'data';data.mkdir();database=data/'radar.sqlite'
         with sqlite3.connect(database) as d:d.execute('CREATE TABLE evidence(x)');d.execute('INSERT INTO evidence VALUES(99)')
         reports=root/'reports';reports.mkdir();ledger=reports/'observer.sqlite'
         with sqlite3.connect(ledger) as d:d.execute('CREATE TABLE preserved(x)');d.execute("INSERT INTO preserved VALUES('cursor and data')")
-        paths={'BUNDLE':bundle,'DEST':root/'lib'/'0.8.0','CONFIG':root/'config.json','REPORTS':reports,'UNIT':root/'quotes.service'}
+        paths={'BUNDLE':bundle,'DEST':root/'lib'/'0.9.0','CONFIG':root/'config.json','REPORTS':reports,'UNIT':root/'quotes.service'}
         return project,database,ledger,paths
 
     @contextlib.contextmanager
@@ -31,8 +31,8 @@ class InstallTests(unittest.TestCase):
         try:
             with patch.multiple(install,**paths),patch('install.run',side_effect=run),patch('install.os.geteuid',return_value=0),patch('install.shutil.which',return_value='/usr/bin/node'),patch('install.subprocess.run',return_value=subprocess.CompletedProcess([],0)),patch('sys.argv',['install.py','--project',str(project),'--enable-service']),contextlib.redirect_stdout(io.StringIO()):
                 expected=json.dumps({'managedBy':install.MARKER,'database':str(database),'reports':str(paths['REPORTS'])},indent=2)+'\n'
-                paths['CONFIG'].write_text(expected.replace('0.8.0','0.7.0'))
-                paths['UNIT'].write_text(install.unit('/usr/bin/node',database).replace('0.8.0','0.7.0'))
+                paths['CONFIG'].write_text(expected.replace('0.9.0','0.8.0'))
+                paths['UNIT'].write_text(install.unit('/usr/bin/node',database).replace('0.9.0','0.8.0'))
                 yield project,database,ledger,paths,calls
         finally:os.umask(oldmask)
 
@@ -40,12 +40,14 @@ class InstallTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d,self.environment(Path(d)) as (_,database,ledger,paths,calls):
             before=(database.read_bytes(),ledger.read_bytes());install.main();install.main()
             self.assertEqual((database.read_bytes(),ledger.read_bytes()),before)
-            self.assertIn('/0.8.0/observer.mjs',paths['UNIT'].read_text())
-            backups=list(paths['REPORTS'].glob('pre-0.8.0-*.sqlite'));self.assertEqual(len(backups),2)
+            self.assertIn('/0.9.0/observer.mjs',paths['UNIT'].read_text())
+            backups=list(paths['REPORTS'].glob('pre-0.9.0-*.sqlite'));self.assertEqual(len(backups),1)
             for b in backups:
                 self.assertEqual(b.stat().st_mode&0o777,0o600)
                 with sqlite3.connect(b) as db:self.assertEqual(db.execute('SELECT * FROM preserved').fetchall(),[('cursor and data',)])
             self.assertFalse(any('compose' in c and 'up' in c for c in calls))
+            self.assertEqual(sum(c[:2]==['systemctl','restart'] for c in calls),1)
+            self.assertEqual(sum(c[:2]==['systemctl','stop'] for c in calls),1)
 
     def test_restart_failure_restores_previous_configuration_and_service(self):
         with tempfile.TemporaryDirectory() as d,self.environment(Path(d),True) as (_,database,ledger,paths,calls):
@@ -63,9 +65,9 @@ class InstallTests(unittest.TestCase):
 
     def test_verified_program_rollback_preserves_current_ledger(self):
         with tempfile.TemporaryDirectory() as d,self.environment(Path(d)) as (_,database,ledger,paths,calls):
-            install.main();before=ledger.read_bytes();old=paths['DEST'].parent/'0.7.0';old.mkdir()
-            (old/'payload').write_text('old');(old/'manifest.json').write_text(json.dumps({'version':'0.7.0','files':{'payload':hashlib.sha256(b'old').hexdigest()}}))
+            install.main();before=ledger.read_bytes();old=paths['DEST'].parent/'0.8.0';old.mkdir()
+            (old/'payload').write_text('old');(old/'manifest.json').write_text(json.dumps({'version':'0.8.0','files':{'payload':hashlib.sha256(b'old').hexdigest()}}))
             rollback.main()
-            self.assertIn('/0.7.0/observer.mjs',paths['UNIT'].read_text());self.assertEqual(ledger.read_bytes(),before)
+            self.assertIn('/0.8.0/observer.mjs',paths['UNIT'].read_text());self.assertEqual(ledger.read_bytes(),before)
 
 if __name__=='__main__':unittest.main()

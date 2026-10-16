@@ -1,3 +1,4 @@
+import {recordMetadata,METADATA_VERSION} from './metadata-provenance.js';
 import {captureEntryContext,ENTRY_CONTEXT_VERSION} from './entry-context.js';
 import {applyFeed,FEED_VERSION} from './feed-evidence.js';
 import {summaryEvents,statisticsHealth} from './stats-memory.js';
@@ -37,7 +38,7 @@ export class Radar {
     const row={at:new Date().toISOString(),message:safe.slice(0,500)};
     this.status.push(row);this.status=this.status.slice(-100);console.log(JSON.stringify({component:'radar',...row}));
   }
-  addCandidate(input) {
+  addCandidate(input,metadataReceipt=null) {
     if(!validMint(input?.mint))return null;
     const now=Date.now(),memory=this.candidates.get(input.mint),archived=this.storage.getState(`paper:${input.mint}`),prev=memory||(archived.paperEntry?archived:null);
     // A bounded queue exposes dropped discovery; ongoing paper entries are never evicted.
@@ -49,6 +50,7 @@ export class Radar {
     }
     const next={...prev,...clean(input),mint:input.mint,firstSeenAt:prev?.firstSeenAt||now,lastDiscoveryAt:now,
       discoverySources:[...new Set([...(prev?.discoverySources||[]),input.discoverySource||'unknown'])]};
+    next.metadataProvenance=recordMetadata(prev,clean(input),metadataReceipt,now);
     // Preserve operational state when discovery updates metadata.
     if(prev?.launchAt)next.launchAt=prev.launchAt;
     ensureTimeline(next,now);this.candidates.set(next.mint,next);this.storage.saveCandidate(next);return next;
@@ -216,7 +218,10 @@ export class Radar {
       const fields=security?['mintAuthority','freezeAuthority','top10Pct','concentrationMethod','tokenProgram','extensions','securityCheckedAt']
         :['organicScore','holderCount','auditIsSus','isVerified','jupiterStats'];
       const patch=Object.fromEntries(fields.map(field=>[field,result[field]]));
-      if(!security)patch.jupiterCheckedAt=Date.now();
+      if(!security){
+        patch.jupiterCheckedAt=Date.now();
+        patch.metadataProvenance=recordMetadata(latest,patch,{source:'jupiter:search',receivedAt:patch.jupiterCheckedAt},patch.jupiterCheckedAt);
+      }
       const enriched={...latest,...patch};
       this.storage.transaction(()=>{recordDecision(this.storage,enriched,this.config,Date.now(),'metadata');this.save(enriched);});
     }catch(e){this.log(`${provider}: ${e.message}`);}
@@ -279,8 +284,11 @@ export class Radar {
           for(const row of rows)this.addCandidate({mint:row.tokenAddress,discoverySource:'dexscreener:profile'});
         } else {
           // A single failing feed does not discard successful discovery from its sibling.
-          for(const get of [this.adapters.getRecent,this.adapters.getTopOrganic]) {
-            try {for(const row of await get(this.config.jupiterApiKey,this.http))this.addCandidate({...jupiter.normalizeDiscoveryRow(row),discoverySource:'jupiter'});}
+          for(const [get,endpoint] of [[this.adapters.getRecent,'jupiter:recent'],[this.adapters.getTopOrganic,'jupiter:top-organic']]) {
+            try {
+              const rows=await get(this.config.jupiterApiKey,this.http),receivedAt=Date.now();
+              for(const row of rows)this.addCandidate({...jupiter.normalizeDiscoveryRow(row),discoverySource:'jupiter'},{source:endpoint,receivedAt});
+            }
             catch(e){this.log(`Jupiter discovery: ${e.message}`);}
           }
         }
@@ -322,7 +330,7 @@ export class Radar {
   getHealth(){if(this.health.mode==='dashboard'){const h=this.storage.getState('health');if(h.providers)return {...h,mode:'dashboard (worker snapshot)',ready:h.ready&&Date.now()-h.lastMarketAt<this.config.freshMs&&Date.now()-h.lastLoopAt<180000};}
     const now=Date.now(),active=[...this.candidates.values()].filter(x=>!x.inactive||tracking(x)||this.research.trackingPending(x.mint));
     const pending=active.filter(x=>!x.lastAttemptAt);
-    return {...this.health.snapshot(this.config,this.storage.notificationStats()),scannerVersion:'0.2.9',feedEvidenceVersion:FEED_VERSION,entryContextVersion:ENTRY_CONTEXT_VERSION,statisticsReader:statisticsHealth(),statisticsWorker:this.statisticsService?.health()||null,research:{...this.research.stats(now),focus:{limit:Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5))),eligible:this.focusEligibleCount,selected:this.researchFocus.size,fastSelected:this.fastFocusSelected||0,fastAwaitingCapacity:this.fastFocusAwaiting||0,ordinaryDisplaced:this.fastFocusDisplaced||0,
+    return {...this.health.snapshot(this.config,this.storage.notificationStats()),scannerVersion:'0.2.9',feedEvidenceVersion:FEED_VERSION,entryContextVersion:ENTRY_CONTEXT_VERSION,metadataProvenanceVersion:METADATA_VERSION,statisticsReader:statisticsHealth(),statisticsWorker:this.statisticsService?.health()||null,research:{...this.research.stats(now),focus:{limit:Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5))),eligible:this.focusEligibleCount,selected:this.researchFocus.size,fastSelected:this.fastFocusSelected||0,fastAwaitingCapacity:this.fastFocusAwaiting||0,ordinaryDisplaced:this.fastFocusDisplaced||0,
       ready:[...this.researchFocus].filter(m=>{const v=this.research.describe(m,now);return v?.metrics?.ready&&v.stage!=='data unavailable';}).length}},droppedCandidates:this.droppedCandidates||0,
     decisionTrace:{writtenSinceRestart:this.storage.decisionEventsWritten||0,retentionDays:this.config.snapshotDays},
     storageWrites:this.storage.writeStats?.()||null,

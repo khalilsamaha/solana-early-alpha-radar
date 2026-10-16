@@ -3,11 +3,11 @@
 import argparse,hashlib,json,os,re,shutil,subprocess,tempfile,sqlite3,time
 from pathlib import Path
 BUNDLE=Path(__file__).resolve().parent
-DEST=Path('/usr/local/lib/solana-radar-quotes/0.8.0')
+DEST=Path('/usr/local/lib/solana-radar-quotes/0.9.0')
 CONFIG=Path('/etc/solana-radar-quotes.json')
 REPORTS=Path('/var/lib/solana-radar-quotes')
 UNIT=Path('/etc/systemd/system/solana-radar-quotes.service')
-MARKER='# Managed by solana-radar-quote-observer-0.8.0'
+MARKER='# Managed by solana-radar-quote-observer-0.9.0'
 
 def run(args,**kwargs):return subprocess.run(args,check=True,text=True,capture_output=True,timeout=45,**kwargs).stdout.strip()
 def unit(node,database):
@@ -77,7 +77,7 @@ def main():
     config=json.dumps({'managedBy':MARKER,'database':str(database),'reports':str(REPORTS)},indent=2)+'\n'
     service=unit(node,database)
     for path,expected in [(CONFIG,config),(UNIT,service)]:
-        if path.is_symlink() or (path.exists() and path.read_text() not in (expected,expected.replace('0.8.0','0.7.0'),expected.replace('0.8.0','0.6.0'),expected.replace('0.8.0','0.5.0'),expected.replace('0.8.0','0.4.0'),expected.replace('0.8.0','0.3.0'),expected.replace('0.8.0','0.2.0'))):raise RuntimeError('Existing configuration differs; preserved: '+str(path))
+        if path.is_symlink() or (path.exists() and path.read_text() not in (expected,expected.replace('0.9.0','0.8.0'),expected.replace('0.9.0','0.7.0'),expected.replace('0.9.0','0.6.0'),expected.replace('0.9.0','0.5.0'),expected.replace('0.9.0','0.4.0'),expected.replace('0.9.0','0.3.0'),expected.replace('0.9.0','0.2.0'))):raise RuntimeError('Existing configuration differs; preserved: '+str(path))
     for directory in [DEST,REPORTS]:
         if directory.is_symlink():raise RuntimeError('Refusing symlink directory')
     if DEST.exists():
@@ -90,6 +90,10 @@ def main():
         for name in manifest['files']:shutil.copyfile(BUNDLE/name,Path(d)/name)
         result=run([node,'--test','quote-check.test.mjs','observer.test.mjs','sampling.test.mjs','error-evidence.test.mjs','entry-features.test.mjs','pricing-evidence.test.mjs'],cwd=d);print(result)
         print(run(['/usr/bin/python3','-E','-s','-m','unittest','test_manage.py','test_audit.py','test_qualification.py','test_exit_evidence.py','test_install.py'],cwd=d))
+    if (DEST.is_dir() and CONFIG.exists() and UNIT.exists() and CONFIG.read_text()==config and UNIT.read_text()==service
+            and subprocess.run(['systemctl','is-active','--quiet',UNIT.name],timeout=10).returncode==0):
+        if a.enable_service:run(['systemctl','enable',UNIT.name])
+        print('Quote observer 0.9.0 already installed and running; no restart or ledger rewrite.');return
     DEST.mkdir(parents=True,exist_ok=True);REPORTS.mkdir(parents=True,exist_ok=True);os.chmod(REPORTS,0o700)
     for name in manifest['files']:write(DEST/name,(BUNDLE/name).read_bytes(),0o644)
     write(DEST/'manifest.json',(BUNDLE/'manifest.json').read_bytes(),0o644)
@@ -100,7 +104,7 @@ def main():
         ledger=REPORTS/'observer.sqlite'
         if ledger.exists():
             if ledger.is_symlink():raise RuntimeError('Refusing symlink ledger')
-            stamp=time.time_ns();backup=REPORTS/f'pre-0.8.0-{stamp}.sqlite';deadline=time.monotonic()+10
+            stamp=time.time_ns();backup=REPORTS/f'pre-0.9.0-{stamp}.sqlite';deadline=time.monotonic()+10
             def progress(status,remaining,total):
                 if time.monotonic()>deadline:raise RuntimeError('Ledger safety copy exceeded deadline')
             try:
@@ -123,7 +127,7 @@ def main():
         run(['systemctl','daemon-reload'])
         if active:run(['systemctl','start',UNIT.name])
         raise
-    print('Quote observer 0.8.0 installed. Scanner and research tools unchanged; no rebuild needed.')
+    print('Quote observer 0.9.0 installed. Scanner and research tools unchanged; no rebuild needed.')
     print('Observer enabled/restarted.' if a.enable_service or active else 'Service installed, not started.')
     print('Existing ledger and cursor preserved. A running watch may be marked interrupted during the observer restart.')
     print('Versioned entry context is captured from immutable scanner events. Request budgets and sampling are unchanged.')
