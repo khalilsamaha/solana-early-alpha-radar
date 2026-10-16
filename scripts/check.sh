@@ -39,3 +39,12 @@ node --test source-comparison/*.test.mjs
   cd launch-study
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd forward-study
+  python3 -m unittest discover -p 'test_audit.py'
+)
+(
+  cd execution-lab
+  python3 -m unittest discover -p 'test_*.py'
+)

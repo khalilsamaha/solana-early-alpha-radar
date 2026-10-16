@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'research-ml/**'
+      - 'forward-study/**'
       - 'research-dataset/**'
       - 'qualification-review/**'
       - 'launch-study/**'
@@ -10,6 +11,7 @@ on:
   pull_request:
     paths:
       - 'research-ml/**'
+      - 'forward-study/**'
       - 'research-dataset/**'
       - 'qualification-review/**'
       - 'launch-study/**'
@@ -29,9 +31,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.19.0'
       - name: Install isolated research dependencies
         run: |
           python3 -m venv /tmp/radar-ml-venv
           /tmp/radar-ml-venv/bin/python -m pip install -r research-ml/requirements.txt
       - name: Offline benchmark regression tests
-        run: /tmp/radar-ml-venv/bin/python -m unittest discover -s research-ml -p 'test_*.py'
+        run: |
+          /tmp/radar-ml-venv/bin/python -m unittest discover -s research-ml -p 'test_*.py'
+          /tmp/radar-ml-venv/bin/python -m unittest discover -s forward-study -p 'test_model.py'
