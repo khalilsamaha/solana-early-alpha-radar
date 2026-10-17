@@ -60,3 +60,7 @@ The evaluator checks artifact integrity and source identity. It excludes pre-fre
 Metrics include Brier/log loss, AUC where defined, calibration, paired day-block descriptive uncertainty, all-watch and selected-watch states, return means/medians, severe losses, best-token/day removal, and illustrative 1%/3% additional costs on each side. These stresses are not measured fees or fills. Cost assumptions must never be presented as realized P&L; reported provider fees are not subtracted twice.
 
 At least seven UTC days and 200 valid labels per target/cohort are required before reporting the forward minimum reached. This is not automatic approval. Sparse failures can keep the availability model unresolved much longer. Repeated looks, quota sampling, few days and unknown outcomes limit inference. No model or result enables trading; `liveUseAllowed` remains false.
+
+## Detailed readiness review
+
+`readiness_details.py` and `run-review.sh` replay a bounded historical capture with the existing registration and include descriptive returns, failure transitions, entry-feature ages, actual quote request clocks and guard deficits. They do not fit a model or change the protocol. See [release commands](../docs/READINESS-RECONCILIATION-UPDATE.md).

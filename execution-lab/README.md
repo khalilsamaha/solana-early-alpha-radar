@@ -28,3 +28,7 @@ The engine can reopen its own marked simulation ledgers for tests. It refuses ov
 ## Still required before any funded test
 
 A separately reviewed implementation must validate actual chain finality/expiry, RPC outages, blockhash handling, wallet isolation, real balances and token decimals, transaction simulation, spending approval, fee accounting, slippage, independent shutdown and operator recovery. The simulation ledger is not that implementation. No real stop-loss or exit guarantee exists here. Research evidence and explicit funded-test authorization remain separate gates.
+
+## Separate public evidence reader
+
+The [chain reader](../chain-reader/README.md) now provides bounded read-only RPC finality and balance evidence. It is not wired to this simulation ledger or to any production execution state. Missing/uncertain evidence never permits resubmission. Its addition does not implement the funded-test gates above.

@@ -1,4 +1,4 @@
-# Project roadmap — 12 October 2026
+# Project roadmap — updated 17 October 2026
 
 The consolidated direction is [EDGE-RESEARCH-PLAN.md](EDGE-RESEARCH-PLAN.md). [PROJECT-HISTORY.md](PROJECT-HISTORY.md) records prior development.
 
@@ -6,12 +6,12 @@ Goal: evaluate whether launch characteristics and timely evidence select realist
 
 | Stage | Status | Next gate |
 | --- | --- | --- |
-| Hosting, notifications and scanner recovery | Established in supplied host tests | Latest supplied backup statuses report verified; further Backblaze work paused at user request |
+| Hosting, notifications and scanner recovery | Established in supplied host tests | Backblaze retained as pay-as-you-go; recovery of previously failed cloud jobs is not yet verified |
 | Paper, observation-quality and walletless quote evidence | Operating | Preserve failures, timing and versioned denominators |
 | Pool/exit evidence and launch foundation | Deployed; initial host readiness, launch capture and quote backup verified | Monitor sustained coverage, retention and new backup failures |
 | Launch-feature study | Six-hour post-update timing verified; paired feed/route audit built | Rule out local-only/cache-only explanations; define bounded prospective source validation before changing signals |
 | Prospective strategy validation | No demonstrated edge yet | Cost, tail-loss, quote-failure, selection-bias and independent-period gates |
-| Execution engineering | Not implemented | Signing isolation, limits, reconciliation, simulation and exit controls |
+| Execution engineering | Synthetic state-machine lab and read-only chain evidence reader implemented | Actual intent/account-lifecycle reconciliation, signing isolation, simulation and independent exit controls |
 | Funded pilot | Not ready | Evidence and controls plus explicit wallet/action/loss-budget approval |
 
 The current quote budget provides at most 48 watches per cohort per day. Collection time depends on independent usable evidence; 1,000 scanner launches do not mean 1,000 executable samples. There is no justified real-money testing date.
@@ -29,3 +29,7 @@ Consistent entry context was verified on all 802 new signals in the supplied pos
 ## 16 October 2026 — fixed comparison and execution simulation
 
 Metadata provenance passed its first host evidence check. The richer-feature protocol, data audit, model freeze and later evaluator are now implemented; fitting remains conditional on per-target/cohort counts and later unseen evaluation. A simulation-only persistent execution/reconciliation harness is implemented and tested. Live chain integration, signing and independent live stop controls remain unimplemented. See [release notes](FORWARD-AND-SIMULATION-UPDATE.md). No profit claim or funded-test date follows from this engineering milestone.
+
+## 17 October 2026 — readiness details and public chain evidence
+
+Reviewed 166 compatible watches across two UTC days. All three cohorts still fail the fixed fitting guards and have negative mean returned 30-second quoted changes. Added richer failure-aware readiness reports, a bounded public RPC evidence reader with offline tests, and source/container deployment inventory. The scanner and observer remain unchanged. See [commands, evidence and remaining gates](READINESS-RECONCILIATION-UPDATE.md). No model is trained or activated; the reader does not sign, submit or reconcile into a trading ledger.

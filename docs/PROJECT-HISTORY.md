@@ -365,3 +365,9 @@ The 04:31–05:31 UTC source export replayed exactly with 124 eligible signals, 
 Added separate return/quote-availability targets, a versioned feature protocol and local registration, training guards, immutable numeric-weight model freezing, and an evaluator that excludes pre-freeze and seen-token evidence without retraining. Reports retain unknown outcomes and independent baselines. No model has been fitted on the supplied five-watch upload.
 
 Added a simulation-only SQLite execution state machine to test unknown outcomes, duplicate submissions, balance/transaction binding, fees, limits, stop behavior and restart recovery. No wallet, chain integration or order-sending code is present. Backblaze's reported download cap is consistent with whole-archive verification downloads approaching 1 GB; configuration remains unchanged and latest completion status still needs local evidence. Details: `FORWARD-AND-SIMULATION-UPDATE.md`.
+
+## 17 October 2026 — detailed readiness, read-only chain reconciliation and deployment identity
+
+The 72-hour capture ending 09:44 UTC rebuilt with 395 watches, of which 166 have protocol-compatible entry provenance (50 baseline, 59 early-activity, 57 Fast30). All existing readiness guards replay unchanged and still fail. Returned 30-second mean quoted changes are negative in all cohorts; failure denominators and recovery remain explicit. No model was fitted.
+
+Added an offline descriptive readiness report, a public two-method Solana RPC evidence reader with synthetic transport/finality/balance tests, and a host/container source hash inventory. No production service or strategy changes are needed. Reader outputs never authorize resubmission or update a ledger; actual intent validation, account lifecycle reconciliation and signing remain unimplemented. Backblaze remains pay-as-you-go with recovery of prior failures unverified. See `READINESS-RECONCILIATION-UPDATE.md` for host commands and limits.
