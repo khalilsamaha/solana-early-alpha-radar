@@ -59,3 +59,8 @@ node --test source-comparison/*.test.mjs
   cd intent-lab
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd intent-journal
+  python3 -m unittest discover -p 'test_*.py'
+)

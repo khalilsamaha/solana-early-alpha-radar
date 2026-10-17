@@ -377,3 +377,9 @@ Added an offline descriptive readiness report, a public two-method Solana RPC ev
 The 16:15 UTC host reports matched all 52 host scanner files, 51 container files and 27 observer files. Scanner health was green with zero restarts, and observer 0.9.0 was running. Offline chain cases and the reused 09:44 UTC readiness capture matched local results exactly.
 
 Added an independent offline transaction-intent lab: expected message binding, public wallet/token account identities, integer input/minimum-output and fee/rent checks, bounded standard SPL lifecycle evidence and finalized-failure fee accounting. It reports unsupported/unknown cases without inferring execution or resubmission permission. No production, sampling, protocol, model, signing or backup changes. Synthetic host self-check is pending. See `INTENT-RECONCILIATION-UPDATE.md`.
+
+## 17 October 2026 — intent host check passed; signed journal developed
+
+The 16:49 UTC host report exactly matched all six prior intent scenarios, including unresolved submission and unexpected-debit rejection. No network request or ledger mutation occurred in that check.
+
+Added `intent-journal`: strict raw transaction decoding, built-in Node Ed25519 verification of every required signature, signed-to-declared message binding and durable local SQLite intents. It preserves a committed submission-unknown state across crashes, rejects duplicate/conflicting intents, keeps receipt retries idempotent and quarantines contradictory final outcomes. The default self-check uses public synthetic signed fixtures and temporary journals; its signatures are real but its RPC finality and balances are hypothetical. No keys, signing, sending, strategy or production changes are included. Host validation is pending. See `SIGNED-INTENT-JOURNAL-UPDATE.md`.

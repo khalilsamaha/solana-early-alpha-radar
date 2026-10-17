@@ -11,7 +11,7 @@ Goal: evaluate whether launch characteristics and timely evidence select realist
 | Pool/exit evidence and launch foundation | Deployed; initial host readiness, launch capture and quote backup verified | Monitor sustained coverage, retention and new backup failures |
 | Launch-feature study | Six-hour post-update timing verified; paired feed/route audit built | Rule out local-only/cache-only explanations; define bounded prospective source validation before changing signals |
 | Prospective strategy validation | No demonstrated edge yet | Cost, tail-loss, quote-failure, selection-bias and independent-period gates |
-| Execution engineering | Synthetic state-machine lab and read-only chain evidence reader implemented | Actual intent/account-lifecycle reconciliation, signing isolation, simulation and independent exit controls |
+| Execution engineering | Offline intent/lifecycle reconciliation, signed-byte verification and persistent intent journal implemented | Recorded-chain/devnet validation, cluster/lookup identity, signer isolation, simulation and independent exit controls |
 | Funded pilot | Not ready | Evidence and controls plus explicit wallet/action/loss-budget approval |
 
 The current quote budget provides at most 48 watches per cohort per day. Collection time depends on independent usable evidence; 1,000 scanner launches do not mean 1,000 executable samples. There is no justified real-money testing date.
@@ -37,3 +37,7 @@ Reviewed 166 compatible watches across two UTC days. All three cohorts still fai
 ## 17 October 2026 — offline transaction-intent comparison
 
 Host inventory and readiness replay for the prior release passed. Added a separate offline lab binding declared transaction messages to wallet/token/native-balance expectations, with narrow standard SPL creation/closure checks and fee-only failed receipts. No signer or execution integration exists. Next: independently verified transaction identity, durable prior intents and recorded/devnet validation, while collecting the unchanged research protocol. See [release notes](INTENT-RECONCILIATION-UPDATE.md).
+
+## 17 October 2026 — signed identity and durable intent journal
+
+The prior six-case host self-check passed. Added strict legacy/v0 wire decoding, all-required-signature Ed25519 verification and a private SQLite intent journal with atomic registration, duplicate protection, a one-time unresolved submission boundary, restart recovery and sticky quarantine. No sender or signer exists; the eleven-case host self-check is pending. ALT-bearing messages remain unsupported until independent lookup resolution is implemented. Next: recorded-chain identity validation and separately scoped devnet tests, while the unchanged research protocol continues. See [release commands and scope](SIGNED-INTENT-JOURNAL-UPDATE.md).
