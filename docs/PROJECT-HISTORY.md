@@ -371,3 +371,9 @@ Added a simulation-only SQLite execution state machine to test unknown outcomes,
 The 72-hour capture ending 09:44 UTC rebuilt with 395 watches, of which 166 have protocol-compatible entry provenance (50 baseline, 59 early-activity, 57 Fast30). All existing readiness guards replay unchanged and still fail. Returned 30-second mean quoted changes are negative in all cohorts; failure denominators and recovery remain explicit. No model was fitted.
 
 Added an offline descriptive readiness report, a public two-method Solana RPC evidence reader with synthetic transport/finality/balance tests, and a host/container source hash inventory. No production service or strategy changes are needed. Reader outputs never authorize resubmission or update a ledger; actual intent validation, account lifecycle reconciliation and signing remain unimplemented. Backblaze remains pay-as-you-go with recovery of prior failures unverified. See `READINESS-RECONCILIATION-UPDATE.md` for host commands and limits.
+
+## 17 October 2026 — host release verified; intent reconciliation added
+
+The 16:15 UTC host reports matched all 52 host scanner files, 51 container files and 27 observer files. Scanner health was green with zero restarts, and observer 0.9.0 was running. Offline chain cases and the reused 09:44 UTC readiness capture matched local results exactly.
+
+Added an independent offline transaction-intent lab: expected message binding, public wallet/token account identities, integer input/minimum-output and fee/rent checks, bounded standard SPL lifecycle evidence and finalized-failure fee accounting. It reports unsupported/unknown cases without inferring execution or resubmission permission. No production, sampling, protocol, model, signing or backup changes. Synthetic host self-check is pending. See `INTENT-RECONCILIATION-UPDATE.md`.

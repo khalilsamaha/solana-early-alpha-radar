@@ -21,3 +21,5 @@ Missing owner/recording or an account present on only one token-balance side sta
 Before using any such evidence in an execution state machine, implement and independently test expected-intent/instruction checks, native/token account lifecycle handling, mint-program and extension checks, current spendability, trusted RPC/finality policy, blockhash expiry and reconciliation after uncertain submissions. This release does not implement those gates or enable live execution. Its automated tests use synthetic legacy/v0 responses and mock transport; no live RPC observation is claimed.
 
 Reference semantics: [getSignatureStatuses](https://solana.com/docs/rpc/http/getsignaturestatuses), [getTransaction](https://solana.com/docs/rpc/http/gettransaction), [JSON structures](https://solana.com/docs/rpc/json-structures).
+
+The [offline intent lab](../intent-lab/README.md) adds message/balance expectations and a narrow standard SPL account lifecycle evidence path. It requires full original RPC evidence, not this reader's summarized report, and never updates a ledger.

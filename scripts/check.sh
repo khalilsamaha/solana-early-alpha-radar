@@ -54,3 +54,8 @@ node --test source-comparison/*.test.mjs
   cd chain-reader
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd intent-lab
+  python3 -m unittest discover -p 'test_*.py'
+)

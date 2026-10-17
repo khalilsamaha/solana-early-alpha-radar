@@ -32,3 +32,5 @@ A separately reviewed implementation must validate actual chain finality/expiry,
 ## Separate public evidence reader
 
 The [chain reader](../chain-reader/README.md) now provides bounded read-only RPC finality and balance evidence. It is not wired to this simulation ledger or to any production execution state. Missing/uncertain evidence never permits resubmission. Its addition does not implement the funded-test gates above.
+
+The [offline intent lab](../intent-lab/README.md) compares declared prepared-message and balance expectations with raw RPC evidence. It remains separate from this simulation ledger; there is no adapter that promotes a comparison result into an execution transition.
