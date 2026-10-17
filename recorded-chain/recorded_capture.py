@@ -46,15 +46,18 @@ def project_transaction(tx):
 
 
 class Client:
+    METHODS = ('getGenesisHash', 'getSignaturesForAddress', 'getTransaction', 'getSignatureStatuses')
+    REQUEST_CAP = 6
+
     def __init__(self, network, opener=None):
         if network not in ENDPOINTS: raise ValueError('Unsupported network')
         self.network, self.calls = network, []
         self.opener = opener or urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
 
     def request(self, method, params):
-        if method not in ('getGenesisHash', 'getSignaturesForAddress', 'getTransaction', 'getSignatureStatuses'):
+        if method not in self.METHODS:
             raise ValueError('RPC method not allowed')
-        if len(self.calls) >= 6: raise ValueError('RPC request cap')
+        if len(self.calls) >= self.REQUEST_CAP: raise ValueError('RPC request cap')
         request_id = len(self.calls) + 1
         record = {'method': method, 'id': request_id}
         if method == 'getTransaction': record['encoding'] = params[1]['encoding']

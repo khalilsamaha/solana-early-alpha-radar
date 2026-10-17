@@ -80,3 +80,27 @@ Primary references:
 - https://solana.com/docs/rpc/http/getsignaturestatuses
 - https://solana.com/docs/core/transactions/versioned-transactions
 - Known genesis constants: https://github.com/solana-labs/solana/blob/master/sdk/src/genesis_config.rs
+
+## Lookup account follow-up
+
+`lookup_cli.py --live --input <recorded-report.json.gz> --output <new-report.json.gz>`
+re-verifies the existing capture before at most three reads for its referenced table accounts.
+`--replay <lookup-report.json.gz> --output <new-report.json.gz>` uses no network.
+See [lookup scope, commands and reboot recovery](../docs/LOOKUP-EVIDENCE-UPDATE.md).
+
+The lookup result is current RPC account consistency only. The original transaction review
+is not rewritten; journal ALT rejection is unchanged. Account nulls, temporal uncertainty,
+wrong ownership and incompatible index state remain explicit. Tests synthesize table bytes
+for the two-table public message; synthetic account rows are not presented as chain captures.
+
+The two-table public fixture was supplied by the user from their successful Kali capture
+at 2026-10-17T21:54:25.147Z (capture hash
+`1bbf74bcbb02be2457ba081f7b8026f3d47f41e36bc900d8ad1264c5d84212dc`).
+It is an existing public transaction, not a transaction created by this project.
+
+`devnet-lookup-fixture.json` contains an actual three-request account capture made during
+development for that same two-table transaction. It resolves all 14 referenced addresses
+consistently; the second table was extended after the transaction, and the replay correctly
+retains `unknown-later-extension`. The capture records that the development environment's
+standard HTTPS proxy route was used; the shipped CLI disables environment proxies. CI
+replays the saved bytes and never contacts an RPC endpoint.
