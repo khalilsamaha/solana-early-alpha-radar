@@ -23,3 +23,5 @@ Before using any such evidence in an execution state machine, implement and inde
 Reference semantics: [getSignatureStatuses](https://solana.com/docs/rpc/http/getsignaturestatuses), [getTransaction](https://solana.com/docs/rpc/http/gettransaction), [JSON structures](https://solana.com/docs/rpc/json-structures).
 
 The [offline intent lab](../intent-lab/README.md) adds message/balance expectations and a narrow standard SPL account lifecycle evidence path. It requires full original RPC evidence, not this reader's summarized report, and never updates a ledger.
+
+The [recorded-chain checker](../recorded-chain/README.md) additionally captures both wire and JSON representations, verifies all required signatures and checks RPC genesis identity before/after collection. It retains a real public devnet capture for offline replay, while explicitly leaving ALT resolution and prior-intent proof unavailable.

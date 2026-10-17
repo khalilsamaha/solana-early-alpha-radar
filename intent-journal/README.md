@@ -64,3 +64,5 @@ Primary format/crypto references:
 - https://solana.com/docs/core/transactions/transaction-structure
 - https://solana.com/docs/core/transactions/versioned-transactions
 - https://nodejs.org/docs/latest-v24.x/api/crypto.html#cryptoverifyalgorithm-data-key-signature-callback
+
+The [recorded-chain checker](../recorded-chain/README.md) uses a lower-level signature verifier to compare actual public wire bytes with RPC JSON, including signed ALT descriptors. That does not resolve ALT addresses or relax this journal's admission rules. The original verified-wire identity contract is preserved.

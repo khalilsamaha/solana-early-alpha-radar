@@ -54,7 +54,7 @@ class Cursor:
         raise ValueError('shortvec-overflow')
 
 
-def parse(encoded):
+def decode_wire(encoded):
     check(isinstance(encoded, str) and len(encoded) <= 1644, 'wire-byte-cap')
     raw = base64.b64decode(encoded, validate=True)
     check(base64.b64encode(raw).decode() == encoded and 1 <= len(raw) <= 1232, 'invalid-wire-encoding')
@@ -86,17 +86,29 @@ def parse(encoded):
                'instructions': instructions}
     if version == 0:
         message['addressTableLookups'] = lookups
-    # Resolve no lookup table from caller-supplied metadata. This journal deliberately
-    # refuses ALT-bearing messages until an independently checked resolver exists.
-    check(not lookups, 'address-lookup-resolution-not-supported')
+    total = len(keys) + sum(len(l['writableIndexes']) + len(l['readonlyIndexes']) for l in lookups)
+    check(1 <= total <= 256 and len(set(keys)) == len(keys), 'duplicate-or-excessive-keys')
+    check(0 <= header['numReadonlySignedAccounts'] < first and
+          header['numReadonlyUnsignedAccounts'] <= len(keys) - first, 'invalid-header-counts')
+    check(bool(instructions) and all(i['programIdIndex'] < total and all(a < total for a in i['accounts'])
+                                    for i in instructions), 'instruction-index-or-count')
     tx = {'version': version, 'transaction': {'signatures': [b58(s) for s in signatures], 'message': message},
           'meta': {'loadedAddresses': {'writable': [], 'readonly': []}}}
+    return raw, raw[start:], keys[:first], signatures, tx
+
+
+def parse(encoded):
+    parts = decode_wire(encoded)
+    tx = parts[4]
+    # Journal behavior stays strict; descriptor verification is not ALT resolution.
+    check(not tx['transaction']['message'].get('addressTableLookups'), 'address-lookup-resolution-not-supported')
     canonical_hash = binding(tx)[0]  # header, key uniqueness and instruction bounds
-    return raw, raw[start:], keys[:first], signatures, tx, canonical_hash
+    return (*parts, canonical_hash)
 
 
-def verify_wire(encoded):
-    raw, message, keys, signatures, tx, canonical_hash = parse(encoded)
+def verify_signed_message(encoded):
+    """Authenticate wire bytes and lookup descriptors; does NOT resolve ALT addresses."""
+    raw, message, keys, signatures, tx = decode_wire(encoded)
     node = shutil.which('node')
     check(node is not None, 'node-runtime-unavailable')
     payload = {'message': base64.b64encode(message).decode(), 'signers': [
@@ -108,6 +120,15 @@ def verify_wire(encoded):
         env={'PATH': os.defpath})
     check(p.returncode == 0 and p.stdout == '{"valid":true}', 'invalid-ed25519-signature')
     return {'format': 'verified-wire-1', 'wireSha256': hashlib.sha256(raw).hexdigest(),
-            'wireMessageSha256': hashlib.sha256(message).hexdigest(), 'canonicalMessageSha256': canonical_hash,
+            'wireMessageSha256': hashlib.sha256(message).hexdigest(),
             'signatures': tx['transaction']['signatures'], 'wallet': tx['transaction']['message']['accountKeys'][0],
-            'version': tx['version'], 'requiredSignatures': len(signatures), 'signatureVerified': True}
+            'version': tx['version'], 'requiredSignatures': len(signatures), 'signatureVerified': True,
+            'addressLookupCount': len(tx['transaction']['message'].get('addressTableLookups', []))}
+
+
+def verify_wire(encoded):
+    canonical_hash = parse(encoded)[5]
+    verified = verify_signed_message(encoded)
+    # Preserve the prior journal identity contract and idempotent registration hash.
+    del verified['addressLookupCount']
+    return {**verified, 'canonicalMessageSha256': canonical_hash}

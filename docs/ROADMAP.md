@@ -41,3 +41,7 @@ Host inventory and readiness replay for the prior release passed. Added a separa
 ## 17 October 2026 — signed identity and durable intent journal
 
 The prior six-case host self-check passed. Added strict legacy/v0 wire decoding, all-required-signature Ed25519 verification and a private SQLite intent journal with atomic registration, duplicate protection, a one-time unresolved submission boundary, restart recovery and sticky quarantine. No sender or signer exists; the eleven-case host self-check is pending. ALT-bearing messages remain unsupported until independent lookup resolution is implemented. Next: recorded-chain identity validation and separately scoped devnet tests, while the unchanged research protocol continues. See [release commands and scope](SIGNED-INTENT-JOURNAL-UPDATE.md).
+
+## 17 October 2026 — signed journal host verified; recorded chain identity
+
+The eleven-case host self-check passed with exact local replay. A newly captured existing public devnet transaction now verifies cryptographically against raw bytes and matches RPC JSON, with before/after cluster identity checks. Its ALT references are signed, but resolved addresses remain explicitly unverified. Added bounded single-transaction capture, replayable public evidence and adversarial cross-encoding/transport tests. No own transaction was submitted. Next: lookup-state resolution/provenance before integrating an independently controlled devnet execution workflow. See [recorded-chain release](RECORDED-CHAIN-UPDATE.md).
