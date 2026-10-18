@@ -145,10 +145,11 @@ class Session:
         try: yield; self.db.execute('COMMIT')
         except BaseException: self.db.execute('ROLLBACK'); raise
 
-    def record(self,intent,now):
+    def record(self,intent,now,replace_expired=False):
         with self.tx():
             check(integer(now) and now>0,'invalid-clock')
-            check(self.db.execute('SELECT COUNT(*) FROM plans').fetchone()[0]==0,'plan-already-recorded-use-status')
+            rows=self.db.execute('SELECT state FROM plans ORDER BY id LIMIT 3').fetchall()
+            check(not rows or (replace_expired and len(rows)==1 and rows[0]['state']=='expired-unsubmitted'),'plan-already-recorded-use-status')
             self.db.execute('INSERT INTO plans(at_ms,intent,state) VALUES (?,?,?)',(now,json.dumps(intent,sort_keys=True),'intent-recorded'))
             return self.db.execute('SELECT last_insert_rowid()').fetchone()[0]
 
@@ -168,8 +169,8 @@ class Session:
             self.db.execute('UPDATE plans SET state=?,result=? WHERE id=?',(result['state'],json.dumps(result,sort_keys=True),plan_id))
 
     def status(self):
-        rows=self.db.execute('SELECT id,at_ms,intent,state,result FROM plans ORDER BY id LIMIT 2').fetchall()
-        check(len(rows)<=1,'plan-cap')
+        rows=self.db.execute('SELECT id,at_ms,intent,state,result FROM plans ORDER BY id LIMIT 3').fetchall()
+        check(len(rows)<=2,'plan-cap')
         return {'format':'devnet-session-status-1','wallet':self.wallet,'plans':[
             {'id':r['id'],'recordedAtMs':r['at_ms'],'intent':json.loads(r['intent']),'state':r['state'],
              'result':json.loads(r['result']) if r['result'] else None} for r in rows],
@@ -211,14 +212,15 @@ def account_value(a):
     return a['lamports']
 
 
-def prepare(home,opener=None,clock=None):
+def prepare(home,opener=None,clock=None,*,replace_expired=False,_session=None):
     clock=clock or (lambda:time.time_ns()//1000000)
     rpc=Rpc(opener); plan_id=None
     result={'format':'devnet-preparation-1','state':'blocked','reason':None,'maximumFeeLamports':MAX_FEE,
             'fixedSelfTransferLamports':1,'requests':rpc.calls,'signed':False,'simulationPassed':False,**FLAGS}
-    with Session(home) as session:
+    with (contextlib.nullcontext(_session) if _session is not None else Session(home)) as session:
         result['wallet']=session.wallet
-        check(not session.status()['plans'],'plan-already-recorded-use-status')
+        plans=session.status()['plans']
+        check(not plans or (replace_expired and len(plans)==1 and plans[0]['state']=='expired-unsubmitted'),'plan-already-recorded-use-status')
         try:
             check(received(rpc.request('getGenesisHash',[]))==GENESIS['devnet'],'wrong-cluster')
             slot,a=context_value(rpc.request('getAccountInfo',[session.wallet,{'encoding':'base64','commitment':'finalized'}]),0)
@@ -237,7 +239,7 @@ def prepare(home,opener=None,clock=None):
                 'quotedFeeLamports':fee,'walletObservedLamports':str(balance),'contextSlot':slot,
                 'blockhash':bh['blockhash'],'lastValidBlockHeight':bh['lastValidBlockHeight'],
                 'messageSha256':hashlib.sha256(msg).hexdigest()}
-            plan_id=session.record(intent,clock()); result['planId']=plan_id
+            plan_id=session.record(intent,clock(),replace_expired=replace_expired); result['planId']=plan_id
             signature=base64.b64decode(signer(session.home,'sign',messageBase64=encoded)['signatureBase64'],validate=True)
             check(len(signature)==64,'invalid-signature-length')
             wire=base64.b64encode(bytes([1])+signature+msg).decode()

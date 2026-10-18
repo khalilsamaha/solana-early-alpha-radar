@@ -11,7 +11,7 @@ Goal: evaluate whether launch characteristics and timely evidence select realist
 | Pool/exit evidence and launch foundation | Deployed; initial host readiness, launch capture and quote backup verified | Monitor sustained coverage, retention and new backup failures |
 | Launch-feature study | Six-hour post-update timing verified; paired feed/route audit built | Rule out local-only/cache-only explanations; define bounded prospective source validation before changing signals |
 | Prospective strategy validation | No demonstrated edge yet | Cost, tail-loss, quote-failure, selection-bias and independent-period gates |
-| Execution engineering | Offline intent/lifecycle reconciliation, signed-byte verification and persistent intent journal implemented | Recorded-chain/devnet validation, cluster/lookup identity, signer isolation, simulation and independent exit controls |
+| Execution engineering | Live devnet simulation passed; controlled single-send and recovery implemented | Host receipt validation, token lifecycle and independent spend/position/exit controls |
 | Funded pilot | Not ready | Evidence and controls plus explicit wallet/action/loss-budget approval |
 
 The current quote budget provides at most 48 watches per cohort per day. Collection time depends on independent usable evidence; 1,000 scanner launches do not mean 1,000 executable samples. There is no justified real-money testing date.
@@ -53,3 +53,7 @@ The Kali recorded-chain capture passed exact offline replay, including two signe
 ## 18 October 2026 — dedicated devnet preparation
 
 Current lookup consistency passed host replay for 14 addresses in two tables. Recovery capture shows services available, while reported reboot timing conflicts with recorded boot/process times and remains unresolved. Added a standalone dedicated devnet wallet initializer, restricted self-transfer signer, durable prior intent and optional signed simulation. There is no broadcaster. First host gate: offline self-check and public wallet report; then explicit devnet simulation. Next: controlled devnet submission/finality/unknown-outcome recovery, token lifecycle and independent stop controls. Strategy fitting and real-money gates remain independent and unmet in the latest reviewed audit. See [release notes](DEVNET-REHEARSAL-UPDATE.md).
+
+## 18 October 2026 — live simulation passed; controlled submission built
+
+The dedicated wallet's live devnet simulation passed with 5,000 simulated lamports of fee and no submission. Added explicit one-send devnet execution, preserved expired-plan replacement (at most one), durable unknown-before-transport state, bounded finality/receipt checks, separate read-only recovery and a persistent stop marker. Host submission remains pending. Next: review its actual receipt, then token lifecycle and independent spend/position controls. Strategy and funded-pilot gates are unchanged. See [submission release](DEVNET-SUBMISSION-UPDATE.md).

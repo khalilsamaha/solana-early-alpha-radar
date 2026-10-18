@@ -25,7 +25,7 @@ class FakeRpc:
         elif method=='simulateTransaction':
             if self.home:
                 with sqlite3.connect(self.home/'rehearsal.sqlite') as db:
-                    row=db.execute('SELECT state,signed_wire FROM plans').fetchone()
+                    row=db.execute('SELECT state,signed_wire FROM plans ORDER BY id DESC LIMIT 1').fetchone()
                 assert row==('signed-not-submitted',p['params'][0]), 'Signed bytes must be committed before simulation'
             if mode=='timeout': raise URLError('private-error-marker')
             v={'err':None,'accounts':[account(995000)],'fee':5000,
