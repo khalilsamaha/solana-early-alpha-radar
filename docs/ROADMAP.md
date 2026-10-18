@@ -1,4 +1,4 @@
-# Project roadmap — updated 17 October 2026
+# Project roadmap — updated 18 October 2026
 
 The consolidated direction is [EDGE-RESEARCH-PLAN.md](EDGE-RESEARCH-PLAN.md). [PROJECT-HISTORY.md](PROJECT-HISTORY.md) records prior development.
 
@@ -49,3 +49,7 @@ The eleven-case host self-check passed with exact local replay. A newly captured
 ## 18 October 2026 — lookup consistency and outage recovery
 
 The Kali recorded-chain capture passed exact offline replay, including two signed lookup descriptors. A separate bounded lookup-account audit now checks account bytes, owners, indices and address ordering while keeping historical state and execution approval unproven. Journal ALT admission remains blocked. The user reported approximately three hours of reboot downtime; a read-only recovery capture checks services, polling and timers. Exact outage bounds and recovery are pending host evidence. Next: review these reports and build a controlled simple devnet intent workflow alongside unchanged forward collection. See [lookup release](LOOKUP-EVIDENCE-UPDATE.md).
+
+## 18 October 2026 — dedicated devnet preparation
+
+Current lookup consistency passed host replay for 14 addresses in two tables. Recovery capture shows services available, while reported reboot timing conflicts with recorded boot/process times and remains unresolved. Added a standalone dedicated devnet wallet initializer, restricted self-transfer signer, durable prior intent and optional signed simulation. There is no broadcaster. First host gate: offline self-check and public wallet report; then explicit devnet simulation. Next: controlled devnet submission/finality/unknown-outcome recovery, token lifecycle and independent stop controls. Strategy fitting and real-money gates remain independent and unmet in the latest reviewed audit. See [release notes](DEVNET-REHEARSAL-UPDATE.md).

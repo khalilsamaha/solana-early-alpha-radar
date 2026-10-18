@@ -22,3 +22,5 @@ radar-*.json
 radar-*.json.gz
 *.log
 .DS_Store
+*.pk8
+solana-radar-devnet-rehearsal/

@@ -69,3 +69,8 @@ node --test source-comparison/*.test.mjs
   cd recorded-chain
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd devnet-rehearsal
+  python3 -m unittest discover -p 'test_*.py'
+)
