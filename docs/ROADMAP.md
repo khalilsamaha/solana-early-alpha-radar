@@ -11,7 +11,7 @@ Goal: evaluate whether launch characteristics and timely evidence select realist
 | Pool/exit evidence and launch foundation | Deployed; initial host readiness, launch capture and quote backup verified | Monitor sustained coverage, retention and new backup failures |
 | Launch-feature study | Six-hour post-update timing verified; paired feed/route audit built | Rule out local-only/cache-only explanations; define bounded prospective source validation before changing signals |
 | Prospective strategy validation | No demonstrated edge yet | Cost, tail-loss, quote-failure, selection-bias and independent-period gates |
-| Execution engineering | Devnet self-transfer finalized and terminal recovery verified; signed token accounting implemented offline | Recorded/devnet token lifecycle evidence, router validation and independent spend/position/exit controls |
+| Execution engineering | Devnet self-transfer/recovery and host synthetic token checks passed; recorded token-flow capture implemented | Review actual token capture; supported lifecycle/router validation and independent spend/position/exit controls |
 | Funded pilot | Not ready | Evidence and controls plus explicit wallet/action/loss-budget approval |
 
 The current quote budget provides at most 48 watches per cohort per day. Collection time depends on independent usable evidence; 1,000 scanner launches do not mean 1,000 executable samples. There is no justified real-money testing date.
@@ -63,3 +63,8 @@ The dedicated wallet's live devnet simulation passed with 5,000 simulated lampor
 Host submission at 09:36 UTC reported a finalized one-lamport self-transfer, exactly one send request and a 5,000-lamport fee. Both public signatures/message hashes were independently replayed from the reports. Fresh-process recovery at 09:40 UTC preserved the same receipt and single boundary with zero network requests. This verifies local terminal recovery, not a second independent chain-finality observation or a forced power-loss test.
 
 Added a standalone offline signed-token reconciler: full signed identity, standard SPL transfer-flow checks, creation/closure ordering, fee/rent separation, explicit failed/unknown outcomes, and a narrow existing-WSOL accounting path. Default intent-lab and durable-journal WSOL admission remain blocked. Next: host self-check, recorded/devnet token evidence, then supported wrap/unwrap and router-specific validation before any connection to an execution ledger. No signal, model, quote budget, mainnet execution or backup changes. See [release notes](TOKEN-RECONCILIATION-UPDATE.md).
+
+
+## 18 October 2026 — host token checks passed; recorded flow capture built
+
+The twelve-case signed-token host report replayed exactly. Added a separate read-only public token capture and replayable ordered flow check covering recorded counterparties, fees, supported funding/refunds and existing WSOL. Historical results explicitly do not establish prior intent. The development RPC attempt was unavailable; actual token capture remains pending on Kali. No additional day-long collection wait is needed for this gate. Next: inspect the selected transaction and address its supported lifecycle requirements before extending devnet execution. See [commands and boundaries](RECORDED-TOKEN-FLOWS-UPDATE.md).

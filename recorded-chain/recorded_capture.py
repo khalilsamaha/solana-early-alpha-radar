@@ -14,6 +14,7 @@ GENESIS = {
     'mainnet-beta': '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d',
 }
 SYSTEM = '11111111111111111111111111111111'
+TOKEN = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
 MAX_RESPONSE = 4 * 1024 * 1024
 MAX_CAPTURE = 20 * 1024 * 1024
 META = ('err', 'fee', 'preBalances', 'postBalances', 'preTokenBalances', 'postTokenBalances',
@@ -93,15 +94,17 @@ class Client:
         return result
 
 
-def collect(network='devnet', signature=None, sample=False, opener=None):
+def collect(network='devnet', signature=None, sample=False, opener=None, *, sample_program=SYSTEM):
     if network not in GENESIS or sample != (signature is None) or (sample and network != 'devnet'):
         raise ValueError('Use explicit signature/network or one devnet sample')
+    if sample_program not in (SYSTEM, TOKEN) or (not sample and sample_program != SYSTEM):
+        raise ValueError('Unsupported sample program')
     if signature is not None: base58(signature, 64)
     client = Client(network, opener)
     evidence = {k: {'state': 'not-requested'} for k in
                 ('genesisBefore', 'discovery', 'transactionJson', 'transactionBase64', 'signatureStatus', 'genesisAfter')}
     report = {'format': 'recorded-chain-capture-1', 'origin': 'public-rpc-capture', 'network': network,
-        'selection': 'recent-system-program-devnet' if sample else 'explicit-signature',
+        'selection': ('recent-token-program-devnet' if sample_program == TOKEN else 'recent-system-program-devnet') if sample else 'explicit-signature',
         'signature': signature, 'startedAtMs': time.time_ns() // 1000000,
         'evidence': evidence, 'requests': client.calls, 'transactionsSent': 0, 'ledgerUpdated': False}
 
@@ -113,7 +116,7 @@ def collect(network='devnet', signature=None, sample=False, opener=None):
         if not fetch('genesisBefore', 'getGenesisHash', []): return
         if evidence['genesisBefore']['result'] != GENESIS[network]: return
         if sample:
-            if not fetch('discovery', 'getSignaturesForAddress', [SYSTEM, {'limit': 1, 'commitment': 'finalized'}]): return
+            if not fetch('discovery', 'getSignaturesForAddress', [sample_program, {'limit': 1, 'commitment': 'finalized'}]): return
             rows = evidence['discovery']['result']
             if not rows: return
             candidate = rows[0]

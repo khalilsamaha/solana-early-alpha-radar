@@ -104,3 +104,15 @@ consistently; the second table was extended after the transaction, and the repla
 retains `unknown-later-extension`. The capture records that the development environment's
 standard HTTPS proxy route was used; the shipped CLI disables environment proxies. CI
 replays the saved bytes and never contacts an RPC endpoint.
+
+
+## Standard token-program sampling
+
+The existing CLI still samples the System program by default. The separate
+[token capture CLI](../token-reconciliation/README.md#recorded-token-flow-capture-and-replay)
+uses the same bounded transport with `sample_program=TOKEN` and records
+`selection=recent-token-program-devnet`. Review binds that selection to the
+selected signature, finalized slot/error and presence of the selected program
+in the signed/resolved key list. It does not assert that every transaction
+referencing the program performs a token transfer. No extra selection, retry,
+lookup resolution or sender is introduced.

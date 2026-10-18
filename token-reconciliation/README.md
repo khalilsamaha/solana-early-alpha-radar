@@ -63,3 +63,25 @@ Primary references checked 18 October 2026:
 - https://www.solana-program.com/docs/token
 - https://solana.com/docs/tokens/basics/sync-native
 - https://solana.com/docs/tokens/basics/close-account
+
+
+## Recorded token-flow capture and replay
+
+`capture_cli.py` is a separate historical-evidence workflow. It never constructs a prior intent from the observed outcome and does not call the prior-intent auditor with invented expectations.
+
+- Default: eleven public synthetic offline checks; output `recorded-token-self-check-1`.
+- `--sample-devnet`: exactly one newest finalized standard SPL Token program discovery row, then its JSON/base64 transaction and signature status with before/after genesis checks. At most six public RPC reads. Unsupported/failed selections are retained without resampling.
+- `--network devnet --signature <public-signature>`: explicit capture, at most five reads. Explicit `mainnet-beta` is also read-only; there is no automatic mainnet discovery.
+- `--input <capture-or-report.json.gz>`: entirely offline replay. Accepts original `recorded-chain-report-1` and new `recorded-token-report-1` envelopes, or a raw capture.
+- `--output <new-path>` is always required. Input is capped at 20 MiB decompressed, RPC responses at 4 MiB each, with duplicate/nonfinite JSON rejected. Private atomic output refuses overwrite. Fixed public endpoints, no redirects/environment proxies/retries; each RPC call has a ten-second socket timeout. No wallet directory or private material is read.
+
+Recorded successful accounting checks all recorded token endpoints and all native balance deltas. Decoded standard SPL transfer quantities are applied in instruction order, with intermediate underflow/overflow checks. Source owner authority, mint, program and decimals must match. Supported creation is System CreateAccount followed by InitializeAccount3; supported closure must empty a non-native account before refund. Existing WSOL requires unchanged positive implied backing and matching native/token movement. Raw missing lifecycle endpoints remain null in exported summaries. Failed finalized receipts must preserve token balances and have only the payer fee as native change.
+
+Results never approve execution or resubmission. Unknown/missing evidence is not an empty balance or an executed transfer. ALT resolution, Token-2022, mint/burn, delegated/multisig authorities, wrap/unwrap and transient unrecorded token accounts are not supported. A router's signed instruction is authenticated but its semantics are not audited. The report records RPC claims rather than independently proving consensus or safety.
+
+See [host commands and current evidence](../docs/RECORDED-TOKEN-FLOWS-UPDATE.md). The live development attempt could not connect and stopped after one read attempt; a successful actual token-flow capture remains a host gate.
+
+Primary references for the decoded standard instructions and public capture:
+- https://github.com/solana-program/token/blob/main/interface/src/instruction.rs
+- https://solana.com/docs/rpc/http/getsignaturesforaddress
+- https://solana.com/docs/rpc/http/gettransaction

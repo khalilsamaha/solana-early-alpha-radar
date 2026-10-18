@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from recorded_capture import GENESIS, META, MAX_CAPTURE, SYSTEM
+from recorded_capture import GENESIS, META, MAX_CAPTURE, SYSTEM, TOKEN
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'intent-journal'))
 from wire import decode_wire, verify_signed_message
 from reconcile import EvidenceError, binding, digest, token_maps
@@ -48,9 +48,9 @@ def review(capture):
         signature = capture['signature']; base58(signature, 64)
         result['signature'] = signature
         selection = capture['selection']
-        require(selection in ('recent-system-program-devnet', 'explicit-signature'), 'invalid-selection', 'invalid-input')
+        require(selection in ('recent-system-program-devnet', 'recent-token-program-devnet', 'explicit-signature'), 'invalid-selection', 'invalid-input')
         discovered = None
-        if selection == 'recent-system-program-devnet':
+        if selection in ('recent-system-program-devnet', 'recent-token-program-devnet'):
             require(network == 'devnet', 'sample-network-mismatch')
             require(ev['discovery']['state'] == 'received', 'discovery-unavailable', 'unknown')
             rows = ev['discovery']['result']
@@ -93,7 +93,9 @@ def review(capture):
         decoded = parsed[4]['transaction']['message']
         require(normalized(tx['transaction']['message'], normalized_instructions) == normalized(decoded, decoded['instructions'])
                 and parsed[4]['version'] == tx['version'], 'wire-json-message-disagreement')
-        if discovered is not None: require(SYSTEM in keys, 'sample-account-not-in-transaction')
+        if discovered is not None:
+            sampled_program = TOKEN if selection == 'recent-token-program-devnet' else SYSTEM
+            require(sampled_program in keys, 'sample-account-not-in-transaction')
         for field in ('preBalances', 'postBalances'):
             require(isinstance(meta.get(field), list) and len(meta[field]) == len(keys) and all(integer(v) for v in meta[field]), 'invalid-native-balances', 'invalid-input')
         require(integer(meta.get('fee')), 'invalid-fee', 'invalid-input')
