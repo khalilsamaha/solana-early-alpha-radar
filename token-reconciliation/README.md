@@ -85,3 +85,11 @@ Primary references for the decoded standard instructions and public capture:
 - https://github.com/solana-program/token/blob/main/interface/src/instruction.rs
 - https://solana.com/docs/rpc/http/getsignaturesforaddress
 - https://solana.com/docs/rpc/http/gettransaction
+
+
+`devnet-token-fixture.json` is the actual six-request host capture supplied at
+2026-10-18T20:40:13.436047+00:00: legacy devnet slot 512559524, two verified signatures,
+one ten-atomic-unit transfer between existing accounts, and a 10,000-lamport fee.
+Its capture hash is `b371549550e88146ee057c98a766005a46b9e96735b78db2ae27ef6376ce5153`.
+CI replays it offline. It is an existing public transaction, not one submitted by this project,
+and supplies no account-creation/closure or prior-intent evidence.

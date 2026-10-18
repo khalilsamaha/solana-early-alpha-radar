@@ -11,7 +11,7 @@ Goal: evaluate whether launch characteristics and timely evidence select realist
 | Pool/exit evidence and launch foundation | Deployed; initial host readiness, launch capture and quote backup verified | Monitor sustained coverage, retention and new backup failures |
 | Launch-feature study | Six-hour post-update timing verified; paired feed/route audit built | Rule out local-only/cache-only explanations; define bounded prospective source validation before changing signals |
 | Prospective strategy validation | No demonstrated edge yet | Cost, tail-loss, quote-failure, selection-bias and independent-period gates |
-| Execution engineering | Devnet self-transfer/recovery and host synthetic token checks passed; recorded token-flow capture implemented | Review actual token capture; supported lifecycle/router validation and independent spend/position/exit controls |
+| Execution engineering | Actual recorded token transfer verified; controlled atomic devnet WSOL lifecycle implemented | Host lifecycle receipt/recovery, independent spend/position/exit controls and supported router validation |
 | Funded pilot | Not ready | Evidence and controls plus explicit wallet/action/loss-budget approval |
 
 The current quote budget provides at most 48 watches per cohort per day. Collection time depends on independent usable evidence; 1,000 scanner launches do not mean 1,000 executable samples. There is no justified real-money testing date.
@@ -68,3 +68,8 @@ Added a standalone offline signed-token reconciler: full signed identity, standa
 ## 18 October 2026 — host token checks passed; recorded flow capture built
 
 The twelve-case signed-token host report replayed exactly. Added a separate read-only public token capture and replayable ordered flow check covering recorded counterparties, fees, supported funding/refunds and existing WSOL. Historical results explicitly do not establish prior intent. The development RPC attempt was unavailable; actual token capture remains pending on Kali. No additional day-long collection wait is needed for this gate. Next: inspect the selected transaction and address its supported lifecycle requirements before extending devnet execution. See [commands and boundaries](RECORDED-TOKEN-FLOWS-UPDATE.md).
+
+
+## 18 October 2026 — actual recorded token evidence passed; controlled lifecycle built
+
+The host eleven-case report and actual devnet token capture replayed exactly. The recorded transaction was a simple transfer between existing accounts, so creation and closure were not proven. Added a standalone fixed atomic WSOL lifecycle using the dedicated devnet wallet: two new accounts, a 1,000-lamport transfer and both closures, bounded by a narrow signer and separate durable one-send journal. Synthetic interruption and receipt tests cover the workflow; actual host execution is pending. Intermediate transient balances remain explicitly unobserved. No strategy, model, scanner or quote-admission changes. See [host commands and limits](DEVNET-TOKEN-LIFECYCLE-UPDATE.md).

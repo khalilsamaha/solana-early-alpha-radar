@@ -137,3 +137,14 @@ Additional specifications reviewed:
 - [sendTransaction](https://solana.com/docs/rpc/http/sendtransaction): acknowledgement is not confirmation.
 - [getSignatureStatuses](https://solana.com/docs/rpc/http/getsignaturestatuses): history search must be explicit.
 - [getBlockHeight](https://solana.com/docs/rpc/http/getblockheight): block height and commitment are used for expiry.
+
+
+## Release 3: atomic WSOL lifecycle rehearsal
+
+The separate `token_lifecycle_cli.py` now exercises a fixed seven-instruction devnet contract: create and initialize two fresh WSOL accounts, transfer exactly 1,000 test lamports, then close both to the dedicated wallet. It has a separate narrow signer and private `token-lifecycle-v1/lifecycle.sqlite` journal; the original native self-transfer signer, plans and submission boundary are not changed. The shared parent lock and STOP marker apply to both workflows.
+
+Default invocation is a ten-case offline self-check. Live execution requires `--action execute --allow-devnet-token-submit`, the existing private directory and exact public wallet. Signed simulation precedes at most one application send. Intent and signed data are committed before their respective external boundaries. A durable unknown state precedes transport. There is no automatic replacement or repeat execution; recovery has a read-only RPC allowlist. Partial setup and incomplete plans are preserved rather than recreated.
+
+The narrow fee cap is 20,000 test lamports, rent cap 2,500,000 per account, fixed amount 1,000. Actual final wallet change must equal the fee; temporary accounts must have zero native balances at both endpoints. WSOL closure returns the wrapped test lamports. Intermediate balances are not observed because the accounts exist only inside the atomic transaction. Exact signed instructions and RPC-reported successful execution are the lifecycle evidence; this is not generic transient-account support or a swap.
+
+See [commands, recovery and evidence limits](../docs/DEVNET-TOKEN-LIFECYCLE-UPDATE.md). No production deployment or new background service is involved. Actual host lifecycle receipt remains the next gate.

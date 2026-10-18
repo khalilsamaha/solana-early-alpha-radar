@@ -169,6 +169,18 @@ class RecordedTests(unittest.TestCase):
         self.assertEqual(r['state'],'unsupported');self.assertEqual(r['reason'],'historical-lookup-resolution-unproven')
         self.assertTrue(r['identity']['signatureVerified']);self.assertFalse(r['intentProven'])
 
+    def test_actual_host_token_capture_replays_without_network(self):
+        c=json.loads((ROOT/'devnet-token-fixture.json').read_text())
+        with patch('socket.socket',side_effect=AssertionError('offline fixture')):
+            r=analyze(c)
+        self.assertEqual(r['state'],'recorded-token-flows-consistent')
+        self.assertEqual(r['identity']['captureSha256'],'b371549550e88146ee057c98a766005a46b9e96735b78db2ae27ef6376ce5153')
+        self.assertEqual(r['identity']['requiredSignatures'],2)
+        self.assertEqual(r['identity']['slot'],512559524)
+        self.assertEqual(r['feeLamports'],'10000')
+        self.assertEqual([x['amountAtomic'] for x in r['transfers']],['10'])
+        self.assertEqual(r['accountFunding'],[]);self.assertEqual(r['accountRefunds'],[])
+
     def test_sample_one_token_program_signature_six_reads(self):
         opener=Opener(capture());c=collect(sample=True,opener=opener,sample_program=TOKEN)
         self.assertEqual(c['rpcRequestsAttempted'],6)
