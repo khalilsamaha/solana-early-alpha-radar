@@ -74,3 +74,8 @@ node --test source-comparison/*.test.mjs
   cd devnet-rehearsal
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd token-reconciliation
+  python3 -m unittest discover -p 'test_*.py'
+)

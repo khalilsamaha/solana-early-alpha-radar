@@ -86,7 +86,7 @@ def binding(tx):
     return digest(normalized), keys, normalized['message']['instructions']
 
 
-def validate_intent(intent):
+def validate_intent(intent, *, wrapped_existing=False):
     fields = {'format', 'network', 'signature', 'wallet', 'messageSha256', 'preparedAtMs', 'walletPreLamports',
               'source', 'destination', 'inputAtomic', 'minimumOutputAtomic', 'maximumFeeLamports', 'maximumRentLamports'}
     require(isinstance(intent, dict) and set(intent) == fields and intent['format'] == 'transaction-intent-1', 'invalid-intent-schema', 'invalid-input')
@@ -102,7 +102,9 @@ def validate_intent(intent):
         require(isinstance(account, dict) and set(account) == {'account', 'mint', 'programId', 'decimals', 'preAmountAtomic', 'lifecycle'}, 'invalid-token-contract', 'invalid-input')
         for key in ('account', 'mint', 'programId'): base58(account[key], 32)
         require(account['programId'] == TOKEN, 'token-program-not-supported', 'unsupported')
-        require(account['mint'] != NATIVE, 'wrapped-native-not-supported', 'unsupported')
+        if account['mint'] == NATIVE:
+            require(wrapped_existing and account['lifecycle'] == 'existing', 'wrapped-native-lifecycle-not-supported' if wrapped_existing else 'wrapped-native-not-supported', 'unsupported')
+            require(account['decimals'] == 9, 'wrapped-native-decimals-mismatch')
         require(integer(account['decimals'], 255) and account['lifecycle'] in lifecycles, 'invalid-token-contract', 'invalid-input')
         atomic(account['preAmountAtomic'])
         if account['lifecycle'] == 'create':
@@ -155,7 +157,7 @@ def transfer(op):
         (data[0] == 12 and len(data) == 10 and len(accounts) == 4))
 
 
-def reconcile(bundle):
+def reconcile(bundle, *, wrapped_existing=False):
     result = {'format': 'intent-reconciliation-1', 'state': 'unknown', 'reason': None,
               'executionApproved': False, 'resubmitAllowed': False, 'ledgerUpdated': False, 'networkRequests': 0,
               'limitations': [
@@ -165,10 +167,12 @@ def reconcile(bundle):
                   'Balance consistency is not profitability, spendability or permission to trade. Mint/account extensions and off-transaction state are not checked.',
                   'Native balance reconciliation allows only transaction fees and explicitly proved account rent creation/refund. Unknown evidence never allows resubmission.',
                   'No execution or simulation ledger is updated. No signer, transaction builder or sender is included.']}
+    if wrapped_existing:
+        result['limitations'][2] = 'Network is caller-labelled; no genesis identity is verified. Standard SPL plus existing WSOL with consistent implied backing only; WSOL creation/closure and Token-2022 remain unsupported.'
     try:
         require(isinstance(bundle, dict) and set(bundle) == {'format', 'network', 'capturedAtMs', 'intent', 'rpcEvidence'} and bundle['format'] == 'intent-evidence-bundle-1', 'invalid-bundle-schema', 'invalid-input')
         intent, rpc = bundle['intent'], bundle['rpcEvidence']
-        validate_intent(intent)
+        validate_intent(intent, wrapped_existing=wrapped_existing)
         result['intentSha256'] = digest(intent)
         require(bundle['network'] == intent['network'], 'network-label-mismatch')
         require(integer(bundle['capturedAtMs']) and bundle['capturedAtMs'] >= intent['preparedAtMs'], 'evidence-before-intent', 'invalid-input')
@@ -213,8 +217,12 @@ def reconcile(bundle):
                 before = after = a['amount'] if a else 0
             elif lifecycle == 'existing':
                 require(a is not None and b is not None, 'existing-account-balance-missing', 'unknown')
-                require(before_native == after_native, 'unexpected-token-account-native-change')
                 before, after = a['amount'], b['amount']
+                if contract['mint'] == NATIVE:
+                    reserve = before_native - before
+                    require(reserve > 0 and after_native - after == reserve, 'wrapped-native-backing-mismatch')
+                else:
+                    require(before_native == after_native, 'unexpected-token-account-native-change')
                 require(all(transfer(o) for o in relevant), 'unsupported-token-account-operation', 'unsupported')
             elif lifecycle == 'create':
                 require(a is None and b is not None and before_native == 0 and after_native > 0, 'creation-evidence-incomplete', 'unknown')
