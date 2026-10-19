@@ -11,7 +11,7 @@ Goal: evaluate whether launch characteristics and timely evidence select realist
 | Pool/exit evidence and launch foundation | Deployed; initial host readiness, launch capture and quote backup verified | Monitor sustained coverage, retention and new backup failures |
 | Launch-feature study | Six-hour post-update timing verified; paired feed/route audit built | Rule out local-only/cache-only explanations; define bounded prospective source validation before changing signals |
 | Prospective strategy validation | No demonstrated edge yet | Cost, tail-loss, quote-failure, selection-bias and independent-period gates |
-| Execution engineering | Host devnet lifecycle/recovery and offline position accounting passed; unsigned direct-swap policy validator built | Host swap self-check, independent state/preflight verification and controlled multi-transaction integration |
+| Execution engineering | Host devnet lifecycle/recovery, position accounting and unsigned policy checks passed; bounded pool/account capture built | Host actual account capture, controlled pool/program provenance, restricted swap signing/simulation and multi-transaction integration |
 | Funded pilot | Not ready | Evidence and controls plus explicit wallet/action/loss-budget approval |
 
 The current quote budget provides at most 48 watches per cohort per day. Collection time depends on independent usable evidence; 1,000 scanner launches do not mean 1,000 executable samples. There is no justified real-money testing date.
@@ -83,3 +83,8 @@ The actual devnet lifecycle reported finalized success with one send and a 15,00
 ## 19 October 2026 — unsigned swap instruction contract
 
 The supplied 04:31:10 UTC position report exactly reproduced all ten synthetic accounting checks with no network requests or transactions. Added a separate offline raw unsigned-message validator for one direct Raydium CPMM devnet exact-input contract: fixed account roles and permissions, atomic amounts/minimum output, allowed compute instructions, integer fee caps, message-bound caller fee assertion and short local deadlines. Twelve synthetic host cases and adversarial regression tests cover rejection paths. No signer is connected; chain/account/program state, policy provenance, RPC fee truth and simulation remain unverified. Next: host replay and a bounded independent state/preflight adapter before devnet swap integration. Strategy evidence collection continues unchanged. See [release scope and commands](SWAP-CONTRACT-UPDATE.md).
+
+
+## 19 October 2026 — current pool/account state adapter
+
+The 09:49:51 UTC host unsigned contract report matched all twelve expected cases exactly, with no requests or transactions. Added raw devnet pool/config/mint/vault/observation decoding, fixed authority and executable program-pointer checks, and a bounded read-only capture. Optional prior-packet mode binds wallet accounts, balances, exact-message RPC fee and blockhash validity to the original unsigned policy. The latest program transaction is only a one-result pool hint, not an authenticated prior intent; unsupported evidence is retained without resampling. Fifteen synthetic host cases and adversarial regression cover state and transport behavior. Development's single public devnet attempt stopped on its first request with network-error, so actual pool capture remains a host gate. No signer, sender, production integration or strategy change. See [release details](SWAP-STATE-UPDATE.md).
