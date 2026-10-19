@@ -94,3 +94,8 @@ node --test source-comparison/*.test.mjs
   cd swap-state
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd swap-program
+  python3 -m unittest discover -p 'test_*.py'
+)
