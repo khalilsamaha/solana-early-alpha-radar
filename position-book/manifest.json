@@ -1,0 +1,22 @@
+{
+  "format": "radar-engineering-release-1",
+  "release": "position-accounting-1",
+  "baseCommit": "412a67eef0ad055c059cd947551df65cf6f96ce2",
+  "mode": "offline-signed-evidence",
+  "validation": {
+    "python": 612,
+    "node": 283,
+    "total": 895,
+    "newPositionTests": 32,
+    "hostSelfCheckPending": true
+  },
+  "files": {
+    "README.md": "0f839a769339822884d678b0bf92c307a1b035455dfa64496a6f47b3b6c3e70d",
+    "book.py": "027eb85d8bf092b87e8c5f6b28f2a1e486b706efbe33b999d889e7b8c92990ba",
+    "cli.py": "c056f5aba5ac4605f0f0ec5bb99ea6d4bc03e0e7d175c56e9c18dde0569929d6",
+    "position_checks.py": "def3d09b3b1fdf92d80567689d6f4902562998b95be6099d345f671a3933be7c",
+    "position_fixtures.py": "7170b8434a222540e405acfd88b1cb7257e2958321f6fa497a087363827423bc",
+    "public-fixtures.json": "3c2a6d56f22db966945e8157478562ca259404fc3b5324938226803c437353a5",
+    "test_book.py": "7348fb7a0f63d0d741f4c30d3afa487bd2328fae73c7f4559baf41f7fdf9bdba"
+  }
+}

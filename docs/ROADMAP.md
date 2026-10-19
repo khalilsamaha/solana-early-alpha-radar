@@ -1,4 +1,4 @@
-# Project roadmap — updated 18 October 2026
+# Project roadmap — updated 19 October 2026
 
 The consolidated direction is [EDGE-RESEARCH-PLAN.md](EDGE-RESEARCH-PLAN.md). [PROJECT-HISTORY.md](PROJECT-HISTORY.md) records prior development.
 
@@ -11,7 +11,7 @@ Goal: evaluate whether launch characteristics and timely evidence select realist
 | Pool/exit evidence and launch foundation | Deployed; initial host readiness, launch capture and quote backup verified | Monitor sustained coverage, retention and new backup failures |
 | Launch-feature study | Six-hour post-update timing verified; paired feed/route audit built | Rule out local-only/cache-only explanations; define bounded prospective source validation before changing signals |
 | Prospective strategy validation | No demonstrated edge yet | Cost, tail-loss, quote-failure, selection-bias and independent-period gates |
-| Execution engineering | Actual recorded token transfer verified; controlled atomic devnet WSOL lifecycle implemented | Host lifecycle receipt/recovery, independent spend/position/exit controls and supported router validation |
+| Execution engineering | Host atomic devnet token lifecycle and recovery passed; offline signed position accounting built | Host accounting self-check, supported router validation and controlled multi-transaction integration |
 | Funded pilot | Not ready | Evidence and controls plus explicit wallet/action/loss-budget approval |
 
 The current quote budget provides at most 48 watches per cohort per day. Collection time depends on independent usable evidence; 1,000 scanner launches do not mean 1,000 executable samples. There is no justified real-money testing date.
@@ -73,3 +73,8 @@ The twelve-case signed-token host report replayed exactly. Added a separate read
 ## 18 October 2026 — actual recorded token evidence passed; controlled lifecycle built
 
 The host eleven-case report and actual devnet token capture replayed exactly. The recorded transaction was a simple transfer between existing accounts, so creation and closure were not proven. Added a standalone fixed atomic WSOL lifecycle using the dedicated devnet wallet: two new accounts, a 1,000-lamport transfer and both closures, bounded by a narrow signer and separate durable one-send journal. Synthetic interruption and receipt tests cover the workflow; actual host execution is pending. Intermediate transient balances remain explicitly unobserved. No strategy, model, scanner or quote-admission changes. See [host commands and limits](DEVNET-TOKEN-LIFECYCLE-UPDATE.md).
+
+
+## 19 October 2026 — host lifecycle/recovery passed; signed position accounting
+
+The actual devnet lifecycle reported finalized success with one send and a 15,000-lamport fee. Independent signature/hash replay passed; fresh-process terminal recovery preserved the exact receipt with zero network requests or sends. Added a separate offline position book combining durable signed intents, raw token evidence, entry/exit continuity, principal/fee reservations, unknown-outcome recovery, persistent entry stop and contradiction quarantine. Synthetic host validation is next; no production sender enforces these limits yet. Supported router semantics and multi-transaction integration remain execution gates, while forward strategy validation remains independent. See [release details](POSITION-ACCOUNTING-UPDATE.md).

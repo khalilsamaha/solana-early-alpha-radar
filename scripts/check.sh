@@ -79,3 +79,8 @@ node --test source-comparison/*.test.mjs
   cd token-reconciliation
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd position-book
+  python3 -m unittest discover -p 'test_*.py'
+)
