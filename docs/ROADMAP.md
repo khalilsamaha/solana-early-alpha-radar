@@ -11,7 +11,7 @@ Goal: evaluate whether launch characteristics and timely evidence select realist
 | Pool/exit evidence and launch foundation | Deployed; initial host readiness, launch capture and quote backup verified | Monitor sustained coverage, retention and new backup failures |
 | Launch-feature study | Six-hour post-update timing verified; paired feed/route audit built | Rule out local-only/cache-only explanations; define bounded prospective source validation before changing signals |
 | Prospective strategy validation | No demonstrated edge yet | Cost, tail-loss, quote-failure, selection-bias and independent-period gates |
-| Execution engineering | Host atomic devnet token lifecycle and recovery passed; offline signed position accounting built | Host accounting self-check, supported router validation and controlled multi-transaction integration |
+| Execution engineering | Host devnet lifecycle/recovery and offline position accounting passed; unsigned direct-swap policy validator built | Host swap self-check, independent state/preflight verification and controlled multi-transaction integration |
 | Funded pilot | Not ready | Evidence and controls plus explicit wallet/action/loss-budget approval |
 
 The current quote budget provides at most 48 watches per cohort per day. Collection time depends on independent usable evidence; 1,000 scanner launches do not mean 1,000 executable samples. There is no justified real-money testing date.
@@ -78,3 +78,8 @@ The host eleven-case report and actual devnet token capture replayed exactly. Th
 ## 19 October 2026 — host lifecycle/recovery passed; signed position accounting
 
 The actual devnet lifecycle reported finalized success with one send and a 15,000-lamport fee. Independent signature/hash replay passed; fresh-process terminal recovery preserved the exact receipt with zero network requests or sends. Added a separate offline position book combining durable signed intents, raw token evidence, entry/exit continuity, principal/fee reservations, unknown-outcome recovery, persistent entry stop and contradiction quarantine. Synthetic host validation is next; no production sender enforces these limits yet. Supported router semantics and multi-transaction integration remain execution gates, while forward strategy validation remains independent. See [release details](POSITION-ACCOUNTING-UPDATE.md).
+
+
+## 19 October 2026 — unsigned swap instruction contract
+
+The supplied 04:31:10 UTC position report exactly reproduced all ten synthetic accounting checks with no network requests or transactions. Added a separate offline raw unsigned-message validator for one direct Raydium CPMM devnet exact-input contract: fixed account roles and permissions, atomic amounts/minimum output, allowed compute instructions, integer fee caps, message-bound caller fee assertion and short local deadlines. Twelve synthetic host cases and adversarial regression tests cover rejection paths. No signer is connected; chain/account/program state, policy provenance, RPC fee truth and simulation remain unverified. Next: host replay and a bounded independent state/preflight adapter before devnet swap integration. Strategy evidence collection continues unchanged. See [release scope and commands](SWAP-CONTRACT-UPDATE.md).

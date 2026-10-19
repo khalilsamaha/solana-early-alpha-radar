@@ -84,3 +84,8 @@ node --test source-comparison/*.test.mjs
   cd position-book
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd swap-contract
+  python3 -m unittest discover -p 'test_*.py'
+)
