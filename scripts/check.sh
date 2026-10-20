@@ -114,3 +114,8 @@ node --test source-comparison/*.test.mjs
   cd devnet-setup
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd devnet-token-pair
+  python3 -m unittest discover -p 'test_*.py'
+)

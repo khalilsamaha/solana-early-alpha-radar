@@ -108,3 +108,8 @@ The 19:52:31 UTC host capture replayed exactly as `pinned-pool-snapshot` at slot
 ## 20 October 2026 — controlled setup costs and fresh packets
 
 The latest host rehearsal self-check and public inventory were replayed exactly. The dedicated wallet had 9,980,000 devnet lamports but no accounts holding either reference-pool token. Added live rent/config-fee estimation for a new controlled standard-SPL pair/pool, a production canonical swap packet builder, and immediate handoff into the existing restricted signed-simulation workflow. The builder preserves independent scope and minimum output and does not reset existing one-shot state. Token/pool provisioning and actual-wallet swap simulation remain pending. Strategy qualification and funded-pilot gates remain separate. See [release and host command](DEVNET-SETUP-UPDATE.md).
+
+
+## 20 October 2026 — controlled token-pair provisioner
+
+The setup-cost report passed exact replay: creation enabled, full setup estimate 185,980,040 devnet lamports, balance 9,980,000 and shortfall 176,000,040. The token-pair stage alone fits: 5,110,480 rent plus a fresh five-signature fee. Added an atomic two-mint/two-holder setup with fixed supplies, revoked mint authorities, absent freeze authorities, restricted signing, a 6,000,000-lamport rent-plus-fee cap, exact simulation, durable one-send boundary, receipt/account reconciliation and read-only recovery. Offline adverse-case tests use disposable wallets and synthetic RPC; actual host provisioning remains pending. Pool creation and swaps are separate next steps. See [release notes](DEVNET-TOKEN-PAIR-UPDATE.md).
