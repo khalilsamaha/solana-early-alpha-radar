@@ -109,3 +109,8 @@ node --test source-comparison/*.test.mjs
   cd swap-rehearsal
   python3 -m unittest discover -p 'test_*.py'
 )
+
+(
+  cd devnet-setup
+  python3 -m unittest discover -p 'test_*.py'
+)
