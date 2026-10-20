@@ -115,6 +115,137 @@ class PoolCase(unittest.TestCase):
         write_new(child/'observation-001.json',dict(state='submission-unknown'))
         with self.assertRaisesRegex(ValueError,'observation-sequence'):work.observations(child)
 
+    def legacy_size_failure(self):
+        payload=base64.b64encode(bytes(105033)).decode()
+        def change(q,v,t):
+            if q['method']=='getMultipleAccounts':v['value'][ROLES.index('associatedTokenProgram')]['data']=[payload,'base64']
+            return v
+        with patch('pool_workflow.signer',side_effect=ValueError('restricted-pool-signer-refused')):
+            r,t=self.run_pool(change)
+        self.assertEqual(r['state'],'preparation-incomplete')
+        child=self.home/CHILD;i=work.read(child,'plan.json')
+        i.update(recordedAtMs=i['recordedAtMs']-100000,expiresAtMs=i['expiresAtMs']-100000,lastValidBlockHeight=800)
+        (child/'plan.json').write_text(json.dumps(i,sort_keys=True,separators=(',',':')))
+        return child,change
+
+    def replacement(self,change=None):
+        t=Transport(self.home,change=change)
+        r=work.execute(self.home,self.wallet,allow_replace_unsigned=True,opener=t,sleeper=lambda _:None)
+        return r,t
+
+    def test_unsigned_size_replacement_archives_exact_bytes_and_sends_once(self):
+        child,change=self.legacy_size_failure();old={p.name:p.read_bytes() for p in child.iterdir()}
+        r,t=self.replacement(change);self.assertEqual(r['state'],'finalized-success',r)
+        archive=self.home/work.UNSIGNED_ARCHIVE
+        self.assertEqual(old,{p.name:p.read_bytes() for p in archive.iterdir()})
+        self.assertEqual(r['unsignedReplacement']['filesSha256'],{n:hashlib.sha256(v).hexdigest() for n,v in old.items()})
+        self.assertTrue(r['unsignedArchivePresent']);self.assertEqual(r['submissionAttempts'],1)
+        self.assertEqual(sum(q['method']=='sendTransaction' for q in t.calls),1)
+        for allow in (False,True):
+            again=work.execute(self.home,self.wallet,allow_replace_unsigned=allow,opener=t,sleeper=lambda _:None)
+            self.assertEqual(again['networkRequests'],0);self.assertEqual(again['state'],'finalized-success')
+        self.assertEqual(work.status(self.home,self.wallet)['state'],'finalized-success')
+        self.assertEqual(work.recover(self.home,self.wallet,opener=t)['networkRequests'],0)
+
+    def test_unsigned_size_replacement_requires_explicit_flag(self):
+        child,_=self.legacy_size_failure();before={p.name:p.read_bytes() for p in child.iterdir()}
+        r,t=self.run_pool();self.assertEqual(t.calls,[])
+        self.assertEqual(before,{p.name:p.read_bytes() for p in child.iterdir()})
+        self.assertFalse((self.home/work.UNSIGNED_REPLACEMENT).exists())
+
+    def test_unsigned_size_replacement_refuses_any_signing_simulation_or_send_file(self):
+        child,_=self.legacy_size_failure()
+        for name in work.JOURNAL_NAMES[1:]:
+            with self.subTest(name=name):
+                write_new(child/name,{})
+                t=Transport(self.home)
+                try:
+                    try:work.execute(self.home,self.wallet,allow_replace_unsigned=True,opener=t,sleeper=lambda _:None)
+                    except (ValueError,KeyError):pass  # Malformed evidence also refuses reporting.
+                    self.assertEqual(t.calls,[])
+                    self.assertFalse((self.home/work.UNSIGNED_REPLACEMENT).exists())
+                finally:(child/name).unlink()
+
+    def test_unsigned_size_replacement_refuses_valid_signed_attempt(self):
+        self.prepare_only();child=self.home/CHILD;before={p.name:p.read_bytes() for p in child.iterdir()}
+        r,t=self.replacement();self.assertEqual(t.calls,[])
+        self.assertEqual(r['state'],'simulation-passed-not-submitted')
+        self.assertFalse((self.home/work.UNSIGNED_REPLACEMENT).exists())
+        self.assertEqual(before,{p.name:p.read_bytes() for p in child.iterdir()})
+
+    def test_unsigned_size_replacement_refuses_unknown_journal_file(self):
+        child,_=self.legacy_size_failure();write_new(child/'extra.json',{})
+        r,t=self.replacement();self.assertEqual(t.calls,[])
+        self.assertFalse((self.home/work.UNSIGNED_REPLACEMENT).exists())
+
+    def test_unsigned_size_replacement_refuses_live_intent(self):
+        child,_=self.legacy_size_failure();i=work.read(child,'plan.json')
+        i.update(recordedAtMs=work.clock(),expiresAtMs=work.clock()+30000)
+        i['expiresAtMs']=i['recordedAtMs']+30000
+        (child/'plan.json').write_text(json.dumps(i))
+        r,t=self.replacement();self.assertEqual(t.calls,[])
+        self.assertFalse((self.home/work.UNSIGNED_REPLACEMENT).exists())
+
+    def test_unsigned_size_replacement_refuses_live_blockhash(self):
+        child,change=self.legacy_size_failure();i=work.read(child,'plan.json');i['lastValidBlockHeight']=900
+        (child/'plan.json').write_text(json.dumps(i))
+        r,t=self.replacement(change);self.assertEqual(r['sendRequestsThisRun'],0)
+        self.assertFalse((self.home/work.UNSIGNED_REPLACEMENT).exists());self.assertTrue(child.exists())
+
+    def test_unsigned_size_replacement_requires_valid_original_message(self):
+        child,_=self.legacy_size_failure();i=work.read(child,'plan.json');i['messageSha256']='0'*64
+        (child/'plan.json').write_text(json.dumps(i))
+        r,t=self.replacement();self.assertEqual(t.calls,[])
+        self.assertFalse((self.home/work.UNSIGNED_REPLACEMENT).exists())
+
+    def test_unsigned_size_replacement_insufficient_funding_preserves_original(self):
+        child,_=self.legacy_size_failure();before={p.name:p.read_bytes() for p in child.iterdir()}
+        def change(q,v,t):
+            if q['method']=='getMultipleAccounts':v['value'][0]['lamports']=1
+            return v
+        r,t=self.replacement(change);self.assertEqual(r['state'],'funding-required')
+        self.assertEqual(before,{p.name:p.read_bytes() for p in child.iterdir()})
+        self.assertFalse((self.home/work.UNSIGNED_REPLACEMENT).exists())
+
+    def test_unsigned_size_replacement_stop_preserves_original(self):
+        child,_=self.legacy_size_failure();(self.home/'STOP').write_text('stop')
+        r,t=self.replacement();self.assertEqual(t.calls,[])
+        self.assertFalse((self.home/work.UNSIGNED_REPLACEMENT).exists())
+
+    def test_unsigned_size_replacement_rechecks_program_and_absent_pool(self):
+        child,_=self.legacy_size_failure()
+        for mode in ('pool','program'):
+            def change(q,v,t):
+                if q['method']=='getMultipleAccounts':
+                    if mode=='pool':v['value'][1]=v['value'][0]
+                    else:v['value'][-1]['owner']=SYSTEM
+                return v
+            r,t=self.replacement(change);self.assertEqual(r['sendRequestsThisRun'],0)
+            self.assertFalse((self.home/work.UNSIGNED_REPLACEMENT).exists());self.assertTrue(child.exists())
+
+    def test_unsigned_size_replacement_crash_after_boundary_never_retries(self):
+        child,change=self.legacy_size_failure();save=work.write_new
+        def crash(p,v):
+            save(p,v)
+            if p.name==work.UNSIGNED_REPLACEMENT:raise KeyboardInterrupt()
+        with patch('pool_workflow.write_new',side_effect=crash):
+            with self.assertRaises(KeyboardInterrupt):self.replacement(change)
+        self.assertTrue(child.exists())
+        for allow in (False,True):
+            t=Transport(self.home);r=work.execute(self.home,self.wallet,allow_replace_unsigned=allow,opener=t)
+            self.assertEqual(t.calls,[]);self.assertEqual(r['sendRequestsThisRun'],0)
+
+    def test_unsigned_size_replacement_crash_after_archive_blocks_empty_slot(self):
+        child,change=self.legacy_size_failure();rename=work.os.rename
+        def crash(src,dst):rename(src,dst);raise KeyboardInterrupt()
+        with patch('pool_workflow.os.rename',side_effect=crash):
+            with self.assertRaises(KeyboardInterrupt):self.replacement(change)
+        self.assertFalse(child.exists());self.assertTrue((self.home/work.UNSIGNED_ARCHIVE).exists())
+        for allow in (False,True):
+            t=Transport(self.home);r=work.execute(self.home,self.wallet,allow_replace_unsigned=allow,opener=t)
+            self.assertEqual(t.calls,[]);self.assertEqual(r['state'],'unsigned-replacement-incomplete')
+        self.assertEqual(work.recover(self.home,self.wallet)['networkRequests'],0)
+
     def test_inspect_no_sign_no_journal(self):
         t=Transport(self.home);r=work.inspect(self.home,self.wallet,opener=t)
         self.assertEqual(r['state'],'funding-ready');self.assertEqual(r['networkRequests'],7)

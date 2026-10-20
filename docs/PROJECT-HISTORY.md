@@ -478,3 +478,8 @@ Built a separate controlled pool initializer with fixed standard-SPL test assets
 ### 2026-10-20 — Pool journal size correction
 
 Funding inspection reported 20.00484452 devnet SOL, but execute and recover both surfaced a generic ValueError. Replaying the attached pre-state showed 143,041 bytes of account JSON, including 140,044 base64 characters for the legacy Associated Token Program. A realistic-sized regression reproduced the original signer/reader failure. Fixed consistent bounded journal reads, role-specific simulation/post-account payload handling and pool observation reads. Added public journal file presence/size evidence. No existing host journal is reset or resumed; deployment next requires status-only evidence. No on-chain pool success has been established.
+
+
+### 2026-10-20 — Explicit unsigned pool plan replacement
+
+Host status after the size-reader fix showed `preparation-incomplete`, a 145,208-byte plan, and no signing-attempt, signed, simulation or send marker. Added one explicitly requested replacement for this exact unsigned size-failure case. It checks the original plan, exclusive journal inventory, expired intent and finalized block height, then performs fresh funding/program/pool checks. A durable boundary and whole-directory archive preserve the original evidence before the normal fresh attempt. Crashes and any signed/ambiguous/replaced journal refuse another attempt. A successful live pool receipt remains outstanding.

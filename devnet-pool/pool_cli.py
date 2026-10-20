@@ -28,14 +28,17 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--action',choices=('self-check','inspect','execute','recover','status'),default='self-check')
     p.add_argument('--wallet');p.add_argument('--directory',type=Path);p.add_argument('--allow-devnet-submit',action='store_true')
+    p.add_argument('--allow-unsigned-size-replacement',action='store_true')
     p.add_argument('--output',required=True,type=Path);a=p.parse_args()
+    if a.allow_unsigned_size_replacement and a.action!='execute':raise ValueError('Unsigned replacement requires execute')
     if a.output.exists() or a.output.is_symlink() or not a.output.parent.is_dir():raise ValueError('Output unavailable')
     if a.action=='self-check':
         if any((a.wallet,a.directory,a.allow_devnet_submit)):raise ValueError('Unexpected self-check arguments')
         r=self_check()
     else:
         if not a.wallet or not a.directory or (a.action=='execute')!=a.allow_devnet_submit:raise ValueError('Explicit action arguments required')
-        r={'inspect':inspect,'execute':execute,'recover':recover,'status':status}[a.action](a.directory,a.wallet)
+        if a.action=='execute':r=execute(a.directory,a.wallet,allow_replace_unsigned=a.allow_unsigned_size_replacement)
+        else:r={'inspect':inspect,'recover':recover,'status':status}[a.action](a.directory,a.wallet)
     r['capturedAt']=datetime.now(timezone.utc).isoformat();publish(a.output,r)
     print('State:',r['state'])
     if 'casesPassed' in r:print('Offline cases passed:',r['casesPassed'])

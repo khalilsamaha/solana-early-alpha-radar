@@ -23,6 +23,8 @@ digest=pair_work.digest
 exists=pair_work.exists
 # Full legacy executable account data belongs to the signed evidence. Keep it,
 # with consistent bounded readers across preparation, simulation and recovery.
+UNSIGNED_ARCHIVE=CHILD+'-unsigned-size-archive-v1'
+UNSIGNED_REPLACEMENT=CHILD+'-unsigned-size-replacement-v1.json'
 JOURNAL_BYTES=524288
 ACCOUNT_SET_BYTES=500000
 LEGACY_PROGRAM_BASE64=262144
@@ -190,6 +192,11 @@ def report(s,rpc,reason=None):
         'Shared fee receiver or pool changes can prevent strict reconciliation; never repeat execute to repair this.',
         'Same-user software signer is not an OS sandbox or hardware wallet; signed bytes remain private and usable while valid.']
     child=s.home/CHILD
+    if exists(s.home,UNSIGNED_REPLACEMENT):
+        r['unsignedReplacement']=loads(private_file(s.home/UNSIGNED_REPLACEMENT,4096))
+        r['unsignedArchivePresent']=exists(s.home,UNSIGNED_ARCHIVE)
+        if not os.path.lexists(child):r['state']='unsigned-replacement-incomplete'
+    elif exists(s.home,UNSIGNED_ARCHIVE):r['state']='unsigned-replacement-incomplete'
     if not os.path.lexists(child):return r
     directory(child);r['state']='initialization-incomplete'
     r['journalFiles']={name:dict(present=exists(child,name),bytes=(child/name).lstat().st_size if exists(child,name) else None)
@@ -264,19 +271,60 @@ def observe(s,child,rpc,*,sleeper=time.sleep):
             save_observation(child,'submission-unknown',reason='rpc-or-status-evidence-unavailable');return
 
 
-def execute(home,wallet,*,opener=None,sleeper=time.sleep):
+def unsigned_size_plan(s,pair):
+    """Only the original oversized, expired, never-signing preparation failure."""
+    check(not exists(s.home,UNSIGNED_ARCHIVE) and not exists(s.home,UNSIGNED_REPLACEMENT),'unsigned-replacement-already-used')
+    child=s.home/CHILD;directory(child)
+    check({p.name for p in child.iterdir()}=={'plan.json','observation-000.json'},'unsigned-replacement-evidence-not-exclusive')
+    raw=private_file(child/'plan.json',JOURNAL_BYTES)
+    check(len(raw)>131072,'unsigned-replacement-not-size-failure')
+    i=loads(raw);check(i.get('pairAccounts')==pair,'unsigned-replacement-pair-mismatch')
+    intent_message(i,pair)
+    check(clock()>=i['expiresAtMs'],'unsigned-replacement-intent-not-expired')
+    evidence=private_file(child/'observation-000.json',4096);o=loads(evidence)
+    check(set(o)=={'state','reason','recordedAtMs'} and o['state']=='preparation-incomplete'
+          and o['reason']=='validation-or-transport-failure' and integer(o['recordedAtMs'])
+          and o['recordedAtMs']>=i['recordedAtMs'],'unsigned-replacement-observation')
+    return i,{name:hashlib.sha256(value).hexdigest() for name,value in
+              [('plan.json',raw),('observation-000.json',evidence)]}
+
+
+def archive_unsigned_size_plan(s,pair,old,hashes,expired_height):
+    check(not stopped(s.home),'stop-requested')
+    current,current_hashes=unsigned_size_plan(s,pair)
+    check(current==old and current_hashes==hashes,'unsigned-replacement-journal-changed')
+    check(integer(expired_height) and expired_height>old['lastValidBlockHeight'],'unsigned-replacement-blockhash-live')
+    marker=dict(format='devnet-pool-unsigned-size-replacement-1',archive=UNSIGNED_ARCHIVE,
+        oldMessageSha256=old['messageSha256'],oldLastValidBlockHeight=old['lastValidBlockHeight'],
+        observedFinalizedHeight=expired_height,filesSha256=hashes,recordedAtMs=clock(),
+        basis='intact-local-journal-no-signing-or-send-evidence',automaticRetry=False)
+    # Durable boundary precedes the rename. A crash anywhere leaves execution
+    # blocked; no automatic recovery ever signs, sends, deletes or resets state.
+    write_new(s.home/UNSIGNED_REPLACEMENT,marker)
+    os.rename(s.home/CHILD,s.home/UNSIGNED_ARCHIVE);sync_directory(s.home)
+
+
+def execute(home,wallet,*,allow_replace_unsigned=False,opener=None,sleeper=time.sleep):
     rpc=PoolRpc(opener)
     with Session(home) as s:
         check(s.wallet==wallet,'explicit-wallet-mismatch')
-        if os.path.lexists(s.home/CHILD):return report(s,rpc,'existing-pool-journal-use-status-or-recover')
+        if not allow_replace_unsigned:
+            if os.path.lexists(s.home/CHILD):return report(s,rpc,'existing-pool-journal-use-status-or-recover')
+            if exists(s.home,UNSIGNED_REPLACEMENT) or exists(s.home,UNSIGNED_ARCHIVE):
+                return report(s,rpc,'unsigned-replacement-interrupted-use-status')
         if stopped(s.home):return report(s,rpc,'stop-requested')
         child=None
         try:
-            pair=pair_accounts(s);c=capture(rpc,pair)
+            pair=pair_accounts(s)
+            old,hashes=unsigned_size_plan(s,pair) if allow_replace_unsigned else (None,None)
+            c=capture(rpc,pair)
             if not c['fundingSufficient']:
                 return dict(report(s,rpc,'insufficient-devnet-funding'),state='funding-required',funding={k:c[k] for k in ('walletLamports','estimatedRequiredLamports','estimatedShortfallLamports')})
             check(not stopped(s.home),'stop-requested')
-            child=s.home/CHILD;child.mkdir(mode=0o700);sync_directory(s.home)
+            if allow_replace_unsigned:
+                expired_height=height(rpc,{'intent':old});genesis(rpc)
+                archive_unsigned_size_plan(s,pair,old,hashes,expired_height)
+            new_child=s.home/CHILD;new_child.mkdir(mode=0o700);sync_directory(s.home);child=new_child
             i,wire,v,sim=prepare(s,child,c,rpc)
             # Re-observe exact deployment and account state after simulation, before sending.
             genesis(rpc)
