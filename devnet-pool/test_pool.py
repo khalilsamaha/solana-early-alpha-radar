@@ -53,6 +53,68 @@ class PoolCase(unittest.TestCase):
         self.assertEqual(receipt['rentLockedLamports'],'30769560');self.assertEqual(receipt['walletAfterLamports'],'24069960')
         q=next(q for q in t.calls if q['method']=='sendTransaction');self.assertEqual(q['params'][1]['maxRetries'],0)
         self.assertFalse(q['params'][1]['skipPreflight']);self.assertNotIn(q['params'][0],json.dumps(r))
+    def test_realistic_legacy_program_payload_survives_entire_journal(self):
+        # Recorded devnet ATA program data is 140044 base64 characters. Earlier
+        # empty executable fixtures hid the 128 KiB plan and 32 KiB observation caps.
+        payload=base64.b64encode(b'\x7fELF'+bytes(105029)).decode()
+        self.assertEqual(len(payload),140044)
+        def change(q,v,t):
+            if q['method']=='getMultipleAccounts':
+                v['value'][ROLES.index('associatedTokenProgram')]['data']=[payload,'base64']
+            return v
+        r,t=self.run_pool(change)
+        self.assertEqual(r['state'],'finalized-success',r)
+        child=self.home/CHILD
+        self.assertGreater((child/'plan.json').stat().st_size,131072)
+        self.assertGreater((child/'observation-000.json').stat().st_size,32768)
+        self.assertEqual(work.status(self.home,self.wallet)['state'],'finalized-success')
+        r=work.recover(self.home,self.wallet,opener=t,sleeper=lambda _:None)
+        self.assertEqual(r['networkRequests'],0)
+        self.assertEqual(sum(q['method']=='sendTransaction' for q in t.calls),1)
+
+    def test_legacy_oversized_unsigned_plan_status_and_recovery_never_retry(self):
+        payload=base64.b64encode(bytes(105033)).decode()
+        def change(q,v,t):
+            if q['method']=='getMultipleAccounts':v['value'][ROLES.index('associatedTokenProgram')]['data']=[payload,'base64']
+            return v
+        with patch('pool_workflow.signer',side_effect=ValueError('restricted-pool-signer-refused')):
+            r,t=self.run_pool(change)
+        self.assertEqual(r['state'],'preparation-incomplete')
+        child=self.home/CHILD;before={p.name:p.read_bytes() for p in child.iterdir()}
+        for f in (work.execute,work.recover):
+            r=f(self.home,self.wallet,opener=t,sleeper=lambda _:None)
+            self.assertEqual(r['networkRequests'],0);self.assertEqual(r['sendRequestsThisRun'],0)
+            self.assertFalse(r['journalFiles']['signed.json']['present'])
+            self.assertFalse(r['journalFiles']['signing-attempt.json']['present'])
+            self.assertFalse(r['journalFiles']['send-boundary.json']['present'])
+            self.assertGreater(r['journalFiles']['plan.json']['bytes'],131072)
+        self.assertEqual(work.status(self.home,self.wallet)['state'],'preparation-incomplete')
+        self.assertEqual(before,{p.name:p.read_bytes() for p in child.iterdir()})
+
+    def test_executable_data_caps_are_role_specific(self):
+        rows=pre_accounts(self.pair)
+        rows[ROLES.index('associatedTokenProgram')]['data']=['A'*(work.LEGACY_PROGRAM_BASE64+1),'base64']
+        with self.assertRaisesRegex(ValueError,'pool-response-account-cap'):work.PoolRpc.accounts(rows)
+        rows=pre_accounts(self.pair);rows[ROLES.index('holder0')]['data']=['A'*6001,'base64']
+        with self.assertRaisesRegex(ValueError,'pool-response-account-cap'):work.PoolRpc.accounts(rows)
+        rows=pre_accounts(self.pair);row=rows[ROLES.index('associatedTokenProgram')]
+        row.update(executable=False,data=['A'*6001,'base64'])
+        with self.assertRaisesRegex(ValueError,'pool-response-account-cap'):work.PoolRpc.accounts(rows)
+
+    def test_journal_cap_still_bounds_python_and_signer(self):
+        self.prepare_only();child=self.home/CHILD
+        (child/'plan.json').write_bytes(b' '*(work.JOURNAL_BYTES+1))
+        with self.assertRaisesRegex(ValueError,'unsafe-private-file'):work.read(child,'plan.json')
+        with self.assertRaisesRegex(ValueError,'restricted-pool-signer-refused'):work.signer(self.home)
+
+    def test_observation_cap_and_sequence_remain_enforced(self):
+        child=self.home/CHILD;child.mkdir(mode=0o700)
+        with self.assertRaisesRegex(ValueError,'pool-journal-cap'):
+            work.save_observation(child,'submission-unknown',evidence='A'*work.JOURNAL_BYTES)
+        self.assertEqual(list(child.iterdir()),[])
+        write_new(child/'observation-001.json',dict(state='submission-unknown'))
+        with self.assertRaisesRegex(ValueError,'observation-sequence'):work.observations(child)
+
     def test_inspect_no_sign_no_journal(self):
         t=Transport(self.home);r=work.inspect(self.home,self.wallet,opener=t)
         self.assertEqual(r['state'],'funding-ready');self.assertEqual(r['networkRequests'],7)

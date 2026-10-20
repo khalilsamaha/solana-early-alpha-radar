@@ -4,6 +4,7 @@ import copy
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -20,8 +21,29 @@ FLAGS=dict(network='devnet',executionApproved=False,mainnetEnabled=False,product
 clock=pair_work.clock
 digest=pair_work.digest
 exists=pair_work.exists
-observations=pair_work.observations
-save_observation=pair_work.save_observation
+# Full legacy executable account data belongs to the signed evidence. Keep it,
+# with consistent bounded readers across preparation, simulation and recovery.
+JOURNAL_BYTES=524288
+ACCOUNT_SET_BYTES=500000
+LEGACY_PROGRAM_BASE64=262144
+JOURNAL_NAMES=('plan.json','signing-attempt.json','signed.json','simulation-request.json',
+               'simulation-response.json','simulation-review.json','send-boundary.json','send-response.json')
+
+
+def observations(child):
+    rows=sorted(p for p in child.iterdir() if re.fullmatch(r'observation-\d{3}\.json',p.name))
+    check(len(rows)<=32,'observation-cap')
+    check([p.name for p in rows]==['observation-%03d.json'%i for i in range(len(rows))],'observation-sequence')
+    return [read(child,p.name) for p in rows]
+
+
+def save_observation(child,state,**values):
+    old=observations(child)
+    if old and old[-1]['state'] in TERMINAL:return
+    check(len(old)<32,'observation-cap')
+    value=dict(state=state,recordedAtMs=clock(),**values)
+    check(len(json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False).encode())<=JOURNAL_BYTES,'pool-journal-cap')
+    write_new(child/('observation-%03d.json'%len(old)),value)
 
 
 class PoolRpc(Client):
@@ -33,12 +55,17 @@ class PoolRpc(Client):
     def accounts(rows,large=False):
         check(type(rows) is list and len(rows)<=21,'pool-response-account-count')
         clean=[]
-        for row in rows:
+        for index,row in enumerate(rows):
             if row is None:clean.append(None);continue
             check(type(row) is dict and type(row.get('data')) is list and len(row['data'])==2
                   and row['data'][1]=='base64' and type(row['data'][0]) is str
-                  and len(row['data'][0])<=(2800000 if large else 6000),'pool-response-account-cap')
+                  and len(row['data'][0])<=(2800000 if large and (len(rows)==2 or index==20)
+                      else LEGACY_PROGRAM_BASE64 if len(rows) in (20,21) and index==ROLES.index('associatedTokenProgram')
+                      and row.get('executable') is True else 6000),'pool-response-account-cap')
             clean.append({k:row[k] for k in ('owner','executable','lamports','data') if k in row})
+        bounded=clean[:-1] if len(clean)==21 else clean
+        if len(clean) in (20,21):
+            check(len(json.dumps(bounded,separators=(',',':')).encode())<=ACCOUNT_SET_BYTES,'pool-account-set-cap')
         return clean
     def request(self,method,params):
         item=super().request(method,params)
@@ -124,7 +151,7 @@ def inspect(home,wallet,*,opener=None):
         return dict(r,networkRequests=len(rpc.calls),requests=rpc.calls)
 
 
-def read(child,name):return loads(private_file(child/name,131072))
+def read(child,name):return loads(private_file(child/name,JOURNAL_BYTES))
 
 
 def signer(home):
@@ -165,6 +192,9 @@ def report(s,rpc,reason=None):
     child=s.home/CHILD
     if not os.path.lexists(child):return r
     directory(child);r['state']='initialization-incomplete'
+    r['journalFiles']={name:dict(present=exists(child,name),bytes=(child/name).lstat().st_size if exists(child,name) else None)
+                       for name in JOURNAL_NAMES}
+    r['journalReaderVersion']='pool-journal-size-1'
     if exists(child,'plan.json'):
         i=read(child,'plan.json');r.update(state='intent-recorded',intent={k:v for k,v in i.items() if k!='preAccounts'})
     if exists(child,'signing-attempt.json'):r['state']='signing-outcome-unknown'

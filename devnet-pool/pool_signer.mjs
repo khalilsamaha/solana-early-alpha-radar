@@ -25,7 +25,7 @@ try {
  fields(r,['directory','action']);check(r.action==='sign');directory(r.directory);check(!stopped(r.directory));
  const child=path.join(r.directory,'controlled-pool-v1');directory(child);
  const pairDir=path.join(r.directory,'test-token-pair-v1');directory(pairDir);
- const i=JSON.parse(read(path.join(child,'plan.json'),131072));
+ const i=JSON.parse(read(path.join(child,'plan.json'),524288));
  fields(i,['format','network','genesis','pairAccounts','accounts','depositAtomicPerMint','openTime','maximumFeeLamports','maximumCreationFeeLamports','maximumSpendLamports','computeUnits','rents','creationFeeLamports','quotedFeeLamports','walletObservedLamports','contextSlot','blockhash','lastValidBlockHeight','recordedAtMs','expiresAtMs','messageSha256','preAccounts']);
  check(i.format==='devnet-pool-intent-1'&&i.network==='devnet'&&i.genesis==='EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG');
  const walletKey=key(path.join(r.directory,'signer.pk8'));const walletPub=pub(walletKey);

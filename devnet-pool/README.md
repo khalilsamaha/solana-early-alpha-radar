@@ -43,3 +43,11 @@ Reviewed official source on 2026-10-20:
 - [Solana SDK public-key derivation](https://github.com/solana-foundation/solana-web3.js/blob/maintenance/v1.x/src/publickey.ts), blob `c8195b4a84c72d81a3eac7932bb9ab23ae3d50c5`; [test vectors](https://github.com/solana-foundation/solana-web3.js/blob/maintenance/v1.x/test/publickey.test.ts), blob `bc4b9cb4c3fa3802845033c63e1010b20e4b07d0`.
 
 These source references describe the implementation interface, not a reproducible-build attestation for the pinned deployed binary.
+
+## Journal size correction (2026-10-20)
+
+The recorded devnet Associated Token Program is a legacy executable with 140,044 base64 characters of data. The original 128 KiB plan readers rejected the resulting intent before signing, and reporting repeated the read failure. Empty executable fixtures had missed this case. Simulation and post-account handling also used a 6,000-character cap, while inherited observation readers accepted only 32 KiB.
+
+Pool journal readers and the restricted signer now use a 512 KiB file bound. Only the Associated Token Program position, when executable, permits up to 256 KiB of base64 payload in the twenty-account evidence set; other regular accounts retain the 6,000-character bound. The separately pinned ProgramData slot retains its existing larger bound. The twenty-account JSON set is bounded to 500,000 bytes. Observations use pool-specific bounded readers with the same sequence and count checks. No account data is discarded or substituted.
+
+`status` exports `journalFiles` presence and byte sizes plus `journalReaderVersion=pool-journal-size-1`. It makes no RPC calls and does not sign, send, delete, rewrite or resume an intent. Existing incomplete journals remain blocked from execute. After upgrading, run **status only** and review its public report before choosing any further action. Do not remove the journal to retry. The fix does not establish whether an earlier host attempt signed or sent; its saved markers must be inspected.
