@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {addresses as poolAddresses} from '../devnet-pool/pool_policy.mjs';
+import {deriveReverse} from '../devnet-pool/reverse_policy.mjs';
 function stopped(p){try{fs.lstatSync(path.join(p,'STOP'));return true;}catch(e){if(e.code==='ENOENT')return false;throw e;}}
 const check=v=>{if(!v)throw new Error('refused');};
 const alpha='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -18,6 +19,7 @@ const SYSTEM='11111111111111111111111111111111';
 const roles=['wallet','authority','config','pool','source','destination','inputVault','outputVault','inputMint','outputMint','observation'];
 const ixroles=['wallet','authority','config','pool','source','destination','inputVault','outputVault','inputTokenProgram','outputTokenProgram','inputMint','outputMint','observation'];
 const writable=new Set(['wallet','pool','source','destination','inputVault','outputVault','observation']);
+const namesMatch=(a,b)=>Object.keys(a).length===Object.keys(b).length&&Object.keys(a).every(k=>a[k]===b[k]);
 const stable=['network','accounts','amountIn','minimumAmountOut','maxComputeUnits','maxMicroLamportsPerCU','maxPriorityFeeLamports','maxTotalFeeLamports'];
 function canonical(v){if(Array.isArray(v))return v.map(canonical);if(v&&typeof v==='object')return Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])]));return v;}
 const stringify=v=>JSON.stringify(canonical(v));
@@ -32,10 +34,10 @@ const u64=n=>{const b=Buffer.alloc(8);b.writeBigUInt64LE(BigInt(n));return b;};
 const u32=n=>{const b=Buffer.alloc(4);b.writeUInt32LE(n);return b;};
 const ix=(program,accounts,data)=>Buffer.concat([Buffer.from([program,accounts.length,...accounts,data.length]),data]);
 try{
- const input=fs.readFileSync(0);check(input.length<=4096);const r=JSON.parse(input);const execution=r.purpose==='controlled-pool-swap-execution-1';
- fields(r,execution?['directory','purpose']:['directory']);directory(r.directory);
+ const input=fs.readFileSync(0);check(input.length<=4096);const r=JSON.parse(input);const execution=r.purpose==='controlled-pool-swap-execution-1',reverse=r.purpose==='controlled-pool-reverse-swap-1';
+ fields(r,execution||reverse?['directory','purpose']:['directory']);directory(r.directory);
  check(!stopped(r.directory));
- const child=path.join(r.directory,execution?'swap-execution-v1':'swap-simulation-v1');directory(child);
+ const child=path.join(r.directory,reverse?'swap-reverse-v1':execution?'swap-execution-v1':'swap-simulation-v1');directory(child);
  const plan=JSON.parse(read(path.join(child,'plan.json'),32768));fields(plan,['format','scope','packet','recordedAtMs']);check(plan.format==='swap-signing-plan-1');
  const req=JSON.parse(read(path.join(child,'signing-request.json'),8192));fields(req,['format','planSha256','preflightSha256','expiresAtMs','computeUnits','microLamportsPerCU','messageBase64']);
  check(req.format==='restricted-swap-request-1'&&req.planSha256===hash(plan)&&/^[a-f0-9]{64}$/.test(req.preflightSha256));
@@ -58,6 +60,24 @@ try{
   const derived=poolAddresses(setup.pairAccounts);
   const mapping={source:'holder0',destination:'holder1',inputVault:'vault0',outputVault:'vault1',inputMint:'mint0',outputMint:'mint1'};
   for(const name of roles)check(a[name]===derived[mapping[name]||name]);
+ }
+ if(reverse){
+  check(p.maxComputeUnits===300000&&p.maxMicroLamportsPerCU==='0'&&p.maxPriorityFeeLamports==='0'&&p.maxTotalFeeLamports==='10000'&&req.microLamportsPerCU==='0');
+  const setup=JSON.parse(read(path.join(r.directory,'controlled-pool-v1','plan.json'),512*1024));
+  const first=path.join(r.directory,'swap-execution-v1');directory(first);
+  const entryPlan=JSON.parse(read(path.join(first,'plan.json'),32768));
+  const entrySigned=JSON.parse(read(path.join(first,'signed.json'),8192));
+  const entryReceipt=JSON.parse(read(path.join(first,'receipt-evidence.json'),131072));
+  const result=deriveReverse(setup.pairAccounts,entryPlan,entrySigned.wire,entryReceipt);
+  check(namesMatch(result.accounts,a)&&p.amountIn===result.amountIn&&p.minimumAmountOut===result.minimumAmountOut);
+  const executionProof=JSON.parse(read(path.join(child,'execution.json'),32768));
+  check(executionProof.format==='controlled-pool-reverse-swap-1'&&executionProof.priorExecution.wireSha256===result.forwardWireSha256);
+  const rows=new Map(capture.accountKeys.map((k,i)=>[k,capture.evidence.accounts.result.value[i]]));
+  check(rows.get(a.wallet).lamports===result.walletAfterLamports);
+  for(const [k,amount] of Object.entries(result.holderAfterAtomic)){
+   const row=rows.get(k);check(row.owner===TOKEN&&row.data[1]==='base64');
+   const raw=Buffer.from(row.data[0],'base64');check(raw.length===165&&raw.readBigUInt64LE(64).toString()===amount);
+  }
  }
  const inputAmount=atomic(p.amountIn,true);check(inputAmount<=1000n);const minimum=atomic(p.minimumAmountOut,true);
  num(p.maxComputeUnits,1,300000);num(req.computeUnits,1,p.maxComputeUnits);

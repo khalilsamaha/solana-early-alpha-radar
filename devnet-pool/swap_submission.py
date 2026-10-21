@@ -1,5 +1,6 @@
 """One controlled devnet swap. Immutable attempt boundary; recovery never broadcasts."""
 import base64
+import copy
 import json
 import os
 from pathlib import Path
@@ -14,8 +15,94 @@ from recorded_capture import Client, GENESIS
 
 CHILD = 'swap-execution-v1'
 VERSION = 'controlled-pool-swap-execution-1'
+REVERSE_CHILD = 'swap-reverse-v1'
+REVERSE_VERSION = 'controlled-pool-reverse-swap-1'
 TERMINAL = ('finalized-success', 'finalized-failure', 'quarantined')
 TOKEN_ROLES = ('source', 'destination', 'inputVault', 'outputVault')
+
+
+def journal_name(reverse=False):
+    check(type(reverse) is bool, 'explicit-direction-required')
+    return REVERSE_CHILD if reverse else CHILD
+
+
+def forward_evidence(home, wallet):
+    r = report(home, wallet)
+    check(r['state'] == 'finalized-success' and r['submissionBoundaryRecorded']
+          and not r['signatureOutcomeUnknown'], 'finalized-entry-required')
+    return r
+
+
+def reverse_scope(home, wallet):
+    entry = forward_evidence(home, wallet)
+    rec = entry['observation']['receipt']
+    quantity = atomic(rec['outputAtomic'], 'entry-output', positive=True)
+    check(990 <= quantity <= 1000, 'reverse-input-cap')
+    scope = copy.deepcopy(entry['scope'])
+    a = scope['accounts']
+    for left, right in (('source', 'destination'), ('inputVault', 'outputVault'), ('inputMint', 'outputMint')):
+        a[left], a[right] = a[right], a[left]
+    scope['amountIn'] = str(quantity)
+    # Fixed test policy for the equal-seed-reserve pair, not a route-derived price.
+    scope['minimumAmountOut'] = str(quantity * 99 // 100)
+    proof = dict(signature=entry['signature'], wireSha256=entry['wireSha256'],
+                 messageSha256=entry['messageSha256'], blockhash=entry['intent']['blockhash'],
+                 receiptSlot=rec['slot'], receiptSha256=pool.digest(rec),
+                 scopeSha256=pool.digest(entry['scope']), receivedAtomic=str(quantity))
+    return scope, proof, rec
+
+
+def verify_forward_on_chain(rpc, home, wallet, expected):
+    child = home / CHILD
+    plan, wire, signed, evidence = bound(child, wallet)
+    genesis(rpc)
+    st = signature_status(rpc, signed['signatures'][0], evidence['contextSlot'])
+    check(st is not None and st['confirmationStatus'] == 'finalized', 'entry-finality-unavailable')
+    tx = transaction(rpc, signed['signatures'][0]); genesis(rpc)
+    check(tx is not None, 'entry-receipt-unavailable')
+    checked = receipt(tx, st, plan, wire, signed, read(child, 'presend-preflight.json', 4 * 1024 * 1024))
+    check(checked == expected, 'entry-current-receipt-mismatch')
+
+
+def continuity(capture, entry):
+    slot = capture['evidence']['accounts']['result']['context']['slot']
+    check(integer(slot) and slot >= entry['slot'], 'entry-continuity-slot')
+    rows = dict(zip(capture['accountKeys'], capture['evidence']['accounts']['result']['value']))
+    wallet = capture['packet']['policy']['accounts']['wallet']
+    check(rows[wallet]['lamports'] == int(entry['walletAfterLamports']), 'entry-wallet-continuity')
+    for role in ('source', 'destination'):
+        e = entry['tokenEffects'][role]
+        current = swap.token(rows[e['account']], e['mint'], wallet)
+        check(int(current['amount']) == int(e['afterAtomic']), 'entry-holder-continuity')
+
+
+def round_trip(entry, exit_receipt):
+    check(entry['state'] == 'finalized-success' and exit_receipt['state'] in ('finalized-success', 'finalized-failure'), 'round-trip-states')
+    check(entry['signature'] != exit_receipt['signature'] and exit_receipt['slot'] >= entry['slot'], 'round-trip-order')
+    first, last = entry['tokenEffects'], exit_receipt['tokenEffects']
+    for a, b in (('source', 'destination'), ('destination', 'source')):
+        check(first[a]['account'] == last[b]['account'] and first[a]['mint'] == last[b]['mint']
+              and first[a]['afterAtomic'] == last[b]['beforeAtomic'], 'round-trip-holder-continuity')
+    check(entry['walletAfterLamports'] == exit_receipt['walletBeforeLamports'], 'round-trip-wallet-continuity')
+    received_amount = int(entry['outputAtomic'])
+    spent = int(exit_receipt['inputAtomic'])
+    closed = exit_receipt['state'] == 'finalized-success'
+    check(spent == (received_amount if closed else 0), 'round-trip-exact-exit-quantity')
+    total_fee = int(entry['feeLamports']) + int(exit_receipt['feeLamports'])
+    check(total_fee <= 20000 and int(entry['walletBeforeLamports']) - int(exit_receipt['walletAfterLamports']) == total_fee, 'round-trip-fee-conservation')
+    net_original = int(last['destination']['afterAtomic']) - int(first['source']['beforeAtomic'])
+    residual = int(last['source']['afterAtomic']) - int(first['destination']['beforeAtomic'])
+    check(residual == received_amount - spent and net_original == int(exit_receipt['outputAtomic']) - int(entry['inputAtomic']), 'round-trip-token-conservation')
+    return dict(state='round-trip-reconciled' if closed else 'exit-failed-position-open',
+                entrySignature=entry['signature'], exitSignature=exit_receipt['signature'],
+                originalMint=first['source']['mint'], acquiredMint=first['destination']['mint'],
+                entryInputAtomic=entry['inputAtomic'], acquiredAtomic=entry['outputAtomic'],
+                exitInputAtomic=exit_receipt['inputAtomic'], returnedOriginalAtomic=exit_receipt['outputAtomic'],
+                netOriginalTokenAtomic=str(net_original), residualAcquiredTokenAtomic=str(residual),
+                entryFeeLamports=entry['feeLamports'], exitFeeLamports=exit_receipt['feeLamports'], totalFeeLamports=str(total_fee),
+                walletBeforeLamports=entry['walletBeforeLamports'], walletAfterLamports=exit_receipt['walletAfterLamports'],
+                evidenceBasis='Two exact finalized receipts with wallet/holder continuity; fees kept in native units',
+                profitabilityClaim=False, productionPositionUpdated=False)
 
 
 def now():
@@ -119,30 +206,38 @@ def save_observation(child, item):
 
 def bound(child, wallet):
     """Revalidate the canonical fixed scope and exact wire before observation or transport."""
+    check(child.name in (CHILD, REVERSE_CHILD), 'unsupported-swap-journal')
+    reverse = child.name == REVERSE_CHILD
     plan = read(child, 'plan.json')
     check(plan.get('format') == 'swap-signing-plan-1', 'plan-format')
     scope = plan['scope']
     p = plan['packet']
     swap.policy_check(scope, p, wallet, plan['recordedAtMs'])
-    check(scope['amountIn'] == '1000' and scope['minimumAmountOut'] == '990'
-          and scope['maxComputeUnits'] == 300000 and scope['maxMicroLamportsPerCU'] == '0'
-          and scope['maxPriorityFeeLamports'] == '0' and scope['maxTotalFeeLamports'] == '10000', 'fixed-scope-required')
-    setup = pool.read(child.parent / pool.CHILD, 'plan.json')
-    a = pool.addresses(setup['pairAccounts'])
-    mapping = dict(source='holder0', destination='holder1', inputVault='vault0', outputVault='vault1', inputMint='mint0', outputMint='mint1')
-    check(all(v == a[mapping.get(k, k)] for k, v in scope['accounts'].items()), 'controlled-accounts-required')
+    if reverse:
+        expected_scope, prior, _ = reverse_scope(child.parent, wallet)
+        check(scope == expected_scope, 'reverse-scope-binding')
+    else:
+        check(scope['amountIn'] == '1000' and scope['minimumAmountOut'] == '990'
+              and scope['maxComputeUnits'] == 300000 and scope['maxMicroLamportsPerCU'] == '0'
+              and scope['maxPriorityFeeLamports'] == '0' and scope['maxTotalFeeLamports'] == '10000', 'fixed-scope-required')
+        setup = pool.read(child.parent / pool.CHILD, 'plan.json')
+        a = pool.addresses(setup['pairAccounts'])
+        mapping = dict(source='holder0', destination='holder1', inputVault='vault0', outputVault='vault1', inputMint='mint0', outputMint='mint1')
+        check(all(v == a[mapping.get(k, k)] for k, v in scope['accounts'].items()), 'controlled-accounts-required')
     wire = read(child, 'signed.json', 8192)['wire']
     signed = swap.signed_binding(p, wire)
     evidence = read(child, 'execution.json')
-    check(evidence.get('format') == VERSION and evidence.get('planSha256') == pool.digest(plan)
+    check(evidence.get('format') == (REVERSE_VERSION if reverse else VERSION) and evidence.get('planSha256') == pool.digest(plan)
           and integer(evidence.get('lastValidBlockHeight')) and evidence['lastValidBlockHeight'] > 0 and integer(evidence.get('contextSlot')), 'execution-binding')
+    if reverse:
+        check(evidence.get('priorExecution') == prior, 'reverse-entry-proof-binding')
     return plan, wire, signed, evidence
 
 
-def report(home, wallet, trace=None, reason=None):
-    child = home / CHILD
+def report(home, wallet, trace=None, reason=None, *, reverse=False):
+    child = home / journal_name(reverse)
     calls = trace.calls if trace else []
-    r = dict(format=VERSION, state='not-started', wallet=wallet, network='devnet', reason=reason,
+    r = dict(format=REVERSE_VERSION if reverse else VERSION, state='not-started', wallet=wallet, network='devnet', reason=reason,
              networkRequests=len(calls), requests=calls,
              sendRequestsThisRun=sum(c['method'] == 'sendTransaction' for c in calls),
              submissionBoundaryRecorded=False, signaturesCreatedThisRun=0, signatureOutcomeUnknown=False,
@@ -154,6 +249,8 @@ def report(home, wallet, trace=None, reason=None):
                  'The signer is a same-user boundary; another holder of private signed bytes could broadcast them while valid.',
                  'Fixed test tokens and devnet fees do not measure strategy profitability or mainnet execution.',
                  'No journal replacement, automatic retry, reverse swap or production position update is enabled.'])
+    if reverse:
+        r['limitations'][-1] = 'One explicit reverse of the recorded acquisition only; no journal replacement, automatic retry or production position update.'
     if not os.path.lexists(child):
         return r
     directory(child)
@@ -164,12 +261,13 @@ def report(home, wallet, trace=None, reason=None):
         plan, wire, signed, evidence = bound(child, wallet)
         r.update(scope=plan['scope'], signature=signed['signatures'][0], wireSha256=signed['wireSha256'],
                  messageSha256=signed['wireMessageSha256'], lastValidBlockHeight=evidence['lastValidBlockHeight'],
-                 setupEvidence=evidence['setupEvidence'], priorSimulation=evidence['priorSimulation'],
+                 setupEvidence=evidence['setupEvidence'],
                  intent=dict(blockhash=plan['packet']['policy']['blockhash'],
                              issuedAtMs=plan['packet']['policy']['issuedAtMs'],
                              expiresAtMs=plan['packet']['policy']['expiresAtMs'],
                              quotedFeeLamports=plan['packet']['feeAssertion']['lamports'],
                              contextSlot=evidence['contextSlot']))
+        r['priorExecution' if reverse else 'priorSimulation'] = evidence['priorExecution' if reverse else 'priorSimulation']
         if os.path.lexists(child / 'simulation-review.json'):
             r['simulation'] = read(child, 'simulation-review.json')
             r['state'] = 'signed-simulated-not-submitted'
@@ -186,6 +284,8 @@ def report(home, wallet, trace=None, reason=None):
                              read(child, 'presend-preflight.json', 4 * 1024 * 1024))
             check(replay == last['receipt'] and replay['state'] == last['state'], 'terminal-receipt-replay-mismatch')
         r.update(state=last['state'], observation=last)
+        if reverse and last['state'] in ('finalized-success', 'finalized-failure'):
+            r['roundTrip'] = round_trip(forward_evidence(home, wallet)['observation']['receipt'], last['receipt'])
     if os.path.lexists(child / 'failure.json'):
         r['failure'] = read(child, 'failure.json')
         if not r['submissionBoundaryRecorded']:
@@ -240,11 +340,12 @@ def receipt(tx, st, plan, wire, signed, capture):
         effects[name] = dict(account=k, mint=mint, beforeAtomic=str(values[0]), afterAtomic=str(values[1]), deltaAtomic=str(deltas[-1]))
     failed = m['err'] is not None
     check(deltas == [0, 0, 0, 0] if failed else
-          deltas[0] == -1000 and deltas[1] >= 990 and deltas[2] == 1000 and deltas[3] == -deltas[1], 'receipt-token-effects')
+          deltas[0] == -int(plan['scope']['amountIn']) and deltas[1] >= int(plan['scope']['minimumAmountOut'])
+          and deltas[2] == -deltas[0] and deltas[3] == -deltas[1], 'receipt-token-effects')
     return dict(state='finalized-failure' if failed else 'finalized-success', slot=st['slot'],
                 signature=signed['signatures'][0], wireSha256=signed['wireSha256'], messageSha256=signed['wireMessageSha256'],
                 feeLamports=str(fee), walletBeforeLamports=str(pre[0]), walletAfterLamports=str(post[0]),
-                inputAtomic='0' if failed else '1000', outputAtomic=str(deltas[1]), tokenEffects=effects,
+                inputAtomic='0' if failed else plan['scope']['amountIn'], outputAtomic=str(deltas[1]), tokenEffects=effects,
                 evidenceBasis='RPC finalized exact signed transaction and native/SPL balance reconciliation')
 
 
@@ -261,6 +362,8 @@ def observe(child, wallet, rpc, *, sleeper=time.sleep):
                 tx = transaction(rpc, signed['signatures'][0]); genesis(rpc)
                 if tx is not None:
                     result = receipt(tx, st, plan, wire, signed, capture)
+                    if child.name == REVERSE_CHILD:
+                        round_trip(forward_evidence(child.parent, wallet)['observation']['receipt'], result)
                     # Retain bounded raw receipt fields privately, so terminal status replays
                     # accounting rather than trusting a stored 'success' label.
                     tx = dict(tx)
@@ -289,25 +392,30 @@ def observe(child, wallet, rpc, *, sleeper=time.sleep):
             code = str(exc) if type(exc) is ValueError else 'invalid-evidence'
             # Missing receipt fields remain unknown; contradictory supplied effects are quarantined.
             unavailable = ('receipt-unavailable', 'receipt-balances-unavailable', 'receipt-tokens-unavailable')
-            if code.startswith('receipt-') and code not in unavailable:
+            if code.startswith(('receipt-', 'round-trip-')) and code not in unavailable:
                 save_observation(child, dict(state='quarantined', reason=code))
             else:
                 save_observation(child, dict(state='submission-unknown', reason='rpc-or-receipt-evidence-unavailable'))
             return
 
 
-def execute(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep):
+def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper=time.sleep):
     trace = Trace(opener); rpc = ExecutionRpc(trace)
     with Session(home) as s:
         check(s.wallet == wallet, 'explicit-wallet-mismatch')
-        child = s.home / CHILD
+        child = s.home / journal_name(reverse)
         if os.path.lexists(child):
-            return report(s.home, wallet, trace, 'existing-journal-use-recover-no-retry')
+            return report(s.home, wallet, trace, 'existing-journal-use-recover-no-retry', reverse=reverse)
         check(not swap.stop(s.home), 'stop-requested')
         scope, setup = bridge.source_scope(s, expected_pool)
-        prior = old_simulation(s.home, scope)
-        # Safe read-only checks precede creation; once the execution directory exists it is never reused.
-        prior_absent_and_expired(rpc, prior)
+        if reverse:
+            scope, prior, entry_receipt = reverse_scope(s.home, wallet)
+            check(scope['accounts']['pool'] == expected_pool, 'explicit-pool-mismatch')
+            verify_forward_on_chain(rpc, s.home, wallet, entry_receipt)
+        else:
+            prior = old_simulation(s.home, scope)
+            prior_absent_and_expired(rpc, prior)
+        # Once the execution directory exists it is never reused.
         check(not swap.stop(s.home), 'stop-requested')
         child.mkdir(mode=0o700); sync_directory(s.home)
         phase = 'fresh-packet'
@@ -317,8 +425,8 @@ def execute(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep):
             v = swap.policy_check(scope, packet, wallet, now())
             plan = dict(format='swap-signing-plan-1', scope=scope, packet=packet, recordedAtMs=now())
             write_new(child / 'plan.json', plan)
-            write_new(child / 'execution.json', dict(format=VERSION, planSha256=pool.digest(plan), setupEvidence=setup,
-                      priorSimulation=prior, lastValidBlockHeight=built['lastValidBlockHeight'],
+            write_new(child / 'execution.json', dict(format=REVERSE_VERSION if reverse else VERSION, planSha256=pool.digest(plan), setupEvidence=setup,
+                      **({'priorExecution': prior} if reverse else {'priorSimulation': prior}), lastValidBlockHeight=built['lastValidBlockHeight'],
                       contextSlot=built['evidence']['blockhash']['result']['context']['slot']))
             phase = 'preflight'
             capture = swap.collect(packet=packet, opener=trace)
@@ -326,13 +434,19 @@ def execute(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep):
             write_new(child / 'preflight.json', capture)
             reviewed = swap.audit(capture, now_ms=now())
             check(reviewed['state'] == 'preflight-evidence-consistent', 'fresh-preflight-required')
+            if reverse:
+                phase = 'entry-to-exit-continuity'
+                continuity(capture, entry_receipt)
             check(not swap.stop(s.home), 'stop-requested')
             write_new(child / 'signing-request.json', dict(format='restricted-swap-request-1',
                 planSha256=pool.digest(plan), preflightSha256=pool.digest(capture), expiresAtMs=reviewed['validUntilExclusiveMs'],
                 computeUnits=v['computeUnits'], microLamportsPerCU=v['microLamportsPerCU'],
                 messageBase64=base64.b64encode(decode_wire(packet['unsignedTransactionBase64'])[1]).decode()))
             phase = 'signing'
-            swap.invoke_signer(s.home, execution=True)
+            if reverse:
+                swap.invoke_signer(s.home, reverse=True)
+            else:
+                swap.invoke_signer(s.home, execution=True)
             plan, wire, signed, evidence = bound(child, wallet)
             check(not swap.stop(s.home), 'stop-requested')
             check(swap.audit(capture, now_ms=now())['state'] == 'preflight-evidence-consistent', 'preflight-expired')
@@ -353,6 +467,8 @@ def execute(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep):
             check(current['state'] == 'preflight-evidence-consistent' and current['snapshotSlot'] >= simulated['simulationSlot'], 'presend-freshness')
             check(fresh['packet'] == packet and fresh['accountKeys'] == capture['accountKeys']
                   and fresh['evidence']['accounts']['result']['value'] == capture['evidence']['accounts']['result']['value'], 'presend-account-drift')
+            if reverse:
+                continuity(fresh, entry_receipt)
             genesis(rpc)
             height = received(rpc.request('getBlockHeight', [dict(commitment='finalized', minContextSlot=current['snapshotSlot'])]))
             check(integer(height) and height + 10 < evidence['lastValidBlockHeight'], 'blockhash-near-expiry')
@@ -372,25 +488,46 @@ def execute(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep):
             observe(child, wallet, rpc, sleeper=sleeper)
         except (ValueError, KeyError, TypeError, IndexError, OSError, swap.subprocess.SubprocessError):
             write_new(child / 'failure.json', dict(phase=phase, reason='execution-validation-or-transport-incomplete', atMs=now()))
-        r = report(s.home, wallet, trace)
+        r = report(s.home, wallet, trace, reverse=reverse)
         r['signaturesCreatedThisRun'] = None if r['signatureOutcomeUnknown'] else int(os.path.lexists(child / 'signed.json'))
         return r
 
 
-def recover(home, wallet, *, opener=None, sleeper=time.sleep):
+def recover(home, wallet, *, opener=None, sleeper=time.sleep, reverse=False):
     trace = Trace(opener, recovery=True)
     with Session(home) as s:
         check(s.wallet == wallet, 'explicit-wallet-mismatch')
-        r = report(s.home, wallet)
+        r = report(s.home, wallet, reverse=reverse)
         if r['state'] in TERMINAL or not r['submissionBoundaryRecorded']:
             return r
-        child = s.home / CHILD
+        child = s.home / journal_name(reverse)
         check(len(observations(child)) <= 29, 'recovery-observation-cap')
         observe(child, wallet, RecoveryRpc(trace), sleeper=sleeper)
-        return report(s.home, wallet, trace)
+        return report(s.home, wallet, trace, reverse=reverse)
 
 
-def status(home, wallet):
+def status(home, wallet, *, reverse=False):
     with Session(home) as s:
         check(s.wallet == wallet, 'explicit-wallet-mismatch')
-        return report(s.home, wallet)
+        return report(s.home, wallet, reverse=reverse)
+
+
+def execute(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep):
+    return _execute(home, wallet, expected_pool, opener=opener, sleeper=sleeper)
+
+
+def execute_reverse(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep):
+    return _execute(home, wallet, expected_pool, reverse=True, opener=opener, sleeper=sleeper)
+
+
+def inspect_reverse(home, wallet, expected_pool):
+    with Session(home) as s:
+        check(s.wallet == wallet, 'explicit-wallet-mismatch')
+        bridge.source_scope(s, expected_pool)
+        scope, proof, _ = reverse_scope(s.home, wallet)
+        check(scope['accounts']['pool'] == expected_pool, 'explicit-pool-mismatch')
+        r = report(s.home, wallet, reverse=True)
+        r.update(scope=scope, priorExecution=proof)
+        if r['state'] == 'not-started':
+            r['state'] = 'stopped' if swap.stop(s.home) else 'reverse-scope-ready'
+        return r

@@ -63,3 +63,7 @@ A crash around the archive boundary remains blocked for inspection; no automatic
 ## Controlled swap submission
 
 After a successful controlled swap simulation, `swap_submit_cli.py` supplies a separate one-send devnet execution journal and read-only receipt recovery. The old simulation is preserved; fresh policy, program/accounts, signature verification, simulation and pre-send checks are required. Fixed input is 1,000 atomic units and minimum output is 990. Terminal reports replay private finalized receipt evidence. See [the submission release](../docs/CONTROLLED-SWAP-SUBMISSION-UPDATE.md) for limits, outcomes and host usage. There is no journal reset, automatic resend or mainnet path.
+
+## Receipt-bound reverse and round-trip accounting
+
+`reverse_cli.py` derives one reverse from a verified finalized forward receipt, using its complete acquired quantity and only the original controlled accounts. It creates `swap-reverse-v1`, preserves prior journals, and requires fresh deployment/accounts, simulation and native/holder continuity. Terminal accounting keeps token changes and native fees separate; failed exits retain the open acquired quantity. See [release and host commands](../docs/CONTROLLED-REVERSE-SWAP-UPDATE.md). No production trading integration or mainnet submission is enabled.
