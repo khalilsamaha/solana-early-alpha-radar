@@ -46,10 +46,10 @@ def policy_check(scope,packet,wallet,at):
 def stop(home):return os.path.lexists(Path(home)/'STOP')
 
 
-def invoke_signer(home):
+def invoke_signer(home, *, execution=False):
     node=shutil.which('node');check(node is not None,'node-unavailable')
     p=subprocess.run([str(Path(node).resolve()),str(Path(__file__).with_name('swap_signer.mjs'))],
-       input=json.dumps({'directory':str(home)}),text=True,capture_output=True,timeout=10,env={'PATH':os.defpath})
+       input=json.dumps(dict(directory=str(home), **({'purpose':'controlled-pool-swap-execution-1'} if execution else {}))),text=True,capture_output=True,timeout=10,env={'PATH':os.defpath})
     check(p.returncode==0 and p.stdout=='{"signed":true}','restricted-signer-refused')
 
 

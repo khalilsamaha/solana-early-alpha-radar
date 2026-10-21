@@ -59,3 +59,7 @@ Pool journal readers and the restricted signer now use a 512 KiB file bound. Onl
 Before replacement it saves an exclusive durable boundary with file hashes, then renames the complete old journal to `controlled-pool-v1-unsigned-size-archive-v1`. It retains every original byte. The fresh attempt uses the same wallet, test pair, pool addresses and spending checks, with a fresh blockhash and the normal signed simulation before its single permitted send. The flag does not allow replacement of a signed, simulated, submitted, ambiguous or previously replaced attempt. Ordinary execute and recovery never perform replacement.
 
 A crash around the archive boundary remains blocked for inspection; no automatic resume or cleanup occurs. The intact same-user local journal is the basis of these checks, not a guarantee against another process or a user deleting or modifying files. Never manually delete or move state to obtain another attempt.
+
+## Controlled swap submission
+
+After a successful controlled swap simulation, `swap_submit_cli.py` supplies a separate one-send devnet execution journal and read-only receipt recovery. The old simulation is preserved; fresh policy, program/accounts, signature verification, simulation and pre-send checks are required. Fixed input is 1,000 atomic units and minimum output is 990. Terminal reports replay private finalized receipt evidence. See [the submission release](../docs/CONTROLLED-SWAP-SUBMISSION-UPDATE.md) for limits, outcomes and host usage. There is no journal reset, automatic resend or mainnet path.

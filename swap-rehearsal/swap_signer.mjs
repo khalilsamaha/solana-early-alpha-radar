@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import {addresses as poolAddresses} from '../devnet-pool/pool_policy.mjs';
 function stopped(p){try{fs.lstatSync(path.join(p,'STOP'));return true;}catch(e){if(e.code==='ENOENT')return false;throw e;}}
 const check=v=>{if(!v)throw new Error('refused');};
 const alpha='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -31,9 +32,10 @@ const u64=n=>{const b=Buffer.alloc(8);b.writeBigUInt64LE(BigInt(n));return b;};
 const u32=n=>{const b=Buffer.alloc(4);b.writeUInt32LE(n);return b;};
 const ix=(program,accounts,data)=>Buffer.concat([Buffer.from([program,accounts.length,...accounts,data.length]),data]);
 try{
- const input=fs.readFileSync(0);check(input.length<=4096);const r=JSON.parse(input);fields(r,['directory']);directory(r.directory);
+ const input=fs.readFileSync(0);check(input.length<=4096);const r=JSON.parse(input);const execution=r.purpose==='controlled-pool-swap-execution-1';
+ fields(r,execution?['directory','purpose']:['directory']);directory(r.directory);
  check(!stopped(r.directory));
- const child=path.join(r.directory,'swap-simulation-v1');directory(child);
+ const child=path.join(r.directory,execution?'swap-execution-v1':'swap-simulation-v1');directory(child);
  const plan=JSON.parse(read(path.join(child,'plan.json'),32768));fields(plan,['format','scope','packet','recordedAtMs']);check(plan.format==='swap-signing-plan-1');
  const req=JSON.parse(read(path.join(child,'signing-request.json'),8192));fields(req,['format','planSha256','preflightSha256','expiresAtMs','computeUnits','microLamportsPerCU','messageBase64']);
  check(req.format==='restricted-swap-request-1'&&req.planSha256===hash(plan)&&/^[a-f0-9]{64}$/.test(req.preflightSha256));
@@ -49,6 +51,14 @@ try{
  const received=capture.evidence.accounts.receivedAtMs;num(received,p.issuedAtMs,now);check(now-received<=10000&&req.expiresAtMs<=received+10001);
  fields(p.accounts,roles);const a=p.accounts;check(new Set(Object.values(a)).size===roles.length);
  for(const v of Object.values(a)){raw58(v);check(![PROGRAM,TOKEN,COMPUTE,NATIVE,SYSTEM].includes(v));}
+ if(execution){
+  check(p.amountIn==='1000'&&p.minimumAmountOut==='990'&&p.maxComputeUnits===300000&&
+   p.maxMicroLamportsPerCU==='0'&&p.maxPriorityFeeLamports==='0'&&p.maxTotalFeeLamports==='10000'&&req.microLamportsPerCU==='0');
+  const setup=JSON.parse(read(path.join(r.directory,'controlled-pool-v1','plan.json'),512*1024));
+  const derived=poolAddresses(setup.pairAccounts);
+  const mapping={source:'holder0',destination:'holder1',inputVault:'vault0',outputVault:'vault1',inputMint:'mint0',outputMint:'mint1'};
+  for(const name of roles)check(a[name]===derived[mapping[name]||name]);
+ }
  const inputAmount=atomic(p.amountIn,true);check(inputAmount<=1000n);const minimum=atomic(p.minimumAmountOut,true);
  num(p.maxComputeUnits,1,300000);num(req.computeUnits,1,p.maxComputeUnits);
  const price=atomic(req.microLamportsPerCU),maxPrice=atomic(p.maxMicroLamportsPerCU);check(price<=maxPrice&&maxPrice<=10000n);
