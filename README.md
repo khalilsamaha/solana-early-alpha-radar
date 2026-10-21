@@ -14,6 +14,8 @@ This repository imports the deployed source captured on **2026-10-09 at 21:59 UT
 
 The complete project record is in [project history](docs/PROJECT-HISTORY.md). The consolidated direction is in [edge research plan](docs/EDGE-RESEARCH-PLAN.md). The current prepared release is [launch evidence and quote backup](docs/LAUNCH-FOUNDATION-UPDATE.md).
 
+Latest execution-engineering release: [controlled test-pool swap simulation](docs/CONTROLLED-SWAP-SIMULATION-UPDATE.md). The finalized devnet pool is connected to the existing restricted signer and simulation checks; no swap broadcaster is enabled.
+
 Start with [development instructions](docs/DEVELOPMENT.md), [current roadmap](docs/ROADMAP.md) and [import review](docs/IMPORT-REVIEW.md). Component READMEs are preserved historical documentation; they may describe earlier deployment layouts.
 
 ## Checks

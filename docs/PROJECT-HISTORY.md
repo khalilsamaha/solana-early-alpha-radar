@@ -483,3 +483,10 @@ Funding inspection reported 20.00484452 devnet SOL, but execute and recover both
 ### 2026-10-20 — Explicit unsigned pool plan replacement
 
 Host status after the size-reader fix showed `preparation-incomplete`, a 145,208-byte plan, and no signing-attempt, signed, simulation or send marker. Added one explicitly requested replacement for this exact unsigned size-failure case. It checks the original plan, exclusive journal inventory, expired intent and finalized block height, then performs fresh funding/program/pool checks. A durable boundary and whole-directory archive preserve the original evidence before the normal fresh attempt. Crashes and any signed/ambiguous/replaced journal refuse another attempt. A successful live pool receipt remains outstanding.
+
+
+## 21 October 2026 — finalized test pool and controlled swap simulation
+
+The supplied 20 October 21:47 UTC report records one pool initialization send, finalized success, 500 tokens in each vault and 500 in each remaining holder. Independent public-evidence replay verified deterministic addresses, the reconstructed message and wire hashes, Ed25519 signature, raw post-account effects and exact 180,774,560-lamport debit. All 70 reported offline cases matched. Raw receipt verification remains a host-side check because that full receipt was not exported.
+
+Added a fixed-scope adapter from verified local setup journals to the existing fresh packet, current account/program preflight, one-shot restricted signer and signed simulation. Explicit wallet/pool required; mint0 to mint1 only; 1,000 atomic input, minimum 990 output, zero priority fee and 10,000-lamport message-fee cap. No sender, production change or journal reset. Seventeen new tests exercise the real local signing path against synthetic transport and adverse interruptions. Corrected signature-count reporting after a durable signature with lost signer acknowledgement. Actual host swap simulation is the next gate; one-send swap execution, reverse-swap/position accounting and strategy qualification remain separate work. See [release instructions](CONTROLLED-SWAP-SIMULATION-UPDATE.md).

@@ -198,7 +198,7 @@ def _prepare(home,wallet,scope,packet,*,opener=None,collector=collect,reviewer=a
         v=policy_check(scope,packet,wallet,clock());check(not stop(s.home),'stop-requested')
         child.mkdir(mode=0o700);sync_directory(s.home)
         write_new(child/'plan.json',dict(format='swap-signing-plan-1',scope=scope,packet=packet,recordedAtMs=clock()))
-        signed_this_run=0;capture=None
+        capture=None
         try:
             capture=collector(packet=packet,opener=opener)
             check(capture.get('packet')==packet,'preflight-packet-changed')
@@ -211,7 +211,7 @@ def _prepare(home,wallet,scope,packet,*,opener=None,collector=collect,reviewer=a
                 expiresAtMs=reviewed['validUntilExclusiveMs'],computeUnits=v['computeUnits'],
                 microLamportsPerCU=v['microLamportsPerCU'],messageBase64=base64.b64encode(decode_wire(packet['unsignedTransactionBase64'])[1]).decode()))
             signer(s.home)
-            signed=loads(private_file(child/'signed.json',8192));signed_binding(packet,signed['wire']);signed_this_run=1
+            signed=loads(private_file(child/'signed.json',8192));signed_binding(packet,signed['wire'])
             check(reviewer(capture,now_ms=clock())['state']=='preflight-evidence-consistent','preflight-expired-after-signing')
             check(not stop(s.home),'stop-requested')
             a=packet['policy']['accounts'];addresses=[a[n] for n in ('wallet','source','destination','inputVault','outputVault')]
@@ -228,7 +228,9 @@ def _prepare(home,wallet,scope,packet,*,opener=None,collector=collect,reviewer=a
         except (ValueError,KeyError,TypeError,IndexError,OSError,subprocess.SubprocessError):
             write_new(child/'failure.json',{'reason':'preparation-validation-failed','atMs':clock()})
         result=report(s.home,rpc)
-        result['signaturesCreatedThisRun']=None if result['signatureOutcomeUnknown'] else signed_this_run
+        # A lost signer acknowledgement may follow a durable signed.json write.
+        # report() has already verified that file; do not report zero in that case.
+        result['signaturesCreatedThisRun']=None if result['signatureOutcomeUnknown'] else int((child/'signed.json').exists())
         result['preflightRequests']=capture.get('requests',[]) if capture else []
         result['networkRequests']+=len(result['preflightRequests'])
         return result
