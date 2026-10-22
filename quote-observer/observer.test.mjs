@@ -36,7 +36,7 @@ test('access denial persists a halt across observer reconstruction',async()=>{co
 test('normal stop preserves completed quotes and labels remaining samples',async()=>{const f=fixture();let t=now,count=0;const c=new AbortController();try{const o=new Observer(f.source,f.db,{signal:c.signal,now:()=>t,sleep:async ms=>t+=ms,log:()=>{},quote:async()=>{count++;c.abort();return {status:'quoted',startedAt:t,receivedAt:t,outAmount:'123',routePlan:[]};}});o.init('test');f.add(raw());o.tick();await o.active;const r=JSON.parse(f.db.prepare('SELECT data FROM probes').get().data);assert.equal(count,1);assert.equal(r.state,'stopped');assert.equal(r.observations.filter(x=>x.reason==='interrupted').length,4);}finally{f.close();}});
 test('rewound source sequence cannot silently stall the observer',()=>{const f=fixture();try{f.add(raw(100));const o=new Observer(f.source,f.db,{now:()=>now});o.init('test');f.writer.exec('DELETE FROM events');assert.throws(()=>o.tick(),/rewound/);}finally{f.close();}});
 test('HTTP 400 does not trigger global transport cooldown; 5xx and timeouts do',async()=>{const {transientFailure}=await import('./observer.mjs');assert.equal(transientFailure({status:'http-error',httpStatus:400}),false);assert.equal(transientFailure({status:'http-error',httpStatus:503}),true);assert.equal(transientFailure({status:'timeout'}),true);});
-test('cohort reservation and sampling registration survive restart',async()=>{const f=fixture();let t=now;try{const o=new Observer(f.source,f.db,{now:()=>t,sleep:async ms=>t+=ms,log:()=>{},quote:async()=>({status:'http-error',httpStatus:400,startedAt:t,receivedAt:t})});o.init('test');f.add(raw());o.tick();assert.equal(JSON.parse(f.db.prepare('SELECT data FROM probes').get().data).samplingPolicy,'cohort-budgets-v2');await o.active;const reg=f.db.prepare("SELECT v FROM meta WHERE k='samplingRegistration'").get().v;const restarted=new Observer(f.source,f.db,{now:()=>t});restarted.init('test');assert.equal(f.db.prepare("SELECT v FROM meta WHERE k='samplingRegistration'").get().v,reg);f.add(raw(2,'research-entries',t,{mint:SOL,candidate:{mint:SOL}}));restarted.tick();assert.equal(f.db.prepare('SELECT decision FROM signals WHERE seq=2').get().decision,'cohort-spacing');assert.equal(f.db.prepare("SELECT v FROM meta WHERE k='blockedUntil'").get(),undefined);}finally{f.close();}});
+test('cohort reservation and sampling registration survive restart',async()=>{const f=fixture();let t=now;try{const o=new Observer(f.source,f.db,{now:()=>t,sleep:async ms=>t+=ms,log:()=>{},quote:async()=>({status:'http-error',httpStatus:400,startedAt:t,receivedAt:t})});o.init('test');f.add(raw());o.tick();assert.equal(JSON.parse(f.db.prepare('SELECT data FROM probes').get().data).samplingPolicy,'three-cohort-budgets-v3');await o.active;const reg=f.db.prepare("SELECT v FROM meta WHERE k='samplingRegistration'").get().v;const restarted=new Observer(f.source,f.db,{now:()=>t});restarted.init('test');assert.equal(f.db.prepare("SELECT v FROM meta WHERE k='samplingRegistration'").get().v,reg);f.add(raw(2,'research-entries',t,{mint:SOL,candidate:{mint:SOL}}));restarted.tick();assert.equal(f.db.prepare('SELECT decision FROM signals WHERE seq=2').get().decision,'cohort-spacing');assert.equal(f.db.prepare("SELECT v FROM meta WHERE k='blockedUntil'").get(),undefined);}finally{f.close();}});
 test('upgrade preserves legacy registration, cursor, probes and rolling cohort budget',()=>{const f=fixture();try{
  const meta=f.db.prepare('INSERT INTO meta VALUES(?,?)');
  meta.run('sourceIdentity',JSON.stringify('test'));meta.run('cursor',JSON.stringify({alerts:0,'research-entries':0}));
@@ -55,7 +55,7 @@ test('upgrade preserves legacy registration, cursor, probes and rolling cohort b
  assert.equal(f.db.prepare('SELECT data FROM probes WHERE seq=-1').get().data,original);
  assert.equal(JSON.parse(f.db.prepare("SELECT v FROM meta WHERE k='cursor'").get().v)['research-entries'],1);
 }finally{f.close();}});
-test('0.5 feature registration persists without changing cohort registration or completed evidence',()=>{
+test('feature registration and completed evidence persist while sampling registration is versioned',()=>{
  const f=fixture();try{
   const put=f.db.prepare('INSERT INTO meta VALUES(?,?)');
   put.run('sourceIdentity',JSON.stringify('test'));put.run('cursor',JSON.stringify({alerts:0,'research-entries':0}));
@@ -68,7 +68,36 @@ test('0.5 feature registration persists without changing cohort registration or 
   const reg=JSON.parse(first);assert.equal(reg.id,'entry-features-1');assert.equal(reg.shadow.changesAdmissions,false);assert.equal(reg.registeredAt,now);
   new Observer(f.source,f.db,{now:()=>now+10000}).init('test');
   assert.equal(f.db.prepare("SELECT v FROM meta WHERE k='featureCaptureRegistration'").get().v,first);
-  assert.equal(f.db.prepare("SELECT v FROM meta WHERE k='samplingRegistration'").get().v,sampling);
+  assert.equal(f.db.prepare("SELECT v FROM meta WHERE k='previousSamplingRegistration'").get().v,sampling);
+  assert.equal(JSON.parse(f.db.prepare("SELECT v FROM meta WHERE k='samplingRegistration'").get().v).id,'three-cohort-budgets-v3');
   assert.equal(f.db.prepare('SELECT data FROM probes WHERE seq=-1').get().data,old);
+ }finally{f.close();}
+});
+
+test('fast feed upgrade starts at tail without skipping existing feeds or rewriting old evidence',()=>{
+ const f=fixture();try{
+  f.add(raw(5,'fast-shadow-entries'));
+  f.db.prepare('INSERT INTO meta VALUES(?,?)').run('cursor',JSON.stringify({alerts:1,'research-entries':2}));
+  const o=new Observer(f.source,f.db,{now:()=>now});o.init('test');
+  const cursor=JSON.parse(f.db.prepare("SELECT v FROM meta WHERE k='cursor'").get().v);
+  assert.deepEqual(cursor,{alerts:1,'research-entries':2,'fast-shadow-entries':5});
+  assert.equal(sourceRows(f.source,cursor).length,0);
+  f.add(raw(6,'fast-shadow-entries'));assert.equal(sourceRows(f.source,cursor)[0].seq,6);
+  o.init('test');assert.equal(JSON.parse(f.db.prepare("SELECT v FROM meta WHERE k='cursor'").get().v)['fast-shadow-entries'],5);
+ }finally{f.close();}
+});
+test('fresh Fast30 signal produces a five-request fixed-quantity watch, preserves unknowns',async()=>{
+ const f=fixture();let t=now,calls=[];try{
+  const obs=new Observer(f.source,f.db,{now:()=>t,sleep:async ms=>t+=ms,log:()=>{},quote:async(a,b,n)=>{
+   calls.push([a,b,n]);return {status:'quoted',startedAt:t,receivedAt:t,outAmount:a===USDC?'123':'9000000',routePlan:[]};}});
+  obs.init('test');const event={id:`fast30-shadow-1:${M}:${now}`,at:now,mint:M,cohort:'fast30-shadow',version:'fast30-shadow-1',ruleId:'fast30-shadow-1',liquidityUsd:null,
+   security:{status:'expired or unavailable'},decision:{return30sPct:12},quality:{lastObservedAt:now},followup:{policy:'fast-followup-1',admitted:false}};
+  f.add({seq:1,kind:'fast-shadow-entries',at:now,data:JSON.stringify(event)});obs.tick();await obs.active;
+  const probe=JSON.parse(f.db.prepare('SELECT data FROM probes').get().data);
+  assert.equal(probe.signal.cohort,'fast30-shadow');assert.equal(probe.samplingPolicy,'three-cohort-budgets-v3');
+  assert.equal(probe.signal.features.liquidityUsd,null);assert.equal(probe.signal.features.security,'expired or unavailable');
+  assert.equal(probe.signal.featureCapture.version,'fast-entry-features-1');assert.equal(probe.signal.followup.admitted,false);
+  assert.equal(calls.length,5);assert.ok(calls.slice(1).every(x=>x[2]==='123'));
+  assert.equal(signalRecord({seq:2,kind:'fast-shadow-entries',at:now,data:JSON.stringify({...event,version:'other'})}).error,'unsupported-version');
  }finally{f.close();}
 });

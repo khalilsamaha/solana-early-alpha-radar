@@ -10,6 +10,7 @@
 rclone.conf
 heartbeat-url
 node_modules/
+.venv-research-ml/
 __pycache__/
 *.py[cod]
 data/
@@ -21,3 +22,5 @@ radar-*.json
 radar-*.json.gz
 *.log
 .DS_Store
+*.pk8
+solana-radar-devnet-rehearsal/

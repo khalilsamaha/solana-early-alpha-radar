@@ -1,0 +1,41 @@
+{
+  "release": "fast-evidence-1",
+  "baseCommit": "a55e567a11ba8baa0f308a71061ebd4892183b8a",
+  "scannerVersion": "0.2.9",
+  "quoteObserver": "0.6.0",
+  "qualityReport": "research-quality-report-3",
+  "validation": {
+    "totalTestsPassed": 344,
+    "scannerJavaScript": 171,
+    "scannerPython": 11,
+    "observerJavaScript": 58,
+    "observerPython": 28,
+    "researchPython": 49,
+    "qualityPython": 21,
+    "deploymentPython": 6,
+    "historicalEntriesReplayed": 705,
+    "quoteCasesRetained": 43,
+    "originalSummariesPreserved": true,
+    "allHistoricalEntriesRemainExploratory": true,
+    "realSourceInstallRollbackVerified": true,
+    "externalProviderRequests": false
+  },
+  "changedFileHashes": {
+    "README.md": "1ed05b693c699aa2f34288db2ce29f376c70c7478ca2fdfba7fc3d9f87d105a1",
+    "deployment/evidence-manifest.json": "9e6cee8839e77aaf6e1febc57b46c6b82111275ce9bd81af856f5a132cba52ec",
+    "deployment/install-evidence.py": "f31f3c91d2253d5d7ff0a4f7d26dda81367f848195e3ae33fcb3727321b0e676",
+    "deployment/test_evidence_install.py": "6ad18f4caf647754ba4881c456c3d67443daf266abbad2b916ae4c82da039fe4",
+    "docs/EVIDENCE-UPDATE.md": "b5463643c5a777941bb2474d9b1b09ec102b766309b47bf1bb1d4ba10163bd53",
+    "docs/FAST30-UPDATE.md": "7560955d5b67e3e778514d86ce7742b7baab3f34b53b57fd2434da9567df9f4a",
+    "docs/ROADMAP.md": "580eb8b17689116472cb30591e9b4e4595cccb47e67b575e4d3859d0cacf49f8",
+    "quality-tools/README.md": "c6dbec67fb07edfce2170d54d5968698869ac7c8889fbebb9184a270e87c70aa",
+    "quality-tools/entry_shadows.py": "6961efaeb99f1ff9c25ea88fa8f6d0b800356cedd59eea4df9ad6e2e23caefea",
+    "quality-tools/joined_analysis.py": "7d2f58b99d4300717fec278022c5983fd41d75362423af8ffb1aca55f8f4e120",
+    "quality-tools/quality_report.py": "b4b6bc8bcce079b85f28750fae39a33b6c9ee246adc224a9a229dd5b443c15d3",
+    "quality-tools/run-evidence.sh": "5d13f7e8d81a975b612ffa2e917a1321357b237610f32653f005655b48b75fff",
+    "quality-tools/test_joined_analysis.py": "0f3ed98617395c9f2306c79b8a644eec153b7dc7d7aa94164f4de609cac07117",
+    "scanner/src/core/fast-shadow.js": "5f65a4bb3c1067fe7303d74f4e6e54c806246dc5a794c2d7afc50309086a19a0",
+    "scanner/test/fast-evidence.test.js": "7de033809f14ef87076bd03e4eed0457fdb6341042b48b2ee542ec0b63b7db5e"
+  },
+  "note": "Hashes exclude this release manifest. Forward hypotheses do not change live eligibility. Source identity absent in historical exports stays unverified."
+}

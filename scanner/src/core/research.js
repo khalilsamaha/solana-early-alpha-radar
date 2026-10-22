@@ -1,3 +1,4 @@
+import {captureEntryContext} from './entry-context.js';
 import {observationQuality} from './observation-quality.js';
 import {FastShadow} from './fast-shadow.js';
 import {qualify} from './qualification.js';
@@ -69,7 +70,7 @@ export class Research {
           observationBasis:'provider-response-time',evidenceHistory:this.evidence(mint,24),
           tokenFollowup:{version:CONTINUITY_VERSION,...(p.followupSamples[horizon]||{status:'missing',reason:'No timely qualified token follow-up',coverage:p.tokenGapped?'gapped':'sampled'})},
           evidence:{entryPool:p.pairAddress,lastSamePoolAt:p.lastAt,lastAttempt:p.lastAttemptEvidence||null},
-          ...(observed?{sampleAt:c.marketObservedAt,priceUsd:c.priceUsd,returnPct:(c.priceUsd/p.priceUsd-1)*100}
+          ...(observed?{feedEvidence:c.feedEvidence||null,sampleAt:c.marketObservedAt,priceUsd:c.priceUsd,returnPct:(c.priceUsd/p.priceUsd-1)*100}
             :{reasonCode,reason:forceReason||missingReasons[reasonCode]})};
         this.storage.append('research-outcomes',row);p.horizons[horizon]=row.status;dirty=true;this.checkpointCount++;
       }
@@ -82,7 +83,7 @@ export class Research {
     // At most one activity episode per six hours, plus one baseline entry.
     s.positions=s.positions.filter(p=>Object.keys(p.horizons).length<4);
     s.positions.push(p);
-    this.storage.append('research-entries',{...p,version:MOMENTUM_VERSION,candidate:publicToken(c),
+    this.storage.append('research-entries',{...p,entryContext:captureEntryContext(c,now,this.config),version:MOMENTUM_VERSION,feedEvidence:c.feedEvidence||null,candidate:publicToken(c),
       baselineScore:c.score,experimentalScore:summary?.score??null,security:summary?.security??'unknown',features:summary?.metrics??null,
       qualification:qualify(c,summary,now),evidence:this.evidence(c.mint)});
     this.fast.link(c,id,cohort,now);
@@ -187,9 +188,11 @@ export class Research {
     this.fast.drop(mint,now);this.states.delete(mint);
   }
   pending(mint) {return Boolean(this.config.researchEnabled&&this.states.get(mint)?.positions.some(p=>Object.keys(p.horizons).length<4));}
+  trackingPending(mint) {return this.pending(mint)||Boolean(this.config.researchEnabled&&this.fast.trackedPending(mint));}
   focusTier(c,now) {
     if(!this.config.researchEnabled)return null;
     if(this.pending(c.mint))return 0;
+    if(this.fast.trackedPending(c.mint))return 0.5;
     if(c.inactive)return null;
     if(c.stale||!c.pairAddress||!(c.priceUsd>0)||!c.marketObservedAt||now-c.marketObservedAt>this.config.freshMs||severe(c))return null;
     const tx=(c.txns?.m5?.buys||0)+(c.txns?.m5?.sells||0);

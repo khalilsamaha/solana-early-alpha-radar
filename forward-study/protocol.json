@@ -1,0 +1,28 @@
+{
+  "id": "entry-context-comparison-1",
+  "mode": "research-only",
+  "samplingPolicy": "three-cohort-budgets-v3",
+  "cohorts": ["baseline", "early-activity", "fast30-shadow"],
+  "entryContextVersion": "entry-context-1",
+  "metadataVersion": "metadata-provenance-1",
+  "primaryOffsetMs": 30000,
+  "secondaryOffsetMs": 120000,
+  "targets": {
+    "positiveReturnedQuote": "Positive validated on-time fixed-quantity quoted USDC change; all unavailable labels remain unknown.",
+    "exitQuoteAvailable": "1 for validated on-time sell quote; 0 only for HTTP 400 provider-reported quote-generation failure after validated buy; all other states unknown."
+  },
+  "features": ["liquidityUsd", "organicScore", "holderCount", "top10Pct", "averageReportedTradeUsd", "return30sPct", "lastIntervalReturnPct", "marketAgeMs", "securityAgeMs", "organicAgeMs", "holderAgeMs", "mintAuthorityActive", "freezeAuthorityActive", "qualificationRetain", "qualificationDefer"],
+  "comparisons": ["training-label-rate constant", "legacy-feature logistic under the same fixed preprocessing", "supplemental-context logistic"],
+  "classifier": {"C": 0.1, "solver": "lbfgs", "maxIterations": 1000, "threshold": 0.5, "classWeight": null, "search": false},
+  "preprocessing": "Signed log1p on numeric values and ages except authority/qualification indicators; train-only median imputation, explicit missing indicators for every feature, train-only standardization.",
+  "minimumTrainingRowsPerTargetCohort": 100,
+  "minimumTrainingPerClass": 20,
+  "minimumTrainingUtcDays": 3,
+  "trainingGuardsMeaning": "Fit safeguards, not statistical sufficiency or strategy approval.",
+  "holdout": {"embargoMs": 300000, "minimumUtcDays": 7, "minimumValidLabelsPerTargetCohort": 200, "unseenTokensOnly": true, "start": "After a separate immutable model freeze; never before model registration plus embargo.", "retraining": false},
+  "evaluation": ["Brier and log loss against constant and legacy model on identical cases", "AUC and calibration where defined", "All admitted and selected state denominators, including missing and failures", "Means, medians, losses of at least 50 percent, best-token and best-day removal", "Day-block paired uncertainty and token deduplication; too few days stays inconclusive", "Separate quote-return and quote-availability results; never multiply them into claimed profit"],
+  "costSensitivity": {"eachSidePct": [1, 3], "basis": "Illustrative additional cost stress on returned quotes only; not actual fees or fills; do not subtract reported provider fees again."},
+  "promotion": "No automatic promotion. A positive research result needs improvement against both baselines on later evidence, failure-aware coverage and downside review. Costs, failed execution and realized profit remain unmeasured.",
+  "wallets": false,
+  "liveActivation": false
+}

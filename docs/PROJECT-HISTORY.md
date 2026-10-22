@@ -1,0 +1,504 @@
+# Solana Early Alpha Radar — project history and current position
+
+Updated: 11 October 2026. Operational dates below use the supplied logs; report filenames use UTC. The host uses Europe/Amsterdam (UTC+2 during this period).
+
+## Purpose and scope
+
+The project began as a way to discover newly appearing Solana tokens early, assess their market activity and available security information, display candidates, and send useful Telegram alerts. The longer-term question is whether those signals can support a repeatable strategy in a market where price moves and collapses can happen within minutes.
+
+Our objective evolved from “find tokens early” into “measure whether an early signal has a realistically available entry and exit.” Those are different milestones. A visible spike, high score, successful API response, or favorable paper price is not sufficient evidence of an executable advantage.
+
+The system currently performs discovery, scoring, notifications, paper observations, experimental shadow comparisons, and walletless route quoting. It does not buy or sell tokens. No wallet private key or funded trading account is required by the quote observer.
+
+This history is reconstructed from the supplied terminal outputs, reviewed source, reports and GitHub development. It covers the earliest available setup through the latest development. Exact dates or version assignments absent from that evidence are not invented. An installed component in an old log is not a guarantee that its service is healthy today.
+
+## Architecture and operating environment
+
+| Part | Role and established configuration |
+| --- | --- |
+| Host | Kali Linux installed directly on an x86_64 machine, intended to remain connected and running 24/7 |
+| Production directory | `~/apps/solana-early-alpha-radar` |
+| Development checkout | `~/apps/solana-radar-dev` |
+| Runtime | Node.js 24; Docker and Docker Compose |
+| Scanner container | Compose service `radar`, restart policy `unless-stopped`, reported 512 MiB memory limit |
+| Dashboard | Localhost binding `127.0.0.1:8787`, authenticated API, readiness endpoint |
+| Discovery and enrichment | PumpPortal, DEX Screener, Jupiter and Helius, with separate rate limits and data-quality states |
+| Scanner persistence | SQLite candidates, events, outbox and key/value state |
+| Notifications | Telegram alerts and separate external health/backup monitoring |
+| Backups | Verified local SQLite snapshots and compressed Backblaze B2 copies |
+| Research tools | Offline/read-only collectors and paper scenario analysis; a 30-minute systemd timer was installed |
+| Quote observer | Separate systemd service and ledger, walletless hypothetical fixed-quantity buy/sell quotes |
+| GitHub | Private repository `khalilsamaha/solana-early-alpha-radar`; source tests and review branches |
+
+The original host project remains the deployment location. Running Compose from the repository's `scanner/` directory could select a different Compose project or database volume. The guarded installers therefore copy approved source changes into the existing host project.
+
+## 1. Initial hosting and connectivity — 29–30 September
+
+You initially considered a VPS/OVHcloud but already had an always-on Kali machine. We used it for the initial deployment. The reported machine architecture was x86_64, with Node 24, Docker 28.5.2 and Compose 2.29.2.
+
+The container became healthy and the dashboard opened successfully. Live doctor checks confirmed configured PumpPortal, Jupiter and Helius access, DEX market responses and Helius security fields. Telegram was initially unconfigured, and notification sending was initially off.
+
+PumpPortal connected but rejected a subscription with the message “Minimum balance not met for PumpSwap websocket data.” The integration was adjusted; later logs showed a connection without that rejection and the dashboard showed `pumpportal:create` observations. This established new-token discovery without treating a connection alone as proof of a successful subscription. It did not establish comprehensive coverage of every Solana launch venue.
+
+Telegram delivery was subsequently confirmed, including a “fresh market observations are arriving” message. Paper alerts and their delivery state became visible in the system.
+
+## 2. Host monitoring, restart behavior and recovery — 30 September
+
+Docker and containerd were enabled at boot. Container inspection confirmed `unless-stopped`. A host heartbeat script was configured with a private Healthchecks URL and scheduled through cron.
+
+You tested the external check: a DOWN event and email arrived, followed by a green recovery. This was an actual notification-path test, not just configuration inspection. The heartbeat URL and other credentials remain outside source control.
+
+An initial SQLite backup was copied from the container and checked. The supplied verification reported:
+
+- SQLite integrity: OK.
+- 1,000 stored candidates and 22,226 events.
+- A readable host backup with restricted permissions.
+
+A daily systemd backup timer was then installed for roughly 03:15–03:20 host time, with missed-run catch-up. A manual service run completed successfully and reported the row counts and archive size.
+
+Supabase and other free services were considered. The implemented off-host backup destination was Backblaze B2, not a Supabase database migration.
+
+## 3. Backblaze B2 and restore verification — 30 September onward
+
+The Kali package repository did not provide an `rclone` installation candidate at the time. A working rclone binary was subsequently available at `/usr/local/bin/rclone`.
+
+A bucket-restricted application key was configured. The initial command still contained the placeholder `YOUR_BUCKET_NAME`; using the actual configured bucket resolved access. The rclone configuration was kept private under `/etc/solana-radar`.
+
+The cloud backup workflow then:
+
+1. Produced a verified local SQLite snapshot.
+2. Compressed and uploaded it to B2.
+3. Downloaded the uploaded archive.
+4. Compared SHA-256 and checked restored SQLite integrity.
+5. Recorded completion and acknowledged the backup monitor.
+
+A restore drill also passed: dashboard startup, authenticated API access, HTML response, unchanged notification outbox, and cleanup of temporary test files were verified against a saved backup.
+
+Later logs confirmed scheduled local and cloud backup success. These checks established recovery for the scanner database. They did **not** establish backup/restore protection for the quote observer's later, separate ledger; that remains an explicit open task.
+
+## 4. Discovery coverage and scheduling — 30 September
+
+Early diagnostics exposed a significant coverage problem: among 1,000 retained candidates, 919 had never been attempted and only 70 had fresh market data. Healthy provider connections were therefore insufficient to establish useful discovery coverage.
+
+The scanner scheduling was improved. In the supplied v0.2.1 report:
+
+- 969 candidates were active.
+- Only one had never been attempted.
+- No candidates were reported evicted before their first attempt.
+- 868 had fresh market data.
+- Market-attempt age was approximately 22 seconds median and 64 seconds p95.
+
+Market polling and slower metadata/security enrichment were separated. This let market coverage improve without enriching every thin or ineligible token at maximum frequency. The initial alert score remained 72 in the supplied diagnostics.
+
+The 1,000-candidate bound still limits the retained active set. A token absent from the current dashboard is not necessarily a token never discovered. Historical events and paper entries provide additional evidence.
+
+## 5. Security labels, token links and historical visibility
+
+Security fields were made more explicit: mint authority, freeze authority, token-account concentration, extensions, and data freshness. Known metadata extensions were distinguished from broadly unevaluated token behavior. These checks are limited observations, not a safety certification.
+
+You asked about NightFloat, seen in Phantom but not the dashboard. Its mint could no longer be found, so that particular case could not be reconstructed. We did not infer its chain, launch route or missed-detection cause from its name.
+
+Token lookup links were added to speed identification in Phantom, Jupiter and Solscan. The mint address is the authoritative lookup reference; ticker/name matching is unreliable for similarly named tokens. Historical token audits later confirmed archived alerts, exits, outcomes and snapshots for tokens no longer retained in the queue.
+
+This work was intended to generalize across future tokens. SGI and other examples were case studies motivating improvements, not hard-coded token exceptions.
+
+## 6. Snapshot retention, decision traces and paper outcomes — 1 October
+
+Scanner v0.2.3 reported snapshot archiving at a routine interval of 60 seconds and a thin-market interval of 300 seconds, skipping redundant routine storage while market polling continued more frequently.
+
+The 1 October report showed healthy providers, zero never-attempted candidates at that snapshot, 883 fresh markets and complete recorded one-hour outcomes for 331 paper entries at the time. Alert and notification totals were larger than unique paper entries because they included different event types and repeated/exit-related messages.
+
+V0.2.4 added decision traces and more detailed outcome reporting. Unknown liquidity was explicitly represented rather than automatically equated with known low liquidity.
+
+The results were a warning about strategy quality: in one retained sample, the one-hour median paper price change was about −95.7%, with roughly 82% of observed outcomes losing at least 50%. A historical sampled peak of 2× did not imply that an actionable exit captured that peak.
+
+This shifted the research toward short holding periods, realistic timing and separate execution evidence rather than headline spikes.
+
+## 7. Resource growth and backup timeout — 1–4 October
+
+Memory and CPU were initially modest, but SQLite and block I/O grew. The database progressed from tens of MiB into hundreds of MiB and later over 1 GiB. A process-level measurement identified approximately 66 MiB written in 60 seconds during one sample. Earlier measurements had inadvertently targeted the wrong process; process names were not a reliable way to identify Node in this container.
+
+On 3 October the daily backup service timed out after one hour. Previous success JSON files were still present, demonstrating why a stale success record cannot prove today's run succeeded.
+
+The backup implementation was replaced with a bounded host snapshot method. The subsequent supplied run:
+
+- Copied an approximately 1.19 GB SQLite database in about 15 seconds.
+- Uploaded and verified an approximately 303 MB compressed archive.
+- Completed the full service in about 3 minutes 33 seconds.
+- Reported a 2.7 GB peak for the host backup service, separate from the scanner container's limit.
+
+The next scheduled backup on 4 October also completed and verified its cloud copy. Database growth, disk writes and host-level backup resource usage remain things to monitor; these logs do not prove that every storage-growth concern is permanently solved.
+
+## 8. Research history continuity and the move to short-duration evidence — 2–5 October
+
+An early research snapshot showed most candidates warming up with one sample and repeated observation-gap resets. Only a small subset had usable continuous histories. Pending paper observations were receiving better coverage than the broad candidate population.
+
+Research focus and continuity handling were improved over subsequent updates, culminating in the deployed scanner 0.2.9. Research paths kept original-pool evidence separate and exposed missing/gapped observations instead of inventing returns. Exact release attribution for every intermediate adjustment is not recoverable from the supplied logs, so those changes are grouped here.
+
+Research tools 1.0.0 introduced bounded read-only analysis and a 30-minute timer. The tools compared fixed 60-/120-second holds and a target/stop/time scenario, initially with hypothetical 1% costs on each side and 10-second entry/exit delays. These were sampled-price models, not route quotes or fills.
+
+The first backup analysis stopped when it reached a snapshot row limit; it published no partial report. Version 1.0.1 corrected the collector limitation. A separate scanner evidence patch increased checkpoint history from 8 to 24 samples, preserving enough evidence for delayed two-minute exits without crossing pool changes.
+
+Research tools 1.1.0 added severe-loss records, feature availability, explanations for unresolved paths, and registered shadow comparisons. Historical data remained exploratory; validation began at a stored registration timestamp. Missing liquidity/organic/security features were not silently filled using later information.
+
+## 9. Walletless quote observation — 5–10 October
+
+A manual quote-check tool was introduced. A shell compatibility issue arose because Bash `read -p` syntax was run in Kali's default interactive shell; subsequent instructions favored explicit Bash blocks or direct arguments.
+
+The quote observer then automated bounded signal-linked observations:
+
+| Release | Main change evidenced in the project |
+| --- | --- |
+| 0.2.0 | Separate walletless observer, indexed signal feed, persistent cursor, fixed hypothetical quantity, buy plus four sell quote observations |
+| 0.3.0 | Paced cohort reservation and safer distinction between ordinary HTTP 400 errors and global transport cooldowns |
+| 0.4.0 | Independent rolling cohort budgets, no borrowing, structured bounded error evidence and preserved legacy budget usage |
+| 0.5.0–0.6.0 | Further entry/exit evidence and Fast30 integration; the reviewed deployed release is 0.6.0 with three-cohort sampling |
+
+The initial limits included one active watch, six admissions per hour, 144 per 24 hours, five requests per admission, ten-second request spacing, and seven-day evidence retention. Admission sampling evolved; historical policies must be analyzed separately rather than pooled as if random.
+
+The observer records a hypothetical buy quote and reuses its exact token quantity for sell quotes. It performs no transaction signing, broadcasting, buying or selling. Quote failure, provider cooldown, busy state, stale signals and exhausted budgets remain explicit exclusions.
+
+A “zero-offset” sell is delayed by request spacing; it is not an instantaneous round trip. Buy-response-relative exit clocks also differ from signal-relative paper clocks.
+
+## 10. Memory failures and worker isolation — 9 October
+
+You observed 44 container restarts without manual intervention. Logs showed V8 JavaScript heap exhaustion near its heap limit. Docker's `OOMKilled=false` did not contradict those logs: a process-level JavaScript heap failure is different from a container being killed by the kernel.
+
+The statistics memory patch 1.0.0 replaced materialization of detailed statistics with lazy iteration and summaries. It preserved detailed stored evidence and existing summary semantics. After rebuilding, the supplied short verification showed zero restarts and about 120 MiB container memory.
+
+Statistics worker 1.1.0 then moved expensive summary calculations off the scanner's main event loop. It added shared refreshes, cache age labeling, worker failure cooldown, timeout termination and explicit unavailable responses. Tests checked health responsiveness while statistics were calculated.
+
+The supplied activation check showed zero restarts before and after a roughly 45-second observation period and approximately 103 MiB memory. This confirmed initial activation, not indefinite stability.
+
+A contemporaneous gap audit showed substantially better continuous research paths. It preserved unavailable original-pool endpoints as unavailable.
+
+## 11. Fast30 quality research and GitHub — 9–10 October
+
+Research quality 1.0.0 added labels for first, repeated, changed, stale and invalid provider responses. Recent receipt time was explicitly separated from proof of fresh exchange data.
+
+Fast30 introduced an experimental earlier signal, distinct from the existing 60-second research cohort. It required enough changed transitions and rising recent activity; a single initial observation plus one changed point could not create the required history. Unknown pump liquidity remained unknown, and security limitations remained explicit.
+
+Fast30 initially did not alter follow-up scheduling. Its initial five-minute coverage was therefore uneven, especially for entries that did not later qualify for the older early-activity cohort.
+
+The private GitHub repository was created on 9 October. Source was imported with provenance and hygiene checks. CI runs offline scanner, observer, research, quality and deployment tests. Production `.env`, database files, backups and credentials are excluded.
+
+The Fast30 follow-up development at commit `a55e567a11ba8baa0f308a71061ebd4892183b8a` added bounded follow-up, timing reports and three-cohort quote sampling. User deployment was confirmed. Fast tracking has a cap of up to 12 active positions within existing focus capacity; polling/provider limits were not broadly increased.
+
+In the 10 October afternoon report, mature five-minute coverage for post-update Fast30 entries reached 321/336 (95.5%). This improved evidence completeness, not profitability. The contemporaneous quote samples were small and had unfavorable median outcomes.
+
+GitHub review sequence:
+
+- PR #2: bounded Fast30 follow-up and sampling, branch `feature/fast30-followup-20261010`.
+- PR #3: joined evidence and diagnostics, branch `feature/evidence-diagnostics-20261010`.
+- Both remained open draft PRs at the latest review. Deployment of a pinned branch commit is separate from merging into `main`.
+
+## 12. Joined evidence and entry hypotheses — 10 October evening
+
+Commit `fdf7199e3391f04ae7b179aef46f2236b511ec20` introduced `fast-evidence-1` and report format 3. You deployed it at approximately 19:19 UTC / 21:19 local.
+
+This update:
+
+- Joined exact Fast30 entries to quote watches using database identity, entry ID, mint, pool, time and price.
+- Preserved original-pool price returns and fixed-quantity route quote changes separately.
+- Recorded bounded attempt diagnostics for missing checkpoints.
+- Registered two independent entry hypotheses: known liquidity at least $5,000; preceding 30-second increase no greater than 50%.
+- Kept selected, excluded and unknown groups, without changing signal admission or notifications.
+
+Registration began at 19:19:44.955 UTC. The first report contained 37 forward entries. The moderate-rise group's initial positive two-minute paper mean was treated as preliminary because only one corresponding quote watch existed in that group.
+
+## 13. Latest assessment — 11 October, 04:33 UTC / 06:33 local
+
+The new report contained 516 Fast30 entries, of which 404 were forward entries for the registered entry hypotheses. Thirty-seven overlapped the prior report, leaving 367 additional forward entries. Overlapping exports must not be added together without deduplication.
+
+| Independent entry comparison | Entries | Observed 120-second outcomes | Mean paper price change | Median | Missing |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Prior 30-second rise ≤50% | 328 | 319 | −7.56% | −11.51% | 9 |
+| Prior 30-second rise >50% | 76 | 73 | −14.36% | −24.75% | 3 |
+| Known liquidity ≥$5,000 | 52 | 52 | −1.75% | −2.25% | 0 |
+| Unknown liquidity | 352 | 340 | −9.91% | −15.93% | 12 |
+
+These comparisons overlap; liquidity and momentum groups are not additive. Missing observations are excluded from numerical return averages, not counted as zero.
+
+Among the 18 Fast30 quote watches associated with forward entry-test signals:
+
+- At 30 seconds: mean quoted change +4.38%, median −0.04%.
+- At 120 seconds: mean −9.08%, median −11.47%.
+- Five changed from a positive 30-second quote result to a negative two-minute result.
+- Only three were in the known-liquidity group.
+
+The full 12-hour quote export contained 67 watches: 65 complete, one complete with failures and one running. One early-activity watch had a successful buy quote followed by four failed sell-quote requests. It remains unresolved execution evidence, not a zero return or proof of permanent unsellability.
+
+All 44 missing forward checkpoints across 21 tokens recorded different-pool observations. At five minutes the forward sample had 379 observed outcomes, 21 missing and four pending. A different pool does not itself prove migration.
+
+The larger sample reversed the earlier positive moderate-rise paper mean. Neither entry filter is validated for live trading. Earlier detection by itself has not demonstrated an edge.
+
+## 14. Current development — pool evidence, timing and fixed exits
+
+The development prepared on 11 October is `pool-timing-evidence-1`, with fixed exit protocol `fixed-short-exits-1` and report format 4. Until the user runs the deployment commands and returns verification, it is **prepared source, not a confirmed host deployment**.
+
+It adds:
+
+1. Eight recent received market observations per active Fast30 position, plus its first alternate-pool observation. These are bounded in memory and copied onto existing outcome events; no new per-poll database writes or provider requests are introduced.
+2. Separate alternate-pool checkpoint observations. Original-pool missing outcomes remain missing; no cross-pool return is substituted.
+3. Backward-only price/quote comparisons: use an original-pool response recorded before the quote request and at most 20 seconds old. The actual age is reported, with a separate indicator for observations within five seconds. No interpolation or identical-time claim is made.
+4. A stored prospective fixed-exit protocol: 30 seconds as the primary comparison, 60 and 120 seconds as fixed comparators, all relative to the hypothetical buy response. Quotes requested more than five seconds late are labeled late. Failed, pending, missing and invalid exits remain explicit.
+5. Additional proceeds haircuts of 0%, 1% and 3% as stress scenarios. These are not measured costs or a net execution model; quotes may already include some fees.
+
+Historical replay is exploratory for the new exit protocol. Its forward period starts with a persisted registration created by the first new Fast30 entry after deployment. Registration survives restart. Restarted incomplete trajectories are explicitly partial/gapped.
+
+## Current roadmap and gates
+
+| Stage | Position | Evidence needed to move forward |
+| --- | --- | --- |
+| Hosting, alerts and scanner recovery | Established in supplied tests | Continue monitoring; protect and restore the separate quote ledger |
+| Discovery and paper evidence | Operating, with bounded retention/focus | Maintain coverage and explicit missing/unknown states |
+| Forward strategy and quote research | **Current stage** | Stable, distinct forward windows; complete failure denominators; reproducible results beyond a few winners |
+| Execution engineering | Not implemented | Quote-to-transaction simulation, fee/slippage/amount caps, idempotency, reconciliation and independent stop controls |
+| Small funded engineering pilot | Not ready | Tested controls, documented limits and explicit user approval of wallet/budget/actions |
+| Scaling | Not planned for deployment | Evidence from the controlled pilot, operational reliability and capacity/cost assessment |
+
+There is no evidence-based date for funded testing. A large number of paper entries alone is not a gate, and a short positive mean is not enough. Strategy evidence and execution correctness are separate requirements.
+
+## Outstanding work and known limitations
+
+- Verified backup and restore of the separate quote observer ledger, including its cursor/registration state.
+- Sustained memory/restart monitoring after the statistics fixes; current deployment logs alone cannot prove long-run stability.
+- Database/retention/write-volume monitoring and cloud storage budget review.
+- Pool-transition interpretation without merging incompatible evidence.
+- Underlying exchange freshness remains partly unknown even when HTTP responses are recent.
+- Quote unit-price comparison is limited by absent token-decimal evidence in existing exports. Atomic token quantities must not be treated as whole tokens.
+- Capacity-limited quote sampling is not random, and repeated mints/overlapping exports require careful handling.
+- Current quote groups are too small for strong claims about liquidity-filtered subsets.
+- Sampled target/stop models do not prove those orders could execute between observations.
+- No real execution, transaction simulation or funded-wallet protection has been demonstrated.
+- The project currently covers Solana integrations; a multichain expansion has not been implemented.
+
+## Operating and development practices
+
+1. Keep production under the existing host directory and use pinned commits for deployment.
+2. Run offline tests and the guarded source installer before rebuilding.
+3. Keep credentials, SQLite files, report archives and backups out of GitHub.
+4. Inspect readiness, component version markers and restart counts after installation.
+5. Check early completed paths for correctness; do not wait a full day to discover a broken implementation.
+6. Collect forward evidence under frozen rules. Use full denominators, not only successful returns.
+7. Deduplicate quote exports by source identity and sequence; use immutable entry IDs for scanner evidence.
+8. Treat provider errors and unavailable outcomes as explicit unknowns.
+9. Preserve rollback and restore evidence before changing storage or deployment topology.
+10. Require a separate, concrete decision before enabling any real-money execution.
+
+## Key references
+
+- Repository: https://github.com/khalilsamaha/solana-early-alpha-radar
+- Fast30 follow-up review: https://github.com/khalilsamaha/solana-early-alpha-radar/pull/2
+- Joined evidence review: https://github.com/khalilsamaha/solana-early-alpha-radar/pull/3
+- Deployment source commit: `fdf7199e3391f04ae7b179aef46f2236b511ec20`.
+- Latest reviewed files: `radar-evidence-review-20261011T043349Z-1110888.json.gz` and `radar-auto-quotes-20261011T043349Z-1110888.json.gz`.
+- Earlier comparison: the paired `20261010T200339Z-4189548` evidence/quote exports.
+- See `docs/POOL-EXIT-UPDATE.md` for the current update and rollback procedure.
+
+This document records engineering progress and research findings. It is not a claim that the scanner identifies safe assets or that the current strategy is profitable.
+
+## 11 October 2026 — consolidated launch-quality direction and evidence foundation
+
+Reviewed the uploaded edge plan against current source and observed negative Fast30 outcomes. Adopted launch-feature research, explicit as-of information, frozen prospective trials and an evidence-based stop decision. Corrected quote-failure/rug conflation, dust-size sellability, exact-reconstruction claims, cost double-counting, sample-capacity assumptions and inconsistent time horizons. The consolidated decision record is `docs/EDGE-RESEARCH-PLAN.md`.
+
+Prepared the launch-foundation release: bounded immutable creation evidence independent of candidate eviction; distinct creator/trader roles; local receipt timestamps; no fabricated on-chain time or raw metadata downloads; a read-only feature-availability audit; and independent quote-ledger backup with isolated all-table restore verification and optional B2 round trip. The combined guarded installer includes the previous pool/exit patch and accepts either known source state. New tests cover retention/caps, adapter failure isolation, archive corruption, cursor preservation, cloud failure and installer rollback.
+
+This entry records development, not confirmed Kali deployment. The scanner stays 0.2.9 and the quote observer stays 0.6.0. No new admission rule, wallet, paid subscription or live order is introduced. The next substantive research step is an as-of launch-feature study after actual field availability has been audited. External alerts for the new backup and cloud retention remain explicit follow-ups.
+
+## 11 October 2026 — host foundation confirmed and as-of launch study built
+
+Supplied Kali output confirms deployment of GitHub commit `2dd705df52327e33e5837c31586794c149e3de30`, a short healthy/restart-free check and successful local/cloud quote-ledger restore verification. The first launch audit retained 38 creations: trader reported in all 38, creator reported in none, URI hash in 37. This confirms field availability in that sample, not verified creator identity or full-market coverage.
+
+Built a standalone bounded read-only launch study while production collects. It links three research cohorts to immutable launch receipts available by signal time, computes strictly earlier other-mint trader/URI-hash counts, and retains original-pool outcome state denominators at 30/60/120/300 seconds. Exploratory groups preserve cohort, follow-up selection and entry liquidity; exports are replayable with fixed cutoff/protocol identity. The health audit now distinguishes an unknown persisted snapshot timestamp from the current read time, and separately counts reported traders. Scanner, observer, entry rules, request budgets and installed backups are unchanged. The new study still needs a real host export; local tests are not live results. Details: `docs/LAUNCH-STUDY.md`.
+
+### Launch-study first-run correction
+
+The first host report attempt failed with a generic SQLite OperationalError and published no report. Local investigation reproduced an inefficient planner choice in the outcome lookup. The reader now uses unique-key equality lookups, preserves the same 10-second read budget and cutoff semantics, and emits safe stage-specific SQLite diagnostics. Large-history, locked-database and missing-schema tests were added. The original host failure has no detailed cause recorded; successful host collection remains to be verified.
+
+
+## 11 October 2026 — launch export verified and joined report automated
+
+The corrected launch collector succeeded on Kali: the supplied report records a 0.283-second read, 609 study entries and 378 entries with prior available launch context. Its actual post-registration coverage is about 4 hours 53 minutes, so earlier-launch counts still have partial lookback. The companion quote export joins to all 609 observer decisions; 27 were admitted (eight baseline, ten early-activity, nine Fast30). This confirms successful collection and joins without assigning an unrecorded cause to the first generic failure.
+
+Implemented an offline, replayable launch/observer/paper/quote report and a one-command read-only wrapper. Identity checks handle distinct baseline IDs; common cutoffs exclude later evidence; integer fixed-quantity checks recompute quoted changes; skipped, failed, unavailable and late observations retain explicit denominators. Matched and wider quote windows remain separate, including the wider Fast30 severe loss. Twenty added tests include wrapper failure cleanup and private atomic publication. This entry records development and validation against supplied files; the fresh host wrapper run is pending.
+
+The report's primary descriptive quote horizon is 30 seconds after buy response, with 60/120-second comparators. All three matched cohorts have negative mean quoted change at 30 seconds in the supplied sample. A positive nine-watch Fast30 result at 120 seconds is exploratory, not a new exit rule or proof of profitability. Scanner, observer, provider budgets, signal rules and backup services remain unchanged. The next gate is sufficient descriptive evidence to justify a frozen prospective hypothesis, followed separately by execution engineering. See `docs/LAUNCH-QUOTE-UPDATE.md`.
+
+
+## 11 October 2026 — fresh joined report confirmed; price reconciliation added
+
+The supplied `20261011T200035Z` report covers 16:00–22:00 Amsterdam, with 911 matched observer decisions, 34 admitted watches and a 0.669-second scanner evidence read. Seven watches overlap the earlier quote export. The primary 30-second mean quoted changes are baseline +0.41%, early-activity −19.94% and Fast30 −6.18%, with sell failures preserved. Baseline's mean becomes −2.94% without its best result. Launch-trader groups remain small and inconsistent; no rule was promoted.
+
+The report reveals substantial paper/quote disagreement: 15 of 31 paired 30-second observations have opposite signs; 13 differ by at least 20 percentage points despite close local receipts, reported original-pool routes and timely quotes. Read the scanner price path and confirmed timestamps represent local response receipts, not independently verified exchange price time. No calculation defect or provider root cause was established by this inspection.
+
+Added reconciliation version `price-reconciliation-1` and collector `launch-study-1.0.2`. The collector projects up to 24 price/time samples already retained inside immutable entries. The audit validates reference consistency, labels unknown/conflicting clocks and compares paths after rebasing both at 30 seconds without assuming token decimals. On the supplied report, 16 of 31 paths still differ by at least 20 percentage points over the 30-to-60-second interval. Eighteen added tests verify failure handling, read-only projection and arithmetic; original joined results replay unchanged. Fresh host capture of the added history is pending. Details and exact commands: `docs/PRICE-RECONCILIATION.md`.
+
+This is measurement investigation, not new signal tuning or trade execution. Scanner, observer, request budgets, notifications and backups are unchanged; no rebuild or restart is required.
+
+
+## 12 October 2026 — feed timing development and Backblaze cap triage
+
+The fresh `20261012T041448Z` report covers six hours, with 876 matched decisions and 34 admitted watches. Entry prices match their retained histories, but 15 of 33 paired 30-second records still have large discrepancies despite close local receipts and reported original-pool quote routes. A baseline example shows a sharp quote collapse before the paper feed records a similar decline; this supports investigation of timing without proving provider lag or a root cause.
+
+Built `feed-provenance-1` to attach bounded clocks and allowlisted HTTP cache metadata to existing DEX reads, and preserve them on new research entries/checkpoints. The joined report retains explicit absent/invalid evidence. Scoring, scheduling, provider request counts, notifications and quote policies remain fixed. Deployment needs a guarded source install and scanner rebuild; no host result is claimed here.
+
+The user also reported Backblaze reaching 100% of a daily cap. Added a read-only local backup status diagnostic that makes no cloud calls and exports no credentials. Cap category and actual backup outcomes still require host evidence. Backup timers, limits, retention and full round-trip verification are unchanged. See `FEED-PROVENANCE.md` for commands and limitations.
+
+
+## 12 October 2026 — full post-update timing window and paired audit
+
+The 07:11–13:11 Amsterdam report confirms valid timing on all 752 entries and 2,925 outcome records. Thirty-three quote watches are new relative to the earlier 06:43 report. Eleven large 30-second paper/quote disagreements survive the close-receipt, original-pool and timely-quote criteria; all have sub-second queue-to-application durations. Eight report cache MISS on both entry and checkpoint, and eight have receipts within one second. Three show positive HTTP Age. These findings narrow the investigation but do not establish provider causality or execution profitability.
+
+Added `paired-feed-audit-1`, an offline, replayable join of timing, cache, route and validated return evidence. Failed quotes, unknown histories and gapped checkpoints retain denominators. No scanner, observer, rate-budget, scoring or notification change is made. The user explicitly paused Backblaze work; no backup changes are included. See `PAIRED-FEED-AUDIT.md` for findings and commands. The current reporting work does not authorize or implement funded trades.
+
+## 15–16 October 2026 — entry context verified; metadata provenance added
+
+The supplied export ending 15 October at 21:22 UTC contains 802 post-update signals with valid supplemental context (62 baseline, 451 early-activity, 289 Fast30). All 25 admitted watches retain denominators: 22 complete, two complete with failures and one interrupted. Two early-activity watches returned buy quotes but repeated HTTP 400 reverse-quote generation failures. The available two-minute quotes had negative means in all cohorts; this is not a profitability milestone.
+
+Organic scores on many early/Fast30 entries had no dedicated-search timestamp because they came through discovery. Added independently bound per-field discovery/search receipt provenance without changing the search timestamp or admission logic. Observer 0.9.0 validates this additive entry-context extension. The offline dataset separates exit evidence categories, preserves all admitted watches and reports source coverage. Reinstalling an identical running observer release skips restart. Existing feature inputs, model, strategy, budgets and Backblaze remain unchanged. Host deployment verification is pending; see `METADATA-PROVENANCE-UPDATE.md`.
+
+## 16 October 2026 — fixed forward protocol and synthetic execution harness
+
+The 04:31–05:31 UTC source export replayed exactly with 124 eligible signals, valid context on all 124, and metadata provenance on 113; the other 11 had absent values. No timestamp/value mismatch was found. Five watches returned all primary-horizon quotes, but all five quoted changes were negative at 30 seconds. One baseline watch had a severe quoted decline despite a score of 75 and already carried a defer classification. These findings inform a fixed comparison, not a case-specific entry-rule change.
+
+Added separate return/quote-availability targets, a versioned feature protocol and local registration, training guards, immutable numeric-weight model freezing, and an evaluator that excludes pre-freeze and seen-token evidence without retraining. Reports retain unknown outcomes and independent baselines. No model has been fitted on the supplied five-watch upload.
+
+Added a simulation-only SQLite execution state machine to test unknown outcomes, duplicate submissions, balance/transaction binding, fees, limits, stop behavior and restart recovery. No wallet, chain integration or order-sending code is present. Backblaze's reported download cap is consistent with whole-archive verification downloads approaching 1 GB; configuration remains unchanged and latest completion status still needs local evidence. Details: `FORWARD-AND-SIMULATION-UPDATE.md`.
+
+## 17 October 2026 — detailed readiness, read-only chain reconciliation and deployment identity
+
+The 72-hour capture ending 09:44 UTC rebuilt with 395 watches, of which 166 have protocol-compatible entry provenance (50 baseline, 59 early-activity, 57 Fast30). All existing readiness guards replay unchanged and still fail. Returned 30-second mean quoted changes are negative in all cohorts; failure denominators and recovery remain explicit. No model was fitted.
+
+Added an offline descriptive readiness report, a public two-method Solana RPC evidence reader with synthetic transport/finality/balance tests, and a host/container source hash inventory. No production service or strategy changes are needed. Reader outputs never authorize resubmission or update a ledger; actual intent validation, account lifecycle reconciliation and signing remain unimplemented. Backblaze remains pay-as-you-go with recovery of prior failures unverified. See `READINESS-RECONCILIATION-UPDATE.md` for host commands and limits.
+
+## 17 October 2026 — host release verified; intent reconciliation added
+
+The 16:15 UTC host reports matched all 52 host scanner files, 51 container files and 27 observer files. Scanner health was green with zero restarts, and observer 0.9.0 was running. Offline chain cases and the reused 09:44 UTC readiness capture matched local results exactly.
+
+Added an independent offline transaction-intent lab: expected message binding, public wallet/token account identities, integer input/minimum-output and fee/rent checks, bounded standard SPL lifecycle evidence and finalized-failure fee accounting. It reports unsupported/unknown cases without inferring execution or resubmission permission. No production, sampling, protocol, model, signing or backup changes. Synthetic host self-check is pending. See `INTENT-RECONCILIATION-UPDATE.md`.
+
+## 17 October 2026 — intent host check passed; signed journal developed
+
+The 16:49 UTC host report exactly matched all six prior intent scenarios, including unresolved submission and unexpected-debit rejection. No network request or ledger mutation occurred in that check.
+
+Added `intent-journal`: strict raw transaction decoding, built-in Node Ed25519 verification of every required signature, signed-to-declared message binding and durable local SQLite intents. It preserves a committed submission-unknown state across crashes, rejects duplicate/conflicting intents, keeps receipt retries idempotent and quarantines contradictory final outcomes. The default self-check uses public synthetic signed fixtures and temporary journals; its signatures are real but its RPC finality and balances are hypothetical. No keys, signing, sending, strategy or production changes are included. Host validation is pending. See `SIGNED-INTENT-JOURNAL-UPDATE.md`.
+
+## 17 October 2026 — host signed journal passed; public recorded transaction captured
+
+The 17:45 UTC Kali report exactly matched all eleven signed-intent cases, including restart recovery, rejected duplicate/tampered submissions and quarantined unexpected debit. Temporary journals were removed and no production ledger changed.
+
+Added `recorded-chain`: fixed official public endpoints, before/after genesis checks, one devnet discovery result, finalized JSON/base64 transaction capture, status binding and offline replay. Six read requests captured an existing devnet transaction at 18:11:57 UTC (slot 512159775). Its required signature and message bytes matched RPC JSON; one ALT prevents claiming verified address resolution. The actual public capture is retained with the development HTTPS-proxy transport distinction. The journal's strict ALT rejection and registration hashes remain unchanged. No transaction was created, funded, signed or sent. Next: bounded lookup-table resolution with historical-state limits and a separately controlled devnet workflow. See `RECORDED-CHAIN-UPDATE.md`.
+
+## 18 October 2026 — current lookup evidence and reboot follow-up
+
+Replayed the user's 17 October 21:54 UTC recorded-chain report exactly: devnet v0, one verified signature, two lookup descriptors, six reads, no transaction sent. Added a three-read table-account capture and offline verifier with explicit current-state versus historical-state limits. Added read-only boot/container/observer/timer recovery capture after the user reported approximately three hours offline at 23:58 Amsterdam. Exact interval and recovery remain pending. No research registration, signal, observer, journal admission, backup or trading changes. See [release scope and commands](LOOKUP-EVIDENCE-UPDATE.md).
+
+## 18 October 2026 — lookup host check and devnet preparation
+
+The supplied lookup capture replayed exactly with 14 addresses across two tables. The later extension on one table keeps historical state unproven. Recovery telemetry showed readiness HTTP 200 and an active polling observer. The user confirmed a Kali reboot and Healthchecks.io alert, but the capture retained an older host boot and process start times. This conflict and exact interruption interval remain unresolved; current health is not continuous-coverage proof.
+
+Implemented a standalone dedicated devnet wallet initializer and purpose-restricted separate-process signer. One fixed System self-transfer message is accepted. SQLite commits an intent before signing and verified signed bytes before optional simulation; exclusive locking, one-plan admission and abrupt-stop tests preserve uncertainty without automatic retry. The default host self-check is offline and uses temporary keys. Initialization reports only a public address. Signed simulation requires an explicit flag and checks the fixed devnet endpoint, genesis, capped fee and its own pre/post balances. No broadcaster, faucet, live trade, real funds, strategy update or production integration is included. Host self-check and initialization are the next verification gate. See [release scope](DEVNET-REHEARSAL-UPDATE.md).
+
+## 18 October 2026 — dedicated wallet simulation passed; one-send devnet workflow
+
+The user's nine-case offline check matched local results exactly, and its public wallet report confirmed local key creation without export or network requests. The web faucet's GitHub flow was confusing; the official requestAirdrop RPC returned a signature for 0.01 devnet SOL. The subsequent 05:47:36 UTC preparation report showed all six requests received, signed simulation passed, 5,000 lamports of simulated fee and no transaction submitted. The uploaded report is a sanitized summary, not raw signed evidence.
+
+Added a separate submission CLI with explicit wallet binding and send permission. It preserves the existing simulation, allows one explicitly requested expired-plan replacement only before any submission boundary, and records an unknown state durably before the sole send call. Read-only recovery, bounded polling, exact signed-byte/receipt matching, fee accounting, sticky quarantine and a persistent stop marker are implemented. Tests use synthetic transport, including abrupt process exit and uncertain send outcomes. No development-environment send or live host submission is claimed. No production, strategy, model or backup settings changed. See [release scope and host gate](DEVNET-SUBMISSION-UPDATE.md).
+
+## 18 October 2026 — own devnet transaction and terminal recovery verified
+
+The 09:36:28 UTC submission report recorded finalized success at slot 512392535, one send request, fee 5,000 lamports, and wallet balance 10,000,000 → 9,995,000 lamports. Expired plan 1 remains preserved; replacement plan 2 supplies the finalized signature. Local independent checks reconstructed both public signed messages and verified their Ed25519 signatures/hashes. The nine-case submission self-check replay matched exactly. The 09:40:28 UTC recovery report preserved the identical receipt, one submission boundary and no network requests. This is a devnet self-transfer, not a swap or profitable trading result.
+
+Added `token-reconciliation` as an offline signed receipt auditor. Reuses signature and account accounting components, requires transfer instruction quantities/directions/authorities to agree with wallet account changes, checks lifecycle ordering and excludes unsupported wallet-native/authority operations. Existing WSOL can be checked with integer backing consistency; wrap/unwrap, Token-2022 and ALT remain excluded. Added public synthetic WSOL fixtures, a twelve-case host self-check and adversarial regression coverage. No live signer, sender, daemon, scanner configuration, evidence registration or trading-policy change. See [release details](TOKEN-RECONCILIATION-UPDATE.md).
+
+
+## 18 October 2026 — signed token host replay and recorded flow engineering
+
+The 15:30:42 UTC host `token-reconciliation-self-check-1` report exactly replayed all twelve expected synthetic states, with zero requests and no ledger changes. Actual chain evidence remains the earlier devnet native self-transfer; synthetic token receipts are not promoted to chain observations.
+
+Added a distinct `capture_cli.py` with an eleven-case offline check, one-result public devnet token discovery, explicit-signature capture and offline report replay. It verifies signed identity and RPC cross-encoding consistency, then reconciles ordered standard SPL transfers across all recorded accounts and the native fee/funding/refund vector. Existing WSOL is narrow; ALT history, Token-2022, wrap/unwrap and unrecorded transient accounts remain unsupported. It does not infer a prior trade intent or update an execution journal. The live development transport stopped after one failed public read; no successful token chain capture was obtained. The next host action is a bounded read-only capture, not a new transaction. Production collection, signals, notifications, budgets and Backblaze are unchanged. See [release notes](RECORDED-TOKEN-FLOWS-UPDATE.md).
+
+
+## 18 October 2026 — recorded token transfer replay and atomic lifecycle implementation
+
+The supplied 20:40 UTC token self-check reproduced all eleven expected cases. The actual public capture reproduced `recorded-token-flows-consistent`: two valid signatures, no lookup tables, devnet slot 512559524, one transfer of ten atomic units between existing accounts, and fee 10,000 lamports. The complete public capture is now retained for offline regression. This was not this project's transaction and did not exercise lifecycle operations.
+
+Implemented a separate exact seven-instruction WSOL devnet rehearsal, using the original dedicated wallet and two newly generated temporary account keys. It records intent before signing, verifies three signatures, validates signed simulation, commits an unknown boundary before one send, and reconciles exact signed receipt identity plus all native endpoints. Both token accounts close within the transaction, so intermediate token quantities are contract quantities rather than recorded endpoint observations. Failure, stop, timeout, duplicate execution, malformed receipts and abrupt process exit are tested with synthetic transport. The original self-transfer records and signer policy remain unchanged. Actual host lifecycle execution is pending; no transaction was sent from development. See [release details](DEVNET-TOKEN-LIFECYCLE-UPDATE.md).
+
+
+## 19 October 2026 — devnet lifecycle recovery and offline position integration
+
+Reviewed the 04:12:56 UTC actual lifecycle report and its ten-case synthetic companion. Reconstructed the exact signed wire, verified all three signatures/hashes and reconciled native endpoints: one send, slot 512673362, fee 15,000 test lamports, both temporary accounts zero. The 04:18:02 UTC recovery report matched intent, simulation and receipt exactly, with no RPC calls or new sends. Transient token quantities and independent consensus confirmation remain unobserved.
+
+Implemented the separate `position-book` integration: the existing signed-intent verifier and raw token auditor now support atomic local reservation/entry/exit accounting in a private SQLite file. One active position, exact account/balance continuity, full exits, fee-only failures, unknown outcome holds, duplicate protection, immutable budgets, persistent entry stop and sticky quarantine are tested. Synthetic fixtures contain public signed bytes from discarded ephemeral keys; no new chain transaction was made during development. No scanner, observer, backup, signal or model changes. See [release notes](POSITION-ACCOUNTING-UPDATE.md).
+
+
+## 19 October 2026 — unsigned swap instruction contract
+
+The supplied 04:31:10 UTC position report exactly reproduced all ten synthetic accounting checks with no network requests or transactions. Added a separate offline raw unsigned-message validator for one direct Raydium CPMM devnet exact-input contract: fixed account roles and permissions, atomic amounts/minimum output, allowed compute instructions, integer fee caps, message-bound caller fee assertion and short local deadlines. Twelve synthetic host cases and adversarial regression tests cover rejection paths. No signer is connected; chain/account/program state, policy provenance, RPC fee truth and simulation remain unverified. Next: host replay and a bounded independent state/preflight adapter before devnet swap integration. Strategy evidence collection continues unchanged. See [release scope and commands](SWAP-CONTRACT-UPDATE.md).
+
+
+## 19 October 2026 — current pool/account state adapter
+
+The 09:49:51 UTC host unsigned contract report matched all twelve expected cases exactly, with no requests or transactions. Added raw devnet pool/config/mint/vault/observation decoding, fixed authority and executable program-pointer checks, and a bounded read-only capture. Optional prior-packet mode binds wallet accounts, balances, exact-message RPC fee and blockhash validity to the original unsigned policy. The latest program transaction is only a one-result pool hint, not an authenticated prior intent; unsupported evidence is retained without resampling. Fifteen synthetic host cases and adversarial regression cover state and transport behavior. Development's single public devnet attempt stopped on its first request with network-error, so actual pool capture remains a host gate. No signer, sender, production integration or strategy change. See [release details](SWAP-STATE-UPDATE.md).
+
+
+## 19 October 2026 — real pool state passed; deployment fingerprinting
+
+The supplied 15-case pool-state self-check and actual devnet capture replayed exactly. The seven-request capture at 15:43:54 UTC observed consistent pool relationships at slot 512847269; both test mints retained mint authorities. Added standalone full ProgramData observations for the fixed devnet program: payload/header hashes, deployment slot, upgrade authority, and explicit baseline drift comparison from raw evidence. Five bounded read requests, no signer or transaction sender. Twenty-nine regression tests and a fourteen-case host self-check cover decoder, transport, replay and change detection. Actual ProgramData capture remains a host gate; fingerprints do not establish published-source equivalence or safety. Next: review the deployment observation and establish an independently reviewed baseline before connecting restricted devnet signing/simulation and durable accounting. Strategy collection and financial readiness gates remain unchanged. See [release commands](SWAP-PROGRAM-UPDATE.md).
+
+
+## 19 October 2026 — deployment observation reviewed; combined preflight
+
+The fourteen-case program self-check and actual five-request capture replayed exactly. Pinned that observed deployment at slot 512857731 without claiming source equivalence or safety. Added one combined finalized account batch for pool and program evidence, with optional wallet and exact-message checks. Separate account receipt timestamps prevent later requests from refreshing older observations; original packet deadlines and deployment drift remain blocking. Fifteen synthetic host cases and twenty-nine regression tests cover the integration. Actual combined capture is the next host gate; signing, simulation, submission and position-book integration remain disconnected. No scanner, strategy, quote budget, model or backup changes. See [release scope](SWAP-PREFLIGHT-UPDATE.md).
+
+
+## 19 October 2026 — combined host preflight passed; restricted swap rehearsal
+
+The 19:52:31 UTC host capture replayed exactly as `pinned-pool-snapshot` at slot 512909802, with six received public reads and unchanged observed deployment identity. All fifteen host self-checks matched and PR #34 CI passed. Added a separate exact-message devnet signer, durable one-attempt plan/signature storage, fresh preflight integration and signed simulation token/native accounting. Local tests use disposable unfunded keys and synthetic transport; no real-wallet swap signature or simulation is claimed. The next host action is a twelve-case offline exercise and public token-account inventory for the reviewed pool. Live packet production, devnet token provisioning if needed, one-send swap submission and position accounting remain integration work. No mainnet, strategy, model, quote-budget or backup change. See [release notes](SWAP-REHEARSAL-UPDATE.md).
+
+
+## 20 October 2026 — controlled setup costs and fresh packets
+
+The latest host rehearsal self-check and public inventory were replayed exactly. The dedicated wallet had 9,980,000 devnet lamports but no accounts holding either reference-pool token. Added live rent/config-fee estimation for a new controlled standard-SPL pair/pool, a production canonical swap packet builder, and immediate handoff into the existing restricted signed-simulation workflow. The builder preserves independent scope and minimum output and does not reset existing one-shot state. Token/pool provisioning and actual-wallet swap simulation remain pending. Strategy qualification and funded-pilot gates remain separate. See [release and host command](DEVNET-SETUP-UPDATE.md).
+
+
+## 20 October 2026 — controlled token-pair provisioner
+
+The setup-cost report passed exact replay: creation enabled, full setup estimate 185,980,040 devnet lamports, balance 9,980,000 and shortfall 176,000,040. The token-pair stage alone fits: 5,110,480 rent plus a fresh five-signature fee. Added an atomic two-mint/two-holder setup with fixed supplies, revoked mint authorities, absent freeze authorities, restricted signing, a 6,000,000-lamport rent-plus-fee cap, exact simulation, durable one-send boundary, receipt/account reconciliation and read-only recovery. Offline adverse-case tests use disposable wallets and synthetic RPC; actual host provisioning remains pending. Pool creation and swaps are separate next steps. See [release notes](DEVNET-TOKEN-PAIR-UPDATE.md).
+
+## 20 October 2026 — test pair verified; controlled devnet pool
+
+Reviewed the two 11:06 UTC token-pair reports: all 40 offline cases, one reported send, finalized success, and exact raw account replay. Reconstructed message and wallet signature validated. The later account snapshot has 1,000 test tokens of each six-decimal mint and no mint/freeze authority. Wallet remainder: 4,844,520 devnet lamports. Full signed wire was intentionally not exported, so public review does not independently re-verify all five signatures or fresh consensus.
+
+Built a separate controlled pool initializer with fixed standard-SPL test assets, 500-token deposits per side, deterministic Raydium/ATA addresses, exact transaction serialization, independent Node policy reconstruction, fresh ProgramData pin checks, funding inspection, simulation, one-send journal and recovery. Tests include official SDK and previously observed devnet PDA vectors, insufficient funding without consuming an attempt, authority/delegate changes, deployment drift, timeout, crash, expiry, duplicate-send prevention and mismatched native/token/LP effects. Caps on creation fee/rent are explicitly pre-send observations rather than an on-chain ceiling. Scanner, strategy, ML, quote sampling and Backblaze configuration are unchanged. Actual pool initialization and subsequent controlled swaps remain host validation steps. See [release notes](DEVNET-POOL-UPDATE.md).
+
+
+### 2026-10-20 — Pool journal size correction
+
+Funding inspection reported 20.00484452 devnet SOL, but execute and recover both surfaced a generic ValueError. Replaying the attached pre-state showed 143,041 bytes of account JSON, including 140,044 base64 characters for the legacy Associated Token Program. A realistic-sized regression reproduced the original signer/reader failure. Fixed consistent bounded journal reads, role-specific simulation/post-account payload handling and pool observation reads. Added public journal file presence/size evidence. No existing host journal is reset or resumed; deployment next requires status-only evidence. No on-chain pool success has been established.
+
+
+### 2026-10-20 — Explicit unsigned pool plan replacement
+
+Host status after the size-reader fix showed `preparation-incomplete`, a 145,208-byte plan, and no signing-attempt, signed, simulation or send marker. Added one explicitly requested replacement for this exact unsigned size-failure case. It checks the original plan, exclusive journal inventory, expired intent and finalized block height, then performs fresh funding/program/pool checks. A durable boundary and whole-directory archive preserve the original evidence before the normal fresh attempt. Crashes and any signed/ambiguous/replaced journal refuse another attempt. A successful live pool receipt remains outstanding.
+
+
+## 21 October 2026 — finalized test pool and controlled swap simulation
+
+The supplied 20 October 21:47 UTC report records one pool initialization send, finalized success, 500 tokens in each vault and 500 in each remaining holder. Independent public-evidence replay verified deterministic addresses, the reconstructed message and wire hashes, Ed25519 signature, raw post-account effects and exact 180,774,560-lamport debit. All 70 reported offline cases matched. Raw receipt verification remains a host-side check because that full receipt was not exported.
+
+Added a fixed-scope adapter from verified local setup journals to the existing fresh packet, current account/program preflight, one-shot restricted signer and signed simulation. Explicit wallet/pool required; mint0 to mint1 only; 1,000 atomic input, minimum 990 output, zero priority fee and 10,000-lamport message-fee cap. No sender, production change or journal reset. Seventeen new tests exercise the real local signing path against synthetic transport and adverse interruptions. Corrected signature-count reporting after a durable signature with lost signer acknowledgement. Actual host swap simulation is the next gate; one-send swap execution, reverse-swap/position accounting and strategy qualification remain separate work. See [release instructions](CONTROLLED-SWAP-SIMULATION-UPDATE.md).
+
+## 21 October 2026 — controlled devnet swap execution lifecycle
+
+Accepted the dedicated wallet's successful signed controlled-pool simulation at 04:35 UTC: input 1,000 atomic units, simulated output 998, fee 5,000 devnet lamports and 21,405 compute units. It sent no transaction. Public message/wire/signature and setup bindings were independently reconstructed; private raw RPC evidence was validated by the host workflow.
+
+Built the next standalone host stage with a separate execution directory, preserving the simulation journal. The fixed test scope is re-derived from finalized setup; fresh exact-message fee, pinned program/account evidence, restricted signing, signed simulation and repeated pre-send checks precede one durable send boundary. The signer accepts a fixed execution purpose and independently derives controlled account identities. There is no arbitrary path or route-provided instruction signing.
+
+Finalized receipts must match the exact signed wire and reconcile fee-only native changes plus all four token balances. Missing receipt data stays unknown, contradictory supplied effects quarantine, and failed transactions must reconcile to fee-only effects. Private raw receipt retention allows later terminal status to replay accounting. Crash and timeout tests cover before/after transport; recovery never signs or sends. No service deployment or strategy change is included. The host's actual swap receipt remains pending; reverse-swap and position accounting are next, while trading edge and real-money readiness remain independent.
+
+## 21 October 2026 — forward swap accepted; bounded reverse and round-trip accounting
+
+Reviewed actual forward execution and terminal recovery: 1,000 atomic input, 998 atomic output, 5,000-lamport fee, one send; recovery replayed the same evidence with zero sends, signatures or requests. Added a separate immutable reverse journal, exact receipt-derived acquired quantity, independent Node verification of the original wire/receipt, fresh chain checks and holder/native continuity. Successful two-receipt accounting separates original-token net change from native fees and requires zero acquired-token residual. Failed exits remain open; unavailable/contradictory evidence remains unknown/quarantined. 27 new synthetic adverse-case tests exercise real local signing without public RPC. Actual reverse execution is the next host gate. See [release and commands](CONTROLLED-REVERSE-SWAP-UPDATE.md).

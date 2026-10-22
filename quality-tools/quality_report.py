@@ -2,7 +2,12 @@
 """Read-only shadow report and offline fixed-quantity quote movements."""
 import argparse,collections,datetime,gzip,json,math,os,signal,sqlite3,statistics,subprocess,time
 from pathlib import Path
-VERSION='research-quality-report-1'
+VERSION='research-quality-report-4'
+from timing_analysis import analyze_timing
+from joined_analysis import join_quotes
+from entry_shadows import entry_shadows, missing_diagnostics
+from path_analysis import path_analysis
+from fixed_exits import fixed_exits
 def finite(v):return isinstance(v,(int,float)) and not isinstance(v,bool) and math.isfinite(v)
 def load(p):
  with (gzip.open(p,'rb') if str(p).endswith('.gz') else open(p,'rb')) as f:raw=f.read(48*1024*1024+1)
@@ -16,7 +21,7 @@ def live_database(project):
  if not info.get('State',{}).get('Running') or len(mounts)!=1:raise ValueError('Running data mount unavailable')
  return Path(mounts[0]['Source']).resolve(strict=True)/'radar.sqlite'
 def capture(path,hours=24,budget=10):
- path=Path(path).resolve(strict=True);start=time.monotonic();deadline=start+budget;wal=Path(str(path)+'-wal');size=wal.stat().st_size if wal.exists() else 0
+ path=Path(path).resolve(strict=True);identity=path.stat();start=time.monotonic();deadline=start+budget;wal=Path(str(path)+'-wal');size=wal.stat().st_size if wal.exists() else 0
  def guard():
   if time.monotonic()>deadline:raise TimeoutError('Read budget exceeded')
   if wal.exists() and wal.stat().st_size-size>64*1024*1024:raise RuntimeError('WAL growth limit reached')
@@ -28,6 +33,12 @@ def capture(path,hours=24,budget=10):
   db.set_progress_handler(lambda:int(time.monotonic()>deadline),1000);db.execute('BEGIN')
   reg=db.execute("SELECT data FROM kv WHERE key='fast-shadow-registration'").fetchone()
   result['registration']=json.loads(reg[0]) if reg else None
+  followup=db.execute("SELECT data FROM kv WHERE key='fast-followup-registration'").fetchone()
+  result['followupRegistration']=json.loads(followup[0]) if followup else None
+  evidence=db.execute("SELECT data FROM kv WHERE key='fast-evidence-registration'").fetchone()
+  result['evidenceRegistration']=json.loads(evidence[0]) if evidence else None
+  exits=db.execute("SELECT data FROM kv WHERE key='fixed-short-exits-registration'").fetchone()
+  result['fixedExitRegistration']=json.loads(exits[0]) if exits else None
   for kind,cap in [('fast-shadow-entries',3000),('fast-shadow-outcomes',12000),('fast-shadow-links',6000)]:
    result[kind]=[]
    for raw,size_bytes in db.execute('SELECT CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data END,length(CAST(data AS BLOB)) FROM events INDEXED BY events_at WHERE kind=? AND at>=? AND at<=? ORDER BY at LIMIT ?',(kind,now-hours*3600000,now,cap+1)):
@@ -39,7 +50,9 @@ def capture(path,hours=24,budget=10):
  finally:
   if db:db.close()
   signal.setitimer(signal.ITIMER_REAL,0);signal.signal(signal.SIGALRM,old)
- result.update(cutoffAt=now,windowStartAt=now-hours*3600000,readSeconds=round(time.monotonic()-start,3))
+ current=path.stat()
+ if (current.st_dev,current.st_ino)!=(identity.st_dev,identity.st_ino):raise RuntimeError('Source replaced during capture')
+ result.update(sourceIdentity=f'{identity.st_dev}:{identity.st_ino}',cutoffAt=now,windowStartAt=now-hours*3600000,readSeconds=round(time.monotonic()-start,3))
  return result
 
 def shadow_summary(data):
@@ -106,12 +119,21 @@ def quote_movements(report):
  return {'groups':summary,'cases':cases,'note':'Same hypothetical token quantity, quote proceeds between actual requests. Quotes are not fills or exit recommendations; failed/missing intervals excluded explicitly. Offset 0 is delayed by request spacing.'}
 
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--project',type=Path);p.add_argument('--quotes',type=Path);p.add_argument('--hours',type=int,choices=range(1,25),default=24);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
- if not a.project and not a.quotes:p.error('Supply project and/or quotes')
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--project',type=Path);p.add_argument('--shadow-report',type=Path);p.add_argument('--quotes',type=Path);p.add_argument('--hours',type=int,choices=range(1,25),default=24);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+ if a.project and a.shadow_report:p.error('Project and shadow-report are mutually exclusive')
+ if not a.project and not a.shadow_report and not a.quotes:p.error('Supply project, shadow-report and/or quotes')
  report={'format':VERSION,'capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat()}
- if a.project:
-  data=capture(live_database(a.project),a.hours);report['shadowCapture']=data;report['shadowSummary']=shadow_summary(data)
- if a.quotes:report['quoteMovements']=quote_movements(load(a.quotes))
+ data=None;quotes=load(a.quotes) if a.quotes else None
+ if a.project:data=capture(live_database(a.project),a.hours)
+ elif a.shadow_report:data=load(a.shadow_report)['shadowCapture']
+ if data is not None:
+  report['shadowCapture']=data;report['shadowSummary']=shadow_summary(data);report['evidenceAnalysis']=analyze_timing(data)
+  report['missingDiagnostics']=missing_diagnostics(data)
+  if quotes is not None:report['joinedEvidence']=join_quotes(data,quotes)
+  report['entryShadows']=entry_shadows(data,report.get('joinedEvidence'))
+  report['pathEvidence']=path_analysis(data,report.get('joinedEvidence'))
+  if quotes is not None:report['fixedExits']=fixed_exits(data,quotes,report['joinedEvidence'])
+ if quotes is not None:report['quoteMovements']=quote_movements(quotes)
  raw=json.dumps(report,allow_nan=False,separators=(',',':')).encode()
  if len(raw)>48*1024*1024:raise ValueError('Output too large')
  compressed=gzip.compress(raw,mtime=0);fd=os.open(a.output,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
@@ -121,6 +143,10 @@ def main():
    if os.geteuid()==0 and os.environ.get('SUDO_UID'):os.fchown(f.fileno(),int(os.environ['SUDO_UID']),int(os.environ['SUDO_GID']))
  except BaseException:a.output.unlink(missing_ok=True);raise
  print(json.dumps(report['shadowSummary'] if 'shadowSummary' in report else {'quoteMovementGroups':len(report['quoteMovements']['groups'])},indent=2));print('Upload: '+str(a.output.resolve()))
+ if 'joinedEvidence' in report:print('Joined source identity: '+report['joinedEvidence']['sourceIdentityState'])
+ if 'entryShadows' in report:print('Entry shadow periods: '+json.dumps(dict(collections.Counter(e['period'] for e in report['entryShadows']['entries']))))
+ if 'pathEvidence' in report:print('Pool evidence: '+json.dumps(report['pathEvidence']['poolSummary']))
+ if 'fixedExits' in report:print('Fixed exit periods: '+json.dumps(dict(collections.Counter(e['period'] for e in report['fixedExits']['cases']))))
 if __name__=='__main__':
  try:main()
  except Exception as e:raise SystemExit('Quality report stopped: '+type(e).__name__+'; no complete report published.')

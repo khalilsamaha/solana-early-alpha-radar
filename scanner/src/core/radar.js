@@ -1,3 +1,6 @@
+import {recordMetadata,METADATA_VERSION} from './metadata-provenance.js';
+import {captureEntryContext,ENTRY_CONTEXT_VERSION} from './entry-context.js';
+import {applyFeed,FEED_VERSION} from './feed-evidence.js';
 import {summaryEvents,statisticsHealth} from './stats-memory.js';
 import {qualify,qualificationSummary} from './qualification.js';
 import {summarizeContinuity} from './continuity.js';
@@ -35,18 +38,19 @@ export class Radar {
     const row={at:new Date().toISOString(),message:safe.slice(0,500)};
     this.status.push(row);this.status=this.status.slice(-100);console.log(JSON.stringify({component:'radar',...row}));
   }
-  addCandidate(input) {
+  addCandidate(input,metadataReceipt=null) {
     if(!validMint(input?.mint))return null;
     const now=Date.now(),memory=this.candidates.get(input.mint),archived=this.storage.getState(`paper:${input.mint}`),prev=memory||(archived.paperEntry?archived:null);
     // A bounded queue exposes dropped discovery; ongoing paper entries are never evicted.
     if(!memory&&this.candidates.size>=this.config.maxCandidates) {
-      const expendable=[...this.candidates.values()].filter(x=>!tracking(x)&&!this.researchFocus.has(x.mint)&&!this.inFlight.has(x.mint)).sort((a,b)=>Number(!a.inactive)-Number(!b.inactive)||(a.lastDiscoveryAt||a.firstSeenAt)-(b.lastDiscoveryAt||b.firstSeenAt))[0];
+      const expendable=[...this.candidates.values()].filter(x=>!tracking(x)&&!this.research.fast.trackedPending(x.mint)&&!this.researchFocus.has(x.mint)&&!this.inFlight.has(x.mint)).sort((a,b)=>Number(!a.inactive)-Number(!b.inactive)||(a.lastDiscoveryAt||a.firstSeenAt)-(b.lastDiscoveryAt||b.firstSeenAt))[0];
       if(!expendable){this.droppedCandidates=(this.droppedCandidates||0)+1;return null;}
       if(!expendable.lastAttemptAt)this.evictedBeforeAttempt=(this.evictedBeforeAttempt||0)+1;
       this.research.drop(expendable.mint);this.storage.deleteCandidate(expendable.mint);this.candidates.delete(expendable.mint);this.droppedCandidates=(this.droppedCandidates||0)+1;
     }
     const next={...prev,...clean(input),mint:input.mint,firstSeenAt:prev?.firstSeenAt||now,lastDiscoveryAt:now,
       discoverySources:[...new Set([...(prev?.discoverySources||[]),input.discoverySource||'unknown'])]};
+    next.metadataProvenance=recordMetadata(prev,clean(input),metadataReceipt,now);
     // Preserve operational state when discovery updates metadata.
     if(prev?.launchAt)next.launchAt=prev.launchAt;
     ensureTimeline(next,now);this.candidates.set(next.mint,next);this.storage.saveCandidate(next);return next;
@@ -59,14 +63,20 @@ export class Radar {
     // checkpoints or known-liquid markets can replace discovery-only markets.
     eligible.sort((a,b)=>a.tier-b.tier||Number(this.researchFocus.has(b.c.mint))-Number(this.researchFocus.has(a.c.mint))
       ||(a.c.lastAttemptAt||0)-(b.c.lastAttemptAt||0)||(a.c.firstSeenAt||0)-(b.c.firstSeenAt||0));
+    const ordinary=eligible.filter(x=>x.tier!==0.5);
+    const limit=Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5)));
+    const next=new Set(eligible.slice(0,limit).map(x=>x.c.mint));
+    this.fastFocusDisplaced=ordinary.slice(0,limit).filter(x=>!next.has(x.c.mint)).length;
+    this.fastFocusSelected=eligible.slice(0,limit).filter(x=>x.tier===0.5).length;
+    this.fastFocusAwaiting=eligible.filter(x=>x.tier===0.5&&!next.has(x.c.mint)).length;
     this.focusEligibleCount=eligible.length;
     this.researchFocus=new Set(eligible.slice(0,Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5)))).map(x=>x.c.mint));
   }
   selectBatch(now=Date.now()) {
-    const rows=[...this.candidates.values()].filter(x=>!x.inactive||tracking(x)||this.research.pending(x.mint));
+    const rows=[...this.candidates.values()].filter(x=>!x.inactive||tracking(x)||this.research.trackingPending(x.mint));
     this.updateResearchFocus(rows,now);
     const order=(a,b)=>(a.lastAttemptAt||0)-(b.lastAttemptAt||0)||(a.firstSeenAt||0)-(b.firstSeenAt||0);
-    const active=rows.filter(x=>now-(x.lastAttemptAt||0)>=this.config.enrichIntervalMs && (this.research.pending(x.mint)||now>=(x.nextMarketAttemptAt||0)));
+    const active=rows.filter(x=>now-(x.lastAttemptAt||0)>=this.config.enrichIntervalMs && (this.research.trackingPending(x.mint)||now>=(x.nextMarketAttemptAt||0)));
     const tracked=active.filter(tracking).sort(order),fresh=active.filter(x=>!tracking(x)&&!x.lastAttemptAt).sort(order);
     const focus=active.filter(x=>!tracking(x)&&x.lastAttemptAt&&this.researchFocus.has(x.mint)).sort(order);
     const rest=active.filter(x=>!tracking(x)&&x.lastAttemptAt&&!this.researchFocus.has(x.mint)).sort(order);
@@ -94,7 +104,7 @@ export class Radar {
     const started=Date.now();base.lastAttemptAt=started;
     const times=[base.launchAt,base.firstPoolAt,base.pairCreatedAt].filter(x=>x>0);
     let tooOld=started-(times.length?Math.min(...times):base.firstSeenAt)>this.config.maxCandidateAgeMin*60000;
-    if(tooOld&&!tracking(base)&&!this.research.pending(mint)){base.inactive=true;recordDecision(this.storage,base,this.config,started);this.save(base);return;}
+    if(tooOld&&!tracking(base)&&!this.research.trackingPending(mint)){base.inactive=true;recordDecision(this.storage,base,this.config,started);this.save(base);return;}
     const {market}=observation,now=observation.observedAt||Date.now();
     // Merge after awaits: a discovery or metadata worker may have updated this row.
     let current={...this.candidates.get(mint)};
@@ -102,7 +112,7 @@ export class Radar {
     const fresh=market?.mint===mint&&Number.isFinite(market.priceUsd)&&market.priceUsd>0
       &&(!current.paperEntry?.pairAddress||market.pairAddress===current.paperEntry.pairAddress);
     if(fresh) {
-      current={...current,...market,marketObservedAt:now,observedAt:now,stale:false,marketEmptyCount:0,nextMarketAttemptAt:0};
+      current={...current,...market,feedEvidence:applyFeed(current,market,started),marketObservedAt:now,observedAt:now,stale:false,marketEmptyCount:0,nextMarketAttemptAt:0};
       this.health.lastMarketAt=Math.max(this.health.lastMarketAt,now);
     } else {
       current.stale=true;
@@ -110,7 +120,7 @@ export class Radar {
         current.marketEmptyCount=(current.marketEmptyCount||0)+1;
         // Pending research deadlines must not inherit a five-minute empty-market backoff.
         // The ordinary scheduler and HTTP limiter still bound actual attempts.
-        current.nextMarketAttemptAt=Date.now()+(this.research.pending(mint)?this.config.enrichIntervalMs
+        current.nextMarketAttemptAt=Date.now()+(this.research.trackingPending(mint)?this.config.enrichIntervalMs
           :Math.min(300000,30000*2**Math.min(4,current.marketEmptyCount-1)));
       }
     }
@@ -208,7 +218,10 @@ export class Radar {
       const fields=security?['mintAuthority','freezeAuthority','top10Pct','concentrationMethod','tokenProgram','extensions','securityCheckedAt']
         :['organicScore','holderCount','auditIsSus','isVerified','jupiterStats'];
       const patch=Object.fromEntries(fields.map(field=>[field,result[field]]));
-      if(!security)patch.jupiterCheckedAt=Date.now();
+      if(!security){
+        patch.jupiterCheckedAt=Date.now();
+        patch.metadataProvenance=recordMetadata(latest,patch,{source:'jupiter:search',receivedAt:patch.jupiterCheckedAt},patch.jupiterCheckedAt);
+      }
       const enriched={...latest,...patch};
       this.storage.transaction(()=>{recordDecision(this.storage,enriched,this.config,Date.now(),'metadata');this.save(enriched);});
     }catch(e){this.log(`${provider}: ${e.message}`);}
@@ -232,6 +245,7 @@ export class Radar {
     recordDecision(this.storage,candidate,this.config,now,'alert');
     const alert={id:`${candidate.mint}:${candidate.paperEntry.at}:${level}`,at:now,level,type:'signal',engineVersion:'0.2.9',decisionTimeline:{...candidate.decisionTimeline},
       candidate:Object.fromEntries(['mint','symbol','tokenName','priceUsd','marketCap','liquidityUsd','organicScore','holderCount','top10Pct','pairAddress'].map(k=>[k,candidate[k]])),scoring};
+    alert.entryContext=captureEntryContext(candidate,now,this.config);
     alert.marketContext=this.research.describe(candidate.mint,now);
     alert.qualification=qualify(candidate,alert.marketContext,now);
     alert.evidence={...this.research.evidence(candidate.mint),inputs:{
@@ -270,8 +284,11 @@ export class Radar {
           for(const row of rows)this.addCandidate({mint:row.tokenAddress,discoverySource:'dexscreener:profile'});
         } else {
           // A single failing feed does not discard successful discovery from its sibling.
-          for(const get of [this.adapters.getRecent,this.adapters.getTopOrganic]) {
-            try {for(const row of await get(this.config.jupiterApiKey,this.http))this.addCandidate({...jupiter.normalizeDiscoveryRow(row),discoverySource:'jupiter'});}
+          for(const [get,endpoint] of [[this.adapters.getRecent,'jupiter:recent'],[this.adapters.getTopOrganic,'jupiter:top-organic']]) {
+            try {
+              const rows=await get(this.config.jupiterApiKey,this.http),receivedAt=Date.now();
+              for(const row of rows)this.addCandidate({...jupiter.normalizeDiscoveryRow(row),discoverySource:'jupiter'},{source:endpoint,receivedAt});
+            }
             catch(e){this.log(`Jupiter discovery: ${e.message}`);}
           }
         }
@@ -311,12 +328,13 @@ export class Radar {
   }
   async stop(){this.running=false;this.health.mode='stopped';this.abort.abort();await Promise.allSettled(this.loops);await this.statisticsService?.close();}
   getHealth(){if(this.health.mode==='dashboard'){const h=this.storage.getState('health');if(h.providers)return {...h,mode:'dashboard (worker snapshot)',ready:h.ready&&Date.now()-h.lastMarketAt<this.config.freshMs&&Date.now()-h.lastLoopAt<180000};}
-    const now=Date.now(),active=[...this.candidates.values()].filter(x=>!x.inactive||tracking(x)||this.research.pending(x.mint));
+    const now=Date.now(),active=[...this.candidates.values()].filter(x=>!x.inactive||tracking(x)||this.research.trackingPending(x.mint));
     const pending=active.filter(x=>!x.lastAttemptAt);
-    return {...this.health.snapshot(this.config,this.storage.notificationStats()),scannerVersion:'0.2.9',statisticsReader:statisticsHealth(),statisticsWorker:this.statisticsService?.health()||null,research:{...this.research.stats(now),focus:{limit:Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5))),eligible:this.focusEligibleCount,selected:this.researchFocus.size,
+    return {...this.health.snapshot(this.config,this.storage.notificationStats()),scannerVersion:'0.2.9',feedEvidenceVersion:FEED_VERSION,entryContextVersion:ENTRY_CONTEXT_VERSION,metadataProvenanceVersion:METADATA_VERSION,statisticsReader:statisticsHealth(),statisticsWorker:this.statisticsService?.health()||null,research:{...this.research.stats(now),focus:{limit:Math.min(this.config.researchFocusLimit||60,Math.max(1,Math.floor(this.config.maxCandidates/5))),eligible:this.focusEligibleCount,selected:this.researchFocus.size,fastSelected:this.fastFocusSelected||0,fastAwaitingCapacity:this.fastFocusAwaiting||0,ordinaryDisplaced:this.fastFocusDisplaced||0,
       ready:[...this.researchFocus].filter(m=>{const v=this.research.describe(m,now);return v?.metrics?.ready&&v.stage!=='data unavailable';}).length}},droppedCandidates:this.droppedCandidates||0,
     decisionTrace:{writtenSinceRestart:this.storage.decisionEventsWritten||0,retentionDays:this.config.snapshotDays},
     storageWrites:this.storage.writeStats?.()||null,
+    launchRegistry:this.storage.launchRegistry?.health()||null,
     snapshotArchive:{storedSinceRestart:this.snapshotCounts.stored,skippedSinceRestart:this.snapshotCounts.skipped,
       routineIntervalMs:this.config.snapshotIntervalMs,thinMarketIntervalMs:this.config.thinSnapshotIntervalMs},
     coverage:{active:active.length,neverAttempted:pending.length,oldestFirstAttemptWaitMs:Math.max(0,...pending.map(x=>now-x.firstSeenAt)),

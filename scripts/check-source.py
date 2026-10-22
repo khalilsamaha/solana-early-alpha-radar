@@ -30,7 +30,7 @@ def main():
         parts = Path(name).parts
         if (path.is_symlink() or any(p in {'data', 'backups', 'source-backups', 'reports', '__pycache__', 'node_modules'} for p in parts)
                 or path.name.startswith('.env') or path.name in {'rclone.conf', 'heartbeat-url'}
-                or re.search(r'\.(sqlite|db)(?:-|\.|$)|\.(pem|key|pyc)$', path.name)):
+                or re.search(r'\.(sqlite|db)(?:-|\.|$)|\.(pem|key|pk8|pyc)$', path.name)):
             failures.append(name + ': prohibited tracked file')
             continue
         if path.stat().st_size > 4 * 1024 * 1024:
@@ -44,7 +44,7 @@ def main():
         for line, text in enumerate(content.splitlines(), 1):
             if any(pattern.search(text) for pattern in PATTERNS):
                 failures.append(f'{name}:{line}: credential pattern; value withheld')
-    for component in ['quote-observer', 'research-tools']:
+    for component in ['quote-observer', 'research-tools', 'operations-tools']:
         manifest = json.loads((ROOT / component / 'manifest.json').read_text())
         for name, expected in manifest['files'].items():
             path = ROOT / component / name

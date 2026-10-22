@@ -50,6 +50,8 @@ test('turnover is continuous at 4x and experimental scoring preserves security c
 test('shadow activity is deduplicated, does not queue Telegram and records all four checkpoints',t=>{
  const {storage,r}=setup(t);for(let i=0;i<=24;i++)feed(r,i);
  const entries=storage.readJsonl('research-entries');assert.equal(entries.length,1);assert.equal(entries[0].cohort,'early-activity');
+ assert.equal(entries[0].entryContext.version,'entry-context-1');assert.equal(entries[0].entryContext.clocks.securityCheckedAt.at,T);
+
  assert.equal(storage.readJsonl('research-events').filter(e=>e.event==='early activity').length,1);
  assert.deepEqual(storage.notificationStats(),{});
  const outcomes=storage.readJsonl('research-outcomes');assert.equal(outcomes.length,4);assert.ok(outcomes.every(o=>o.coverage==='sampled'&&o.status==='observed'));
@@ -103,6 +105,7 @@ test('first strong baseline alert enters short-window comparison exactly once',t
  radar.maybeAlert(c,scoring,T);radar.maybeAlert(c,scoring,T+1000);
  assert.equal(storage.readJsonl('alerts').length,1);assert.equal(storage.readJsonl('research-entries').length,1);
  assert.equal(storage.readJsonl('research-entries')[0].cohort,'baseline');
+ assert.equal(storage.readJsonl('alerts')[0].entryContext.version,'entry-context-1');
 });
 test('opt-in research notification expires after 45s; disabling feature cancels pending research only',async t=>{
  const {storage,r}=setup(t,{researchNotifications:true});for(let i=0;i<=4;i++)feed(r,i);

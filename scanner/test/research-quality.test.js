@@ -17,13 +17,13 @@ test('quality distinguishes initial, repeated, price-only and value-only changes
 test('fast track fires at 30 seconds, existing early track at 60 and linked lead is explicit',t=>{
  const {r,storage}=setup(t);for(let i=0;i<=4;i++)feed(r,i);
  const f=storage.readJsonl('fast-shadow-entries'),e=storage.readJsonl('research-entries');
- assert.equal(f.length,1);assert.equal(f[0].at,T+30000);assert.equal(e[0].at,T+60000);
+ assert.equal(f.length,1);assert.equal(f[0].entryContext.derived.transactions5m,122);assert.equal(f[0].entryContext.clocks.securityCheckedAt.at,T);assert.equal(f[0].at,T+30000);assert.equal(e[0].at,T+60000);
  assert.equal(storage.readJsonl('fast-shadow-links')[0].leadMs,30000);assert.deepEqual(storage.notificationStats(),{});
  assert.equal(r.pending(mint),true);assert.equal(storage.getState('fast-shadow-registration').id,FAST_RULE.id);
 });
-test('fast-only tracking does not alter scheduler pending or focus tier',t=>{
+test('fast-only tracking gets a bounded focus tier without creating a baseline paper position',t=>{
  const {r}=setup(t);for(let i=0;i<=2;i++)feed(r,i);
- assert.equal(r.fast.stats().pending,1);assert.equal(r.pending(mint),false);assert.equal(r.focusTier(token(2),T+30000),1);
+ assert.equal(r.fast.stats().pending,1);assert.equal(r.pending(mint),false);assert.equal(r.focusTier(token(2),T+30000),0.5);assert.equal(r.trackingPending(mint),true);
 });
 test('one initial plus one changed transition cannot create early history',t=>{
  const {r,storage}=setup(t);feed(r,0);feed(r,1,{...token(0),marketObservedAt:T+15000});feed(r,2);
@@ -64,4 +64,23 @@ test('quality counters reset with pool and warmup, future timestamp never fresh'
  const h=new MomentumHistory();for(let i=0;i<4;i++)h.observe(token(i),T+i*15000);h.observe(token(4,{pairAddress:'other'}),T+60000);
  const q=observationQuality(h,T+60000);assert.equal(q.sampleCount,1);assert.equal(q.lastPriceChangeAt,null);assert.equal(q.historyResetReason,'pool changed');
  assert.equal(observationQuality(h,T+59000).responseRecent,false);
+});
+
+test('fast tracking admission is bounded, recorded, survives restart and expires',t=>{
+ const {r,storage}=setup(t);
+ for(let n=0;n<13;n++)for(let i=0;i<=2;i++)feed(r,i,{mint:'token'+n});
+ const entries=storage.readJsonl('fast-shadow-entries');assert.equal(entries.length,13);
+ assert.equal(entries.filter(e=>e.followup.admitted).length,12);assert.equal(entries[12].followup.reason,'tracking capacity full');
+ assert.equal(r.trackingPending('token12'),false);assert.equal(r.fast.stats().trackingActive,12);
+ const restarted=new Research(config,storage);for(let n=0;n<13;n++)restarted.state('token'+n);
+ assert.equal(restarted.fast.stats().trackingActive,12);assert.equal(restarted.fast.states.get('token0').position.gapped,true);
+ restarted.sweep(T+400000);assert.equal(restarted.fast.stats().trackingActive,0);
+ assert.equal(storage.readJsonl('fast-shadow-outcomes').length,52);
+ assert.equal(storage.getState('fast-followup-registration').id,'fast-followup-1');
+});
+test('linked entry records its own observed price and timestamp without modifying old entry',t=>{
+ const {r,storage}=setup(t);for(let i=0;i<=4;i++)feed(r,i);
+ const entry=storage.readJsonl('fast-shadow-entries')[0],link=storage.readJsonl('fast-shadow-links')[0];
+ assert.equal(entry.priceUsd,token(2).priceUsd);assert.equal(link.comparisonPriceUsd,token(4).priceUsd);
+ assert.equal(link.comparisonObservedAt,T+60000);assert.equal(link.followup.policy,'fast-followup-1');
 });

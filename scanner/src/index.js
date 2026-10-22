@@ -16,7 +16,9 @@ async function shutdown(code=0) {
 }
 radar.onFatal=()=>void shutdown(1);
 if(args.has('--dashboard-only'))radar.health.mode='dashboard';
-else {radar.startBackgroundLoops();stopPump=startPumpPortal(config.pumpPortalApiKey,c=>radar.addCandidate(c),msg=>radar.log(msg),radar.health);}
+else {radar.startBackgroundLoops();stopPump=startPumpPortal(config.pumpPortalApiKey,c=>radar.addCandidate(c),msg=>radar.log(msg),radar.health,e=>{
+  storage.recordLaunch(e);
+});}
 if(!args.has('--scanner-only'))server=startServer(radar,config.dashboardPort,path.join(path.dirname(fileURLToPath(import.meta.url)),'../public'));
 if(!config.heliusApiKey)radar.log('Security provider disabled; candidates remain visible but incomplete checks cap scores below default alerts.');
 if(!config.notificationsEnabled)radar.log('Notification sending is OFF; paper alerts stay in the dashboard.');

@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {alertQualityLabel} from '../public/alert-quality.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -22,7 +23,7 @@ function controller() {
  const stats={qualification:{version:'qualification-1',entries:1,groups:{defer:summary}},research:{tokenFollowup:{baseline:{entries:1,horizons:{'30s':{originalPool:0,alternatePool:1,medianReturnPct:20,gapped:0,missing:0,pending:0,overdue:0}}}},summary:{baseline:{entries:1,horizons:{'30s':{observed:1,medianReturnPct:12,aboveEntry:1,gapped:0,missing:0,pending:0,overdue:0}}}},events:[{mint,candidate:row,at:Date.now(),event:'early activity',security:'incomplete',reasons:['<unsafe>']}]},paperSummaryV026:summary,paperSummaryV025:summary,paperSummary:summary,paperSummaryCurrent:{entries:0,horizons:{}},health:{research:{enabled:true,notificationsEnabled:false},providers:{},notifications:{},oldestAttemptAgeMs:0},status:[],buckets:{}};
  const responses={'/api/stats':stats,'/api/candidates?active=1&limit=1000':[row],'/api/alerts?limit=50':[{at:Date.now(),candidate:row,qualification:row.qualification,scoring:{score:75,reasons:[]}}],'/api/outcomes?limit=50':[{mint,horizon:'5m',multiple:1.1}]};
  let copied;
- const sandbox={tokenLinks,validSolanaAddress,createRefreshLoop:({load,render,onState})=>{const request=async()=>{render(await load());onState({lastSuccessAt:Date.now(),ageMs:0,stale:false});};return {request,start:request};},document:{querySelector:node,addEventListener:(name,fn)=>handlers[name]=fn},
+ const sandbox={alertQualityLabel,tokenLinks,validSolanaAddress,createRefreshLoop:({load,render,onState})=>{const request=async()=>{render(await load());onState({lastSuccessAt:Date.now(),ageMs:0,stale:false});};return {request,start:request};},document:{querySelector:node,addEventListener:(name,fn)=>handlers[name]=fn},
    navigator:{clipboard:{writeText:async value=>{copied=value;}}},console,Date,clearTimeout:()=>{},setTimeout:()=>1,
    fetch:async url=>({ok:true,json:async()=>responses[url]})};
  const source=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8').replace(/^import[^\n]+\n/gm,'');
@@ -100,6 +101,7 @@ test('qualification dashboard leads with deterioration and escapes reasons',asyn
  const c=controller();await new Promise(setImmediate);
  assert.match(c.node('#candidates').innerHTML,/deteriorating/);
  assert.match(c.node('#alerts').innerHTML,/shadow defer/);
+ assert.match(c.node('#alerts').innerHTML,/Entry conditions are not qualified/);
  assert.match(c.node('#alerts').innerHTML,/&lt;unsafe&gt;/);
  assert.match(c.node('#qualificationRows').innerHTML,/defer/);
  assert.match(c.node('#qualificationScope').textContent,/baseline alerts continue/);
