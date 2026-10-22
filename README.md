@@ -1,20 +1,25 @@
 # Solana Early Alpha Radar
 
-Private research system for discovering Solana tokens, recording paper signals and observing walletless route quotes. It does not execute trades.
+Private research system for discovering Solana tokens, recording paper signals and observing walletless route quotes. The scanner and quote observer do not trade. Separate, explicitly invoked tools can sign and submit tightly scoped **devnet** test transactions; they are not connected to trading signals or mainnet.
+
+**Current review: 22 October 2026.** A controlled devnet entry and reverse have finalized, with exact token/fee reconciliation and local terminal recovery. PR #43 consolidated the tested development chain into `main`. Strategy profitability remains unproven. See the [current project review and next gates](docs/PROJECT-REVIEW-20261022.md).
 
 This repository imports the deployed source captured on **2026-10-09 at 21:59 UTC**. The original hashes are preserved in SOURCE-REVIEW-MANIFEST.json. Subsequent changes are reviewed separately; see docs/FAST30-UPDATE.md for the deployed follow-up and sampling update, and docs/EVIDENCE-UPDATE.md for the subsequent evidence diagnostics update.
 
 | Directory | Component |
 | --- | --- |
 | `scanner/` | Scanner 0.2.9, dashboard and SQLite evidence store; includes memory, worker and research-quality patches |
-| `quote-observer/` | Walletless quote observer 0.6.0, separate evidence ledger |
+| `quote-observer/` | Walletless quote observer 0.9.0 in source, separate evidence ledger; confirm deployed version with host inventory |
 | `research-tools/` | Research collector and scenario analysis 1.1.0 |
 | `quality-tools/` | Fast30 timing, coverage, joined price/quote reports and registered shadow comparisons |
+| `forward-study/` | Fixed feature/target protocol, fitting guards, immutable model freeze and later unseen evaluation |
+| `devnet-pool/` | Controlled test-token pool, signed entry/reverse, exact receipts and read-only recovery |
+| `position-book/` | Generic offline budget/position tests plus separate historical controlled-receipt accounting |
 | `docs/` | Current roadmap, import provenance and development workflow |
 
-The complete project record is in [project history](docs/PROJECT-HISTORY.md). The consolidated direction is in [edge research plan](docs/EDGE-RESEARCH-PLAN.md). The current prepared release is [launch evidence and quote backup](docs/LAUNCH-FOUNDATION-UPDATE.md).
+The complete project record is in [project history](docs/PROJECT-HISTORY.md). The research concept is in [edge research plan](docs/EDGE-RESEARCH-PLAN.md); its dated phase descriptions are historical. The [current project review](docs/PROJECT-REVIEW-20261022.md) distinguishes implemented tools, supplied host evidence and remaining gates.
 
-Latest execution-engineering release: [controlled test-pool swap simulation](docs/CONTROLLED-SWAP-SIMULATION-UPDATE.md). The finalized devnet pool is connected to the existing restricted signer and simulation checks; no swap broadcaster is enabled.
+Next release: [controlled receipt position accounting](docs/CONTROLLED-POSITION-UPDATE.md). It imports replayed local entry/reverse receipts into a bounded, idempotent historical ledger. It makes no network requests and does not sign or submit. Pretrade budget enforcement is not retroactively claimed.
 
 Start with [development instructions](docs/DEVELOPMENT.md), [current roadmap](docs/ROADMAP.md) and [import review](docs/IMPORT-REVIEW.md). Component READMEs are preserved historical documentation; they may describe earlier deployment layouts.
 

@@ -1,6 +1,6 @@
 # Solana Early Alpha Radar — project history and current position
 
-Updated: 11 October 2026. Operational dates below use the supplied logs; report filenames use UTC. The host uses Europe/Amsterdam (UTC+2 during this period).
+Updated: 22 October 2026. The opening retrospective describes the original 11 October checkpoint; dated updates follow. See [the current project review](PROJECT-REVIEW-20261022.md) for today's status. Operational dates below use the supplied logs; report filenames use UTC. The host uses Europe/Amsterdam (UTC+2 during this period).
 
 ## Purpose and scope
 
@@ -502,3 +502,13 @@ Finalized receipts must match the exact signed wire and reconcile fee-only nativ
 ## 21 October 2026 — forward swap accepted; bounded reverse and round-trip accounting
 
 Reviewed actual forward execution and terminal recovery: 1,000 atomic input, 998 atomic output, 5,000-lamport fee, one send; recovery replayed the same evidence with zero sends, signatures or requests. Added a separate immutable reverse journal, exact receipt-derived acquired quantity, independent Node verification of the original wire/receipt, fresh chain checks and holder/native continuity. Successful two-receipt accounting separates original-token net change from native fees and requires zero acquired-token residual. Failed exits remain open; unavailable/contradictory evidence remains unknown/quarantined. 27 new synthetic adverse-case tests exercise real local signing without public RPC. Actual reverse execution is the next host gate. See [release and commands](CONTROLLED-REVERSE-SWAP-UPDATE.md).
+
+## 22 October 2026 — reverse accepted, main consolidated and historical position ledger
+
+The four supplied reverse reports passed the public signature/message, accounting and recovery consistency review. The full test round trip was 1000 original atomic units → 998 acquired → 997 original, with zero acquired residual and 10,000 devnet lamports in combined fees. Terminal recovery made no network requests, signatures or sends.
+
+Merged PR #43 to main at `ee394cae5f713bea3ca987933fde3fa778fa6610`, preserving the tested tree. Closed superseded draft PRs #3–42 after confirming their heads were included; historical branches remain. New development targets main directly.
+
+Added a separate controlled historical position ledger, reusing exact private-journal signature/receipt replay and distinguishing the acquisition from pre-existing test-token holdings. Idempotent imports, failed/pending exits, sticky quarantine, shared execution locking, atomic rollback and source/ledger integrity checks are covered by 17 new tests. Full regression: 1007 Python + 283 Node = 1290 passing tests. Host import is pending. No key access, RPC or submission occurs during import; self-check fixtures use disposable unfunded wallets.
+
+Updated the project overview and roadmap. The next strategy action is an immediate bounded readiness refresh under the existing registration. Old near-chance ML results and the 17 October insufficient-sample audit do not establish today's readiness or any profitable edge. Prospective budget integration and later independent strategy evaluation remain separate gates. See [project review](PROJECT-REVIEW-20261022.md) and [host commands](CONTROLLED-POSITION-UPDATE.md).

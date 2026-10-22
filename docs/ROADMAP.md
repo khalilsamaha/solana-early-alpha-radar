@@ -1,4 +1,6 @@
-# Project roadmap — updated 19 October 2026
+# Project roadmap — updated 22 October 2026
+
+The [22 October project review](PROJECT-REVIEW-20261022.md) is the current assessment. Dated sections below are a development history, not statements that earlier limitations remain unchanged.
 
 The consolidated direction is [EDGE-RESEARCH-PLAN.md](EDGE-RESEARCH-PLAN.md). [PROJECT-HISTORY.md](PROJECT-HISTORY.md) records prior development.
 
@@ -10,11 +12,13 @@ Goal: evaluate whether launch characteristics and timely evidence select realist
 | Paper, observation-quality and walletless quote evidence | Operating | Preserve failures, timing and versioned denominators |
 | Pool/exit evidence and launch foundation | Deployed; initial host readiness, launch capture and quote backup verified | Monitor sustained coverage, retention and new backup failures |
 | Launch-feature study | Six-hour post-update timing verified; paired feed/route audit built | Rule out local-only/cache-only explanations; define bounded prospective source validation before changing signals |
-| Prospective strategy validation | No demonstrated edge yet | Cost, tail-loss, quote-failure, selection-bias and independent-period gates |
-| Execution engineering | Host devnet lifecycle/recovery, position accounting and unsigned policy checks passed; bounded pool/account capture built | Host actual account capture, controlled pool/program provenance, restricted swap signing/simulation and multi-transaction integration |
+| Prospective strategy validation | No demonstrated edge; last reviewed readiness is 17 October, not current collection | Refresh existing registered protocol now; fit only targets that meet guards, then freeze and evaluate a later unseen period |
+| Execution engineering | Controlled devnet entry and full reverse finalized; exact 1000 → 998 → 997 token accounting and 10,000 lamports in fees; recovery replays locally without sending | Validate the new historical receipt ledger on the host, then connect prospective reservations/stop/fee budgets to the actual submission boundary |
 | Funded pilot | Not ready | Evidence and controls plus explicit wallet/action/loss-budget approval |
 
 The current quote budget provides at most 48 watches per cohort per day. Collection time depends on independent usable evidence; 1,000 scanner launches do not mean 1,000 executable samples. There is no justified real-money testing date.
+
+Current engineering sequence: (1) replay real devnet receipts into the separate historical ledger, (2) refresh strategy readiness from already collected evidence, (3) connect pretrade reservations and durable unknown outcomes to controlled execution, (4) test interrupted open-position recovery and bounded exits. A funded pilot additionally requires strategy evidence, mainnet-specific transaction validation and explicit pilot limits. Completing a devnet round trip alone does not satisfy these gates.
 
 Current paired evidence audit: [PAIRED-FEED-AUDIT.md](PAIRED-FEED-AUDIT.md). Current instrumentation and backup-cap investigation: [FEED-PROVENANCE.md](FEED-PROVENANCE.md). Current report update: [PRICE-RECONCILIATION.md](PRICE-RECONCILIATION.md); joined evidence: [LAUNCH-QUOTE-UPDATE.md](LAUNCH-QUOTE-UPDATE.md); original context study: [LAUNCH-STUDY.md](LAUNCH-STUDY.md). The launch foundation deployment is recorded in [LAUNCH-FOUNDATION-UPDATE.md](LAUNCH-FOUNDATION-UPDATE.md).
 
