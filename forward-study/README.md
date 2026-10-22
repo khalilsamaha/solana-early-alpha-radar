@@ -1,5 +1,7 @@
 # Fixed entry-context comparison 1
 
+The reviewed October 22 freeze is now available privately. Use the [frozen experiment release](../docs/FROZEN-FORWARD-STUDY-UPDATE.md) to install that exact artifact and evaluate multiple later captures. The generic freeze command below documents the mechanism; do not rerun it for this experiment.
+
 This release separates data readiness, model fitting, and later evaluation. It reads original local observer exports or one verified local history capture, rebuilds the validated dataset, and makes no market, cloud, notification or transaction requests. It does not change the scanner or observer. Existing production collection continues without restart.
 
 `protocol.json` fixes the cohorts, entry-only features, two independent targets, model settings, preprocessing, comparisons and minimum evidence guards. The primary horizon is 30 seconds after buy response; 120 seconds is secondary descriptive evidence. Organic/holder receipt ages remain separate from dedicated search age. Missing metadata is not zero; missing or stale security is not a safety approval.

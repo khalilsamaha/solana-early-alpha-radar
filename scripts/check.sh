@@ -44,6 +44,7 @@ node --test source-comparison/*.test.mjs
   cd forward-study
   python3 -m unittest discover -p 'test_audit.py'
   python3 -m unittest discover -p 'test_readiness_details.py'
+  python3 -m unittest discover -p 'test_capture_review.py'
 )
 (
   cd execution-lab
