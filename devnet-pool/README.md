@@ -71,3 +71,7 @@ After a successful controlled swap simulation, `swap_submit_cli.py` supplies a s
 ## Durable spending reservations
 
 New controlled executions reserve principal and the round-trip fee allowance before signing. Unknown outcomes retain reservations across process crashes; verified finalized receipts settle them. Historical executions remain explicitly unguarded, and cannot authorize a new guarded reverse. See [the spending guard release and offline host check](../docs/DEVNET-SPENDING-GUARD-UPDATE.md). Do not reset existing journals to exercise this change.
+
+## Preparation of a subsequent controlled cycle
+
+`cycle_cli.py` checks closed historical receipts and current finalized balances, then records one separately identified subsequent cycle with cumulative input and fee allocation. It preserves prior journals and has no signer or send method. See [scope, refusal conditions and host commands](../docs/DEVNET-CYCLE-PREPARATION-UPDATE.md). A prepared record is not executable; sender integration and a controlled network demonstration remain separate milestones.
