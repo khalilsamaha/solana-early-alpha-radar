@@ -16,6 +16,7 @@ from core import check, directory, private_file, loads, write_new, sync_director
 from recorded_capture import Client, GENESIS
 sys.path.insert(0, str(submit.bridge.ROOT / 'position-book'))
 import controlled
+import funding_reconciliation as funding
 
 VERSION = 'controlled-cycle-preparation-1'
 CYCLE = 'controlled-cycle-0002'
@@ -117,10 +118,13 @@ def review_capture(home, wallet, source, capture):
     return balances, comparison
 
 
-def validate_capture(home, wallet, source, capture):
+def validate_capture(home, wallet, source, capture, funding_proof=None):
     balances, comparison = review_capture(home, wallet, source, capture)
     check(all(comparison['tokenAuthoritiesIntact'].values()), 'token-authority-changed-since-close')
-    check(comparison['nativeLamports']['matches'], 'wallet-balance-changed-since-close')
+    if funding_proof is None:
+        check(comparison['nativeLamports']['matches'], 'wallet-balance-changed-since-close')
+    else:
+        funding.verify(funding_proof, source['exitReceipt'], wallet, balances)
     check(comparison['originalTokenAtomic']['matches'] and comparison['acquiredTokenAtomic']['matches'],
           'token-balance-changed-since-close')
     check(comparison['nextCycleFundingSufficient'], 'next-cycle-funding-required')
@@ -190,6 +194,9 @@ def public(state, *, changed=False, calls=0, record=None):
                  budget=record['budget'], balancesAtPreparation=record['balances'],
                  priorEntrySignature=record['source']['entryReceipt']['signature'],
                  priorExitSignature=record['source']['exitReceipt']['signature'])
+        if record.get('fundingProof') is not None:
+            r['fundingReconciliation'] = funding.verify(record['fundingProof'], record['source']['exitReceipt'],
+                                                        record['wallet'], record['balances'])
     return r
 
 
@@ -206,12 +213,12 @@ def existing(home, wallet, pool, source, allocation):
           and record.get('source') == source and record.get('priorEvidenceSha256') == controlled.digest(source),
           'cycle-source-or-policy-changed')
     check(type(record.get('preparedAtMs')) is int and record['preparedAtMs'] == record['capture']['finishedAtMs']
-          and record['balances'] == validate_capture(home, wallet, source, record['capture']), 'cycle-capture-changed')
+          and record['balances'] == validate_capture(home, wallet, source, record['capture'], record.get('fundingProof')), 'cycle-capture-changed')
     check(seal == dict(format=VERSION, preparationSha256=controlled.digest(record)), 'cycle-seal-mismatch')
     return public('prepared-not-executable', record=record)
 
 
-def run(home, wallet, pool, *, prepare=False, opener=None, now=clock):
+def run(home, wallet, pool, *, prepare=False, reconcile_funding=False, opener=None, now=clock):
     # Public identity + common execution lock; deliberately never instantiate key-reading Session.
     with controlled.source_lock(home, wallet) as home:
         source, allocation = local(home, wallet, pool)
@@ -220,15 +227,25 @@ def run(home, wallet, pool, *, prepare=False, opener=None, now=clock):
         if not prepare:
             return dict(public('not-prepared'), budget=allocation, wallet=wallet, pool=pool)
         check(not submit.swap.stop(home), 'stop-requested')
-        rpc = ReadRpc('devnet', opener)
-        capture = capture_now(home, wallet, source, rpc, now)
-        balances = validate_capture(home, wallet, source, capture)
+        rpc = (funding.FundingRpc if reconcile_funding else ReadRpc)('devnet', opener)
+        capture = collect_evidence(source, rpc, now)
+        funding_proof = None
+        if reconcile_funding:
+            _, comparison = review_capture(home, wallet, source, capture)
+            check(all(comparison['tokenAuthoritiesIntact'].values()), 'token-authority-changed-since-close')
+            check(comparison['originalTokenAtomic']['matches'] and comparison['acquiredTokenAtomic']['matches'],
+                  'token-balance-changed-since-close')
+            if not comparison['nativeLamports']['matches']:
+                check(int(comparison['nativeLamports']['delta']) > 0, 'funding-positive-credit-required')
+                funding_proof = funding.collect(source, capture, rpc, now, submit.received)
+        balances = validate_capture(home, wallet, source, capture, funding_proof)
         check(not submit.swap.stop(home), 'stop-requested')
         check(capture['finishedAtMs'] <= now() <= capture['accountsReceivedAtMs'] + 10000, 'balance-observation-expired')
         record = dict(format=VERSION, cycleId=CYCLE, wallet=wallet, pool=pool,
                       policy=copy.deepcopy(POLICY), budget=allocation, source=source,
                       priorEvidenceSha256=controlled.digest(source), capture=capture,
                       balances=balances, preparedAtMs=capture['finishedAtMs'])
+        if funding_proof is not None: record['fundingProof'] = funding_proof
         check(len(controlled.encoded(record).encode()) <= LIMIT, 'cycle-record-size-cap')
         child = home / CYCLE
         child.mkdir(mode=0o700); sync_directory(home)

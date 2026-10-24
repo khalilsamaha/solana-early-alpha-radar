@@ -13,10 +13,12 @@ Goal: evaluate whether launch characteristics and timely evidence select realist
 | Pool/exit evidence and launch foundation | Deployed; initial host readiness, launch capture and quote backup verified | Monitor sustained coverage, retention and new backup failures |
 | Launch-feature study | Six-hour post-update timing verified; paired feed/route audit built | Rule out local-only/cache-only explanations; define bounded prospective source validation before changing signals |
 | Prospective strategy validation | Frozen comparison installed October 22; forward collection continues unchanged; no approved trading edge | Next user review October 27; evaluate the fixed models against sample/date-coverage and quality gates without refitting |
-| Execution engineering | Historical controlled devnet round trip and accounting verified; durable one-cycle spending guard passed 19 Kali offline cases and GitHub CI | Validate subsequent-cycle preparation on the host, then bind its preserved identity and cumulative budget to the sender before a new controlled network demonstration |
+| Execution engineering | Historical controlled devnet round trip and accounting verified; durable one-cycle spending guard passed 19 Kali offline cases and GitHub CI | Verify external devnet funding and cycle-2 preparation on the host, then bind its preserved identity and cumulative budget to the sender before a new controlled network demonstration |
 | Funded pilot | Not ready | Evidence and controls plus explicit wallet/action/loss-budget approval |
 
 The current quote budget provides at most 48 watches per cohort per day. Collection time depends on independent usable evidence; 1,000 scanner launches do not mean 1,000 executable samples. There is no justified real-money testing date.
+
+A legitimate native top-up exposed an overly strict balance-continuity gate. [Verified external funding reconciliation](DEVNET-EXTERNAL-FUNDING-UPDATE.md) is built; host evidence remains pending. It preserves prior spending and cannot sign or send.
 
 Current engineering sequence: (1) preserve the closed cycle and prepare one explicitly identified subsequent cycle with historical spending included, (2) connect that identity and cumulative allocation to the restricted sender and durable reservations, (3) demonstrate the guarded cycle and recovery on devnet. Preparation is not execution approval; no old journal is reset or replayed. See [the next-cycle release](DEVNET-CYCLE-PREPARATION-UPDATE.md). A funded pilot additionally requires strategy evidence, mainnet-specific transaction validation and explicit pilot limits. Completing a devnet round trip alone does not satisfy these gates.
 
