@@ -7,6 +7,7 @@ from pathlib import Path
 import time
 
 import controlled_swap as bridge
+import spend_guard
 from controlled_swap import pool, swap
 from fresh_packet import build
 from core import Session, check, directory, private_file, loads, write_new, sync_directory, received, context_value, integer
@@ -290,6 +291,18 @@ def report(home, wallet, trace=None, reason=None, *, reverse=False):
         r['failure'] = read(child, 'failure.json')
         if not r['submissionBoundaryRecorded']:
             r['state'] = 'preparation-incomplete'
+    r['spendingGuard'] = spend_guard.status(home, child)
+    return r
+
+
+def finish_report(home, wallet, trace=None, reason=None, *, reverse=False):
+    """Reconcile only replayed local finalized evidence, including after a crash."""
+    r = report(home, wallet, trace, reason, reverse=reverse)
+    child = home / journal_name(reverse)
+    if os.path.lexists(child / spend_guard.MARKER):
+        with spend_guard.Guard(home) as guard:
+            guard.reconcile('exit' if reverse else 'entry', r)
+        r['spendingGuard'] = spend_guard.status(home, child)
     return r
 
 
@@ -405,10 +418,15 @@ def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper
         check(s.wallet == wallet, 'explicit-wallet-mismatch')
         child = s.home / journal_name(reverse)
         if os.path.lexists(child):
-            return report(s.home, wallet, trace, 'existing-journal-use-recover-no-retry', reverse=reverse)
+            return finish_report(s.home, wallet, trace, 'existing-journal-use-recover-no-retry', reverse=reverse)
         check(not swap.stop(s.home), 'stop-requested')
         scope, setup = bridge.source_scope(s, expected_pool)
         if reverse:
+            # Legacy entries cannot acquire a retroactive pretrade approval.
+            finish_report(s.home, wallet)
+            with spend_guard.Guard(s.home) as guard:
+                entry_guard = guard.read()[0]
+                check(entry_guard and not entry_guard['quarantined'] and entry_guard['legs'].get('entry', {}).get('receipt'), 'spending-prospective-entry-required')
             scope, prior, entry_receipt = reverse_scope(s.home, wallet)
             check(scope['accounts']['pool'] == expected_pool, 'explicit-pool-mismatch')
             verify_forward_on_chain(rpc, s.home, wallet, entry_receipt)
@@ -425,7 +443,7 @@ def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper
             v = swap.policy_check(scope, packet, wallet, now())
             plan = dict(format='swap-signing-plan-1', scope=scope, packet=packet, recordedAtMs=now())
             write_new(child / 'plan.json', plan)
-            write_new(child / 'execution.json', dict(format=REVERSE_VERSION if reverse else VERSION, planSha256=pool.digest(plan), setupEvidence=setup,
+            write_new(child / 'execution.json', dict(format=REVERSE_VERSION if reverse else VERSION, planSha256=pool.digest(plan), setupEvidence=setup, spendingGuardVersion=spend_guard.VERSION,
                       **({'priorExecution': prior} if reverse else {'priorSimulation': prior}), lastValidBlockHeight=built['lastValidBlockHeight'],
                       contextSlot=built['evidence']['blockhash']['result']['context']['slot']))
             phase = 'preflight'
@@ -438,6 +456,11 @@ def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper
                 phase = 'entry-to-exit-continuity'
                 continuity(capture, entry_receipt)
             check(not swap.stop(s.home), 'stop-requested')
+            phase = 'spending-reservation'
+            side = 'exit' if reverse else 'entry'
+            with spend_guard.Guard(s.home, create=not reverse) as guard:
+                guard.reserve(side, plan, capture)
+            write_new(child / spend_guard.MARKER, dict(format=spend_guard.VERSION, side=side, planSha256=pool.digest(plan)))
             write_new(child / 'signing-request.json', dict(format='restricted-swap-request-1',
                 planSha256=pool.digest(plan), preflightSha256=pool.digest(capture), expiresAtMs=reviewed['validUntilExclusiveMs'],
                 computeUnits=v['computeUnits'], microLamportsPerCU=v['microLamportsPerCU'],
@@ -448,6 +471,8 @@ def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper
             else:
                 swap.invoke_signer(s.home, execution=True)
             plan, wire, signed, evidence = bound(child, wallet)
+            with spend_guard.Guard(s.home) as guard:
+                guard.bind(side, plan, signed)
             check(not swap.stop(s.home), 'stop-requested')
             check(swap.audit(capture, now_ms=now())['state'] == 'preflight-evidence-consistent', 'preflight-expired')
             phase = 'simulation'
@@ -478,6 +503,8 @@ def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper
             check(swap.audit(fresh, now_ms=now())['state'] == 'preflight-evidence-consistent', 'presend-expired')
             check(not swap.stop(s.home), 'stop-requested')
             phase = 'submission'
+            with spend_guard.Guard(s.home) as guard:
+                guard.boundary(side, plan, signed)
             write_new(child / 'submission-boundary.json', dict(signature=signed['signatures'][0], wireSha256=signed['wireSha256'], atMs=now()))
             # Recheck after fsync. A stop/expiry here intentionally consumes the only boundary without sending.
             check(not swap.stop(s.home) and now() < packet['policy']['expiresAtMs'] and now() < current['validUntilExclusiveMs'], 'boundary-stopped-or-expired')
@@ -488,7 +515,7 @@ def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper
             observe(child, wallet, rpc, sleeper=sleeper)
         except (ValueError, KeyError, TypeError, IndexError, OSError, swap.subprocess.SubprocessError):
             write_new(child / 'failure.json', dict(phase=phase, reason='execution-validation-or-transport-incomplete', atMs=now()))
-        r = report(s.home, wallet, trace, reverse=reverse)
+        r = finish_report(s.home, wallet, trace, reverse=reverse)
         r['signaturesCreatedThisRun'] = None if r['signatureOutcomeUnknown'] else int(os.path.lexists(child / 'signed.json'))
         return r
 
@@ -497,13 +524,13 @@ def recover(home, wallet, *, opener=None, sleeper=time.sleep, reverse=False):
     trace = Trace(opener, recovery=True)
     with Session(home) as s:
         check(s.wallet == wallet, 'explicit-wallet-mismatch')
-        r = report(s.home, wallet, reverse=reverse)
+        r = finish_report(s.home, wallet, reverse=reverse)
         if r['state'] in TERMINAL or not r['submissionBoundaryRecorded']:
             return r
         child = s.home / journal_name(reverse)
         check(len(observations(child)) <= 29, 'recovery-observation-cap')
         observe(child, wallet, RecoveryRpc(trace), sleeper=sleeper)
-        return report(s.home, wallet, trace, reverse=reverse)
+        return finish_report(s.home, wallet, trace, reverse=reverse)
 
 
 def status(home, wallet, *, reverse=False):

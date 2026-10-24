@@ -67,3 +67,7 @@ After a successful controlled swap simulation, `swap_submit_cli.py` supplies a s
 ## Receipt-bound reverse and round-trip accounting
 
 `reverse_cli.py` derives one reverse from a verified finalized forward receipt, using its complete acquired quantity and only the original controlled accounts. It creates `swap-reverse-v1`, preserves prior journals, and requires fresh deployment/accounts, simulation and native/holder continuity. Terminal accounting keeps token changes and native fees separate; failed exits retain the open acquired quantity. See [release and host commands](../docs/CONTROLLED-REVERSE-SWAP-UPDATE.md). No production trading integration or mainnet submission is enabled.
+
+## Durable spending reservations
+
+New controlled executions reserve principal and the round-trip fee allowance before signing. Unknown outcomes retain reservations across process crashes; verified finalized receipts settle them. Historical executions remain explicitly unguarded, and cannot authorize a new guarded reverse. See [the spending guard release and offline host check](../docs/DEVNET-SPENDING-GUARD-UPDATE.md). Do not reset existing journals to exercise this change.
