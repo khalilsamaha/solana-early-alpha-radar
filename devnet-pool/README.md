@@ -79,3 +79,5 @@ New controlled executions reserve principal and the round-trip fee allowance bef
 If continuity fails, `cycle_cli.py --action diagnose` exports exact balance differences from a fresh validated snapshot without writing a preparation or bypassing the check. It does not determine the cause of intervening balance changes.
 
 Legitimate external SOL credits can be reconciled using `cycle_cli.py --action prepare-funded`. It verifies bounded finalized transfer history and exact balance continuity while preserving historical fees and allocation caps. See [funding reconciliation and host commands](../docs/DEVNET-EXTERNAL-FUNDING-UPDATE.md). This still cannot sign or submit.
+
+The prepared second cycle is connected through `cycle_execute_cli.py`: local inspection, explicit guarded entry/exit, and read-only recovery. It uses separate cycle-2 journals and preserves all prior spending. See [release scope and commands](../docs/GUARDED-CYCLE-TWO-UPDATE.md).

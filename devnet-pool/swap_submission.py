@@ -8,6 +8,7 @@ import time
 
 import controlled_swap as bridge
 import spend_guard
+import cycle_binding
 from controlled_swap import pool, swap
 from fresh_packet import build
 from core import Session, check, directory, private_file, loads, write_new, sync_directory, received, context_value, integer
@@ -211,6 +212,7 @@ def bound(child, wallet):
     reverse = child.name == REVERSE_CHILD
     plan = read(child, 'plan.json')
     check(plan.get('format') == 'swap-signing-plan-1', 'plan-format')
+    cycle_binding.plan_matches(child.parent, plan)
     scope = plan['scope']
     p = plan['packet']
     swap.policy_check(scope, p, wallet, plan['recordedAtMs'])
@@ -221,7 +223,7 @@ def bound(child, wallet):
         check(scope['amountIn'] == '1000' and scope['minimumAmountOut'] == '990'
               and scope['maxComputeUnits'] == 300000 and scope['maxMicroLamportsPerCU'] == '0'
               and scope['maxPriorityFeeLamports'] == '0' and scope['maxTotalFeeLamports'] == '10000', 'fixed-scope-required')
-        setup = pool.read(child.parent / pool.CHILD, 'plan.json')
+        setup = pool.read(cycle_binding.root(child.parent) / pool.CHILD, 'plan.json')
         a = pool.addresses(setup['pairAccounts'])
         mapping = dict(source='holder0', destination='holder1', inputVault='vault0', outputVault='vault1', inputMint='mint0', outputMint='mint1')
         check(all(v == a[mapping.get(k, k)] for k, v in scope['accounts'].items()), 'controlled-accounts-required')
@@ -242,7 +244,7 @@ def report(home, wallet, trace=None, reason=None, *, reverse=False):
              networkRequests=len(calls), requests=calls,
              sendRequestsThisRun=sum(c['method'] == 'sendTransaction' for c in calls),
              submissionBoundaryRecorded=False, signaturesCreatedThisRun=0, signatureOutcomeUnknown=False,
-             stopRequested=swap.stop(home), mainnetEnabled=False, resubmitAllowed=False,
+             stopRequested=swap.stop(cycle_binding.root(home)), mainnetEnabled=False, resubmitAllowed=False,
              productionLedgerUpdated=False, positionBookConnected=False, privateKeyExported=False, signedBytesExported=False,
              limitations=[
                  'A durable send boundary can precede a crash before HTTP transport; it is not proof of delivery.',
@@ -250,6 +252,9 @@ def report(home, wallet, trace=None, reason=None, *, reverse=False):
                  'The signer is a same-user boundary; another holder of private signed bytes could broadcast them while valid.',
                  'Fixed test tokens and devnet fees do not measure strategy profitability or mainnet execution.',
                  'No journal replacement, automatic retry, reverse swap or production position update is enabled.'])
+    if cycle_binding.is_cycle(home):
+        r['cycleBinding'] = cycle_binding.load(home, wallet)
+        r['cycleId'] = cycle_binding.CYCLE
     if reverse:
         r['limitations'][-1] = 'One explicit reverse of the recorded acquisition only; no journal replacement, automatic retry or production position update.'
     if not os.path.lexists(child):
@@ -412,36 +417,40 @@ def observe(child, wallet, rpc, *, sleeper=time.sleep):
             return
 
 
-def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper=time.sleep):
+def _execute(home, wallet, expected_pool, *, reverse=False, cycle=False, opener=None, sleeper=time.sleep):
     trace = Trace(opener); rpc = ExecutionRpc(trace)
     with Session(home) as s:
         check(s.wallet == wallet, 'explicit-wallet-mismatch')
-        child = s.home / journal_name(reverse)
+        check(type(cycle) is bool, 'explicit-cycle-required')
+        jhome = s.home / cycle_binding.CYCLE if cycle else s.home
+        binding = cycle_binding.load(jhome, wallet, expected_pool) if cycle else None
+        child = jhome / journal_name(reverse)
         if os.path.lexists(child):
-            return finish_report(s.home, wallet, trace, 'existing-journal-use-recover-no-retry', reverse=reverse)
+            return finish_report(jhome, wallet, trace, 'existing-journal-use-recover-no-retry', reverse=reverse)
         check(not swap.stop(s.home), 'stop-requested')
         scope, setup = bridge.source_scope(s, expected_pool)
         if reverse:
             # Legacy entries cannot acquire a retroactive pretrade approval.
-            finish_report(s.home, wallet)
-            with spend_guard.Guard(s.home) as guard:
+            finish_report(jhome, wallet)
+            with spend_guard.Guard(jhome) as guard:
                 entry_guard = guard.read()[0]
                 check(entry_guard and not entry_guard['quarantined'] and entry_guard['legs'].get('entry', {}).get('receipt'), 'spending-prospective-entry-required')
-            scope, prior, entry_receipt = reverse_scope(s.home, wallet)
+            scope, prior, entry_receipt = reverse_scope(jhome, wallet)
             check(scope['accounts']['pool'] == expected_pool, 'explicit-pool-mismatch')
-            verify_forward_on_chain(rpc, s.home, wallet, entry_receipt)
+            verify_forward_on_chain(rpc, jhome, wallet, entry_receipt)
         else:
             prior = old_simulation(s.home, scope)
             prior_absent_and_expired(rpc, prior)
         # Once the execution directory exists it is never reused.
         check(not swap.stop(s.home), 'stop-requested')
-        child.mkdir(mode=0o700); sync_directory(s.home)
+        child.mkdir(mode=0o700); sync_directory(jhome)
         phase = 'fresh-packet'
         try:
             built = build(scope, opener=trace); packet = built['packet']
             check(packet['policy']['blockhash'] != prior['blockhash'], 'fresh-blockhash-required')
             v = swap.policy_check(scope, packet, wallet, now())
             plan = dict(format='swap-signing-plan-1', scope=scope, packet=packet, recordedAtMs=now())
+            if binding is not None: plan['cycleBinding'] = binding
             write_new(child / 'plan.json', plan)
             write_new(child / 'execution.json', dict(format=REVERSE_VERSION if reverse else VERSION, planSha256=pool.digest(plan), setupEvidence=setup, spendingGuardVersion=spend_guard.VERSION,
                       **({'priorExecution': prior} if reverse else {'priorSimulation': prior}), lastValidBlockHeight=built['lastValidBlockHeight'],
@@ -452,13 +461,15 @@ def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper
             write_new(child / 'preflight.json', capture)
             reviewed = swap.audit(capture, now_ms=now())
             check(reviewed['state'] == 'preflight-evidence-consistent', 'fresh-preflight-required')
+            if binding is not None and not reverse:
+                cycle_binding.continuity(capture, binding)
             if reverse:
                 phase = 'entry-to-exit-continuity'
                 continuity(capture, entry_receipt)
             check(not swap.stop(s.home), 'stop-requested')
             phase = 'spending-reservation'
             side = 'exit' if reverse else 'entry'
-            with spend_guard.Guard(s.home, create=not reverse) as guard:
+            with spend_guard.Guard(jhome, create=not reverse) as guard:
                 guard.reserve(side, plan, capture)
             write_new(child / spend_guard.MARKER, dict(format=spend_guard.VERSION, side=side, planSha256=pool.digest(plan)))
             write_new(child / 'signing-request.json', dict(format='restricted-swap-request-1',
@@ -467,11 +478,11 @@ def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper
                 messageBase64=base64.b64encode(decode_wire(packet['unsignedTransactionBase64'])[1]).decode()))
             phase = 'signing'
             if reverse:
-                swap.invoke_signer(s.home, reverse=True)
+                swap.invoke_signer(s.home, reverse=True, **({'cycle': True} if cycle else {}))
             else:
-                swap.invoke_signer(s.home, execution=True)
+                swap.invoke_signer(s.home, execution=True, **({'cycle': True} if cycle else {}))
             plan, wire, signed, evidence = bound(child, wallet)
-            with spend_guard.Guard(s.home) as guard:
+            with spend_guard.Guard(jhome) as guard:
                 guard.bind(side, plan, signed)
             check(not swap.stop(s.home), 'stop-requested')
             check(swap.audit(capture, now_ms=now())['state'] == 'preflight-evidence-consistent', 'preflight-expired')
@@ -492,6 +503,8 @@ def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper
             check(current['state'] == 'preflight-evidence-consistent' and current['snapshotSlot'] >= simulated['simulationSlot'], 'presend-freshness')
             check(fresh['packet'] == packet and fresh['accountKeys'] == capture['accountKeys']
                   and fresh['evidence']['accounts']['result']['value'] == capture['evidence']['accounts']['result']['value'], 'presend-account-drift')
+            if binding is not None and not reverse:
+                cycle_binding.continuity(fresh, binding)
             if reverse:
                 continuity(fresh, entry_receipt)
             genesis(rpc)
@@ -503,7 +516,7 @@ def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper
             check(swap.audit(fresh, now_ms=now())['state'] == 'preflight-evidence-consistent', 'presend-expired')
             check(not swap.stop(s.home), 'stop-requested')
             phase = 'submission'
-            with spend_guard.Guard(s.home) as guard:
+            with spend_guard.Guard(jhome) as guard:
                 guard.boundary(side, plan, signed)
             write_new(child / 'submission-boundary.json', dict(signature=signed['signatures'][0], wireSha256=signed['wireSha256'], atMs=now()))
             # Recheck after fsync. A stop/expiry here intentionally consumes the only boundary without sending.
@@ -515,36 +528,46 @@ def _execute(home, wallet, expected_pool, *, reverse=False, opener=None, sleeper
             observe(child, wallet, rpc, sleeper=sleeper)
         except (ValueError, KeyError, TypeError, IndexError, OSError, swap.subprocess.SubprocessError):
             write_new(child / 'failure.json', dict(phase=phase, reason='execution-validation-or-transport-incomplete', atMs=now()))
-        r = finish_report(s.home, wallet, trace, reverse=reverse)
+        r = finish_report(jhome, wallet, trace, reverse=reverse)
         r['signaturesCreatedThisRun'] = None if r['signatureOutcomeUnknown'] else int(os.path.lexists(child / 'signed.json'))
         return r
 
 
-def recover(home, wallet, *, opener=None, sleeper=time.sleep, reverse=False):
+@cycle_binding.operation
+def recover(home, wallet, *, opener=None, sleeper=time.sleep, reverse=False, cycle=False, expected_pool=None):
+    check(type(cycle) is bool, 'explicit-cycle-required')
     trace = Trace(opener, recovery=True)
     with Session(home) as s:
         check(s.wallet == wallet, 'explicit-wallet-mismatch')
-        r = finish_report(s.home, wallet, reverse=reverse)
+        jhome = s.home / cycle_binding.CYCLE if cycle else s.home
+        if cycle: cycle_binding.load(jhome, wallet, expected_pool)
+        r = finish_report(jhome, wallet, reverse=reverse)
         if r['state'] in TERMINAL or not r['submissionBoundaryRecorded']:
             return r
-        child = s.home / journal_name(reverse)
+        child = jhome / journal_name(reverse)
         check(len(observations(child)) <= 29, 'recovery-observation-cap')
         observe(child, wallet, RecoveryRpc(trace), sleeper=sleeper)
-        return finish_report(s.home, wallet, trace, reverse=reverse)
+        return finish_report(jhome, wallet, trace, reverse=reverse)
 
 
-def status(home, wallet, *, reverse=False):
+@cycle_binding.operation
+def status(home, wallet, *, reverse=False, cycle=False, expected_pool=None):
+    check(type(cycle) is bool, 'explicit-cycle-required')
     with Session(home) as s:
         check(s.wallet == wallet, 'explicit-wallet-mismatch')
-        return report(s.home, wallet, reverse=reverse)
+        jhome = s.home / cycle_binding.CYCLE if cycle else s.home
+        if cycle: cycle_binding.load(jhome, wallet, expected_pool)
+        return report(jhome, wallet, reverse=reverse)
 
 
-def execute(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep):
-    return _execute(home, wallet, expected_pool, opener=opener, sleeper=sleeper)
+@cycle_binding.operation
+def execute(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep, cycle=False):
+    return _execute(home, wallet, expected_pool, opener=opener, sleeper=sleeper, cycle=cycle)
 
 
-def execute_reverse(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep):
-    return _execute(home, wallet, expected_pool, reverse=True, opener=opener, sleeper=sleeper)
+@cycle_binding.operation
+def execute_reverse(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep, cycle=False):
+    return _execute(home, wallet, expected_pool, reverse=True, opener=opener, sleeper=sleeper, cycle=cycle)
 
 
 def inspect_reverse(home, wallet, expected_pool):

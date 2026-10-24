@@ -4,6 +4,7 @@ Inputs are internally audited plans and replayed exact receipts. This is a local
 trusted-owner control, not a wallet-wide or mainnet spending authority.
 """
 import copy
+import cycle_binding
 import hashlib
 import os
 from pathlib import Path
@@ -27,6 +28,7 @@ def digest(value):
 
 class Guard:
     def __init__(self, home, *, create=False, clock=None):
+        self.cycle = cycle_binding.load(home) if cycle_binding.is_cycle(home) else None
         path = directory(home) / NAME
         existed = os.path.lexists(path)
         if existed:
@@ -59,6 +61,7 @@ class Guard:
             state = loads(row['snapshot'])
             check(state.get('format') == VERSION and state.get('policy') == POLICY and encoded(state) == row['snapshot'],
                   'spending-state-format')
+            check(state.get('cycleBinding') == self.cycle, 'spending-cycle-binding')
             h = digest(dict(seq=seq, atMs=row['at_ms'], state=state, previousHash=previous))
             check(row['previous_hash'] == previous and row['event_hash'] == h, 'spending-event-integrity')
             at = row['at_ms']; previous = h
@@ -79,6 +82,11 @@ class Guard:
 
     def reserve(self, side, plan, capture):
         check(side in ('entry', 'exit'), 'spending-side')
+        check(plan.get('cycleBinding') == self.cycle, 'spending-cycle-plan')
+        if self.cycle:
+            check(int(self.cycle['historicalEntryAtomic']) + 1000 <= 2000
+                  and int(self.cycle['historicalSwapFeeLamports']) + 20000 <= 40000, 'spending-cumulative-cap')
+            if side == 'entry': cycle_binding.continuity(capture, self.cycle)
         scope = plan['scope']; a = scope['accounts']; packet = plan['packet']
         # Repeat current freshness and full policy validation at the reservation boundary.
         def apply(state, now):
@@ -100,6 +108,7 @@ class Guard:
                 check(side == 'entry' and scope['amountIn'] == '1000' and scope['minimumAmountOut'] == '990', 'spending-entry-required')
                 state = dict(format=VERSION, policy=copy.deepcopy(POLICY), wallet=a['wallet'], pool=a['pool'],
                              quarantined=False, quarantineReason=None, legs={})
+                if self.cycle: state['cycleBinding'] = copy.deepcopy(self.cycle)
             check(not state['quarantined'] and state['wallet'] == a['wallet'] and state['pool'] == a['pool'], 'spending-identity-or-quarantine')
             check(side not in state['legs'], 'spending-attempt-already-reserved')
             confirmed = sum(int(x['receipt']['feeLamports']) for x in state['legs'].values() if x['receipt'])
@@ -125,6 +134,7 @@ class Guard:
         return self.change(apply)
 
     def bind(self, side, plan, signed):
+        check(plan.get('cycleBinding') == self.cycle, 'spending-cycle-plan')
         def apply(state, now):
             check(state and not state['quarantined'] and side in state['legs'], 'spending-reservation-required')
             leg = state['legs'][side]
@@ -196,7 +206,7 @@ class Guard:
             stage = 'closed' if xr['state'] == 'finalized-success' else 'exit-failed-position-open'; reserve_fee = 0
         else:
             stage = 'exit-unresolved' if x else 'open'; reserve_fee = 10000
-        return dict(format=VERSION, state='quarantined' if state['quarantined'] else stage,
+        result = dict(format=VERSION, state='quarantined' if state['quarantined'] else stage,
                     policy=state['policy'], eventCount=count, pretradeBudgetEnforced=True,
                     wallet=state['wallet'], pool=state['pool'], confirmedFeeLamports=str(fees),
                     heldEntryPrincipalAtomic=str(held_principal), reservedFeeLamports=str(reserve_fee),
@@ -211,6 +221,12 @@ class Guard:
                                  'One entry and one exit only; a failed exit retains exposure and has no automatic replacement.',
                                  'Atomic token amounts and native fees are different units; no USD budget or profit claim.',
                                  'Local files and process ownership are trusted; external wallet activity can bypass this guard.'])
+        if self.cycle:
+            result['cycleBinding'] = self.cycle
+            result['cumulativeConfirmedFeeLamports'] = str(int(self.cycle['historicalSwapFeeLamports']) + fees)
+            result['cumulativeConfirmedAndReservedFeeLamports'] = str(int(self.cycle['historicalSwapFeeLamports']) + fees + reserve_fee)
+            result['cumulativeGrossEntryAllocatedAtomic'] = str(int(self.cycle['historicalEntryAtomic']) + 1000)
+        return result
 
 
 def status(home, child):

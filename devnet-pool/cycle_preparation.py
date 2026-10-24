@@ -203,8 +203,10 @@ def public(state, *, changed=False, calls=0, record=None):
 def existing(home, wallet, pool, source, allocation):
     child = directory(home / CYCLE)
     names = {p.name for p in child.iterdir()}
-    check(names <= {'preparation.json', 'complete.json'}, 'unexpected-cycle-preparation-files')
-    if names != {'preparation.json', 'complete.json'}:
+    allowed = {'preparation.json', 'complete.json', submit.CHILD, submit.REVERSE_CHILD, submit.spend_guard.NAME,
+               submit.spend_guard.NAME + '-journal'}
+    check(names <= allowed, 'unexpected-cycle-preparation-files')
+    if not {'preparation.json', 'complete.json'} <= names:
         return public('preparation-incomplete')
     record = loads(private_file(child / 'preparation.json', LIMIT))
     seal = loads(private_file(child / 'complete.json', 4096))
