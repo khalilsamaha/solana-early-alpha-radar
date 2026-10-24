@@ -75,3 +75,5 @@ New controlled executions reserve principal and the round-trip fee allowance bef
 ## Preparation of a subsequent controlled cycle
 
 `cycle_cli.py` checks closed historical receipts and current finalized balances, then records one separately identified subsequent cycle with cumulative input and fee allocation. It preserves prior journals and has no signer or send method. See [scope, refusal conditions and host commands](../docs/DEVNET-CYCLE-PREPARATION-UPDATE.md). A prepared record is not executable; sender integration and a controlled network demonstration remain separate milestones.
+
+If continuity fails, `cycle_cli.py --action diagnose` exports exact balance differences from a fresh validated snapshot without writing a preparation or bypassing the check. It does not determine the cause of intervening balance changes.

@@ -43,7 +43,7 @@ python3 -E -s \
 SH
 ```
 
-Expected: `offline-checks-passed`, 18 cases. It uses disposable unfunded keys and synthetic RPC, never your existing wallet or the public network.
+Expected with the balance-diagnostic update: `offline-checks-passed`, 24 cases (the original 18 plus six diagnostic cases). It uses disposable unfunded keys and synthetic RPC, never your existing wallet or the public network.
 
 After that passes, prepare using the existing dedicated devnet identity:
 
@@ -71,3 +71,28 @@ Expected: `prepared-not-executable`, seven read-only requests on first success, 
 No scanner rebuild, observer restart, background service, backup change or private-key migration is needed. The frozen study remains fixed, with its next user review scheduled for October 27. This release includes the existing collection tools. Research sample-size/date-coverage gates and empirical quality criteria still apply; another elapsed day does not automatically approve a model or real-money trial.
 
 After the host preparation report is reviewed, integrate the separately identified cycle into the restricted signer and one-send recovery flow. That release must account for the recorded prior spending and retain any uncertain new reservation. A real devnet demonstration of that integration is still required; this preparation does not claim it has occurred.
+
+## Diagnose a balance-continuity refusal
+
+The first supplied host self-check passed all 18 original cases, while live preparation stopped at `wallet-balance-changed-since-close`. This check happens before creation of the next-cycle directory. The error establishes a native balance mismatch, not its size or cause; token continuity checks had not yet completed. It does not establish that an airdrop, fee, unauthorized transfer or accounting error caused the difference.
+
+The new `diagnose` action revalidates the original receipts and compares a fresh finalized three-account snapshot, using at most seven read-only requests. It exports expected/observed balances and signed differences in native lamports and test-token atomic units, plus token-authority status. Devnet SOL differences are formatted with exact decimal arithmetic. It does not enumerate intervening transactions or claim attribution.
+
+After checking out the pinned diagnostic release, run:
+
+```bash
+bash <<'SH'
+set -euo pipefail
+umask 077
+cd "$HOME/apps/solana-early-alpha-radar"
+python3 -E -s \
+  "$HOME/apps/solana-radar-dev/devnet-pool/cycle_cli.py" \
+  --action diagnose \
+  --directory "$HOME/solana-radar-devnet-rehearsal" \
+  --wallet FNoAk1H1SEk5ZXbwVZDFUEyiDUnYF5vBQhZQbZKjeGPr \
+  --pool EuRveSHpbfCJ3May56v7jmRtW97rbWyAikWFV5dCLPLT \
+  --output "$PWD/radar-cycle-balance-$(date -u +%Y%m%dT%H%M%SZ)-$$.json.gz"
+SH
+```
+
+`balance-comparison-mismatch` is a completed diagnostic, not permission to prepare or execute. `balance-comparison-match` only describes that snapshot and is also not execution approval. Upload the public report. Preparation continues to require exact continuity and sufficient funds. There is no balance override, rebase, funding request, signing, new cycle directory, or change to old journals. The diagnostic remains usable with `STOP` present because it cannot spend or create a preparation. It refuses malformed, stale, wrong-chain or conflicting receipt evidence rather than exporting a trusted comparison.

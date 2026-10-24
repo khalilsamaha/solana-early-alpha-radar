@@ -2,6 +2,10 @@
 import base64
 import copy
 import json
+import gzip
+import io
+import sys
+from contextlib import redirect_stdout
 from pathlib import Path
 import shutil
 import unittest
@@ -208,3 +212,75 @@ class CyclePreparationCase(unittest.TestCase):
     def test_record_cap_prevents_partial_directory_creation(self):
         with patch.object(c,'LIMIT',1),self.assertRaisesRegex(ValueError,'cycle-record-size-cap'):self.run_prepare()
         self.assertFalse((self.home/c.CYCLE).exists())
+
+    def test_diagnostic_exact_native_credit_debit_and_match_never_rebase(self):
+        before=self.old_files()
+        for delta in (0,1,-5000,200000000):
+            def change(q,v):
+                if q['method']=='getMultipleAccounts':v['value'][0]['lamports']+=delta
+                return v
+            t=Transport(self.home,self.wallet,change)
+            r=c.diagnose(self.home,self.wallet,self.pool,opener=t)
+            self.assertEqual(r['comparison']['nativeLamports']['delta'],str(delta))
+            self.assertEqual(r['state'],'balance-comparison-match' if delta==0 else 'balance-comparison-mismatch')
+            self.assertEqual(r['networkRequests'],7);self.assertFalse(r['causeEstablished'])
+            self.assertFalse(r['executionApproved']);self.assertFalse(r['preparationCreated'])
+            if delta==1:self.assertEqual(r['comparison']['nativeLamports']['deltaDevnetSol'],'0.000000001')
+            if delta==-5000:self.assertEqual(r['comparison']['nativeLamports']['deltaDevnetSol'],'-0.000005')
+            if delta:
+                with self.assertRaisesRegex(ValueError,'wallet-balance-changed-since-close'):self.run_prepare(change)
+        self.assertEqual(before,self.old_files());self.assertFalse((self.home/c.CYCLE).exists())
+
+    def test_diagnostic_reports_token_and_authority_differences_together(self):
+        def change(q,v):
+            if q['method']=='getMultipleAccounts':
+                for index in (1,2):
+                    row=v['value'][index];raw=bytearray(base64.b64decode(row['data'][0]))
+                    raw[64:72]=(int.from_bytes(raw[64:72],'little')+index).to_bytes(8,'little')
+                    if index==2:raw[72:76]=(1).to_bytes(4,'little');raw[76:108]=bytes([7])*32
+                    row['data'][0]=base64.b64encode(raw).decode()
+            return v
+        r=c.diagnose(self.home,self.wallet,self.pool,opener=Transport(self.home,self.wallet,change))
+        self.assertEqual(r['comparison']['originalTokenAtomic']['delta'],'1')
+        self.assertEqual(r['comparison']['acquiredTokenAtomic']['delta'],'2')
+        self.assertFalse(r['comparison']['tokenAuthoritiesIntact']['acquired'])
+        self.assertTrue(r['comparison']['nativeLamports']['matches'])
+        self.assertEqual(r['state'],'balance-comparison-mismatch')
+
+    def test_diagnostic_preserves_existing_preparation_and_works_with_stop(self):
+        self.run_prepare();(self.home/'STOP').touch();(self.home/'STOP').chmod(0o600)
+        before={str(p):p.read_bytes() for p in self.home.rglob('*') if p.is_file()}
+        r=c.diagnose(self.home,self.wallet,self.pool,opener=Transport(self.home,self.wallet))
+        self.assertTrue(r['preparationDirectoryPresent']);self.assertFalse(r['journalFilesChanged'])
+        self.assertEqual(before,{str(p):p.read_bytes() for p in self.home.rglob('*') if p.is_file()})
+
+    def test_diagnostic_refuses_invalid_chain_receipts_and_stale_snapshot(self):
+        for change in (lambda q,v:c.GENESIS['mainnet-beta'] if q['method']=='getGenesisHash' else v,
+                       lambda q,v:dict(v,slot=999) if q['method']=='getTransaction' else v,
+                       lambda q,v:dict(v,value=[None]*3) if q['method']=='getMultipleAccounts' else v):
+            with self.assertRaises(ValueError):
+                c.diagnose(self.home,self.wallet,self.pool,opener=Transport(self.home,self.wallet,change))
+        with self.assertRaisesRegex(ValueError,'balance-observation-expired'):
+            c.diagnose(self.home,self.wallet,self.pool,opener=Transport(self.home,self.wallet),now=iter((100000,110001)).__next__)
+        self.assertFalse((self.home/c.CYCLE).exists())
+
+    def test_diagnostic_never_needs_private_key(self):
+        t=Transport(self.home,self.wallet);(self.home/'signer.pk8').unlink()
+        with patch('core.signer',side_effect=AssertionError('key access')):
+            r=c.diagnose(self.home,self.wallet,self.pool,opener=t)
+        self.assertFalse(r['privateKeyAccessed']);self.assertEqual(r['signaturesCreated'],0)
+
+    def test_diagnostic_cli_exports_public_comparison_without_raw_wire(self):
+        import cycle_cli
+        output=Path(self.tmp.name)/'diagnostic.json.gz'
+        rpc=c.ReadRpc('devnet',Transport(self.home,self.wallet))
+        args=['cycle_cli.py','--action','diagnose','--directory',str(self.home),'--wallet',self.wallet,
+              '--pool',self.pool,'--output',str(output)]
+        with patch.object(sys,'argv',args),patch.object(c,'ReadRpc',return_value=rpc),redirect_stdout(io.StringIO()):
+            cycle_cli.main()
+        with gzip.open(output,'rt') as f:r=json.load(f)
+        self.assertEqual(r['diagnosticVersion'],'cycle-balance-diagnostic-1')
+        text=json.dumps(r)
+        wire=c.submit.read(self.home/c.submit.CHILD,'signed.json')['wire']
+        self.assertNotIn(wire,text);self.assertNotIn('signer.pk8',text)
+        self.assertEqual(r['transactionsSent'],0);self.assertFalse((self.home/c.CYCLE).exists())

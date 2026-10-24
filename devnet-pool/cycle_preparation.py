@@ -4,6 +4,7 @@ No signer, transaction builder or send method. Allocation is preparation-only;
 future execution must bind this record and reserve before signing independently.
 """
 import copy
+from decimal import Decimal
 import os
 from pathlib import Path
 import sys
@@ -76,7 +77,8 @@ def local(home, wallet, pool):
     return binding, budget(position)
 
 
-def validate_capture(home, wallet, source, capture):
+def review_capture(home, wallet, source, capture):
+    """Validate raw evidence first; expose differences without accepting continuity."""
     check(capture['genesisBefore'] == capture['genesisAfter'] == GENESIS['devnet'], 'wrong-cluster')
     receipts = capture['receipts']
     check(type(receipts) is list and len(receipts) == 2, 'receipt-count')
@@ -93,22 +95,39 @@ def validate_capture(home, wallet, source, capture):
     native = account_value(rows[0])
     original = submit.swap.token(rows[1], a['inputMint'], wallet)
     acquired = submit.swap.token(rows[2], a['outputMint'], wallet)
-    check(all(t['delegate'] is None and t['delegatedAmount'] == '0' and t['closeAuthority'] is None
-              for t in (original, acquired)), 'token-authority-changed-since-close')
+    authorities = {name: t['delegate'] is None and t['delegatedAmount'] == '0' and t['closeAuthority'] is None
+                   for name,t in (('original',original),('acquired',acquired))}
     last = source['exitReceipt']
-    check(str(native) == last['walletAfterLamports'], 'wallet-balance-changed-since-close')
-    check(original['amount'] == last['tokenEffects']['destination']['afterAtomic']
-          and acquired['amount'] == last['tokenEffects']['source']['afterAtomic'], 'token-balance-changed-since-close')
-    check(native >= int(POLICY['nextRoundTripFeeAllowanceLamports'])
-          and int(original['amount']) >= int(POLICY['nextEntryAtomic']), 'next-cycle-funding-required')
     check(type(capture['accountsReceivedAtMs']) is int and type(capture['finishedAtMs']) is int
           and 0 < capture['accountsReceivedAtMs'] <= capture['finishedAtMs']
           <= capture['accountsReceivedAtMs'] + 10000, 'balance-observation-expired')
-    return dict(slot=slot, walletLamports=str(native), originalTokenAtomic=original['amount'],
-                backgroundAcquiredAtomic=acquired['amount'], receivedAtMs=capture['accountsReceivedAtMs'])
+    balances = dict(slot=slot, walletLamports=str(native), originalTokenAtomic=original['amount'],
+                    backgroundAcquiredAtomic=acquired['amount'], receivedAtMs=capture['accountsReceivedAtMs'])
+    def difference(expected, observed):
+        return dict(expected=str(expected), observed=str(observed), delta=str(int(observed)-int(expected)),
+                    matches=int(expected)==int(observed))
+    native_diff = difference(last['walletAfterLamports'],native)
+    native_diff['deltaDevnetSol'] = format(Decimal(native_diff['delta'])/Decimal(1000000000),'f')
+    comparison = dict(nativeLamports=native_diff,
+        originalTokenAtomic=difference(last['tokenEffects']['destination']['afterAtomic'],original['amount']),
+        acquiredTokenAtomic=difference(last['tokenEffects']['source']['afterAtomic'],acquired['amount']),
+        tokenAuthoritiesIntact=authorities,
+        nextCycleFundingSufficient=native >= int(POLICY['nextRoundTripFeeAllowanceLamports'])
+                                  and int(original['amount']) >= int(POLICY['nextEntryAtomic']))
+    return balances, comparison
 
 
-def capture_now(home, wallet, source, rpc, now):
+def validate_capture(home, wallet, source, capture):
+    balances, comparison = review_capture(home, wallet, source, capture)
+    check(all(comparison['tokenAuthoritiesIntact'].values()), 'token-authority-changed-since-close')
+    check(comparison['nativeLamports']['matches'], 'wallet-balance-changed-since-close')
+    check(comparison['originalTokenAtomic']['matches'] and comparison['acquiredTokenAtomic']['matches'],
+          'token-balance-changed-since-close')
+    check(comparison['nextCycleFundingSufficient'], 'next-cycle-funding-required')
+    return balances
+
+
+def collect_evidence(source, rpc, now):
     result = dict(genesisBefore=submit.received(rpc.request('getGenesisHash', [])), receipts=[])
     check(result['genesisBefore'] == GENESIS['devnet'], 'wrong-cluster')
     for expected in (source['entryReceipt'], source['exitReceipt']):
@@ -123,8 +142,34 @@ def capture_now(home, wallet, source, rpc, now):
         accountsReceivedAtMs=now())
     result['genesisAfter'] = submit.received(rpc.request('getGenesisHash', []))
     result['finishedAtMs'] = now()
+    return result
+
+
+def capture_now(home, wallet, source, rpc, now):
+    result = collect_evidence(source, rpc, now)
     validate_capture(home, wallet, source, result)
     return result
+
+
+def diagnose(home, wallet, pool, *, opener=None, now=clock):
+    """Read-only chain comparison; never creates/updates a preparation or budget."""
+    with controlled.source_lock(home, wallet) as home:
+        source, _ = local(home, wallet, pool)
+        rpc = ReadRpc('devnet', opener)
+        capture = collect_evidence(source, rpc, now)
+        balances, comparison = review_capture(home, wallet, source, capture)
+        check(capture['finishedAtMs'] <= now() <= capture['accountsReceivedAtMs']+10000,
+              'balance-observation-expired')
+        matching = all(comparison[k]['matches'] for k in ('nativeLamports','originalTokenAtomic','acquiredTokenAtomic'))
+        matching = matching and all(comparison['tokenAuthoritiesIntact'].values())
+        result = public('balance-comparison-match' if matching else 'balance-comparison-mismatch', calls=len(rpc.calls))
+        result.update(diagnosticVersion='cycle-balance-diagnostic-1',wallet=wallet,pool=pool,
+            priorReceiptsReverified=True,priorClosingSlot=source['exitReceipt']['slot'],
+            priorExitSignature=source['exitReceipt']['signature'],snapshot=balances,comparison=comparison,
+            causeEstablished=False,preparationDirectoryPresent=os.path.lexists(home/CYCLE),
+            journalFilesChanged=False,
+            attributionNote='Net balance differences do not establish their cause or enumerate intervening activity; no rebase or override performed.')
+        return result
 
 
 def public(state, *, changed=False, calls=0, record=None):
