@@ -1,0 +1,112 @@
+{
+  "format": "engineering-source-consolidation-1",
+  "date": "2026-10-25",
+  "priorMain": "cf47600b6294a31d534929b8cc0ad81f0a6259b0",
+  "sourceHead": "b9504ebc422543d4a7b73e619aeb3ebdb9942781",
+  "sourceTree": "47268977991cbbf4ce1f0f81833be6c7a6bcec3d",
+  "runtimeChangesInConsolidation": false,
+  "deploymentMode": "development-checkout-only",
+  "productionServiceChanges": false,
+  "privateStateMigration": false,
+  "mainnetEnabled": false,
+  "frozenStudyReviewDate": "2026-10-27",
+  "frozenStudyRulesChanged": false,
+  "sourceRegression": {
+    "python": 1170,
+    "node": 283,
+    "workflowRun": 40183596018
+  },
+  "unchangedFromPriorMainTrees": {
+    "scanner": "72fbc21b7af87cf2a51c99be6ab70cacd5d189e9",
+    "quote-observer": "3b62b3d6913c2f537d5454872fc1c2ef2b010976",
+    "research-tools": "68aa57bb846b573f6a65302a8d9bfdcdca86c009",
+    "quality-tools": "7089e6766e7bcf6eadce8cced69516d6c2213eb6",
+    "operations-tools": "1a08814afaa61d6caa080aac7a8bde058734c919",
+    "deployment": "d339d992cfc7677451a2d3525b49763098f1929d",
+    "research-dataset": "16e428a7cbcedeb0fb8b9fa76a85247ba283566d",
+    "research-ml": "d44e59b59f3fde75cc2923f37fb9ca0904dac932",
+    "launch-study": "d8742e6f40fd60cfeceac2c181a269b799471c5e"
+  },
+  "sourceFiles": {
+    ".github/workflows/research-ml.yml": "740d201d00b9e16ced11a914ab0b562b3ea068abd53b76e03ac10b5a16b92969",
+    "devnet-pool/cycle_binding.py": "350ac75a1382adae62605cdb073b4340800f37ec62df07a39acccb883c4ba359",
+    "devnet-pool/cycle_cli.py": "f6dc1fba8920a68c914936922b43f250d3ee5e84265d0cfd687e301c82a6c169",
+    "devnet-pool/cycle_execute_cli.py": "8316b3bf3706a9e67a8f27cd6d66e34930626b2928d2f1dfaf30cf12e4b31038",
+    "devnet-pool/cycle_policy.mjs": "2182217abbd4a0813ba9d063c2c8b9c2ed0f9ebc93e5558151bdb969f371e66c",
+    "devnet-pool/cycle_preparation.py": "38cb25e37e050199f607b753c771712029a99e89a9f7f7d338de3ae0eac4b4af",
+    "devnet-pool/cycle_replacement_cli.py": "ef8ce27290060cf933a3282bd4fb6885f1c21646edf4c83de7ce845e11d3997a",
+    "devnet-pool/cycle_reservation_audit.mjs": "a2ce5aecece3d69dc30b9e584510b4f2bdd031184907e0c8b635ae26e9f523eb",
+    "devnet-pool/cycle_reservation_cli.py": "49aadc2d4164c6f9e98347d0695e0c0191d8535fe153fb7169f5e3404d9c9403",
+    "devnet-pool/funding_reconciliation.py": "8d773e7b67d93c9f55afeb4a46f04d106d428927a325d81b595b7a23789263d3",
+    "devnet-pool/spend_guard.py": "738fd7ee1fb0fca0ee13e7ce390dbaafafa466fa6a2f1c67332eda3e8f70c387",
+    "devnet-pool/spending_cli.py": "b91797d31f696a05fc6de7c205de2efb36ce90206884982ab4097488076d4404",
+    "devnet-pool/swap_submission.py": "9cd1473282cb591a488c3728efd6058dc4a57dd7d57603b0c223b686a5743b57",
+    "devnet-pool/test_cycle_execution.py": "7007e9b103a552d5406f04a3d996826f7197846c9d952b97f65307f1a6008663",
+    "devnet-pool/test_cycle_hash.py": "e82dae6f49041a491cf3e26c5a2b86192001794a7f7c09dc9e009f8ec94f94c4",
+    "devnet-pool/test_cycle_preparation.py": "6c1b5fea1a9b1c1c039385f3af7086132eea98ef9da0a403d86d069543ed0324",
+    "devnet-pool/test_funding_reconciliation.py": "a2fe8ecaad9122562188c801083b794c157721111bcda0cc9a06e43026652c50",
+    "devnet-pool/test_spend_guard.py": "15116ef46d550ece59f7d5a577d0e8a40a67047f573636d67c34aee6d74cb2a1",
+    "devnet-pool/test_unsigned_replacement.py": "298f9054a6aefc46137708add0540985aa44706a4dc0d4e0fbc5461d1dfd3f7b",
+    "devnet-pool/unsigned_replacement.py": "487d703cf91a28b14d884e25c5af5b91d78155cc92ebe10d12405699c8dd2d3f",
+    "forward-study/capture_review.py": "cb371e5efebec998d8e406990e3fa3940656e8ec4edd2036e10c09db3f9944a1",
+    "forward-study/collect-review.sh": "e1b9e5341e4e58a28b9cc2ced47cb5ae43183e6713be639612d081fd588ee86c",
+    "forward-study/experiment.py": "446cd354057808c224cbe65ed0a950dc220486ed92df94b52cf4beec285ac0a4",
+    "forward-study/test_capture_review.py": "13e1c975317bdcbba229c0c31e222fede0c3b5d90d4720be99c59b3f35b0615b",
+    "forward-study/test_experiment.py": "14b4f22c9a2b64f7f5351fdbaf6eb0b1ee2a82029b388e8ec2d2f101c024500e",
+    "intent-journal/journal.py": "093e1a2968b3cd450eb327759dfe6af16d3c699196ffa33d6abcae2185c62809",
+    "intent-journal/test_readonly.py": "806c59d557b70d12edaa2a212b95649c96b692d6ff27bed2b9214501238e627f",
+    "position-book/controlled.py": "aff37d9bbf264e85f0442d70da308ebb964543a8f1c19576b84ac83d66b6a121",
+    "position-book/cycles.py": "7c20d832e97b6499720e2e6ec0f886b57ecb7a7f136f34124092038174149e9f",
+    "position-book/cycles_cli.py": "7db3ca40e7a23306dbbaaecaa37dc7006dc91ffecaf7e9880ffca6fd90673373",
+    "position-book/readiness.py": "42e40e85712b28e22739091234cc49ea2e808fa15589cd5ded15360e6aad35ef",
+    "position-book/readiness_cli.py": "bca77e1b829c2305c7b0da88641e683b31a624dff3274d008aa46f0db5e62775",
+    "position-book/test_cycles.py": "1dd9c0b0b7a2cac3062053c62a2405f649d1f2b7385b69e4bad6972655db7eb6",
+    "position-book/test_readiness.py": "691c55ecfc8021a2cf14473e4524c81da325234ce929c42cf736db8cb37f2bc3",
+    "recorded-chain/recorded_capture.py": "b872074b0b8ffe78ed63b27f433b128ae17f7672719fcacbc36e33dc9248304f",
+    "scripts/check.sh": "d7709aa6613158078a9cf6f79a6750766296af77b7f0ce10fef206781c582ea4",
+    "swap-rehearsal/swap_rehearsal.py": "92b2c20c874ced0cf25b78da382b037f7a243ee0df9ceb6a177441520c12787e",
+    "swap-rehearsal/swap_signer.mjs": "de9eebfd4fa3f234b587756cd8a41fecfcd08a9400808de07d7860f545a81535"
+  },
+  "includedPullRequests": [
+    {
+      "number": 45,
+      "head": "e59b01de1a4fd06c640bd472f99c939ac730489a"
+    },
+    {
+      "number": 46,
+      "head": "27084e524ee062c60943929e2e4a13f845309b7b"
+    },
+    {
+      "number": 47,
+      "head": "985b1c31414e006abaa37553cbda85867df73e2f"
+    },
+    {
+      "number": 48,
+      "head": "c9e919709bf353e8e80a58c190fa49fbf0c229a8"
+    },
+    {
+      "number": 49,
+      "head": "bc7ed379a025f398dc4a9519da7b241ae6450f5d"
+    },
+    {
+      "number": 50,
+      "head": "7e1f821d0f9cc32195c408e1bd166a25367a33fe"
+    },
+    {
+      "number": 51,
+      "head": "b66e115851ac93760121a06051ed9609a0562297"
+    },
+    {
+      "number": 52,
+      "head": "ce5ccbf6e2df1ed54ad7d30c6a55d5e4c1139226"
+    },
+    {
+      "number": 53,
+      "head": "7e874bb3583f22e82b0c7690630174120739d313"
+    },
+    {
+      "number": 54,
+      "head": "b9504ebc422543d4a7b73e619aeb3ebdb9942781"
+    }
+  ]
+}

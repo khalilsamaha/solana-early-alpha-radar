@@ -2,7 +2,7 @@
 
 Private research system for discovering Solana tokens, recording paper signals and observing walletless route quotes. The scanner and quote observer do not trade. Separate, explicitly invoked tools can sign and submit tightly scoped **devnet** test transactions; they are not connected to trading signals or mainnet.
 
-**Current review: 22 October 2026.** A controlled devnet entry and reverse have finalized, with exact token/fee reconciliation and local terminal recovery. PR #43 consolidated the tested development chain into `main`. Strategy profitability remains unproven. See the [current project review and next gates](docs/PROJECT-REVIEW-20261022.md).
+**Current engineering release: 25 October 2026.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. Strategy profitability remains unproven; the next frozen-study review is October 27.
 
 This repository imports the deployed source captured on **2026-10-09 at 21:59 UTC**. The original hashes are preserved in SOURCE-REVIEW-MANIFEST.json. Subsequent changes are reviewed separately; see docs/FAST30-UPDATE.md for the deployed follow-up and sampling update, and docs/EVIDENCE-UPDATE.md for the subsequent evidence diagnostics update.
 
@@ -19,7 +19,7 @@ This repository imports the deployed source captured on **2026-10-09 at 21:59 UT
 
 The complete project record is in [project history](docs/PROJECT-HISTORY.md). The research concept is in [edge research plan](docs/EDGE-RESEARCH-PLAN.md); its dated phase descriptions are historical. The [current project review](docs/PROJECT-REVIEW-20261022.md) distinguishes implemented tools, supplied host evidence and remaining gates.
 
-Next release: [controlled receipt position accounting](docs/CONTROLLED-POSITION-UPDATE.md). It imports replayed local entry/reverse receipts into a bounded, idempotent historical ledger. It makes no network requests and does not sign or submit. Pretrade budget enforcement is not retroactively claimed.
+Controlled receipt accounting is available for [one historical cycle](docs/CONTROLLED-POSITION-UPDATE.md) and [the fixed two-cycle rehearsal](docs/TWO-CYCLE-ACCOUNTING.md). The latter complements prospective spending reservations; historical imports never retroactively grant pretrade approval.
 
 Start with [development instructions](docs/DEVELOPMENT.md), [current roadmap](docs/ROADMAP.md) and [import review](docs/IMPORT-REVIEW.md). Component READMEs are preserved historical documentation; they may describe earlier deployment layouts.
 

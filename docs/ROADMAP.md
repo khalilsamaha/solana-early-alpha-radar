@@ -1,28 +1,28 @@
-# Project roadmap — updated 24 October 2026
+# Project roadmap — updated 25 October 2026
 
-The [22 October project review](PROJECT-REVIEW-20261022.md) provides the strategy assessment; the table below includes the subsequent frozen-study and spending-control work. Dated sections below are a development history, not statements that earlier limitations remain unchanged.
+The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
 
-The consolidated direction is [EDGE-RESEARCH-PLAN.md](EDGE-RESEARCH-PLAN.md). [PROJECT-HISTORY.md](PROJECT-HISTORY.md) records prior development.
+Goal: establish whether entry-time evidence identifies realistically enterable and exitable opportunities. More alerts and faster detection alone have not established a profitable strategy.
 
-Goal: evaluate whether launch characteristics and timely evidence select realistically enterable and exitable opportunities. Faster momentum alerts alone have not demonstrated an edge. Keep current entry rules frozen while researching launch quality.
-
-| Stage | Status | Next gate |
+| Workstream | Current scope | Next gate |
 | --- | --- | --- |
-| Hosting, notifications and scanner recovery | Established in supplied host tests | Backblaze retained as pay-as-you-go; recovery of previously failed cloud jobs is not yet verified |
-| Paper, observation-quality and walletless quote evidence | Operating | Preserve failures, timing and versioned denominators |
-| Pool/exit evidence and launch foundation | Deployed; initial host readiness, launch capture and quote backup verified | Monitor sustained coverage, retention and new backup failures |
-| Launch-feature study | Six-hour post-update timing verified; paired feed/route audit built | Rule out local-only/cache-only explanations; define bounded prospective source validation before changing signals |
-| Prospective strategy validation | Frozen comparison installed October 22; forward collection continues unchanged; no approved trading edge | Next user review October 27; evaluate the fixed models against sample/date-coverage and quality gates without refitting |
-| Execution engineering | Historical controlled devnet round trip and accounting verified; durable one-cycle spending guard passed 19 Kali offline cases and GitHub CI | Funding reconciliation and cycle-2 preparation passed on Kali; guarded cycle-2 sender integration is built and awaits its controlled network demonstration |
-| Funded pilot | Not ready | Evidence and controls plus explicit wallet/action/loss-budget approval |
+| Hosting and backups | Existing Kali services and backup tooling; no deployment change in this release | Current host health and backup success need their own operational evidence |
+| Scanner and walletless quotes | Existing discovery, paper signals, three-cohort sampling and explicit failures | Preserve timing, versioned denominators and retained evidence |
+| Frozen comparison | Installed private artifact; capture merging and unchanged fixed evaluation | October 27 review checkpoint; preserve earlier days with capture-only exports |
+| Controlled devnet execution | Fixed two-cycle identity, cumulative spending reservations, explicit one-send paths and bounded unsigned recovery | Keep the completed rehearsal closed; any further execution needs a separately scoped design |
+| Accounting and readiness | Two-cycle receipt reconciliation, idempotent historical accounting and strictly read-only readiness | Consolidate source and use reports to distinguish accounting consistency from current chain/service health |
+| Funded pilot | Not enabled | Separate strategy review, mainnet-specific validation, execution-cost evidence and explicit pilot scope/limits |
 
-The current quote budget provides at most 48 watches per cohort per day. Collection time depends on independent usable evidence; 1,000 scanner launches do not mean 1,000 executable samples. There is no justified real-money testing date.
+The current quote quota permits at most 48 watches per cohort per day. Forward review keeps the existing minimum of 200 valid labels and seven distinct UTC dates per target/cohort, plus all other quality guards. A study starting October 22 can span only six UTC dates by October 27; that date is a checkpoint, not a promised qualification date. Do not lower guards, refit, or select a favorable review to force progress. Sparse failure labels may leave some targets unfitted.
 
-The host verified one +20 devnet SOL credit and prepared cycle 2 without increasing spending limits. [Guarded cycle-2 execution](GUARDED-CYCLE-TWO-UPDATE.md) now binds that identity and cumulative allocation to reservations, the signer and one-send recovery. Actual new-cycle execution remains pending.
+Immediate sequence:
 
-Current engineering sequence: (1) validate the guarded second-cycle entry on Kali, (2) verify its exact reverse and durable recovery, (3) reconcile the combined historical inventory while the frozen strategy study continues. Preparation is not execution approval; no old journal is reset or replayed. See [the next-cycle release](DEVNET-CYCLE-PREPARATION-UPDATE.md). A funded pilot additionally requires strategy evidence, mainnet-specific transaction validation and explicit pilot limits. Completing a devnet round trip alone does not satisfy these gates.
+1. Consolidate PRs #45–54 and the release instructions into one reviewed source base. Merging does not deploy services.
+2. Preserve a bounded local quote capture before earlier study days leave the helper's 72-hour window. Collection alone does not run predictions or change the frozen experiment.
+3. On October 27, run the existing review against all retained captures. Report gaps, insufficient evidence and failed targets explicitly.
+4. Use that review to choose a targeted engineering or research improvement. A positive paper/quote result alone does not establish executable profitability; a weak result may justify rejecting the approach.
 
-Current paired evidence audit: [PAIRED-FEED-AUDIT.md](PAIRED-FEED-AUDIT.md). Current instrumentation and backup-cap investigation: [FEED-PROVENANCE.md](FEED-PROVENANCE.md). Current report update: [PRICE-RECONCILIATION.md](PRICE-RECONCILIATION.md); joined evidence: [LAUNCH-QUOTE-UPDATE.md](LAUNCH-QUOTE-UPDATE.md); original context study: [LAUNCH-STUDY.md](LAUNCH-STUDY.md). The launch foundation deployment is recorded in [LAUNCH-FOUNDATION-UPDATE.md](LAUNCH-FOUNDATION-UPDATE.md).
+No calendar date or expected revenue is justified for a real-money pilot. Deployment layout migration, private journal disaster recovery, general portfolio management and arbitrary mainnet routes are not completed by this source consolidation.
 
 ## 15 October 2026 update
 
