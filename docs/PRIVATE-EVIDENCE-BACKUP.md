@@ -80,6 +80,10 @@ manifest traversal, caps, incomplete publication, non-accounting SQLite integrit
 semantic tampering despite updated hashes, sanitized output and fresh-process
 verification. The normal source regression discovers these tests automatically.
 
+GitHub runs `scripts/check.sh core` and `scripts/check.sh devnet-pool` as independent
+jobs: the expanded sequential suite reached the existing ten-minute job deadline.
+No tests are removed. `bash scripts/check.sh` still runs both groups locally.
+
 ## Rollback
 
 Return the development checkout to consolidated main `f2e4898700d7e8d265c51710ef9f67c9bda10de1`.

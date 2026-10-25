@@ -2,6 +2,19 @@
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 export PYTHONDONTWRITEBYTECODE=1
+case "${1:-all}" in
+  all|core|devnet-pool) radar_check_group="${1:-all}" ;;
+  *) echo 'Usage: scripts/check.sh [all|core|devnet-pool]' >&2; exit 2 ;;
+esac
+if (( $# > 1 )); then
+  echo 'Usage: scripts/check.sh [all|core|devnet-pool]' >&2
+  exit 2
+fi
+if [[ "$radar_check_group" == devnet-pool ]]; then
+  cd devnet-pool
+  python3 -m unittest discover -p 'test_*.py'
+  exit
+fi
 python3 scripts/check-source.py
 node --test source-comparison/*.test.mjs
 (cd qualification-review && python3 -m unittest discover -p 'test_*.py')
@@ -122,6 +135,8 @@ node --test source-comparison/*.test.mjs
 )
 
 (
-  cd devnet-pool
-  python3 -m unittest discover -p 'test_*.py'
+  if [[ "$radar_check_group" == all ]]; then
+    cd devnet-pool
+    python3 -m unittest discover -p 'test_*.py'
+  fi
 )
