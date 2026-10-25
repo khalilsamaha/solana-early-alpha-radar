@@ -86,7 +86,10 @@ The normal review helper exports only the last 72 hours. A review on October 27
 will not by itself preserve all observations since October 22. Existing captures
 or verified local quote backups may contain the earlier evidence, but their
 presence must not be assumed. Save a capture now; this command uses the existing
-bounded, read-only history exporter and does not call the model evaluator.
+bounded, read-only history exporter and does not call the model evaluator. Its
+explicit entry window is October 22 00:00 through October 25 00:00 UTC, so a later
+run today does not shift the first study day out of the requested window. Actual
+retention coverage remains subject to the exporter's reported bounds.
 
 ```bash
 bash <<'SH'
@@ -116,7 +119,7 @@ PY
 
 radar_capture="$radar_experiment/captures/capture-$(date -u +%Y%m%dT%H%M%SZ)-$$"
 sudo python3 -E -s "$radar_dev/research-dataset/history.py" \
-  --hours 72 --output-dir "$radar_capture"
+  --hours 72 --end 2026-10-25T00:00:00Z --output-dir "$radar_capture"
 printf 'Preserved locally: %s\nNo model evaluation or refitting performed.\n' "$radar_capture"
 SH
 ```
