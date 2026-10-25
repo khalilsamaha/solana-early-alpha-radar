@@ -23,6 +23,8 @@ Next release: [controlled receipt position accounting](docs/CONTROLLED-POSITION-
 
 Start with [development instructions](docs/DEVELOPMENT.md), [current roadmap](docs/ROADMAP.md) and [import review](docs/IMPORT-REVIEW.md). Component READMEs are preserved historical documentation; they may describe earlier deployment layouts.
 
+The [local devnet readiness check](docs/DEVNET-READINESS.md) consolidates the fixed two-cycle journals, spending state and historical accounting into one read-only report. A consistent result does not authorize another cycle or assess the frozen strategy study.
+
 ## Checks
 
 Requires Node.js 24.10 or newer in the 24.x series and Python 3.12. There are no third-party runtime packages to install for these tests.
