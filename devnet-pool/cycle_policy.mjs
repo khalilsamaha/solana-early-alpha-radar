@@ -17,10 +17,15 @@ function read(p,max){const fd=fs.openSync(p,fs.constants.O_RDONLY|fs.constants.O
 }finally{fs.closeSync(fd);}}
 export function verifyCycleReservation(root,home,plan,capture,side){
  check(home===path.join(root,'controlled-cycle-0002')&&['entry','exit'].includes(side));
- const prep=JSON.parse(read(path.join(home,'preparation.json'),512*1024));
+ // Python wrote canonical JSON and sealed those bytes. Re-encoding the parsed
+ // object in JS rounds u64 RPC fields and changes float spellings (1.0 -> 1).
+ // Verify the immutable bytes; never rewrite the preparation or its seal.
+ const prepBytes=read(path.join(home,'preparation.json'),512*1024);
+ const preparationHash=crypto.createHash('sha256').update(prepBytes).digest('hex');
+ const prep=JSON.parse(prepBytes);
  const seal=JSON.parse(read(path.join(home,'complete.json'),4096));
  check(prep.format==='controlled-cycle-preparation-1'&&prep.cycleId==='controlled-cycle-0002'&&stringify(prep.policy)===stringify(POLICY));
- check(seal.format===prep.format&&seal.preparationSha256===hash(prep)&&prep.priorEvidenceSha256===hash(prep.source));
+ check(seal.format===prep.format&&seal.preparationSha256===preparationHash&&prep.priorEvidenceSha256===hash(prep.source));
  const a=prep.source.scope.accounts,budget=prep.budget;
  check(prep.wallet===a.wallet&&prep.pool===a.pool&&plan.scope.accounts.wallet===prep.wallet&&plan.scope.accounts.pool===prep.pool);
  check(budget.historicalCycles===1&&budget.allocatedCycles===2&&budget.historicalEntryAtomic==='1000'&&budget.historicalResidualAcquiredAtomic==='0');
@@ -31,7 +36,7 @@ export function verifyCycleReservation(root,home,plan,capture,side){
   &&atomic(prep.source.entryReceipt.feeLamports)+atomic(prep.source.exitReceipt.feeLamports)===priorFees);
  check(budget.nextEntryAllocationAtomic==='1000'&&budget.nextFeeAllocationLamports==='20000'&&budget.cumulativeEntryWithAllocationAtomic==='2000');
  check(atomic(budget.cumulativeSwapFeesWithAllocationLamports)===priorFees+20000n&&priorFees+20000n<=40000n);
- const expected={format:'controlled-cycle-binding-1',cycleId:prep.cycleId,preparationSha256:hash(prep),priorEvidenceSha256:prep.priorEvidenceSha256,
+ const expected={format:'controlled-cycle-binding-1',cycleId:prep.cycleId,preparationSha256:preparationHash,priorEvidenceSha256:prep.priorEvidenceSha256,
  wallet:prep.wallet,pool:prep.pool,historicalEntryAtomic:budget.historicalEntryAtomic,historicalSwapFeeLamports:budget.historicalSwapFeeLamports,
  nextEntryAtomic:'1000',nextFeeAllowanceLamports:'20000',cumulativeEntryCapAtomic:'2000',cumulativeFeeCapLamports:'40000',balances:prep.balances,accounts:a};
  check(stringify(plan.cycleBinding)===stringify(expected));
