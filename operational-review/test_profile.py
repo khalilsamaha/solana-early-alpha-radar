@@ -26,3 +26,15 @@ class ProfileLauncherTests(unittest.TestCase):
         for r in (subprocess.CompletedProcess([],1,b'private detail'),subprocess.CompletedProcess([],0,b'x'*65537),subprocess.CompletedProcess([],0,b'[]')):
             result=self.module.collect(Path('/example'),lambda *a,**k:r)
             self.assertEqual(result['state'],'unavailable');self.assertNotIn('private detail',json.dumps(result))
+    def test_projected_mode_transmits_only_reviewed_candidate_and_keeps_manifest(self):
+        import base64
+        calls=[]
+        def run(args,**kw):
+            calls.append(args)
+            return subprocess.CompletedProcess(args,0,b'{"format":"statistics-profile-1","state":"completed"}')
+        self.module.collect(Path('/example'),run,projected=True)
+        args=calls[0]
+        self.assertIn('src/core/stats-worker.js',json.loads(args[-2]))
+        source=base64.b64decode(args[-1],validate=True)
+        self.assertEqual(source,(self.module.ROOT/'statistics-lab/projected-reader.mjs').read_bytes())
+        self.assertLessEqual(len(source),16384)

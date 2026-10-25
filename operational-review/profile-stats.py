@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run one bounded metadata-only statistics profile inside the existing radar container."""
 import argparse
+import base64
 import json
 import os
 from pathlib import Path
@@ -12,12 +13,16 @@ from operational import publish
 ROOT=Path(__file__).resolve().parents[1]
 
 
-def collect(project, runner=subprocess.run):
+def collect(project, runner=subprocess.run, projected=False):
     manifest=json.loads((ROOT/'deployment/engineering-release-1.json').read_text())
     hashes={k:v for k,v in manifest['scannerFiles'].items() if k.startswith('src/') and k.endswith('.js')}
     script=(ROOT/'operational-review/stats-profile.mjs').read_bytes()
     command=['sudo','-n','docker','compose','--project-directory',str(project),
              'exec','-T','radar','node','--input-type=module','-',json.dumps(hashes,separators=(',',':'))]
+    if projected:
+        candidate=(ROOT/'statistics-lab/projected-reader.mjs').read_bytes()
+        if len(candidate)>16384:raise ValueError('projection-cap')
+        command.append(base64.b64encode(candidate).decode('ascii'))
     try:
         r=runner(command,input=script,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=20)
         if r.returncode!=0 or len(r.stdout)>65536:raise ValueError('profile-command')
@@ -31,11 +36,11 @@ def collect(project, runner=subprocess.run):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--project',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--project',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--projected',action='store_true');a=p.parse_args()
     if os.geteuid()==0:p.error('Run as the project user; Docker access alone uses sudo.')
     project=a.project.absolute()
     if project.resolve()!=project or not project.is_dir():p.error('Invalid project directory.')
-    r=collect(project);publish(a.output,r)
+    r=collect(project,projected=a.projected);publish(a.output,r)
     print('Profile state:',r['state']);print('Error category:',r.get('error'))
     d=r.get('diagnostic',{});print('Last phase:',d.get('phase'));print('Elapsed ms:',d.get('elapsedMs'))
     print('No outcome values exported; live statistics cache unchanged. Upload:',a.output)

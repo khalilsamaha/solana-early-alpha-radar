@@ -42,3 +42,15 @@ test('diagnostic sanitizer drops arbitrary fields, unknown phases and nonfinite 
  assert.equal(r.phase,'unknown');assert.equal(r.rawBytes,null);assert.equal(r.kinds.alerts.rows,null);
  assert(!JSON.stringify(r).includes('secret'));assert(!JSON.stringify(r).includes('token'));
 });
+test('projected replay preserves original byte limits and exports only reduced payload timings',async t=>{
+ const {database}=setup(t),db=new DatabaseSync(database);
+ db.prepare('UPDATE events SET data=?').run(JSON.stringify({id:'test:1:1',candidate:{mint:'test',unused:'x'.repeat(120000)},engineVersion:'0.2.9'}));db.close();
+ const before=fs.readFileSync(database),o={...options(database),projectionSource:fs.readFileSync('statistics-lab/projected-reader.mjs','utf8')};
+ const r=await profile(o);assert.equal(r.state,'completed');assert.equal(r.reader,'statistics-projection-1');
+ assert(r.diagnostic.kinds.alerts.rawBytes>120000);assert(r.diagnostic.kinds.alerts.returnedBytes<200);
+ assert.deepEqual(fs.readFileSync(database),before);assert(!JSON.stringify(r).includes('test:1'));
+ for(const [data,error] of [[JSON.stringify({large:'x'.repeat(270000)}),'row-size-limit'],['{broken','statistics-read-failed']]){
+  const edit=new DatabaseSync(database);edit.prepare('UPDATE events SET data=?').run(data);edit.close();
+  const failed=await profile(o);assert.equal(failed.state,'stopped');assert.equal(failed.error,error);
+ }
+});
