@@ -49,6 +49,7 @@ def project_transaction(tx):
 class Client:
     METHODS = ('getGenesisHash', 'getSignaturesForAddress', 'getTransaction', 'getSignatureStatuses')
     REQUEST_CAP = 6
+    SIGNATURE_LIST_CAP = 1
 
     def __init__(self, network, opener=None):
         if network not in ENDPOINTS: raise ValueError('Unsupported network')
@@ -81,7 +82,7 @@ class Client:
                     value = envelope['result']
                     if method == 'getTransaction': value = project_transaction(value)
                     elif method == 'getSignaturesForAddress':
-                        if not isinstance(value, list) or len(value) > 1: raise ValueError('Discovery cap')
+                        if not isinstance(value, list) or len(value) > self.SIGNATURE_LIST_CAP: raise ValueError('Discovery cap')
                         value = [{k: row[k] for k in ('signature', 'slot', 'err', 'confirmationStatus') if k in row} for row in value]
                     result = {'state': 'received', 'result': value}
         except urllib.error.HTTPError as e:

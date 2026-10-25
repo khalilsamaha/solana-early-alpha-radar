@@ -67,3 +67,27 @@ After a successful controlled swap simulation, `swap_submit_cli.py` supplies a s
 ## Receipt-bound reverse and round-trip accounting
 
 `reverse_cli.py` derives one reverse from a verified finalized forward receipt, using its complete acquired quantity and only the original controlled accounts. It creates `swap-reverse-v1`, preserves prior journals, and requires fresh deployment/accounts, simulation and native/holder continuity. Terminal accounting keeps token changes and native fees separate; failed exits retain the open acquired quantity. See [release and host commands](../docs/CONTROLLED-REVERSE-SWAP-UPDATE.md). No production trading integration or mainnet submission is enabled.
+
+## Durable spending reservations
+
+New controlled executions reserve principal and the round-trip fee allowance before signing. Unknown outcomes retain reservations across process crashes; verified finalized receipts settle them. Historical executions remain explicitly unguarded, and cannot authorize a new guarded reverse. See [the spending guard release and offline host check](../docs/DEVNET-SPENDING-GUARD-UPDATE.md). Do not reset existing journals to exercise this change.
+
+## Preparation of a subsequent controlled cycle
+
+`cycle_cli.py` checks closed historical receipts and current finalized balances, then records one separately identified subsequent cycle with cumulative input and fee allocation. It preserves prior journals and has no signer or send method. See [scope, refusal conditions and host commands](../docs/DEVNET-CYCLE-PREPARATION-UPDATE.md). A prepared record is not executable; sender integration and a controlled network demonstration remain separate milestones.
+
+If continuity fails, `cycle_cli.py --action diagnose` exports exact balance differences from a fresh validated snapshot without writing a preparation or bypassing the check. It does not determine the cause of intervening balance changes.
+
+Legitimate external SOL credits can be reconciled using `cycle_cli.py --action prepare-funded`. It verifies bounded finalized transfer history and exact balance continuity while preserving historical fees and allocation caps. See [funding reconciliation and host commands](../docs/DEVNET-EXTERNAL-FUNDING-UPDATE.md). This still cannot sign or submit.
+
+The prepared second cycle is connected through `cycle_execute_cli.py`: local inspection, explicit guarded entry/exit, and read-only recovery. It uses separate cycle-2 journals and preserves all prior spending. See [release scope and commands](../docs/GUARDED-CYCLE-TWO-UPDATE.md).
+
+## October 25 cycle-2 signer correction
+
+For an existing cycle-2 `preparation-incomplete` result in the signing phase, see
+[the preparation hash fix and read-only reservation check](../docs/CYCLE-PREPARATION-HASH-FIX.md).
+The correction preserves sealed evidence and does not retry an expired entry.
+
+After the unsigned reservation audit passes, the fixed recovery tool supports one
+explicit replacement while archiving the refused entry and retaining its spending
+history. See [unsigned cycle recovery](../docs/UNSIGNED-CYCLE-RECOVERY.md).

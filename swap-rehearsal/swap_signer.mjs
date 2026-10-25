@@ -4,6 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {addresses as poolAddresses} from '../devnet-pool/pool_policy.mjs';
 import {deriveReverse} from '../devnet-pool/reverse_policy.mjs';
+import {verifyCycleReservation} from '../devnet-pool/cycle_policy.mjs';
 function stopped(p){try{fs.lstatSync(path.join(p,'STOP'));return true;}catch(e){if(e.code==='ENOENT')return false;throw e;}}
 const check=v=>{if(!v)throw new Error('refused');};
 const alpha='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -35,13 +36,17 @@ const u32=n=>{const b=Buffer.alloc(4);b.writeUInt32LE(n);return b;};
 const ix=(program,accounts,data)=>Buffer.concat([Buffer.from([program,accounts.length,...accounts,data.length]),data]);
 try{
  const input=fs.readFileSync(0);check(input.length<=4096);const r=JSON.parse(input);const execution=r.purpose==='controlled-pool-swap-execution-1',reverse=r.purpose==='controlled-pool-reverse-swap-1';
- fields(r,execution||reverse?['directory','purpose']:['directory']);directory(r.directory);
+ const cycle=r.cycle==='controlled-cycle-0002';
+ fields(r,cycle?['directory','purpose','cycle']:execution||reverse?['directory','purpose']:['directory']);directory(r.directory);
+ check(!cycle||execution||reverse);
+ const journalHome=cycle?path.join(r.directory,r.cycle):r.directory;directory(journalHome);
  check(!stopped(r.directory));
- const child=path.join(r.directory,reverse?'swap-reverse-v1':execution?'swap-execution-v1':'swap-simulation-v1');directory(child);
- const plan=JSON.parse(read(path.join(child,'plan.json'),32768));fields(plan,['format','scope','packet','recordedAtMs']);check(plan.format==='swap-signing-plan-1');
+ const child=path.join(journalHome,reverse?'swap-reverse-v1':execution?'swap-execution-v1':'swap-simulation-v1');directory(child);
+ const plan=JSON.parse(read(path.join(child,'plan.json'),32768));fields(plan,cycle?['format','scope','packet','recordedAtMs','cycleBinding',...(Object.hasOwn(plan,'unsignedReplacementSha256')?['unsignedReplacementSha256']:[])]:['format','scope','packet','recordedAtMs']);check(plan.format==='swap-signing-plan-1');
  const req=JSON.parse(read(path.join(child,'signing-request.json'),8192));fields(req,['format','planSha256','preflightSha256','expiresAtMs','computeUnits','microLamportsPerCU','messageBase64']);
  check(req.format==='restricted-swap-request-1'&&req.planSha256===hash(plan)&&/^[a-f0-9]{64}$/.test(req.preflightSha256));
  const capture=JSON.parse(read(path.join(child,'preflight.json'),4*1024*1024));check(hash(capture)===req.preflightSha256);
+ const cycleState=cycle?verifyCycleReservation(r.directory,journalHome,plan,capture,reverse?'exit':'entry'):null;
  const packet=plan.packet;fields(packet,['format','policy','unsignedTransactionBase64','feeAssertion']);check(packet.format==='unsigned-cpmm-contract-1');
  check(stringify(capture.packet)===stringify(packet));
  const p=packet.policy;fields(p,['format','issuedAtMs','expiresAtMs','blockhash',...stable]);
@@ -64,11 +69,12 @@ try{
  if(reverse){
   check(p.maxComputeUnits===300000&&p.maxMicroLamportsPerCU==='0'&&p.maxPriorityFeeLamports==='0'&&p.maxTotalFeeLamports==='10000'&&req.microLamportsPerCU==='0');
   const setup=JSON.parse(read(path.join(r.directory,'controlled-pool-v1','plan.json'),512*1024));
-  const first=path.join(r.directory,'swap-execution-v1');directory(first);
+  const first=path.join(journalHome,'swap-execution-v1');directory(first);
   const entryPlan=JSON.parse(read(path.join(first,'plan.json'),32768));
   const entrySigned=JSON.parse(read(path.join(first,'signed.json'),8192));
   const entryReceipt=JSON.parse(read(path.join(first,'receipt-evidence.json'),131072));
   const result=deriveReverse(setup.pairAccounts,entryPlan,entrySigned.wire,entryReceipt);
+  if(cycle)check(cycleState.legs.entry.signed.wireSha256===result.forwardWireSha256);
   check(namesMatch(result.accounts,a)&&p.amountIn===result.amountIn&&p.minimumAmountOut===result.minimumAmountOut);
   const executionProof=JSON.parse(read(path.join(child,'execution.json'),32768));
   check(executionProof.format==='controlled-pool-reverse-swap-1'&&executionProof.priorExecution.wireSha256===result.forwardWireSha256);

@@ -4,6 +4,7 @@ Record the submission boundary BEFORE a future external sender would be invoked.
 This module cannot prove that another process obeyed that ordering.
 """
 import contextlib
+from contextvars import ContextVar
 import json
 import os
 from pathlib import Path
@@ -17,6 +18,18 @@ from reconcile import binding, digest, reconcile, validate_intent
 
 APPLICATION_ID = 0x52494A31
 MAX_EVENTS = 10000
+_READ_ONLY = ContextVar('journal_read_only', default=False)
+
+
+@contextlib.contextmanager
+def read_only_journals():
+    """New journal connections in this scope cannot create or modify storage."""
+    token = _READ_ONLY.set(True)
+    try:
+        yield
+    finally:
+        _READ_ONLY.reset(token)
+
 FLAGS = {'executionApproved': False, 'resubmitAllowed': False, 'networkRequests': 0,
          'productionLedgerUpdated': False}
 
@@ -32,18 +45,30 @@ class Journal:
         parent = self.path.parent
         check(parent.is_dir() and not parent.is_symlink() and parent.stat().st_uid == os.getuid()
               and stat.S_IMODE(parent.stat().st_mode) == 0o700, 'journal-directory-must-be-private-owned-0700')
+        self.read_only = _READ_ONLY.get()
         created = False
-        try:
-            if not create and not self.path.exists():
-                raise ValueError('journal-not-found')
-            fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600)
-            os.close(fd)
-            created = True
-        except FileExistsError:
+        if self.read_only:
+            # Refuse possible recovery files instead of allowing SQLite to repair
+            # them during an observational check. Do not use immutable=1: it can
+            # hide recovery evidence and bypass normal locking.
+            check(not any(os.path.lexists(str(self.path) + suffix)
+                          for suffix in ('-journal', '-wal', '-shm')), 'journal-recovery-files-present')
             s = self.path.lstat()
             check(stat.S_ISREG(s.st_mode) and s.st_uid == os.getuid() and stat.S_IMODE(s.st_mode) == 0o600
                   and s.st_nlink == 1 and s.st_size <= 64 * 1024 * 1024, 'unsafe-journal-file')
-        self.db = sqlite3.connect(self.path, timeout=5, isolation_level=None)
+            self.db = sqlite3.connect(self.path.as_uri() + '?mode=ro', uri=True, timeout=5, isolation_level=None)
+        else:
+            try:
+                if not create and not self.path.exists():
+                    raise ValueError('journal-not-found')
+                fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600)
+                os.close(fd)
+                created = True
+            except FileExistsError:
+                s = self.path.lstat()
+                check(stat.S_ISREG(s.st_mode) and s.st_uid == os.getuid() and stat.S_IMODE(s.st_mode) == 0o600
+                      and s.st_nlink == 1 and s.st_size <= 64 * 1024 * 1024, 'unsafe-journal-file')
+            self.db = sqlite3.connect(self.path, timeout=5, isolation_level=None)
         self.db.row_factory = sqlite3.Row
         try:
             if not created:
@@ -52,7 +77,10 @@ class Journal:
             self.db.execute('PRAGMA trusted_schema=OFF')
             self.db.execute('PRAGMA foreign_keys=ON')
             self.db.execute('PRAGMA synchronous=FULL')
-            check(self.db.execute('PRAGMA journal_mode=DELETE').fetchone()[0] == 'delete', 'journal-mode')
+            if self.read_only:
+                self.db.execute('PRAGMA query_only=ON')
+            mode = 'PRAGMA journal_mode' if self.read_only else 'PRAGMA journal_mode=DELETE'
+            check(self.db.execute(mode).fetchone()[0] == 'delete', 'journal-mode')
             if created:
                 with self.transaction():
                     self.db.execute(f'PRAGMA application_id={APPLICATION_ID}')
@@ -77,7 +105,7 @@ class Journal:
 
     @contextlib.contextmanager
     def transaction(self):
-        self.db.execute('BEGIN IMMEDIATE')
+        self.db.execute('BEGIN' if self.read_only else 'BEGIN IMMEDIATE')
         try:
             yield
             self.db.execute('COMMIT')

@@ -111,9 +111,13 @@ def quarantine(old, reason):
 
 
 class Ledger:
-    """One position, bounded append-only snapshots, one atomic commit per update."""
+    """Bounded append-only snapshots, one atomic commit per update."""
+    name = NAME
+    version = VERSION
+    conflict = staticmethod(conflict)
+    quarantine = staticmethod(quarantine)
     def __init__(self, home, *, create, clock=None):
-        path = directory(home) / NAME
+        path = directory(home) / self.name
         existed = os.path.lexists(path)
         if existed:
             private_file(path, 2 * 1024 * 1024)
@@ -143,7 +147,7 @@ class Ledger:
             check(r['seq'] == seq and type(r['at_ms']) is int and r['at_ms'] >= stamp
                   and len(r['snapshot'].encode()) <= MAX_SNAPSHOT, 'controlled-event-order-or-size')
             value = loads(r['snapshot'])
-            check(value.get('format') == VERSION and encoded(value) == r['snapshot'], 'controlled-snapshot-format')
+            check(value.get('format') == self.version and encoded(value) == r['snapshot'], 'controlled-snapshot-format')
             expected = digest(dict(seq=seq, atMs=r['at_ms'], snapshot=value, previousHash=previous))
             check(r['previous_hash'] == previous and r['event_hash'] == expected, 'controlled-event-integrity')
             previous = expected; last = value; stamp = r['at_ms']
@@ -156,9 +160,9 @@ class Ledger:
                 return self.result(old, count, False)
             if source_error:
                 check(old is not None, 'no-valid-source-or-prior-ledger')
-                value = quarantine(old, 'source-validation-failed')
-            elif old and conflict(old, value):
-                value = quarantine(old, 'source-regressed-or-conflicted')
+                value = self.quarantine(old, 'source-validation-failed')
+            elif old and self.conflict(old, value):
+                value = self.quarantine(old, 'source-regressed-or-conflicted')
             check(value is not None, 'missing-accounting-evidence')
             if old == value:
                 return self.result(old, count, False)

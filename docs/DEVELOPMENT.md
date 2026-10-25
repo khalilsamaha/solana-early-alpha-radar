@@ -1,6 +1,6 @@
 # Development and release workflow
 
-1. Create a short-lived branch for one change. Record the hypothesis and success/failure measures before changing signal rules.
+1. Branch from the current `main` and target `main` with a short-lived branch for one change. Record the hypothesis and success/failure measures before changing signal rules.
 2. Run `bash scripts/check.sh` from the repository root. Tests use temporary databases, mocked external providers and local HTTP servers.
 3. Open a pull request describing behavior, tests, evidence compatibility and rollback. Separate fixes to measurement from changes to signal selection.
 4. Review CI and the diff before merging. A merge is not a deployment.
@@ -29,3 +29,7 @@ bash /path/to/checkout/quality-tools/run-report.sh
 ```
 
 Replace `/path/to/checkout` with the real cloned repository path. The report helper takes a bounded read-only snapshot and writes a private report on the host. GitHub cannot read the live Kali database.
+
+## October 25 consolidation
+
+Use [ENGINEERING-RELEASE-20261025.md](ENGINEERING-RELEASE-20261025.md) for the source-only rollout, compatible code rollback and capture-only evidence preservation. Keep historical development branches for provenance; close superseded PRs only after their exact heads are confirmed as ancestors of the consolidated main commit. Do not force-push, rewrite old manifests, reset private journals or reinstall the frozen experiment as release cleanup.
