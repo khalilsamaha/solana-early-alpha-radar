@@ -204,7 +204,8 @@ def existing(home, wallet, pool, source, allocation):
     child = directory(home / CYCLE)
     names = {p.name for p in child.iterdir()}
     allowed = {'preparation.json', 'complete.json', submit.CHILD, submit.REVERSE_CHILD, submit.spend_guard.NAME,
-               submit.spend_guard.NAME + '-journal'}
+               submit.spend_guard.NAME + '-journal', 'refused-unsigned-entry-v1',
+               'unsigned-replacement.json', 'unsigned-replacement-ready.json'}
     check(names <= allowed, 'unexpected-cycle-preparation-files')
     if not {'preparation.json', 'complete.json'} <= names:
         return public('preparation-incomplete')

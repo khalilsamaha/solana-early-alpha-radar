@@ -73,4 +73,8 @@ def continuity(capture, binding):
 def plan_matches(home, plan):
     binding = load(home, plan['scope']['accounts']['wallet'], plan['scope']['accounts']['pool']) if is_cycle(home) else None
     check(plan.get('cycleBinding') == binding, 'cycle-plan-binding')
+    if binding:
+        import unsigned_replacement as replacement
+        expected = replacement.digest(replacement.ready(home)[0]) if replacement.exists(home) else None
+        check(plan.get('unsignedReplacementSha256') == expected, 'replacement-plan-binding')
     return binding

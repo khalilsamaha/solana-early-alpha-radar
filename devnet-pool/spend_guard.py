@@ -80,8 +80,36 @@ class Guard:
                                   (count+1, now, encoded(state), previous, h))
             return state
 
-    def reserve(self, side, plan, capture):
+    def authorize_unsigned_replacement(self, manifest):
+        import unsigned_replacement as replacement
+        check(self.cycle is not None, 'replacement-cycle-required')
+        old,count,head,_ = self.read()
+        def apply(state, now):
+            check(state and not state['quarantined'] and set(state['legs']) == {'entry'}
+                  and state['legs']['entry'] == manifest['oldEntry'], 'replacement-initial-reservation-required')
+            leg=state['legs']['entry']
+            check(leg['signed'] is None and leg['boundaryAtMs'] is None and leg['receipt'] is None,'replacement-old-entry-not-unsigned')
+            authorization=state.get('unsignedReplacement')
+            if authorization:
+                check(authorization['manifestSha256'] == replacement.digest(manifest)
+                      and authorization['oldEntry'] == leg and authorization['newPlanSha256'] is None,'replacement-already-used')
+                return state
+            check(count == manifest['oldLedgerCount'] == 1 and head == manifest['oldLedgerHash'],'replacement-ledger-head-changed')
+            state['unsignedReplacement']=dict(format=replacement.VERSION,manifestSha256=replacement.digest(manifest),
+                oldEntry=copy.deepcopy(leg),authorizedAtMs=now,newPlanSha256=None)
+            return state
+        return self.change(apply)
+
+    def reserve(self, side, plan, capture, *, replace_unsigned=False):
         check(side in ('entry', 'exit'), 'spending-side')
+        replacement_manifest = None
+        if replace_unsigned:
+            import unsigned_replacement as replacement
+            check(side == 'entry' and self.cycle is not None, 'replacement-cycle-entry-required')
+            replacement_manifest, archived = replacement.ready(self.j.path.parent)
+            check(plan.get('unsignedReplacementSha256') == replacement.digest(replacement_manifest)
+                  and plan['packet']['policy']['blockhash'] != archived['plan.json']['packet']['policy']['blockhash'],
+                  'replacement-fresh-plan-required')
         check(plan.get('cycleBinding') == self.cycle, 'spending-cycle-plan')
         if self.cycle:
             check(int(self.cycle['historicalEntryAtomic']) + 1000 <= 2000
@@ -110,10 +138,19 @@ class Guard:
                              quarantined=False, quarantineReason=None, legs={})
                 if self.cycle: state['cycleBinding'] = copy.deepcopy(self.cycle)
             check(not state['quarantined'] and state['wallet'] == a['wallet'] and state['pool'] == a['pool'], 'spending-identity-or-quarantine')
-            check(side not in state['legs'], 'spending-attempt-already-reserved')
+            if replacement_manifest:
+                authorization=state.get('unsignedReplacement')
+                check(set(state['legs']) == {'entry'} and state['legs']['entry'] == replacement_manifest['oldEntry']
+                      and authorization and authorization['newPlanSha256'] is None
+                      and authorization['manifestSha256'] == digest(replacement_manifest)
+                      and authorization['oldEntry'] == replacement_manifest['oldEntry'], 'replacement-reservation-not-ready')
+                authorization['newPlanSha256']=digest(plan)
+                authorization['replacedAtMs']=now
+            else:
+                check(side not in state['legs'], 'spending-attempt-already-reserved')
             confirmed = sum(int(x['receipt']['feeLamports']) for x in state['legs'].values() if x['receipt'])
             if side == 'entry':
-                check(not state['legs'] and int(source['amount']) >= 1000, 'spending-principal-cap')
+                check((not state['legs'] or replacement_manifest is not None) and int(source['amount']) >= 1000, 'spending-principal-cap')
                 reserve_fee = 20000  # Reserve one maximum-fee exit before entry signing.
             else:
                 entry = state['legs'].get('entry')
@@ -226,6 +263,11 @@ class Guard:
             result['cumulativeConfirmedFeeLamports'] = str(int(self.cycle['historicalSwapFeeLamports']) + fees)
             result['cumulativeConfirmedAndReservedFeeLamports'] = str(int(self.cycle['historicalSwapFeeLamports']) + fees + reserve_fee)
             result['cumulativeGrossEntryAllocatedAtomic'] = str(int(self.cycle['historicalEntryAtomic']) + 1000)
+        if state.get('unsignedReplacement'):
+            r=state['unsignedReplacement']
+            result['unsignedReplacement']=dict(format=r['format'],manifestSha256=r['manifestSha256'],
+                originalPlanSha256=r['oldEntry']['contract']['planSha256'],newPlanSha256=r['newPlanSha256'],
+                authorizedAtMs=r['authorizedAtMs'],replacedAtMs=r.get('replacedAtMs'),originalReservationPreserved=True)
         return result
 
 
@@ -238,6 +280,20 @@ def status(home, child):
     side = 'exit' if child.name == 'swap-reverse-v1' else 'entry'
     marked = os.path.lexists(marker)
     if not marked:
+        # A fresh replacement can fail before transferring the existing reservation.
+        # Keep that held budget visible even if no fresh packet was completed.
+        if cycle_binding.is_cycle(home) and os.path.lexists(Path(home) / NAME):
+            with Guard(home) as g:
+                state=g.read()[0]
+                replacement=state.get('unsignedReplacement') if state else None
+                if side == 'entry' and replacement and replacement['newPlanSha256'] is None:
+                    check(not any(os.path.lexists(child/n) for n in ('signing-attempt.json','signed.json','submission-boundary.json')),
+                          'replacement-unreserved-signing-marker')
+                    if execution:
+                        plan=loads(private_file(child/'plan.json',32768))
+                        check(digest(plan)==execution['planSha256'] and plan.get('unsignedReplacementSha256')==replacement['manifestSha256'],
+                              'replacement-unreserved-plan-binding')
+                    return dict(g.summary(),reservationMarkerPresent=False,replacementReservationTransferred=False)
         check(not version or not any(os.path.lexists(child / n) for n in ('signing-attempt.json', 'signed.json', 'submission-boundary.json')),
               'spending-required-marker-missing')
         if not version or not os.path.lexists(Path(home) / NAME):

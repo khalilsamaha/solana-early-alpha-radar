@@ -15,6 +15,43 @@ const SPENDING={network:'devnet',maximumPrincipalAtomic:'1000',maximumLegFeeLamp
 function read(p,max){const fd=fs.openSync(p,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW);try{
  const s=fs.fstatSync(fd);check(s.isFile()&&s.uid===process.getuid()&&(s.mode&0o777)===0o600&&s.nlink===1&&s.size<=max);return fs.readFileSync(fd);
 }finally{fs.closeSync(fd);}}
+function present(p){try{fs.lstatSync(p);return true;}catch(e){if(e.code==='ENOENT')return false;throw e;}}
+function verifyReplacement(home,state,plan,rows){
+ const r=state.unsignedReplacement,archive=path.join(home,'refused-unsigned-entry-v1');
+ if(!r){check(plan.unsignedReplacementSha256===undefined&&!present(path.join(home,'unsigned-replacement.json'))&&!present(archive));return;}
+ const m=JSON.parse(read(path.join(home,'unsigned-replacement.json'),32768));
+ const seal=JSON.parse(read(path.join(home,'unsigned-replacement-ready.json'),4096));
+ check(m.format==='unsigned-cycle-replacement-1'&&m.cycleId==='controlled-cycle-0002'&&r.format===m.format
+  &&seal.format===m.format&&seal.manifestSha256===hash(m)&&r.manifestSha256===hash(m)
+  &&plan.unsignedReplacementSha256===hash(m)&&m.preparationSha256===plan.cycleBinding.preparationSha256);
+ check(m.oldLedgerCount===1&&rows.length>=3&&m.oldLedgerHash===rows[0].event_hash);
+ const first=JSON.parse(rows[0].snapshot),approved=JSON.parse(rows[1].snapshot);
+ check(!first.unsignedReplacement&&Object.keys(first.legs).join('|')==='entry'&&stringify(first.legs.entry)===stringify(m.oldEntry));
+ check(stringify(r.oldEntry)===stringify(m.oldEntry)&&stringify(approved.legs.entry)===stringify(m.oldEntry)
+  &&approved.unsignedReplacement.manifestSha256===hash(m)&&approved.unsignedReplacement.newPlanSha256===null);
+ check(r.newPlanSha256===state.legs.entry.contract.planSha256&&r.newPlanSha256!==m.oldEntry.contract.planSha256
+  &&whole(m.approvedAtMs)&&whole(r.authorizedAtMs)&&whole(r.replacedAtMs)
+  &&m.approvedAtMs<=r.authorizedAtMs&&r.authorizedAtMs<=r.replacedAtMs&&r.replacedAtMs<=Date.now());
+ check(m.oldEntry.signed===null&&m.oldEntry.boundaryAtMs===null&&m.oldEntry.receipt===null);
+ const a=fs.lstatSync(archive);check(a.isDirectory()&&!a.isSymbolicLink()&&a.uid===process.getuid()&&(a.mode&0o777)===0o700);
+ const limits={'plan.json':32768,'execution.json':32768,'preflight.json':4*1024*1024,
+  'signing-request.json':8192,'spending-reservation.json':4096,'failure.json':4096};
+ check(fs.readdirSync(archive).sort().join('|')===Object.keys(limits).sort().join('|'));
+ const hashes={},values={};for(const [name,max] of Object.entries(limits)){
+  const raw=read(path.join(archive,name),max);hashes[name]=crypto.createHash('sha256').update(raw).digest('hex');values[name]=JSON.parse(raw);
+ }
+ check(stringify(hashes)===stringify(m.files)&&m.evidenceSha256===hash(hashes));
+ const old=values['plan.json'],request=values['signing-request.json'],contract=m.oldEntry.contract;
+ check(contract.planSha256===hash(old)&&contract.preflightSha256===hash(values['preflight.json'])
+  &&request.planSha256===hash(old)&&request.preflightSha256===contract.preflightSha256
+  &&stringify(old.cycleBinding)===stringify(plan.cycleBinding)&&old.unsignedReplacementSha256===undefined);
+ check(whole(request.expiresAtMs)&&whole(old.packet.policy.expiresAtMs)
+  &&Math.max(request.expiresAtMs,old.packet.policy.expiresAtMs)<=m.approvedAtMs
+  &&values['failure.json'].phase==='signing'&&values['failure.json'].reason==='execution-validation-or-transport-incomplete');
+ if(plan.scope.accounts.source===old.scope.accounts.source){
+  check(plan.packet.policy.blockhash!==old.packet.policy.blockhash&&hash(plan)===r.newPlanSha256);
+ }
+}
 export function verifyCycleReservation(root,home,plan,capture,side){
  check(home===path.join(root,'controlled-cycle-0002')&&['entry','exit'].includes(side));
  // Python wrote canonical JSON and sealed those bytes. Re-encoding the parsed
@@ -52,6 +89,7 @@ export function verifyCycleReservation(root,home,plan,capture,side){
   previous=row.event_hash;stamp=row.at_ms;
  }
  check(!state.quarantined&&state.wallet===prep.wallet&&state.pool===prep.pool&&stamp<=Date.now());
+ verifyReplacement(home,state,plan,rows);
  const leg=state.legs[side];check(leg&&leg.signed===null&&leg.boundaryAtMs===null&&leg.receipt===null);
  check(leg.contract.planSha256===hash(plan)&&leg.contract.preflightSha256===hash(capture)&&leg.contract.scopeSha256===hash(plan.scope));
  check(leg.contract.feeLamports===plan.packet.feeAssertion.lamports&&atomic(leg.contract.feeLamports)>0n&&atomic(leg.contract.feeLamports)<=10000n);

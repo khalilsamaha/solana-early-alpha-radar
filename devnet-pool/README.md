@@ -87,3 +87,7 @@ The prepared second cycle is connected through `cycle_execute_cli.py`: local ins
 For an existing cycle-2 `preparation-incomplete` result in the signing phase, see
 [the preparation hash fix and read-only reservation check](../docs/CYCLE-PREPARATION-HASH-FIX.md).
 The correction preserves sealed evidence and does not retry an expired entry.
+
+After the unsigned reservation audit passes, the fixed recovery tool supports one
+explicit replacement while archiving the refused entry and retaining its spending
+history. See [unsigned cycle recovery](../docs/UNSIGNED-CYCLE-RECOVERY.md).

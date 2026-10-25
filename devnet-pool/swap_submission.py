@@ -255,6 +255,12 @@ def report(home, wallet, trace=None, reason=None, *, reverse=False):
     if cycle_binding.is_cycle(home):
         r['cycleBinding'] = cycle_binding.load(home, wallet)
         r['cycleId'] = cycle_binding.CYCLE
+        import unsigned_replacement as replacement
+        if replacement.exists(home):
+            m,_=replacement.ready(home)
+            r['unsignedReplacement']=dict(format=replacement.VERSION,manifestSha256=replacement.digest(m),
+                originalEvidenceSha256=m['evidenceSha256'],originalJournalPreserved=True)
+            r['limitations'][-1]='One explicitly prepared unsigned replacement only; no automatic retry or production position update.'
     if reverse:
         r['limitations'][-1] = 'One explicit reverse of the recorded acquisition only; no journal replacement, automatic retry or production position update.'
     if not os.path.lexists(child):
@@ -417,7 +423,7 @@ def observe(child, wallet, rpc, *, sleeper=time.sleep):
             return
 
 
-def _execute(home, wallet, expected_pool, *, reverse=False, cycle=False, opener=None, sleeper=time.sleep):
+def _execute(home, wallet, expected_pool, *, reverse=False, cycle=False, replace_unsigned=False, opener=None, sleeper=time.sleep):
     trace = Trace(opener); rpc = ExecutionRpc(trace)
     with Session(home) as s:
         check(s.wallet == wallet, 'explicit-wallet-mismatch')
@@ -427,6 +433,15 @@ def _execute(home, wallet, expected_pool, *, reverse=False, cycle=False, opener=
         child = jhome / journal_name(reverse)
         if os.path.lexists(child):
             return finish_report(jhome, wallet, trace, 'existing-journal-use-recover-no-retry', reverse=reverse)
+        check(type(replace_unsigned) is bool and (not replace_unsigned or cycle and not reverse), 'replacement-cycle-entry-required')
+        replacement_hash = None
+        if cycle:
+            import unsigned_replacement as replacement
+            if replacement.exists(jhome):
+                check(reverse or replace_unsigned, 'explicit-unsigned-replacement-required')
+                replacement_hash = replacement.digest(replacement.ready(jhome)[0])
+            else:
+                check(not replace_unsigned, 'replacement-not-prepared')
         check(not swap.stop(s.home), 'stop-requested')
         scope, setup = bridge.source_scope(s, expected_pool)
         if reverse:
@@ -451,6 +466,7 @@ def _execute(home, wallet, expected_pool, *, reverse=False, cycle=False, opener=
             v = swap.policy_check(scope, packet, wallet, now())
             plan = dict(format='swap-signing-plan-1', scope=scope, packet=packet, recordedAtMs=now())
             if binding is not None: plan['cycleBinding'] = binding
+            if replacement_hash is not None: plan['unsignedReplacementSha256'] = replacement_hash
             write_new(child / 'plan.json', plan)
             write_new(child / 'execution.json', dict(format=REVERSE_VERSION if reverse else VERSION, planSha256=pool.digest(plan), setupEvidence=setup, spendingGuardVersion=spend_guard.VERSION,
                       **({'priorExecution': prior} if reverse else {'priorSimulation': prior}), lastValidBlockHeight=built['lastValidBlockHeight'],
@@ -470,7 +486,7 @@ def _execute(home, wallet, expected_pool, *, reverse=False, cycle=False, opener=
             phase = 'spending-reservation'
             side = 'exit' if reverse else 'entry'
             with spend_guard.Guard(jhome, create=not reverse) as guard:
-                guard.reserve(side, plan, capture)
+                guard.reserve(side, plan, capture, **({'replace_unsigned': True} if replace_unsigned else {}))
             write_new(child / spend_guard.MARKER, dict(format=spend_guard.VERSION, side=side, planSha256=pool.digest(plan)))
             write_new(child / 'signing-request.json', dict(format='restricted-swap-request-1',
                 planSha256=pool.digest(plan), preflightSha256=pool.digest(capture), expiresAtMs=reviewed['validUntilExclusiveMs'],
@@ -561,8 +577,8 @@ def status(home, wallet, *, reverse=False, cycle=False, expected_pool=None):
 
 
 @cycle_binding.operation
-def execute(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep, cycle=False):
-    return _execute(home, wallet, expected_pool, opener=opener, sleeper=sleeper, cycle=cycle)
+def execute(home, wallet, expected_pool, *, opener=None, sleeper=time.sleep, cycle=False, replace_unsigned=False):
+    return _execute(home, wallet, expected_pool, opener=opener, sleeper=sleeper, cycle=cycle,replace_unsigned=replace_unsigned)
 
 
 @cycle_binding.operation

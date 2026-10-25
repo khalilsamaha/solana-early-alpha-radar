@@ -42,7 +42,7 @@ try{
  const journalHome=cycle?path.join(r.directory,r.cycle):r.directory;directory(journalHome);
  check(!stopped(r.directory));
  const child=path.join(journalHome,reverse?'swap-reverse-v1':execution?'swap-execution-v1':'swap-simulation-v1');directory(child);
- const plan=JSON.parse(read(path.join(child,'plan.json'),32768));fields(plan,cycle?['format','scope','packet','recordedAtMs','cycleBinding']:['format','scope','packet','recordedAtMs']);check(plan.format==='swap-signing-plan-1');
+ const plan=JSON.parse(read(path.join(child,'plan.json'),32768));fields(plan,cycle?['format','scope','packet','recordedAtMs','cycleBinding',...(Object.hasOwn(plan,'unsignedReplacementSha256')?['unsignedReplacementSha256']:[])]:['format','scope','packet','recordedAtMs']);check(plan.format==='swap-signing-plan-1');
  const req=JSON.parse(read(path.join(child,'signing-request.json'),8192));fields(req,['format','planSha256','preflightSha256','expiresAtMs','computeUnits','microLamportsPerCU','messageBase64']);
  check(req.format==='restricted-swap-request-1'&&req.planSha256===hash(plan)&&/^[a-f0-9]{64}$/.test(req.preflightSha256));
  const capture=JSON.parse(read(path.join(child,'preflight.json'),4*1024*1024));check(hash(capture)===req.preflightSha256);
