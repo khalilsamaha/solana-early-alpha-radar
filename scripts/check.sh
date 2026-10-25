@@ -17,6 +17,8 @@ if [[ "$radar_check_group" == devnet-pool ]]; then
 fi
 python3 scripts/check-source.py
 node --test source-comparison/*.test.mjs
+node --test operational-review/*.test.mjs
+(cd operational-review && python3 -m unittest discover -p 'test_*.py')
 (cd qualification-review && python3 -m unittest discover -p 'test_*.py')
 (cd research-dataset && python3 -m unittest discover -p 'test_*.py')
 (
