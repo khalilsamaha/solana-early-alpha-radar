@@ -37,3 +37,7 @@ Raw evidence signatures authenticate the outer message, not RPC finality, inner 
 `public-fixtures.json` contains four synthetic signed messages for one ephemeral fixture wallet. Its private key was discarded during fixture generation and is not shipped. The fictitious router, slot, mint and balance evidence was never sent to a network. Entry spends 100 arbitrary quote atomic units for 200 asset units; a successful exit returns 80. Synthetic failures charge 5,000 native lamports with unchanged token amounts. These amounts are deliberately tiny test integers, not an approved budget or performance observation.
 
 Tests cover complete entry/exit, failed fees, unknown outcomes, exact signed binding, forged summaries, slot ordering, duplicate final receipts, conflicting outcomes, persistent entry stop, full-quantity/identity/continuity checks, immutable policy, principal and fee caps, loss limits, file constraints, atomic rollback at an event cap, two connections, and actual subprocess death immediately before/after the boundary commit. Host self-check results remain synthetic even when run on the production machine.
+
+## Two closed controlled cycles
+
+`cycles_cli.py` reconciles the first historical round trip and the fixed prepared cycle two into a separate bounded ledger. It preserves the original single-position ledger, keeps verified external credits separate from returns, and never signs or calls RPC. See [the two-cycle accounting guide](../docs/TWO-CYCLE-ACCOUNTING.md) for commands, repeat-import behavior and quarantine handling.
