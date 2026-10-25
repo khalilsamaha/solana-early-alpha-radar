@@ -35,3 +35,16 @@ bash ~/apps/solana-radar-dev/operational-review/preserve.sh
 It verifies the existing registration, preserves another bounded 72-hour local capture, and never runs model evaluation. Run one preservation at a time; existing captures are never deleted or overwritten. Stop and report a cap error rather than deleting evidence. No Backblaze transfer is performed. Capture windows show what was requested, not uninterrupted collection or complete outcomes.
 
 Keep the existing final review command for October 28, after checking preservation coverage. It combines preserved captures with the final fresh capture and retains the frozen artifact and guards. A positive research result would still require separate execution-cost and mainnet-specific work before any funded pilot.
+
+## Investigating a repeated statistics timeout
+
+A fresh dashboard request can fail at the existing eight-second read/compute limit while scanner readiness remains healthy. Before changing limits or summary semantics, run one standalone profile:
+
+```bash
+cd ~/apps/solana-early-alpha-radar
+bash ~/apps/solana-radar-dev/operational-review/profile-stats.sh
+```
+
+Upload the printed `radar-statistics-profile-*.json.gz`. The helper verifies the installed source hashes, then replays the installed statistics calculation in a separate worker with the existing eight-second read deadline, ten-second watchdog, memory/row/byte/WAL limits and read-only database transaction. It records per-kind row/byte counts, SQLite stepping, JSON parsing, consumer time and summary phases. It exports no summary values, tokens, raw errors or database paths. A stopped replay publishes only partial diagnostic counters and a fixed error category.
+
+This does not deploy code, restart the scanner, clear live worker counters, change stored evidence, or invoke the frozen model. The replay consumes local CPU/I/O briefly; timings include instrumentation and concurrent load. Run once and inspect the report before any repetition or performance change. The live scanner and its existing statistics service retain their existing behavior.
