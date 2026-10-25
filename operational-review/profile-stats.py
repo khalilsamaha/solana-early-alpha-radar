@@ -17,7 +17,7 @@ def collect(project, runner=subprocess.run):
     hashes={k:v for k,v in manifest['scannerFiles'].items() if k.startswith('src/') and k.endswith('.js')}
     script=(ROOT/'operational-review/stats-profile.mjs').read_bytes()
     command=['sudo','-n','docker','compose','--project-directory',str(project),
-             'exec','--interactive=false','-T','radar','node','--input-type=module','-',json.dumps(hashes,separators=(',',':'))]
+             'exec','-T','radar','node','--input-type=module','-',json.dumps(hashes,separators=(',',':'))]
     try:
         r=runner(command,input=script,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=20)
         if r.returncode!=0 or len(r.stdout)>65536:raise ValueError('profile-command')

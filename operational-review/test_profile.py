@@ -18,6 +18,7 @@ class ProfileLauncherTests(unittest.TestCase):
         self.assertEqual(r['state'],'completed');self.assertEqual(len(calls),1)
         args,kw=calls[0]
         self.assertEqual(args[:7],['sudo','-n','docker','compose','--project-directory','/example/project','exec'])
+        self.assertNotIn('--interactive=false',args);self.assertIn('-T',args)
         self.assertEqual(kw['timeout'],20);self.assertEqual(kw['stderr'],subprocess.DEVNULL)
         self.assertIn('src/core/stats-worker.js',json.loads(args[-1]));self.assertNotIn('.env',args)
         self.assertLess(len(kw['input']),65536)
