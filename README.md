@@ -25,6 +25,8 @@ Start with [development instructions](docs/DEVELOPMENT.md), [current roadmap](do
 
 The [local devnet readiness check](docs/DEVNET-READINESS.md) consolidates the fixed two-cycle journals, spending state and historical accounting into one read-only report. A consistent result does not authorize another cycle or assess the frozen strategy study.
 
+The [private evidence snapshot and isolated restore check](docs/PRIVATE-EVIDENCE-BACKUP.md) preserves closed devnet journals and accounting locally, excludes the signing key, and verifies a disposable stopped copy. It does not restore into the active wallet or provide off-machine disaster recovery.
+
 ## Checks
 
 Requires Node.js 24.10 or newer in the 24.x series and Python 3.12. There are no third-party runtime packages to install for these tests.
