@@ -97,3 +97,28 @@ node statistics-lab/scale-check.mjs
 
 It checks completion and zero historical payload reads in the warm round. It is
 not run against production data and its timings are not predictions for Kali.
+
+## Phase diagnostics and local-first development
+
+Reports retain `diagnostic.failedPhase` on a caught failure and `activePhase` for
+an externally terminated worker. `inventory-validation` includes the source/cache
+identity comparison and bounded catch-up. `summary-calculation` includes compact
+row reads and the unchanged summary functions. `summary-finalization` includes
+post-calculation guards and committing completion metadata. Timings are elapsed
+wall time, not CPU attribution; an incomplete phase has only the last progress
+message if the parent watchdog terminates the worker.
+
+`cursor` identifies the committed cursor before the current batch. `readRows` and
+`reusedRows` count completed batches; unfinished work is not reported as committed.
+The runner instrumentation does not change compact-store code, schema or its
+provenance binding, so existing matching caches remain resumable. It does not
+relax any timeout, memory, row or WAL limit.
+
+For a larger local exercise (160,000 rows, with longer synthetic identifiers):
+
+```bash
+node statistics-lab/scale-check.mjs --large
+```
+
+This fixture is not a production disk, writer workload or complete reproduction
+of private event shapes. Passing it does not establish readiness for deployment.

@@ -18,6 +18,8 @@ function fixture(t){
 test('isolated benchmark completes two rounds with no source writes or outcome exports',async t=>{
  const o=fixture(t),before=fs.readFileSync(o.database),r=await benchmark(o);
  assert.equal(r.state,'completed');assert.equal(r.diagnostic.rounds.length,2);
+ assert.equal(r.diagnosticVersion,'phase-timing-1');
+ for(const round of r.diagnostic.rounds){assert(round.inventoryMs>=0);assert(round.summaryMs>=0);assert(round.validationAndSummaryMs>=round.inventoryMs+round.summaryMs);}
  assert.equal(r.diagnostic.rounds[0].readRows,1);assert.equal(r.diagnostic.rounds[1].readRows,0);assert.equal(r.diagnostic.rounds[1].reusedRows,1);
  assert.deepEqual(fs.readFileSync(o.database),before);assert(!JSON.stringify(r).includes('private'));assert(!JSON.stringify(r).includes('paperSummary'));
 });
@@ -32,4 +34,22 @@ test('worker timeout rejects late completion and preserves explicit failure',asy
 test('worker memory failure keeps its specific category on nonzero exit',async()=>{
  const r=await benchmark({}, {workerFactory:()=>{const w=new EventEmitter();queueMicrotask(()=>{w.emit('error',{code:'ERR_WORKER_OUT_OF_MEMORY'});w.emit('exit',1);});return w;}});
  assert.equal(r.error,'worker-memory-limit');
+});
+test('summary failure retains its phase and a resumable cache without exporting evidence',async t=>{
+ const o=fixture(t),file=path.join(path.dirname(o.cache),'failing-radar.mjs');
+ fs.writeFileSync(file,"export class Radar { getStats(){throw Error('read-timeout');} }");
+ const r=await benchmark({...o,radarUrl:pathToFileURL(file).href});
+ assert.equal(r.error,'read-timeout');assert.equal(r.diagnostic.failedPhase,'summary-calculation');
+ assert.equal(r.diagnostic.rounds.length,0);assert(r.diagnostic.timings.inventoryMs>0);
+ assert(!JSON.stringify(r).includes('private'));
+ const resumed=await benchmark(o);assert.equal(resumed.state,'completed');assert.equal(resumed.diagnostic.rounds[0].readRows,0);
+ assert.equal(resumed.diagnostic.rounds[0].reusedRows,0); // inventory already complete before failed summary
+});
+test('inventory failure and watchdog retain the last active phase',async t=>{
+ const o=fixture(t);
+ const stub="export class CompactStore { get(){return {kind:4,cursor:0}} step(){return {phase:'validation-required',readRows:0,reusedRows:0}} validateAndSummarize(){throw Error('read-timeout')} close(){} }";
+ const r=await benchmark({...o,storeSource:stub});assert.equal(r.diagnostic.failedPhase,'inventory-validation');assert(r.diagnostic.timings.inventoryMs>=0);
+ class W extends EventEmitter{terminate(){this.emit('exit',1);return Promise.resolve();}}
+ const timeout=await benchmark({}, {watchdogMs:5,workerFactory:()=>{const w=new W();queueMicrotask(()=>w.emit('message',{progress:{activePhase:'summary-calculation',rounds:[]}}));return w;}});
+ assert.equal(timeout.error,'worker-timeout');assert.equal(timeout.diagnostic.activePhase,'summary-calculation');
 });

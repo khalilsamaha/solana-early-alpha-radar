@@ -8,7 +8,7 @@ export async function benchmark(options,{watchdogMs=10000,workerFactory=o=>new W
  return new Promise(resolve=>{
   let w,timer,done=false,timedOut=false,terminal=null,progress=null;
   const arm=()=>{clearTimeout(timer);timer=setTimeout(()=>{timedOut=true;terminal={state:'stopped',error:'worker-timeout'};void w.terminate();},watchdogMs);};
-  const finish=()=>{if(done)return;done=true;clearTimeout(timer);resolve({format:'statistics-compact-benchmark-1',capturedAt:new Date().toISOString(),state:terminal?.state||'stopped',error:terminal?.error&&ERRORS.has(terminal.error)?terminal.error:terminal?.state==='completed'||terminal?.state==='paused'?null:'benchmark-failed',diagnostic:progress,sourceMode:'read-only',derivedCacheMode:'read-write',statisticsExported:false,modelEvaluated:false,networkRequests:0});};
+  const finish=()=>{if(done)return;done=true;clearTimeout(timer);resolve({format:'statistics-compact-benchmark-1',diagnosticVersion:'phase-timing-1',capturedAt:new Date().toISOString(),state:terminal?.state||'stopped',error:terminal?.error&&ERRORS.has(terminal.error)?terminal.error:terminal?.state==='completed'||terminal?.state==='paused'?null:'benchmark-failed',diagnostic:progress,sourceMode:'read-only',derivedCacheMode:'read-write',statisticsExported:false,modelEvaluated:false,networkRequests:0});};
   try{
    w=workerFactory({workerData:options,env:{},execArgv:[],resourceLimits:{maxOldGenerationSizeMb:96,maxYoungGenerationSizeMb:8,stackSizeMb:4}});
    w.on('message',m=>{if(timedOut||done)return;if(m.progress){progress=m.progress;arm();}if(m.terminal)terminal=m.terminal;});
@@ -23,8 +23,11 @@ const {performance}=require('node:perf_hooks');
 const fs=require('node:fs');
 const {createHash}=require('node:crypto');
 (async()=>{
- const started=performance.now(),rounds=[];let store,batches=0,readRows=0,reusedRows=0,lastPost=0;
- const post=(phase,force=false)=>{if(force||performance.now()-lastPost>250){lastPost=performance.now();parentPort.postMessage({progress:{phase,elapsedMs:performance.now()-started,batches,readRows,reusedRows,heapUsedBytes:process.memoryUsage().heapUsed,rounds}});}};
+ const started=performance.now(),rounds=[],kinds=['alerts','outcomes','research-entries','research-outcomes'];
+ let store,batches=0,readRows=0,reusedRows=0,lastPost=0,activePhase='opening',failedPhase=null,cursor=null,phaseStarted=started;
+ const timings={buildMs:0,maxBatchMs:0,inventoryMs:0,summaryMs:0,finalizeMs:0};
+ const enter=phase=>{activePhase=phase;phaseStarted=performance.now();post(phase,true);};
+ const post=(phase,force=false)=>{if(force||performance.now()-lastPost>250){lastPost=performance.now();parentPort.postMessage({progress:{phase,activePhase,failedPhase,phaseElapsedMs:performance.now()-phaseStarted,cursor,timings:{...timings},elapsedMs:performance.now()-started,batches,readRows,reusedRows,heapUsedBytes:process.memoryUsage().heapUsed,rounds}});}};
  const stop=(state,error)=>{parentPort.postMessage({terminal:{state,error}});};
  try{
   post('opening',true);
@@ -38,19 +41,32 @@ const {createHash}=require('node:crypto');
    const began=performance.now(),readStart=readRows,reuseStart=reusedRows;let retries=0;
    while(true){
     if(performance.now()-started>=o.budgetMs){post('budget-paused',true);stop('paused',null);return;}
-    post(round?'warm-reconciliation':'initial-build');
-    const batch=store.step();batches++;readRows+=batch.readRows;reusedRows+=batch.reusedRows;
+    const committed=store.get('progress');
+    cursor={kind:kinds[committed.kind]||'validation',sequence:committed.cursor};
+    activePhase=round?'warm-reconciliation':'initial-build';phaseStarted=performance.now();post(activePhase);
+    let batch;try{batch=store.step();}finally{const ms=performance.now()-phaseStarted;timings.buildMs+=ms;timings.maxBatchMs=Math.max(timings.maxBatchMs,ms);}
+    batches++;readRows+=batch.readRows;reusedRows+=batch.reusedRows;
     if(batch.phase==='validation-required'){
-     post('validating-and-summarizing',true);const summarizeAt=performance.now();
-     const result=store.validateAndSummarize((storage,now)=>Radar.prototype.getStats.call({storage,config:{horizonToleranceMs:o.toleranceMs},candidates:new Map(),status:[],getHealth:()=>null},now));
-     if(result.complete){readRows+=result.catchupReadRows;rounds.push({round:round?'warm':'initial-or-resumed',elapsedMs:performance.now()-began,validationAndSummaryMs:performance.now()-summarizeAt,catchupReadRows:result.catchupReadRows,catchupRemovedRows:result.catchupRemovedRows,readRows:readRows-readStart,reusedRows:reusedRows-reuseStart,snapshotAt:result.snapshotAt,sourceMaxSeq:result.sourceMaxSeq,counts:result.counts,originalBytes:result.rawBytes});break;}
+     enter('inventory-validation');const summarizeAt=performance.now();let inventoryMs=0,summaryMs=0,result;
+     try{
+      result=store.validateAndSummarize((storage,now)=>{
+       inventoryMs=performance.now()-summarizeAt;timings.inventoryMs+=inventoryMs;enter('summary-calculation');
+       let value;try{value=Radar.prototype.getStats.call({storage,config:{horizonToleranceMs:o.toleranceMs},candidates:new Map(),status:[],getHealth:()=>null},now);}
+       finally{summaryMs=performance.now()-phaseStarted;timings.summaryMs+=summaryMs;}
+       enter('summary-finalization');return value;
+      });
+     }finally{
+      if(activePhase==='inventory-validation'){inventoryMs=performance.now()-summarizeAt;timings.inventoryMs+=inventoryMs;}
+      else{timings.finalizeMs+=Math.max(0,performance.now()-summarizeAt-inventoryMs-summaryMs);}
+     }
+     if(result.complete){readRows+=result.catchupReadRows;rounds.push({round:round?'warm':'initial-or-resumed',elapsedMs:performance.now()-began,validationAndSummaryMs:performance.now()-summarizeAt,inventoryMs,summaryMs,catchupReadRows:result.catchupReadRows,catchupRemovedRows:result.catchupRemovedRows,readRows:readRows-readStart,reusedRows:reusedRows-reuseStart,snapshotAt:result.snapshotAt,sourceMaxSeq:result.sourceMaxSeq,counts:result.counts,originalBytes:result.rawBytes});break;}
      if(++retries>=2){post('source-changing',true);stop('paused',null);return;}
     }
     await new Promise(r=>setTimeout(r,10));
    }
   }
   post('complete',true);stop('completed',null);
- }catch(e){post('stopped',true);stop('stopped',e.message);}
+ }catch(e){failedPhase=activePhase;post('stopped',true);stop('stopped',e.message);}
  finally{if(store)try{store.close();}catch{}parentPort.close();}
 })();`;
 function privateFile(file){const s=fs.lstatSync(file);if(!s.isFile()||s.isSymbolicLink()||s.uid!==process.getuid()||(s.mode&0o077)||s.nlink!==1)throw Error('cache-path');}
