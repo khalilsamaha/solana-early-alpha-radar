@@ -169,13 +169,14 @@ def restore_sidecar_ownership(file, expected_identity):
                 os.fchown(fd,owner.st_uid,owner.st_gid)
         finally:os.close(fd)
 
-def worker(file, apply, runner=subprocess.run):
+def worker(file, apply, runner=subprocess.run, *, extended=False):
     before=identity(file)
     command = [sys.executable,'-E','-s','-','--worker',str(file)] + (['--apply'] if apply else [])
+    if extended and apply:command += ['--extended-maintenance']
     # Docker volume ancestors may be root-only. Never change directory permissions.
     try:
         child = runner(command, input=Path(__file__).read_bytes(), stdout=subprocess.PIPE,
-                       stderr=subprocess.DEVNULL, timeout=45, user=0,
+                       stderr=subprocess.DEVNULL, timeout=210 if extended and apply else 45, user=0,
                        group=0, extra_groups=[])
     finally:
         restore_sidecar_ownership(file,before)
@@ -220,10 +221,13 @@ def main():
     p.add_argument('--project', type=Path)
     p.add_argument('--apply', action='store_true', help='Explicitly add the partial source index; may briefly block scanner writes.')
     p.add_argument('--maintenance', action='store_true', help='Permit a brief stop/start of the same scanner container for --apply.')
+    p.add_argument('--extended-maintenance', action='store_true', help='After backup rehearsal, permit a 180-second index build with a 210-second worker limit.')
     p.add_argument('--worker', type=Path, help=argparse.SUPPRESS)
     a = p.parse_args()
+    if a.extended_maintenance and (not a.apply or (not a.worker and not a.maintenance)):
+        p.error('--extended-maintenance requires --apply --maintenance.')
     if a.worker:
-        result = run_index(a.worker, a.apply)
+        result = run_index(a.worker, a.apply, deadline_seconds=180 if a.extended_maintenance else DEADLINE_SECONDS)
     else:
         if os.geteuid() != 0 or not a.project:
             p.error('Use sudo and --project; inspection is the default. --apply permits the index write.')
@@ -240,7 +244,7 @@ def main():
                 raise Refused('maintenance-lock-refused')
             fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
             file,cid = discover(a.project.absolute(), with_container=True)
-            result = maintenance(file,cid,a.apply)
+            result = maintenance(file,cid,a.apply,run_worker=lambda f,apply:worker(f,apply,extended=a.extended_maintenance))
         finally:
             os.close(fd)
     print(json.dumps(result, indent=2))

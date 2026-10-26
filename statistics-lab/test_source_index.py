@@ -105,6 +105,25 @@ class IndexTests(unittest.TestCase):
         args,kw=calls[0];self.assertEqual(args[1:5],['-E','-s','-','--worker']);self.assertEqual(args[-1],'--apply')
         self.assertEqual(kw['user'],0);self.assertEqual(kw['group'],0)
         self.assertEqual(kw['extra_groups'],[]);self.assertEqual(kw['timeout'],45);self.assertEqual(kw['input'],Path(m.__file__).read_bytes())
+    def test_extended_worker_is_bounded_and_inspection_keeps_default(self):
+        for apply in (False,True):
+            calls=[]
+            def child(args,**kw):
+                calls.append((args,kw))
+                return subprocess.CompletedProcess(args,0,stdout=b'{"format":"statistics-source-index-1","state":"already-present"}')
+            m.worker(self.file,apply,child,extended=True)
+            args,kw=calls[0]
+            self.assertEqual(kw['timeout'],210 if apply else 45)
+            self.assertEqual('--extended-maintenance' in args,apply)
+    def test_extended_cli_requires_explicit_apply_and_maintenance(self):
+        for flags in ([],['--apply'],['--maintenance']):
+            r=subprocess.run(['python3',str(Path(m.__file__)),'--project',str(self.root),'--extended-maintenance']+flags,capture_output=True,text=True)
+            self.assertEqual(r.returncode,2);self.assertIn('requires --apply --maintenance',r.stderr)
+    def test_extended_actual_worker_reports_selected_deadline(self):
+        r=subprocess.run(['python3','-E','-s',str(Path(m.__file__)),'--worker',str(self.file),'--apply','--extended-maintenance'],capture_output=True,text=True)
+        self.assertEqual(r.returncode,0,r.stderr)
+        report=json.loads(r.stdout)
+        self.assertEqual(report['deadlineSeconds'],180);self.assertEqual(report['state'],'index-installed')
     def test_sidecar_ownership_repair_rejects_symlinks_and_source_replacement(self):
         target=self.root/'unrelated';target.write_text('preserve')
         journal=Path(str(self.file)+'-journal');journal.symlink_to(target)

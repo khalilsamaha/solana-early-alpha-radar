@@ -32,9 +32,10 @@ restore its statistics endpoint.
    read-only and check its identity, size and modification metadata before and
    after copying. Verify SQLite integrity and manifest counts on the copy.
 4. Enable WAL on the copy and use the same partial index builder, with a
-   **180-second cooperative deadline for this disposable copy only**. The public
-   live installer still has its 30-second deadline and 45-second process timeout;
-   there is no public deadline override. Existing row, schema and WAL-growth
+   **180-second cooperative deadline for this disposable copy only**. The live installer defaults to 30 seconds and a 45-second process timeout.
+   After reviewing rehearsal evidence, the explicit extended-maintenance option
+   described in SOURCE-INDEX.md permits fixed 180/210-second limits. There is no
+   arbitrary deadline override. Existing row, schema and WAL-growth
    checks remain enforced.
 5. Verify integrity and counts again. Remove only the rehearsal's temporary
    directory, including after a child timeout. Preserve the original backup.

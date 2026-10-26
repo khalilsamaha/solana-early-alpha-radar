@@ -37,9 +37,9 @@ writers can still cause a refusal. No retry loop is used.
 The worker requires WAL mode, expected event columns and the sequence index,
 100,000 rows or fewer per summary kind, and at least 1 GiB free disk space. Index
 creation is atomic in one `BEGIN IMMEDIATE` transaction. A SQLite progress handler
-checks a 30-second cooperative deadline and 64 MiB WAL-growth threshold; failure
+checks a default 30-second cooperative deadline and 64 MiB WAL-growth threshold; failure
 rolls back uncommitted index work. Native I/O can delay progress callbacks; the
-launcher separately limits the worker process to 45 seconds. These are migration
+launcher separately limits the worker process to 45 seconds by default. These are migration
 bounds, not increases to the statistics reader's eight-second deadline. Existing
 records and derived-cache progress remain intact. No explicit checkpoint, VACUUM,
 backup deletion or cloud operation is performed.
@@ -109,3 +109,25 @@ The scale fixture invokes the same bounded installer with `--large --sparse
 If the bounded live installation times out, use the completed-backup rehearsal
 in [INDEX-REHEARSAL.md](INDEX-REHEARSAL.md) before planning further maintenance.
 The rehearsal's longer copy-only deadline does not change the live installer.
+
+## Extended maintenance after rehearsal
+
+When a completed backup rehearsal establishes that index creation needs longer
+than 30 seconds, the operator can explicitly select `--extended-maintenance`
+alongside `--apply --maintenance`. This fixed option allows a 180-second
+cooperative build deadline and a 210-second worker process limit. Inspection
+retains its 45-second process limit. It is not an arbitrary timeout override.
+Default installation, the statistics reader deadline, and all other guards are
+unchanged. The same-container restart and sidecar ownership recovery paths also
+apply to the extended worker on failure.
+
+```bash
+sudo python3 -E -s ~/apps/solana-radar-dev/statistics-lab/source-index.py \
+  --project "$PWD" --apply --maintenance --extended-maintenance
+```
+
+Plan a few minutes of scanner downtime. Backup-copy timing is not a guarantee of
+live timing. After success, verify `/readyz` and run the compact benchmark once;
+a successful index build alone does not restore production statistics. On any
+failure preserve the report and inspect before retrying. The frozen study must
+retain the resulting observation gap.
