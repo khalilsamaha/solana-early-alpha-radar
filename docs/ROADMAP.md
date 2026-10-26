@@ -11,19 +11,48 @@ Goal: establish whether entry-time evidence identifies realistically enterable a
 | Frozen comparison | Installed private artifact; capture merging and unchanged fixed evaluation | Late October 28 review checkpoint; preserve earlier days with capture-only exports |
 | Controlled devnet execution | Fixed two-cycle identity, cumulative spending reservations, explicit one-send paths and bounded unsigned recovery | Keep the completed rehearsal closed; any further execution needs a separately scoped design |
 | Accounting and readiness | Two-cycle receipt reconciliation, idempotent historical accounting and strictly read-only readiness; local key-excluded evidence snapshots with isolated restore checks | Host isolated restore accepted; encrypted off-machine recovery and key custody remain separate work |
-| Execution economics | Standalone integer cost contract and synthetic cases; total-fee/priority separation, rent reserve, explicit unknown costs and break-even proceeds | Independent quote/message/cost evidence and future preflight integration; no live adapter or profitability conclusion |
+| Execution economics | Integer cost contract plus optional bounded exact-message fee/native-account RPC bridge; tested on synthetic transport, no host live capture claimed | Validate quote-to-instruction semantics, principal/token balances, account funding and ledger-backed reservations before joining any execution path |
 | Funded pilot | Not enabled | Separate strategy review, mainnet-specific validation, execution-cost evidence and explicit pilot scope/limits |
 
 The current quote quota permits at most 48 watches per cohort per day. Forward review keeps the existing minimum of 200 valid labels and seven distinct UTC dates per target/cohort, plus all other quality guards. October 22–28 spans seven distinct UTC dates, not seven full 24-hour periods. The main checkpoint is late October 28, Amsterdam time; qualification is not promised by that date. Do not lower guards, refit, or select a favorable review to force progress. Sparse failure labels may leave some targets unfitted.
 
 Immediate sequence:
 
-1. Consolidation and the host-accepted private evidence snapshot/isolated restore are on main. Production compact statistics passed host acceptance on October 26: two complete refreshes, zero refresh failures and readiness throughout. The [execution cost contract](../execution-cost/README.md) can be developed and tested on synthetic inputs while the study remains frozen; no additional runtime deployment is needed for that module.
+1. Consolidation and the host-accepted private evidence snapshot/isolated restore are on main. Production compact statistics passed host acceptance on October 26: two complete refreshes, zero refresh failures and readiness throughout. The [execution cost contract and read-only evidence bridge](../execution-cost/README.md) can be developed and tested on synthetic inputs while the study remains frozen; no additional runtime deployment is needed for those modules.
 2. Preserve bounded local quote captures before earlier study days leave the helper's 72-hour window. Collection alone does not run predictions or change the frozen experiment. Keep existing captures intact. Take another capture-only export on October 26 to bridge the earlier window with a late October 28 final capture.
 3. Late on October 28, run the existing review against all retained captures. Report gaps, insufficient evidence and failed targets explicitly.
 4. Use that review to choose a targeted engineering or research improvement. A positive paper/quote result alone does not establish executable profitability; a weak result may justify rejecting the approach.
 
 No calendar date or expected revenue is justified for a real-money pilot. Deployment layout migration, private journal disaster recovery, general portfolio management and arbitrary mainnet routes are not completed by this source consolidation.
+
+## Next execution integration sequence
+
+1. **Implemented, not deployed:** exact-message network-fee observations and native
+   account evidence feed the standalone cost model. Both message/quote identities
+   are retained, but their association is not a verified swap. Missing evidence
+   remains unavailable; devnet has no USDC-economic interpretation. See
+   [integration release](EXECUTION-COST-EVIDENCE-UPDATE.md).
+2. **Next engineering gate:** one narrowly supported mainnet route/message
+   validator, with input/output mint and amount/minimum-output checks, fee/tip
+   treatment, account creation/rent, token-account ownership and principal
+   spendability. Unsupported routes and extensions remain blocked. Build and test
+   read-only/simulation integration before connecting a signer.
+3. **Then execution integration:** bind fresh cost evidence and the validated route
+   to the durable intent and authoritative reservation ledger; recheck before the
+   send boundary. Exercise stale evidence, insufficient balance, stop controls,
+   unknown outcomes and idempotent recovery without reopening the closed rehearsals.
+4. **Independent research gate:** October 28 at 17:30 Europe/Amsterdam, review the
+   frozen study using preserved captures and original guards. A failed or sparse
+   result requires an explicit research decision, not relaxed thresholds.
+5. **Funded test gate:** only after route, simulation, accounting, operational and
+   strategy reviews, agree a separate disposable test budget and hard exposure
+   limits. A small execution-mechanics test would establish actual fee/fill behavior,
+   not expected profitability. Positive execution readiness cannot substitute for
+   evidence that the strategy works.
+
+This sequence separates two questions: can the system execute and reconcile the
+intended trade reliably, and do its signals identify an economic edge? Both need
+evidence. The current release advances the first without changing the second.
 
 ## 15 October 2026 update
 
