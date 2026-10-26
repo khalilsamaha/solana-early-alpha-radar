@@ -43,12 +43,17 @@ test('retention, empty kinds and reused sequence numbers reconcile before public
  build(s);const r=s.validateAndSummarize(summarize);assert(r.complete);assert.deepEqual(r.result,summarize(original(f.db),r.snapshotAt));
  assert.equal(s.cache.prepare('SELECT count(*) AS n FROM rows').get().n,1);s.close();f.db.close();
 });
-test('arrival or deletion after batching refuses publication and restarts reconciliation',t=>{
+test('arrivals and deletions after batching are reconciled in the final source snapshot',t=>{
  const f=fixture(t);f.add('alerts',{id:'m:1:a',candidate:{mint:'m'}});const s=f.open();build(s);
- f.add('alerts',{id:'n:2:a',candidate:{mint:'n'}});let called=false;
- assert.equal(s.validateAndSummarize(()=>{called=true;}).phase,'source-changed');assert.equal(called,false);
- build(s);assert(s.validateAndSummarize(summarize).complete);build(s);f.db.exec('DELETE FROM events');
- assert.equal(s.validateAndSummarize(summarize).phase,'source-changed');build(s);assert(s.validateAndSummarize(summarize).complete);s.close();f.db.close();
+ f.add('alerts',{id:'n:2:a',candidate:{mint:'n'}});
+ let r=s.validateAndSummarize(summarize);assert(r.complete);assert.equal(r.catchupReadRows,1);assert.equal(r.result.alerts,2);
+ build(s);f.db.exec('DELETE FROM events');r=s.validateAndSummarize(summarize);assert(r.complete);assert.equal(r.catchupRemovedRows,2);assert.equal(r.result.alerts,0);s.close();f.db.close();
+});
+test('excessive final inventory changes refuse publication and restart bounded reconciliation',t=>{
+ const f=fixture(t),s=f.open();build(s);for(let i=0;i<513;i++)f.add('alerts',{id:`m:${i}:a`,candidate:{mint:'m'}});
+ let called=false;assert.equal(s.validateAndSummarize(()=>{called=true;}).phase,'source-changed');assert.equal(called,false);
+ assert.equal(s.cache.prepare('SELECT count(*) AS n FROM rows').get().n,0);
+ build(s);assert(s.validateAndSummarize(summarize).complete);s.close();f.db.close();
 });
 test('malformed and oversized source rows roll back the entire current batch and its cursor',t=>{
  for(const raw of ['{broken',JSON.stringify({large:'x'.repeat(270000)})]){
@@ -76,4 +81,16 @@ test('derived byte counters track replacement and pruning without scanning every
  const total=s.cache.prepare('SELECT n,bytes FROM totals WHERE kind=?').get('research-entries');
  const actual=s.cache.prepare('SELECT count(*) AS n,sum(rawBytes) AS bytes FROM rows WHERE kind=?').get('research-entries');assert.deepEqual(total,actual);
  f.db.exec('DELETE FROM events');build(s);assert.deepEqual({...s.cache.prepare('SELECT n,bytes FROM totals WHERE kind=?').get('research-entries')},{n:0,bytes:0});s.close();f.db.close();
+});
+test('WAL growth rolls back a batch and leaves its durable cursor unchanged',t=>{
+ const f=fixture(t);f.add('alerts',{id:'m:1:a',candidate:{mint:'m'}});const s=f.open();
+ const originalStat=fs.statSync;let checks=0;
+ fs.statSync=function(file,...args){if(file===f.source+'-wal')return {size:checks++===0?0:67108865};return originalStat.call(this,file,...args);};
+ try{assert.throws(()=>s.step(),/wal-growth-limit/);}finally{fs.statSync=originalStat;}
+ assert.equal(s.cache.prepare('SELECT count(*) AS n FROM rows').get().n,0);assert.deepEqual(s.get('progress'),{kind:0,cursor:0});s.close();f.db.close();
+});
+test('bad final catch-up data cannot leak a partial inventory into the cache',t=>{
+ const f=fixture(t);f.add('alerts',{id:'m:1:a',candidate:{mint:'m'}});const s=f.open();build(s);
+ f.add('alerts',{id:'new:2:a',candidate:{mint:'new'}});f.add('alerts','{broken');
+ assert.throws(()=>s.validateAndSummarize(summarize));assert.equal(s.cache.prepare('SELECT count(*) AS n FROM rows').get().n,1);assert.equal(s.get('complete'),null);s.close();f.db.close();
 });

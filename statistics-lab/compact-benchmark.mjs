@@ -43,7 +43,7 @@ const {createHash}=require('node:crypto');
     if(batch.phase==='validation-required'){
      post('validating-and-summarizing',true);const summarizeAt=performance.now();
      const result=store.validateAndSummarize((storage,now)=>Radar.prototype.getStats.call({storage,config:{horizonToleranceMs:o.toleranceMs},candidates:new Map(),status:[],getHealth:()=>null},now));
-     if(result.complete){rounds.push({round:round?'warm':'initial-or-resumed',elapsedMs:performance.now()-began,validationAndSummaryMs:performance.now()-summarizeAt,readRows:readRows-readStart,reusedRows:reusedRows-reuseStart,snapshotAt:result.snapshotAt,sourceMaxSeq:result.sourceMaxSeq,counts:result.counts,originalBytes:result.rawBytes});break;}
+     if(result.complete){readRows+=result.catchupReadRows;rounds.push({round:round?'warm':'initial-or-resumed',elapsedMs:performance.now()-began,validationAndSummaryMs:performance.now()-summarizeAt,catchupReadRows:result.catchupReadRows,catchupRemovedRows:result.catchupRemovedRows,readRows:readRows-readStart,reusedRows:reusedRows-reuseStart,snapshotAt:result.snapshotAt,sourceMaxSeq:result.sourceMaxSeq,counts:result.counts,originalBytes:result.rawBytes});break;}
      if(++retries>=2){post('source-changing',true);stop('paused',null);return;}
     }
     await new Promise(r=>setTimeout(r,10));

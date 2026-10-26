@@ -51,9 +51,11 @@ A restart resumes the committed cursor. Source replacement is rejected using fil
 identity. Reader provenance is persisted and mismatched code cannot reuse a cache.
 
 After a pass, a fresh read transaction compares all retained source identities to
-the cache in sequence order. New arrivals, deletions or reused sequence numbers
-with different identities prevent completion and restart reconciliation. Only a
-matching inventory can feed the unchanged statistics functions; the latest 30
+the cache in sequence order. Up to 512 new arrivals, deletions or reused sequence numbers with different
+identities are reconciled inside that same read snapshot before calculation.
+Larger changes prevent completion and restart bounded reconciliation. Cache
+iterators close before applying the collected delta. Only the resulting matching
+inventory can feed the unchanged statistics functions; the latest 30
 research events are read in that same source snapshot. Pending/overdue calculations
 use its current timestamp. Source retention is respected rather than inferred
 from a guessed cutoff.

@@ -84,16 +84,30 @@ export class CompactStore {
  validateAndSummarize(summarize){return this.transaction(guard=>{
   if(this.get('progress').kind<KINDS.length)return {phase:'building',complete:false};
   const sourceMaxSeq=this.source.prepare('SELECT COALESCE(MAX(seq),0) AS seq FROM events').get().seq,snapshotAt=Date.now();
-  let compared=0;
+  let compared=0;const changes=[];
+  // Collect a bounded inventory delta before writing so active SQLite iterators
+  // never observe mutations to the cache table they are scanning.
   for(const kind of KINDS){
    const a=this.source.prepare('SELECT seq,id,at FROM events WHERE kind=? ORDER BY seq').iterate(kind);
    const b=this.cache.prepare('SELECT seq,id,at FROM rows WHERE kind=? ORDER BY seq').iterate(kind);
-   try{while(true){guard();const x=a.next(),y=b.next();if(x.done&&y.done)break;
-    if(x.done!==y.done||x.value.seq!==y.value.seq||x.value.id!==y.value.id||x.value.at!==y.value.at){
-     this.put('progress',{kind:0,cursor:0});this.put('complete',null);return {phase:'source-changed',complete:false};
+   try{let x=a.next(),y=b.next();while(!x.done||!y.done){
+    guard();if(++compared>8*MAX_ROWS)throw Error('row-limit');
+    if(x.done||(!y.done&&y.value.seq<x.value.seq)){changes.push({kind,seq:y.value.seq,remove:true});y=b.next();}
+    else if(y.done||x.value.seq<y.value.seq){changes.push({kind,seq:x.value.seq});x=a.next();}
+    else{
+     if(x.value.id!==y.value.id||x.value.at!==y.value.at)changes.push({kind,seq:x.value.seq});
+     x=a.next();y=b.next();
     }
-    if(++compared>4*MAX_ROWS)throw Error('row-limit');
+    if(changes.length>512){this.put('progress',{kind:0,cursor:0});this.put('complete',null);return {phase:'source-changed',complete:false};}
    }}finally{a.return?.();b.return?.();}
+  }
+  let catchupReadRows=0,catchupRemovedRows=0;
+  const raw=this.source.prepare('SELECT seq,id,at,length(CAST(data AS BLOB)) AS rawBytes,CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data ELSE NULL END AS data FROM events WHERE kind=? AND seq=?');
+  const save=this.cache.prepare('INSERT INTO rows VALUES(?,?,?,?,?,?) ON CONFLICT(kind,seq) DO UPDATE SET id=excluded.id,at=excluded.at,rawBytes=excluded.rawBytes,data=excluded.data');
+  const remove=this.cache.prepare('DELETE FROM rows WHERE kind=? AND seq=?');
+  for(const change of changes){guard();
+   if(change.remove){remove.run(change.kind,change.seq);catchupRemovedRows++;}
+   else{const r=raw.get(change.kind,change.seq),value=this.decode(r,change.kind);save.run(change.kind,r.seq,r.id,r.at,r.rawBytes,JSON.stringify(value));catchupReadRows++;}
   }
   let rawBytes=0;const counts={};
   const storage={
@@ -116,7 +130,7 @@ export class CompactStore {
   const result=summarize(storage,snapshotAt);guard();
   const complete={snapshotAt,sourceMaxSeq,counts,rawBytes};
   this.put('complete',complete);this.put('progress',{kind:0,cursor:0});
-  return {phase:'complete',complete:true,...complete,result};
+  return {phase:'complete',complete:true,...complete,catchupReadRows,catchupRemovedRows,result};
  });}
  close(){this.cache.close();this.source.close();}
 }
