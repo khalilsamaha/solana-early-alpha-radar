@@ -1,0 +1,42 @@
+{
+  "version": "compact-runtime-1",
+  "semanticFiles": {
+    "src/adapters/dexscreener.js": "387cd4d724edf989c02b6fd7d684b1b3c823d95476ac5a86fe883ab9b99d11fc",
+    "src/adapters/helius.js": "dc9e31fe540a484296eb4b38911a64d835470e9cfd811dec13442eb06fd60ce4",
+    "src/adapters/jupiter.js": "d27326fb73fbd408206a94e2d1a93e57e60417d1ccfdbc6bc19f223b0c56ed62",
+    "src/adapters/pumpportal.js": "9f2e86dcd3489711994be458489e4b3d3f584d210eaee32c094e9bfa74132aac",
+    "src/adapters/telegram.js": "83e7d3a2596fcf5a7c1bf1fe47718cd540dc50b1a304dbcb22755c7585c9e246",
+    "src/benchmark.js": "7eaaa5ffe83447a6387494382b32d70b9654adf5949b242cb7f98ac2cb8e0dd2",
+    "src/config.js": "f83a32af773c87974a10973a3ecb713fdadbc063fabf4406b6dbc41cd89bc88a",
+    "src/core/continuity.js": "3da1862cba96140b3ea2a17310824cd409f6224190ab868aab8a5f6c54b4607a",
+    "src/core/decision.js": "4bdc0b713630ebd5771de0f6e3c7a134e320d63032c1b7c28d337f1cd0160fe6",
+    "src/core/entry-context.js": "1b0bc6f6fbe8961eb16a6434cc46abb7c256b2e4dbcbf04dc197cce98388603a",
+    "src/core/exit.js": "eaecb3b053ce912f11d8d40075a51a05889b41f8a2c79f24e02fced2a0ccecad",
+    "src/core/fast-shadow.js": "08b9ff6eb7715309e93d308c79cf83ec6d607c2570e9b78c506dc90949629e05",
+    "src/core/feed-evidence.js": "446bba20c7a81c9997e75f406eef519697187f1d9660253182b4150f40ab7971",
+    "src/core/health.js": "ee8af1dda5adbc7e8c19c6214b638a4f0933541f388685c643a57696d4a66f9c",
+    "src/core/http.js": "aea3d0db6d1ab3ab36a7c19b18f1b0e21d1342796f6fa9ec27ff7b79e355396d",
+    "src/core/launch-registry.js": "2419f77f8ff284363e7a6f5b1378ee441e2ffed89af415e54a3b1b749957c75b",
+    "src/core/metadata-provenance.js": "127633056363a1ee7ca853be4a716c0ab4f892acaad89bc469bd75b99eebd702",
+    "src/core/momentum.js": "dc71aa6ac5c569e07eb58b897a68850128943a11a7f75e281503080bb8dd76c1",
+    "src/core/notifications.js": "82862d342dc887adc43642cce4c9ff1f89c8feb6367cd9348153c3ccd51d4871",
+    "src/core/observation-quality.js": "fe1713810d3e8f73866e65717ce57b24e476ed2de60439464acff88b9be0c45d",
+    "src/core/outcome-summary.js": "8cda55eb4ec7ddd4a35abd345e1c966218fd32268724a8f8d65d28536550f077",
+    "src/core/paper.js": "6badbae20c93e421a767067e6cae724693fd83f7f64e4c58a8095289c93abfd5",
+    "src/core/qualification.js": "fcab3bfd8fb900a561b28e247b2840c99df6609e91039fe482781941f07130f3",
+    "src/core/radar.js": "72f100c510ea8fa12b64a2e6b57d367cd0864a7a59f34de54941db71e25330d9",
+    "src/core/research.js": "e31d0489b1512276cb179d81077ed75e49b27d666a4fe0508bf8299edcf36c64",
+    "src/core/scoring.js": "aaa40f3ebef6183a07d7158219a10fcaa0295f8995127e64ddb9f8110ab0b086",
+    "src/core/stats-memory.js": "0078f0b6b88366e154287ebcd29728fd81592abf10ec14e08bb702ec9a455252",
+    "src/core/storage.js": "e401d1acd31a6cfa1e318950495a500eabe5a9e196a3344c7550f9a5a8a371a1",
+    "src/demo.js": "e4d27fd7e5f3de64b0056ff4c55d94c436cea829829e56cd1deb771e79af0dfc",
+    "src/index.js": "068777bd023b39e0fba8e7454b75b36be304588e885d3ffbce1b6a674657dc0d"
+  },
+  "storeSha256": "4d9a0e965a62a66398f0971e6d1c76a68966e7b3e2cd5ec86b2b52f7af3048df",
+  "compatibleProvenance": [
+    "31981c19b6f58cb596c22ef3a7016ec1c7533554b0b640c9c7ea5a083c1be0e6",
+    "364b960e728f82212454463f985b927d61a696cc0b438f047a688f469441a955",
+    "c794dc1883cab815e52974a4a9eef0c02b53f4bc47348b72d8a16a8cabd39a02",
+    "6e826d8b7c4f3da3897dd37a1ea3a248ef3fb6f0506afc1dfe221d1ab828c31e"
+  ]
+}

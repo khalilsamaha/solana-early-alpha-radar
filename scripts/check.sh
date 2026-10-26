@@ -19,6 +19,7 @@ python3 scripts/check-source.py
 node --test source-comparison/*.test.mjs
 node --test operational-review/*.test.mjs
 node --test statistics-lab/*.test.mjs
+node --test deployment/*.test.mjs
 (cd statistics-lab && python3 -m unittest discover -p 'test_*.py')
 (cd operational-review && python3 -m unittest discover -p 'test_*.py')
 (cd qualification-review && python3 -m unittest discover -p 'test_*.py')

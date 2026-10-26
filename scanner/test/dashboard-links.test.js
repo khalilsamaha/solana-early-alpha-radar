@@ -8,6 +8,7 @@ import path from 'node:path';
 import {once} from 'node:events';
 import {tokenLinks,validSolanaAddress} from '../public/token-links.js';
 import {startServer} from '../src/server/server.js';
+import {CREATE_IDENTITY_INDEX} from '../src/core/stats-compact-store.js';
 import {Storage} from '../src/core/storage.js';
 import {Radar} from '../src/core/radar.js';
 import {readConfig} from '../src/config.js';
@@ -52,10 +53,10 @@ test('dashboard copy action handles success and denied clipboard with full-mint 
  c.node('#closeMintDialog').listeners.click();assert.equal(c.node('#mintDialog').open,false);
 });
 test('server serves shared browser module under CSP and keeps API authenticated',async t=>{
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'radar-link-http-'));const s=new Storage(dir);
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'radar-link-http-'));const s=new Storage(dir);s.db.exec(CREATE_IDENTITY_INDEX);
  const r=new Radar({...readConfig({}),dashboardToken:'test-token'},s);
  const server=startServer(r,0,path.resolve('public'));await once(server,'listening');
- t.after(()=>{server.close();s.close();fs.rmSync(dir,{recursive:true,force:true});});
+ t.after(async()=>{await r.statisticsService.close();server.close();s.close();fs.rmSync(dir,{recursive:true,force:true});});
  const base=`http://127.0.0.1:${server.address().port}`;
  const response=await fetch(base+'/token-links.js');assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/javascript/);
  assert.match(await response.text(),/export function tokenLinks/);

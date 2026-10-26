@@ -1,0 +1,92 @@
+{
+  "version": "statistics-compact-runtime-1",
+  "changed": {
+    "src/core/stats-service.js": {
+      "before": [
+        "a947609dda2d5e78433aba64f2af40d7387097665c31ef48eed249a232dbea5c"
+      ],
+      "after": "56aa328e61c13358f768f7cc33dcdcadeabc0ec0c9f2bd0efa19b7e4e9ff7b4b"
+    },
+    "src/core/stats-worker.js": {
+      "before": [
+        "ba28ef7b1d146e9e7a605b7f9d4a2a7e2751f289ddc297482af817ed25cefebd"
+      ],
+      "after": "d564be9d2359ae74fa67814ce0648a2e31c3774c87fa29e6c59e17e08e504d48"
+    },
+    "src/server/server.js": {
+      "before": [
+        "755fec4d872c8ed18dba6ac51055eb6ecffb53f8b2a73c6f89203146c1cfa227"
+      ],
+      "after": "da36cc80b0b99f3bc854899e94b707e2146e50de7e8481ecb50c42703f4a992f"
+    },
+    "src/core/stats-compact-store.js": {
+      "before": [
+        null
+      ],
+      "after": "4d9a0e965a62a66398f0971e6d1c76a68966e7b3e2cd5ec86b2b52f7af3048df"
+    },
+    "src/core/stats-compact-runtime.js": {
+      "before": [
+        null
+      ],
+      "after": "86f224801a6133a3412c9df5212694cc68ad4ec549b633d34763caf6c5d53513"
+    },
+    "src/core/stats-compact-manifest.json": {
+      "before": [
+        null
+      ],
+      "after": "f827311939cbc21341a9fed73538261f284155c739104dce43a9fe801bca51c5"
+    }
+  },
+  "dependencies": {
+    "Dockerfile": "b58a7c2f3a30c8fcc7d448d2cb0cfc114cf88e9070dddbb1faebf077f3835b7f",
+    "package.json": "5ebac88f894750a129999b83e78f1a32abac0807f41e37cc8fcbe05f760ae2c1",
+    "public/alert-quality.js": "574e6b10af95fe70b7d294174cbb11f7384c92f09e50ea277ee0cff352c22400",
+    "public/app.js": "24064c180c4552800bd84a77f319e1ae9b5a68d1994409f07661cbb5f11bf5fe",
+    "public/index.html": "6b6342e707beef06ffbccc0d23d0f41dc8416ac49d2a6d71f0aead31a084706d",
+    "public/refresh-loop.js": "9404a78db4954484e106076e1de0e53417502b09aa4cbe0c42ff7dcf5b3a3383",
+    "public/styles.css": "ee0fcd71e1fd7b620bb8e3afc6ab285568411d7008703a6e395ea171fb37a986",
+    "public/token-links.js": "c7fd47b11828e94abb9883b315e417d9a10024a4a703e0268471aca2de2b9ec6",
+    "scripts/backup.js": "c48a26cbc471104e7ae496130f1297468e7da67be69023ffb5db090bf3ab0370",
+    "scripts/doctor.js": "688b9506474f9e2e0e1d15492e6d77d306eb4956d3f491216f0d48bda6d3bf36",
+    "scripts/evidence-check.py": "f120622bf367f392c748c40128126420d8bdbe745514cc9c7defd37de7cbba03",
+    "scripts/export.js": "aefa08c49efee7ed9b98d4990075e6f4daa01af85fd0e3d3c7397928dbcb7086",
+    "scripts/healthcheck.js": "41eaa3bf5b57fb1a43d2e94f16755c1539f84216404253d46eacac0afc261054",
+    "scripts/notify-test.js": "b76b82060dc92e8f8cb0a6d8de950c7d8657610fb91ea8ca71481959e179d2b9",
+    "scripts/radar-diagnostics.mjs": "d6e7607121a1626e1ca2e259b1de818bc5d1038ec7f9352f280dfdcf3353e2fc",
+    "scripts/radar-host-heartbeat.py": "561e1b9f97e2836d479a1a6eb443ecdd79a8ed624b8a831fa657400d16664d7f",
+    "scripts/research-replay.mjs": "396b97bdc33e158f5b2a11d3c10a8176877efe88240407f1f0bc3f6a1e3515bf",
+    "scripts/run-evidence-check.sh": "c62050300863de2acec762b6db9df6636bcf7ed84c48871f27e16a5edbe0c58a",
+    "scripts/token-audit.mjs": "a903c4d5e3e2c8f5e60add54be5967ccf8313500b98185f5fd6b8653a470b1f9",
+    "src/adapters/dexscreener.js": "387cd4d724edf989c02b6fd7d684b1b3c823d95476ac5a86fe883ab9b99d11fc",
+    "src/adapters/helius.js": "dc9e31fe540a484296eb4b38911a64d835470e9cfd811dec13442eb06fd60ce4",
+    "src/adapters/jupiter.js": "d27326fb73fbd408206a94e2d1a93e57e60417d1ccfdbc6bc19f223b0c56ed62",
+    "src/adapters/pumpportal.js": "9f2e86dcd3489711994be458489e4b3d3f584d210eaee32c094e9bfa74132aac",
+    "src/adapters/telegram.js": "83e7d3a2596fcf5a7c1bf1fe47718cd540dc50b1a304dbcb22755c7585c9e246",
+    "src/benchmark.js": "7eaaa5ffe83447a6387494382b32d70b9654adf5949b242cb7f98ac2cb8e0dd2",
+    "src/config.js": "f83a32af773c87974a10973a3ecb713fdadbc063fabf4406b6dbc41cd89bc88a",
+    "src/core/continuity.js": "3da1862cba96140b3ea2a17310824cd409f6224190ab868aab8a5f6c54b4607a",
+    "src/core/decision.js": "4bdc0b713630ebd5771de0f6e3c7a134e320d63032c1b7c28d337f1cd0160fe6",
+    "src/core/entry-context.js": "1b0bc6f6fbe8961eb16a6434cc46abb7c256b2e4dbcbf04dc197cce98388603a",
+    "src/core/exit.js": "eaecb3b053ce912f11d8d40075a51a05889b41f8a2c79f24e02fced2a0ccecad",
+    "src/core/fast-shadow.js": "08b9ff6eb7715309e93d308c79cf83ec6d607c2570e9b78c506dc90949629e05",
+    "src/core/feed-evidence.js": "446bba20c7a81c9997e75f406eef519697187f1d9660253182b4150f40ab7971",
+    "src/core/health.js": "ee8af1dda5adbc7e8c19c6214b638a4f0933541f388685c643a57696d4a66f9c",
+    "src/core/http.js": "aea3d0db6d1ab3ab36a7c19b18f1b0e21d1342796f6fa9ec27ff7b79e355396d",
+    "src/core/launch-registry.js": "2419f77f8ff284363e7a6f5b1378ee441e2ffed89af415e54a3b1b749957c75b",
+    "src/core/metadata-provenance.js": "127633056363a1ee7ca853be4a716c0ab4f892acaad89bc469bd75b99eebd702",
+    "src/core/momentum.js": "dc71aa6ac5c569e07eb58b897a68850128943a11a7f75e281503080bb8dd76c1",
+    "src/core/notifications.js": "82862d342dc887adc43642cce4c9ff1f89c8feb6367cd9348153c3ccd51d4871",
+    "src/core/observation-quality.js": "fe1713810d3e8f73866e65717ce57b24e476ed2de60439464acff88b9be0c45d",
+    "src/core/outcome-summary.js": "8cda55eb4ec7ddd4a35abd345e1c966218fd32268724a8f8d65d28536550f077",
+    "src/core/paper.js": "6badbae20c93e421a767067e6cae724693fd83f7f64e4c58a8095289c93abfd5",
+    "src/core/qualification.js": "fcab3bfd8fb900a561b28e247b2840c99df6609e91039fe482781941f07130f3",
+    "src/core/radar.js": "72f100c510ea8fa12b64a2e6b57d367cd0864a7a59f34de54941db71e25330d9",
+    "src/core/research.js": "e31d0489b1512276cb179d81077ed75e49b27d666a4fe0508bf8299edcf36c64",
+    "src/core/scoring.js": "aaa40f3ebef6183a07d7158219a10fcaa0295f8995127e64ddb9f8110ab0b086",
+    "src/core/stats-memory.js": "0078f0b6b88366e154287ebcd29728fd81592abf10ec14e08bb702ec9a455252",
+    "src/core/storage.js": "e401d1acd31a6cfa1e318950495a500eabe5a9e196a3344c7550f9a5a8a371a1",
+    "src/demo.js": "e4d27fd7e5f3de64b0056ff4c55d94c436cea829829e56cd1deb771e79af0dfc",
+    "src/index.js": "068777bd023b39e0fba8e7454b75b36be304588e885d3ffbce1b6a674657dc0d"
+  }
+}
