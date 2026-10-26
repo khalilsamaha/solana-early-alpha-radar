@@ -85,3 +85,13 @@ new events, retention/empty kinds, sequence reuse, changes before validation,
 malformed/oversized input rollback, timeout/summary failure, source replacement,
 source/cache alias rejection, provenance changes, bounded reports, privacy and
 launcher behavior. Host timing remains a release gate, not a test-suite inference.
+
+An optional reproducible scale exercise creates 65,000 synthetic events and runs
+both benchmark rounds, then removes its temporary databases:
+
+```bash
+node statistics-lab/scale-check.mjs
+```
+
+It checks completion and zero historical payload reads in the warm round. It is
+not run against production data and its timings are not predictions for Kali.

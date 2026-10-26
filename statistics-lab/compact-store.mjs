@@ -44,9 +44,9 @@ export class CompactStore {
  transaction(fn){
   this.checkIdentity();const start=this.now();let wal=0;
   const walSize=()=>{try{return fs.statSync(this.sourcePath+'-wal').size;}catch{return 0;}};
-  wal=walSize();const guard=()=>{if(this.now()-start>8000)throw Error('read-timeout');if(walSize()-wal>67108864)throw Error('wal-growth-limit');};
+  wal=walSize();let checks=0;const guard=(force=false)=>{if(this.now()-start>8000)throw Error('read-timeout');if((force||++checks%128===0)&&walSize()-wal>67108864)throw Error('wal-growth-limit');};
   this.source.exec('BEGIN');
-  try{this.cache.exec('BEGIN IMMEDIATE');try{const value=fn(guard);guard();this.checkIdentity();this.cache.exec('COMMIT');return value;}catch(e){this.cache.exec('ROLLBACK');throw e;}}
+  try{this.cache.exec('BEGIN IMMEDIATE');try{const value=fn(guard);guard(true);this.checkIdentity();this.cache.exec('COMMIT');return value;}catch(e){this.cache.exec('ROLLBACK');throw e;}}
   finally{this.source.exec('ROLLBACK');}
  }
  decode(row,kind){
