@@ -50,3 +50,10 @@ missing/null/zero fields, gaps and alternate pools, and verify unchanged databas
 bytes. Runtime integration tests cover bounded reports and malformed/oversized
 rows. No runtime release is authorized by a successful benchmark alone; a runtime
 patch still needs review, integration checks and deployment verification.
+
+## Subsequent experiment
+
+The projected reader did not meet the runtime target on the host. The next
+standalone candidate is documented in [COMPACT-STORE.md](COMPACT-STORE.md): a
+resumable compact row cache with source-inventory reconciliation. Neither
+candidate is connected to the production statistics worker.
