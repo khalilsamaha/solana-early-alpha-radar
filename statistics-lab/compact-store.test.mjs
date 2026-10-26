@@ -10,7 +10,7 @@ import {Radar} from '../scanner/src/core/radar.js';
 function fixture(t){
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'compact-stats-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
  const source=path.join(dir,'source.sqlite'),cache=path.join(dir,'cache.sqlite');fs.writeFileSync(cache,'');
- const db=new DatabaseSync(source);db.exec('CREATE TABLE events(seq INTEGER PRIMARY KEY,kind TEXT NOT NULL,id TEXT NOT NULL,at INTEGER NOT NULL,data TEXT NOT NULL);CREATE INDEX events_kind_seq ON events(kind,seq)');
+ const db=new DatabaseSync(source);db.exec('CREATE TABLE events(seq INTEGER PRIMARY KEY,kind TEXT NOT NULL,id TEXT NOT NULL,at INTEGER NOT NULL,data TEXT NOT NULL,UNIQUE(kind,id));CREATE INDEX events_kind_seq ON events(kind,seq);CREATE INDEX events_at ON events(kind,at)');
  let n=0;const add=(kind,data,at=1000,id=`event-${++n}`)=>db.prepare('INSERT INTO events(kind,id,at,data) VALUES(?,?,?,?)').run(kind,id,at,typeof data==='string'?data:JSON.stringify(data));
  return {source,cache,db,add,open:options=>new CompactStore({source,cache,compact:compactSummaryRow,...options})};
 }
@@ -124,4 +124,39 @@ test('native validation refuses more than 512 combined replacements and removals
  f.db.exec('DELETE FROM events');for(let i=0;i<257;i++)f.add('research-entries',{id:'r'+i,at:1000});
  let called=false;assert.equal(s.validateAndSummarize(()=>{called=true}).phase,'source-changed');assert.equal(called,false);
  assert.equal(s.cache.prepare('SELECT count(*) n FROM rows').get().n,257);s.close();f.db.close();
+});
+
+test('fixture matches production event columns and indexes; inventory stays ordered despite timestamp disorder',async t=>{
+ const {Storage}=await import('../scanner/src/core/storage.js');
+ const {ADDITIONS_SQL,DELETIONS_SQL}=await import('./compact-store.mjs');
+ const f=fixture(t),production=new Storage(path.join(path.dirname(f.source),'production'));
+ const schema=db=>({columns:db.prepare('PRAGMA table_info(events)').all(),indexes:db.prepare('PRAGMA index_list(events)').all().map(i=>({unique:i.unique,origin:i.origin,columns:db.prepare(`PRAGMA index_info(${i.name})`).all().map(c=>c.name)})).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))});
+ assert.deepEqual(schema(f.db),schema(production.db));production.close();
+ for(let i=0;i<40;i++)f.add('alerts',{id:`mint${i}:1000:first`,candidate:{mint:`mint${i}`}},1000+(i*17)%41);
+ const s=f.open();build(s);
+ for(const sql of [ADDITIONS_SQL,DELETIONS_SQL]){
+  const plan=s.cache.prepare('EXPLAIN QUERY PLAN '+sql).all('alerts',513).map(r=>r.detail).join('\n');
+  assert.match(plan,/events_kind_seq/);assert.doesNotMatch(plan,/events_at|TEMP B-TREE/);
+ }
+ f.db.exec('DELETE FROM events WHERE seq IN (3,19)');
+ f.add('alerts',{id:'late:1000:first',candidate:{mint:'late'}},900);
+ const result=s.validateAndSummarize(summarize);
+ assert.equal(result.catchupReadRows,1);assert.equal(result.catchupRemovedRows,2);
+ assert.deepEqual(result.result,summarize(original(f.db),result.snapshotAt));s.close();f.db.close();
+});
+test('query progress identifies a failed scan and does not reset the transaction deadline',t=>{
+ const f=fixture(t);f.add('alerts',{id:'a:1:a',candidate:{mint:'a'}});
+ let tick=0;const events=[],s=f.open({now:()=>tick,onInventory:q=>{events.push(q);if(q.operation==='scan-additions'&&q.state==='complete')tick=8001;}});
+ build(s);assert.throws(()=>s.validateAndSummarize(summarize),/read-timeout/);
+ assert.equal(events.at(-1).operation,'scan-additions');assert.equal(events.at(-1).kind,'alerts');
+ assert.equal(s.get('complete'),null);assert.equal(s.get('progress').kind,4);s.close();f.db.close();
+});
+test('known native predecessor cache resumes validation without rebuilding committed rows',t=>{
+ const f=fixture(t);f.add('alerts',{id:'a:1:a',candidate:{mint:'a'}});
+ const predecessor='c794dc1883cab815e52974a4a9eef0c02b53f4bc47348b72d8a16a8cabd39a02';
+ let s=f.open({provenance:predecessor});build(s);s.close();
+ s=f.open({provenance:'sequence-query-reader',compatibleProvenance:[predecessor]});
+ assert.deepEqual(s.step(),{phase:'validation-required',readRows:0,reusedRows:0});
+ const r=s.validateAndSummarize(summarize);assert(r.complete);assert.equal(r.catchupReadRows,0);assert.equal(r.result.alerts,1);
+ assert.equal(s.get('previousProvenance'),predecessor);s.close();f.db.close();
 });

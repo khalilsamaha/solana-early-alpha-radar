@@ -10,10 +10,11 @@ const alertCount=large?25000:10000,researchCount=large?12000:5000,expectedRows=a
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'radar-large-cache-'));
 try{
  const database=dir+'/source.sqlite',cache=dir+'/compact.sqlite';fs.writeFileSync(cache,'');const db=new DatabaseSync(database);
- db.exec('CREATE TABLE events(seq INTEGER PRIMARY KEY,kind TEXT,id TEXT,at INTEGER,data TEXT);CREATE INDEX events_kind_seq ON events(kind,seq);BEGIN');const put=db.prepare('INSERT INTO events(kind,id,at,data) VALUES(?,?,?,?)');
+ db.exec('CREATE TABLE events(seq INTEGER PRIMARY KEY,kind TEXT NOT NULL,id TEXT NOT NULL,at INTEGER NOT NULL,data TEXT NOT NULL,UNIQUE(kind,id));CREATE INDEX events_kind_seq ON events(kind,seq);CREATE INDEX events_at ON events(kind,at);BEGIN');const put=db.prepare('INSERT INTO events(kind,id,at,data) VALUES(?,?,?,?)');
  let sequence=0,filler=0;
- const record=(kind,id,at,data)=>{put.run(kind,id,at,data);sequence++;
-  if(sparse){for(let j=0;j<8;j++){put.run('snapshots','padding-'+(++filler),at,'x'.repeat(2048));sequence++;}}
+ // Deterministic out-of-order timestamps exercise the competing production index.
+ const record=(kind,id,at,data)=>{const stamp=at+((sequence*104729)%1000003);put.run(kind,id,stamp,data);sequence++;
+  if(sparse){for(let j=0;j<8;j++){put.run('snapshots','padding-'+(++filler),at+((sequence*104729)%1000003),'x'.repeat(2048));sequence++;}}
  };
  const at=1700000000000,history='x'.repeat(7000);
  for(let i=0;i<alertCount;i++){
@@ -26,5 +27,5 @@ try{
  }
  db.exec('COMMIT');db.close();const radar=root+'/scanner/src/core/radar.js';
  const r=await benchmark({database,cache,storeSource:fs.readFileSync(candidate,'utf8'),expected:{[radar]:createHash('sha256').update(fs.readFileSync(radar)).digest('hex')},radarUrl:pathToFileURL(radar).href,compactUrl:pathToFileURL(root+'/scanner/src/core/stats-memory.js').href,toleranceMs:120000,budgetMs:120000});
- console.log(JSON.stringify({expectedRows,unrelatedRows:filler,sourceBytes:fs.statSync(database).size,state:r.state,error:r.error,diagnostic:r.diagnostic,cacheBytes:fs.statSync(cache).size},null,2));if(r.state!=='completed'||r.diagnostic.rounds[1].readRows!==0||r.diagnostic.rounds[1].reusedRows!==expectedRows)process.exitCode=1;
+ console.log(JSON.stringify({fixtureVersion:"production-event-indexes-2",timestampOrder:"permuted",expectedRows,unrelatedRows:filler,sourceBytes:fs.statSync(database).size,state:r.state,error:r.error,diagnostic:r.diagnostic,cacheBytes:fs.statSync(cache).size},null,2));if(r.state!=='completed'||r.diagnostic.rounds[1].readRows!==0||r.diagnostic.rounds[1].reusedRows!==expectedRows)process.exitCode=1;
 }finally{fs.rmSync(dir,{recursive:true,force:true});}

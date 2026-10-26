@@ -49,7 +49,7 @@ removes cached rows absent from that sequence range. Source reads use a read-onl
 transaction; cache rows and progress commit together in a separate transaction.
 A restart resumes the committed cursor. Source replacement is rejected using file
 identity. Reader provenance is persisted. Unknown reader changes cannot reuse a cache; the
-explicit reviewed compatibility transition described below is the sole exception.
+explicit reviewed compatibility transitions described below are the only exceptions.
 
 After a pass, a fresh read transaction compares all retained source identities to
 the cache using native SQLite joins and existence checks. Up to 512 new arrivals, deletions or reused sequence numbers with different
@@ -125,22 +125,27 @@ of private event shapes. Passing it does not establish readiness for deployment.
 
 ## Native inventory comparison
 
-The `sqlite-delta-1` experiment attaches the source with SQLite URI `mode=ro` to
+The `sqlite-sequence-delta-2` experiment attaches the source with SQLite URI `mode=ro` to
 the cache connection. All final inventory, catch-up and recent-event reads use
 that attachment in the same transaction. The summary is computed before that
 transaction commits. Tests exercise a concurrent WAL writer and verify that later
 arrivals do not leak into the final snapshot.
 
 Only differences cross into JavaScript, with the existing 512-change limit. The
-source's existing `events_kind_seq` index supports deletion checks without reading
-source payload pages. The new `rows_inventory` covering index exists only in the
+source's existing `events_kind_seq` index is explicitly selected for both difference
+queries. Additions are visited in sequence order rather than allowing SQLite to
+choose the competing `(kind,at)` index. Deletion checks use only source index
+identities; additions still need the source ID/timestamp columns. The new `rows_inventory` covering index exists only in the
 private derived cache; no source index is created. SQLite statements remain under
 the cooperative eight-second transaction deadline and ten-second worker watchdog.
 An individual statement cannot be interrupted by a JavaScript guard while running;
-the parent watchdog bounds an unresponsive worker. Limits are not increased.
+the parent watchdog requests worker termination after ten seconds without progress.
+Native SQLite may delay termination until the statement returns; the host launcher
+also has its independent 145-second process timeout. Limits are not increased.
 
-A single compatibility transition permits reuse of the earlier cache from commit
-`9693b44726d670a05b0ea015ca214153a0236986`. Both its exact old provenance and the
+Explicit compatibility transitions permit reuse of the earlier cache from commits
+`9693b44726d670a05b0ea015ca214153a0236986` and
+`9c526f508611ab21c58094d45ddbb11334dd2f69`. Both the exact old provenance and the
 unchanged scanner-file manifest fingerprint must match. Compact row semantics and
 schema remain compatible; the upgrade adds the private covering index and records
 previous provenance atomically while preserving rows and the committed cursor.
@@ -161,10 +166,57 @@ comparison. This option is for trusted local development code only, not the host
 launcher. Disk caching and concurrent workload still prevent treating synthetic
 timings as a prediction for the host.
 
-A paired local sparse-fixture run (160,000 relevant events, 1,280,000 unrelated
-rows, 5,546,942,464 source bytes) completed both rounds for both readers. The old
-inventory phase took 1.56/1.11 seconds; the native phase took 0.54/0.82 seconds.
-Final validation plus summary took 4.55/3.50 seconds before and 2.51/2.87 seconds
-after. Both warm passes reread zero historical payloads. The covering index grew
-the derived cache from about 54.8 MB to 73.0 MB. These single-run measurements
-vary with disk caching and other load; the host benchmark remains necessary.
+## Production-index fixture correction
+
+The earlier sparse fixture omitted `events_at(kind,at)` and `UNIQUE(kind,id)` and
+used identical timestamps. Its timings are superseded for this comparison. The
+corrected fixture includes all production event columns and indexes, checked
+against an actual `Storage` database in a regression test, and deterministically
+permutes event timestamps. Query-plan tests require the sequence index and reject
+a temporary ORDER BY sort. No production schema or source index is modified.
+
+The old additions query can choose `events_at` with the complete schema. This is
+a local planner finding, not proof of the statement responsible for a host stall.
+Both old and new readers must be compared with the corrected fixture. Even a
+successful synthetic run cannot reproduce host storage contention or cache state.
+
+## Individual-query diagnostics
+
+Reports use `diagnosticVersion: query-timing-3`. `inventoryQuery` records the last
+operation (transaction start, snapshot maximum sequence, statement preparation,
+per-kind additions/deletions, or applying differences), its kind and running or
+completed state. `inventoryQueries` retains at most 16 completed operation timings
+per validation attempt. It contains fixed labels and durations, never SQL errors,
+IDs, payloads or paths. A running operation's zero duration means it had not
+returned at the last progress message, not that it completed instantly.
+
+Top-level `parentElapsedMs` measures actual parent elapsed time through worker
+exit, and `lastProgressAgeMs` measures time since its last received progress. The
+older `diagnostic.elapsedMs` remains the elapsed time at that progress message.
+These clocks distinguish a stalled worker from a short successful query. Query
+progress refreshes the existing inactivity watchdog but never resets the shared
+eight-second transaction deadline. Caught failures retain their active query;
+externally terminated workers retain the last received query progress.
+
+## Local validation of the sequence-query candidate
+
+The corrected sparse fixture contains 160,000 relevant rows, 1,280,000 unrelated
+rows and 5,649,461,248 source bytes. Both candidates completed both passes; the
+cache remained 72,974,336 bytes and the warm pass reread zero historical payloads.
+Single-run measurements on this development machine:
+
+| Reader | Initial inventory | Warm inventory | Initial validation + summary | Warm validation + summary |
+| --- | ---: | ---: | ---: | ---: |
+| Previous native reader | 1.135 s | 1.129 s | 3.485 s | 3.894 s |
+| Explicit sequence reader | 0.828 s | 0.938 s | 3.967 s | 4.558 s |
+
+Inventory improved in this comparison, but summary time varied and the complete
+final phase was slower. These results support correctness of the candidate and
+its instrumentation; they do not prove an overall speedup or resolve a host-only
+stall. A bounded host run remains necessary before any production integration.
+
+79 relevant local tests passed (58 Node, 21 Python), including production-schema
+parity, query-plan selection, summary equality, WAL snapshot consistency, bounded
+changes, failure rollback, native predecessor cache reuse, scanner fingerprint
+rejection, query failure privacy and parent/worker clocks. Scanner source,
+deployment manifests, observer and frozen-study files are unchanged by this batch.

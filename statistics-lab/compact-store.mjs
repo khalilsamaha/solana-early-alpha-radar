@@ -3,13 +3,20 @@ import fs from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {performance} from 'node:perf_hooks';
 import {pathToFileURL} from 'node:url';
-export const INVENTORY_READER='sqlite-delta-1';
+export const INVENTORY_READER='sqlite-sequence-delta-2';
 export const CACHE_VERSION='compact-statistics-1';
 export const KINDS=['alerts','outcomes','research-entries','research-outcomes'];
+export const ADDITIONS_SQL=`SELECT e.seq FROM source_inventory.events AS e INDEXED BY events_kind_seq
+ LEFT JOIN main.rows AS c INDEXED BY rows_inventory ON c.kind=e.kind AND c.seq=e.seq
+ WHERE e.kind=? AND (c.seq IS NULL OR c.id IS NOT e.id OR c.at IS NOT e.at)
+ ORDER BY e.seq LIMIT ?`;
+export const DELETIONS_SQL=`SELECT c.seq FROM main.rows AS c
+ WHERE c.kind=? AND NOT EXISTS (SELECT 1 FROM source_inventory.events AS e INDEXED BY events_kind_seq WHERE e.seq=c.seq AND e.kind=c.kind)
+ ORDER BY c.seq LIMIT ?`;
 const MAX_ROW=262144,MAX_BYTES=1073741824,MAX_ROWS=100000;
 export class CompactStore {
- constructor({source,cache,compact,provenance=CACHE_VERSION,compatibleProvenance=[],now=()=>performance.now()}) {
-  this.sourcePath=source;this.compact=compact;this.now=now;
+ constructor({source,cache,compact,provenance=CACHE_VERSION,compatibleProvenance=[],onInventory=()=>{},now=()=>performance.now()}) {
+  this.sourcePath=source;this.compact=compact;this.now=now;this.onInventory=onInventory;
   const a=fs.statSync(source),b=fs.statSync(cache);
   if(a.dev===b.dev&&a.ino===b.ino)throw Error('cache-source-alias');
   this.identity=`${a.dev}:${a.ino}`;
@@ -90,26 +97,28 @@ export class CompactStore {
   this.put('progress',p);this.put('complete',null);
   return {phase:p.kind===KINDS.length?'validation-required':'building',readRows,reusedRows};
  });}
- validateAndSummarize(summarize){return this.transaction(guard=>{
+ inventory(operation,kind,fn){
+  const start=this.now();this.onInventory({operation,kind,state:'running',elapsedMs:0});
+  const result=fn();this.onInventory({operation,kind,state:'complete',elapsedMs:this.now()-start});return result;
+ }
+ validateAndSummarize(summarize){
+  this.onInventory({operation:'transaction-start',kind:null,state:'running',elapsedMs:0});
+  return this.transaction(guard=>{
   if(this.get('progress').kind<KINDS.length)return {phase:'building',complete:false};
   // All final source reads use this attached read-only database in the same
   // transaction as the inventory comparison and cache updates.
-  const sourceMaxSeq=this.cache.prepare('SELECT COALESCE(MAX(seq),0) AS seq FROM source_inventory.events').get().seq,snapshotAt=Date.now();
-  const changes=[];
-  const additions=this.cache.prepare(`SELECT e.seq FROM source_inventory.events AS e
-    LEFT JOIN main.rows AS c INDEXED BY rows_inventory ON c.kind=e.kind AND c.seq=e.seq
-    WHERE e.kind=? AND (c.seq IS NULL OR c.id IS NOT e.id OR c.at IS NOT e.at)
-    LIMIT ?`);
-  const deletions=this.cache.prepare(`SELECT c.seq FROM main.rows AS c
-    WHERE c.kind=? AND NOT EXISTS (SELECT 1 FROM source_inventory.events AS e INDEXED BY events_kind_seq WHERE e.seq=c.seq AND e.kind=c.kind)
-    LIMIT ?`);
+  const sourceMaxSeq=this.inventory('snapshot-max-sequence',null,()=>this.cache.prepare('SELECT COALESCE(MAX(seq),0) AS seq FROM source_inventory.events').get().seq),snapshotAt=Date.now();
+  guard();const changes=[];
+  const additions=this.inventory('prepare-additions',null,()=>this.cache.prepare(ADDITIONS_SQL));
+  const deletions=this.inventory('prepare-deletions',null,()=>this.cache.prepare(DELETIONS_SQL));
   for(const kind of KINDS){
    for(const [statement,remove] of [[additions,false],[deletions,true]]){
-    guard();const rows=statement.all(kind,513-changes.length);guard();
+    guard();const rows=this.inventory(remove?'scan-deletions':'scan-additions',kind,()=>statement.all(kind,513-changes.length));guard();
     for(const row of rows)changes.push({kind,seq:row.seq,remove});
     if(changes.length>512){this.put('progress',{kind:0,cursor:0});this.put('complete',null);return {phase:'source-changed',complete:false};}
    }
   }
+  this.onInventory({operation:'apply-differences',kind:null,state:'running',elapsedMs:0});
   let catchupReadRows=0,catchupRemovedRows=0;
   const raw=this.cache.prepare('SELECT seq,id,at,length(CAST(data AS BLOB)) AS rawBytes,CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data ELSE NULL END AS data FROM source_inventory.events WHERE kind=? AND seq=?');
   const save=this.cache.prepare('INSERT INTO rows VALUES(?,?,?,?,?,?) ON CONFLICT(kind,seq) DO UPDATE SET id=excluded.id,at=excluded.at,rawBytes=excluded.rawBytes,data=excluded.data');
