@@ -48,13 +48,13 @@ Each batch reconciles at most 128 source identities, reads missing payloads and
 removes cached rows absent from that sequence range. Source reads use a read-only
 transaction; cache rows and progress commit together in a separate transaction.
 A restart resumes the committed cursor. Source replacement is rejected using file
-identity. Reader provenance is persisted and mismatched code cannot reuse a cache.
+identity. Reader provenance is persisted. Unknown reader changes cannot reuse a cache; the
+explicit reviewed compatibility transition described below is the sole exception.
 
 After a pass, a fresh read transaction compares all retained source identities to
-the cache in sequence order. Up to 512 new arrivals, deletions or reused sequence numbers with different
+the cache using native SQLite joins and existence checks. Up to 512 new arrivals, deletions or reused sequence numbers with different
 identities are reconciled inside that same read snapshot before calculation.
-Larger changes prevent completion and restart bounded reconciliation. Cache
-iterators close before applying the collected delta. Only the resulting matching
+Larger changes prevent completion and restart bounded reconciliation. Both difference queries finish before applying the collected delta. Only the resulting matching
 inventory can feed the unchanged statistics functions; the latest 30
 research events are read in that same source snapshot. Pending/overdue calculations
 use its current timestamp. Source retention is respected rather than inferred
@@ -110,9 +110,9 @@ message if the parent watchdog terminates the worker.
 
 `cursor` identifies the committed cursor before the current batch. `readRows` and
 `reusedRows` count completed batches; unfinished work is not reported as committed.
-The runner instrumentation does not change compact-store code, schema or its
-provenance binding, so existing matching caches remain resumable. It does not
-relax any timeout, memory, row or WAL limit.
+Phase instrumentation does not change summary semantics or relax timeout, memory,
+row or WAL limits. The native reader uses the explicit cache compatibility
+transition described below.
 
 For a larger local exercise (160,000 rows, with longer synthetic identifiers):
 
@@ -122,3 +122,49 @@ node statistics-lab/scale-check.mjs --large
 
 This fixture is not a production disk, writer workload or complete reproduction
 of private event shapes. Passing it does not establish readiness for deployment.
+
+## Native inventory comparison
+
+The `sqlite-delta-1` experiment attaches the source with SQLite URI `mode=ro` to
+the cache connection. All final inventory, catch-up and recent-event reads use
+that attachment in the same transaction. The summary is computed before that
+transaction commits. Tests exercise a concurrent WAL writer and verify that later
+arrivals do not leak into the final snapshot.
+
+Only differences cross into JavaScript, with the existing 512-change limit. The
+source's existing `events_kind_seq` index supports deletion checks without reading
+source payload pages. The new `rows_inventory` covering index exists only in the
+private derived cache; no source index is created. SQLite statements remain under
+the cooperative eight-second transaction deadline and ten-second worker watchdog.
+An individual statement cannot be interrupted by a JavaScript guard while running;
+the parent watchdog bounds an unresponsive worker. Limits are not increased.
+
+A single compatibility transition permits reuse of the earlier cache from commit
+`9693b44726d670a05b0ea015ca214153a0236986`. Both its exact old provenance and the
+unchanged scanner-file manifest fingerprint must match. Compact row semantics and
+schema remain compatible; the upgrade adds the private covering index and records
+previous provenance atomically while preserving rows and the committed cursor.
+Unknown provenance, changed scanner files, source identity changes and version
+mismatches still refuse reuse. Keep the existing cache; do not delete it to bypass
+a mismatch. The older reader will refuse the upgraded cache.
+
+The sparse local exercise adds 1.28 million unrelated rows to the large fixture,
+creating approximately 5.5 GB of source data:
+
+```bash
+node statistics-lab/scale-check.mjs --large --sparse
+```
+
+It needs temporary disk space and deletes only its own temporary directory when
+finished. `--store /absolute/path/to/reader.mjs` permits a local before/after
+comparison. This option is for trusted local development code only, not the host
+launcher. Disk caching and concurrent workload still prevent treating synthetic
+timings as a prediction for the host.
+
+A paired local sparse-fixture run (160,000 relevant events, 1,280,000 unrelated
+rows, 5,546,942,464 source bytes) completed both rounds for both readers. The old
+inventory phase took 1.56/1.11 seconds; the native phase took 0.54/0.82 seconds.
+Final validation plus summary took 4.55/3.50 seconds before and 2.51/2.87 seconds
+after. Both warm passes reread zero historical payloads. The covering index grew
+the derived cache from about 54.8 MB to 73.0 MB. These single-run measurements
+vary with disk caching and other load; the host benchmark remains necessary.

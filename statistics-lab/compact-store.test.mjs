@@ -94,3 +94,34 @@ test('bad final catch-up data cannot leak a partial inventory into the cache',t=
  f.add('alerts',{id:'new:2:a',candidate:{mint:'new'}});f.add('alerts','{broken');
  assert.throws(()=>s.validateAndSummarize(summarize));assert.equal(s.cache.prepare('SELECT count(*) AS n FROM rows').get().n,1);assert.equal(s.get('complete'),null);s.close();f.db.close();
 });
+test('native comparison detects changed identity and cross-kind reuse at the same sequence',t=>{
+ const f=fixture(t);f.add('alerts',{id:'a:1:a',candidate:{mint:'a'}},1000,'old');const s=f.open();build(s);
+ f.db.prepare('UPDATE events SET id=?,at=?,data=? WHERE seq=1').run('new',2000,JSON.stringify({id:'b:2:a',candidate:{mint:'b'}}));
+ let r=s.validateAndSummarize(summarize);assert.equal(r.catchupReadRows,1);assert.deepEqual(r.result,summarize(original(f.db),r.snapshotAt));
+ build(s);f.db.exec('DELETE FROM events');f.add('research-entries',{id:'research',at:2000},2000,'r');
+ r=s.validateAndSummarize(summarize);assert.equal(r.catchupReadRows,1);assert.equal(r.catchupRemovedRows,1);assert.deepEqual(r.result,summarize(original(f.db),r.snapshotAt));s.close();f.db.close();
+});
+test('attached source enforces read-only access and final summary retains one WAL snapshot',t=>{
+ const f=fixture(t);f.db.exec('PRAGMA journal_mode=WAL');f.add('alerts',{id:'a:1:a',candidate:{mint:'a'}});f.add('research-events',{stage:'before'});
+ const s=f.open();build(s);
+ assert.throws(()=>s.cache.exec('DELETE FROM source_inventory.events'),/readonly/);
+ const r=s.validateAndSummarize((storage,now)=>{
+  f.add('alerts',{id:'b:2:a',candidate:{mint:'b'}});f.add('research-events',{stage:'after'});
+  assert.deepEqual(storage.readJsonl('research-events',30),[{stage:'before'}]);
+  return summarize(storage,now);
+ });
+ assert.equal(r.result.alerts,1);assert.equal(r.sourceMaxSeq,2);
+ build(s);assert.equal(s.validateAndSummarize(summarize).result.alerts,2);s.close();f.db.close();
+});
+test('explicit reviewed provenance upgrade preserves data and cursor, and rejects other readers',t=>{
+ const f=fixture(t);f.add('alerts',{id:'a:1:a',candidate:{mint:'a'}});let s=f.open({provenance:'reviewed-old'});s.step();const cursor=s.get('progress');s.close();
+ s=f.open({provenance:'reviewed-new',compatibleProvenance:['reviewed-old']});assert.equal(s.get('previousProvenance'),'reviewed-old');assert.equal(s.get('provenance'),'reviewed-new');assert.deepEqual(s.get('progress'),cursor);
+ assert.equal(s.cache.prepare('SELECT count(*) n FROM rows').get().n,1);build(s);assert(s.validateAndSummarize(summarize).complete);s.close();
+ assert.throws(()=>f.open({provenance:'unknown',compatibleProvenance:['reviewed-old']}),/cache-version/);f.db.close();
+});
+test('native validation refuses more than 512 combined replacements and removals',t=>{
+ const f=fixture(t);for(let i=0;i<257;i++)f.add('alerts',{id:`a:${i}:a`,candidate:{mint:'a'}});const s=f.open();build(s);
+ f.db.exec('DELETE FROM events');for(let i=0;i<257;i++)f.add('research-entries',{id:'r'+i,at:1000});
+ let called=false;assert.equal(s.validateAndSummarize(()=>{called=true}).phase,'source-changed');assert.equal(called,false);
+ assert.equal(s.cache.prepare('SELECT count(*) n FROM rows').get().n,257);s.close();f.db.close();
+});

@@ -2,11 +2,13 @@
 import fs from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {performance} from 'node:perf_hooks';
+import {pathToFileURL} from 'node:url';
+export const INVENTORY_READER='sqlite-delta-1';
 export const CACHE_VERSION='compact-statistics-1';
 export const KINDS=['alerts','outcomes','research-entries','research-outcomes'];
 const MAX_ROW=262144,MAX_BYTES=1073741824,MAX_ROWS=100000;
 export class CompactStore {
- constructor({source,cache,compact,provenance=CACHE_VERSION,now=()=>performance.now()}) {
+ constructor({source,cache,compact,provenance=CACHE_VERSION,compatibleProvenance=[],now=()=>performance.now()}) {
   this.sourcePath=source;this.compact=compact;this.now=now;
   const a=fs.statSync(source),b=fs.statSync(cache);
   if(a.dev===b.dev&&a.ino===b.ino)throw Error('cache-source-alias');
@@ -31,9 +33,16 @@ export class CompactStore {
    const registered=this.get('identity');
    if(registered&&registered!==this.identity)throw Error('source-replaced');
    const version=this.get('version');if(version&&version!==CACHE_VERSION)throw Error('cache-version');
-   if(this.get('provenance')&&this.get('provenance')!==provenance)throw Error('cache-version');
+   const prior=this.get('provenance');
+   if(prior&&prior!==provenance&&!compatibleProvenance.includes(prior))throw Error('cache-version');
+   // URI mode=ro enforces read-only access even through the writable cache connection.
+   this.cache.prepare('ATTACH DATABASE ? AS source_inventory').run(pathToFileURL(source).href+'?mode=ro');
+   this.cache.exec('PRAGMA source_inventory.cache_size=-4096');
    this.cache.exec('BEGIN IMMEDIATE');
-   this.put('identity',this.identity);this.put('version',CACHE_VERSION);this.put('provenance',provenance);
+   this.cache.exec('CREATE INDEX IF NOT EXISTS rows_inventory ON rows(kind,seq,id,at)');
+   this.put('identity',this.identity);this.put('version',CACHE_VERSION);
+   if(prior&&prior!==provenance)this.put('previousProvenance',prior);
+   this.put('provenance',provenance);
    if(!this.get('progress'))this.put('progress',{kind:0,cursor:0});
    this.cache.exec('COMMIT');
   }catch(e){this.cache?.close();this.source.close();throw e;}
@@ -83,26 +92,26 @@ export class CompactStore {
  });}
  validateAndSummarize(summarize){return this.transaction(guard=>{
   if(this.get('progress').kind<KINDS.length)return {phase:'building',complete:false};
-  const sourceMaxSeq=this.source.prepare('SELECT COALESCE(MAX(seq),0) AS seq FROM events').get().seq,snapshotAt=Date.now();
-  let compared=0;const changes=[];
-  // Collect a bounded inventory delta before writing so active SQLite iterators
-  // never observe mutations to the cache table they are scanning.
+  // All final source reads use this attached read-only database in the same
+  // transaction as the inventory comparison and cache updates.
+  const sourceMaxSeq=this.cache.prepare('SELECT COALESCE(MAX(seq),0) AS seq FROM source_inventory.events').get().seq,snapshotAt=Date.now();
+  const changes=[];
+  const additions=this.cache.prepare(`SELECT e.seq FROM source_inventory.events AS e
+    LEFT JOIN main.rows AS c INDEXED BY rows_inventory ON c.kind=e.kind AND c.seq=e.seq
+    WHERE e.kind=? AND (c.seq IS NULL OR c.id IS NOT e.id OR c.at IS NOT e.at)
+    LIMIT ?`);
+  const deletions=this.cache.prepare(`SELECT c.seq FROM main.rows AS c
+    WHERE c.kind=? AND NOT EXISTS (SELECT 1 FROM source_inventory.events AS e INDEXED BY events_kind_seq WHERE e.seq=c.seq AND e.kind=c.kind)
+    LIMIT ?`);
   for(const kind of KINDS){
-   const a=this.source.prepare('SELECT seq,id,at FROM events WHERE kind=? ORDER BY seq').iterate(kind);
-   const b=this.cache.prepare('SELECT seq,id,at FROM rows WHERE kind=? ORDER BY seq').iterate(kind);
-   try{let x=a.next(),y=b.next();while(!x.done||!y.done){
-    guard();if(++compared>8*MAX_ROWS)throw Error('row-limit');
-    if(x.done||(!y.done&&y.value.seq<x.value.seq)){changes.push({kind,seq:y.value.seq,remove:true});y=b.next();}
-    else if(y.done||x.value.seq<y.value.seq){changes.push({kind,seq:x.value.seq});x=a.next();}
-    else{
-     if(x.value.id!==y.value.id||x.value.at!==y.value.at)changes.push({kind,seq:x.value.seq});
-     x=a.next();y=b.next();
-    }
+   for(const [statement,remove] of [[additions,false],[deletions,true]]){
+    guard();const rows=statement.all(kind,513-changes.length);guard();
+    for(const row of rows)changes.push({kind,seq:row.seq,remove});
     if(changes.length>512){this.put('progress',{kind:0,cursor:0});this.put('complete',null);return {phase:'source-changed',complete:false};}
-   }}finally{a.return?.();b.return?.();}
+   }
   }
   let catchupReadRows=0,catchupRemovedRows=0;
-  const raw=this.source.prepare('SELECT seq,id,at,length(CAST(data AS BLOB)) AS rawBytes,CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data ELSE NULL END AS data FROM events WHERE kind=? AND seq=?');
+  const raw=this.cache.prepare('SELECT seq,id,at,length(CAST(data AS BLOB)) AS rawBytes,CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data ELSE NULL END AS data FROM source_inventory.events WHERE kind=? AND seq=?');
   const save=this.cache.prepare('INSERT INTO rows VALUES(?,?,?,?,?,?) ON CONFLICT(kind,seq) DO UPDATE SET id=excluded.id,at=excluded.at,rawBytes=excluded.rawBytes,data=excluded.data');
   const remove=this.cache.prepare('DELETE FROM rows WHERE kind=? AND seq=?');
   for(const change of changes){guard();
@@ -122,7 +131,7 @@ export class CompactStore {
    },
    readJsonl:(kind,limit)=>{
     if(kind!=='research-events'||limit!==30)throw Error('unsupported-kind');
-    return this.source.prepare('SELECT seq,id,at,length(CAST(data AS BLOB)) AS rawBytes,CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data ELSE NULL END AS data FROM events WHERE kind=? ORDER BY seq DESC LIMIT 30').all(kind).reverse().map(r=>{
+    return this.cache.prepare('SELECT seq,id,at,length(CAST(data AS BLOB)) AS rawBytes,CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data ELSE NULL END AS data FROM source_inventory.events WHERE kind=? ORDER BY seq DESC LIMIT 30').all(kind).reverse().map(r=>{
      guard();rawBytes+=r.rawBytes;if(rawBytes>MAX_BYTES)throw Error('read-size-limit');return this.decode(r,kind);
     });
    }

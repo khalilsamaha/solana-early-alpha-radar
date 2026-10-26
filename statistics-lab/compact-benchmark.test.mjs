@@ -18,7 +18,7 @@ function fixture(t){
 test('isolated benchmark completes two rounds with no source writes or outcome exports',async t=>{
  const o=fixture(t),before=fs.readFileSync(o.database),r=await benchmark(o);
  assert.equal(r.state,'completed');assert.equal(r.diagnostic.rounds.length,2);
- assert.equal(r.diagnosticVersion,'phase-timing-1');
+ assert.equal(r.diagnosticVersion,'phase-timing-2');
  for(const round of r.diagnostic.rounds){assert(round.inventoryMs>=0);assert(round.summaryMs>=0);assert(round.validationAndSummaryMs>=round.inventoryMs+round.summaryMs);}
  assert.equal(r.diagnostic.rounds[0].readRows,1);assert.equal(r.diagnostic.rounds[1].readRows,0);assert.equal(r.diagnostic.rounds[1].reusedRows,1);
  assert.deepEqual(fs.readFileSync(o.database),before);assert(!JSON.stringify(r).includes('private'));assert(!JSON.stringify(r).includes('paperSummary'));
