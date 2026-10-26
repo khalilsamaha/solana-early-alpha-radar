@@ -8,7 +8,7 @@ const safeEqual=(a,b)=>{const x=Buffer.from(a),y=Buffer.from(b);return x.length=
 const limit=(u,fallback)=>Math.max(1,Math.min(1000,parseInt(u.searchParams.get('limit'),10)||fallback));
 export function startServer(radar,port,publicDir=path.resolve('public'),options={}) {
   const token=options.token??radar.config.dashboardToken;
-  const statistics=new StatsService(path.join(radar.storage.dir,'radar.sqlite'),radar.config.horizonToleranceMs);
+  const statistics=new StatsService(path.join(radar.storage.dir,'radar.sqlite'),radar.config.horizonToleranceMs,options.statisticsOptions);
   radar.statisticsService=statistics;
   const liveStats=async()=>({...await statistics.get(),totalCandidates:radar.candidates.size,activeCandidates:[...radar.candidates.values()].filter(x=>!x.inactive).length,health:radar.getHealth(),status:radar.status.slice(-20).reverse()});
   const server=http.createServer(async(req,res)=>{

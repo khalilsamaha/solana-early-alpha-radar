@@ -8,18 +8,18 @@ Goal: establish whether entry-time evidence identifies realistically enterable a
 | --- | --- | --- |
 | Hosting and backups | Existing Kali services and backup tooling; no deployment change in this release | Current host health and backup success need their own operational evidence |
 | Scanner and walletless quotes | Existing discovery, paper signals, three-cohort sampling and explicit failures | Preserve timing, versioned denominators and retained evidence |
-| Frozen comparison | Installed private artifact; capture merging and unchanged fixed evaluation | October 27 review checkpoint; preserve earlier days with capture-only exports |
+| Frozen comparison | Installed private artifact; capture merging and unchanged fixed evaluation | Late October 28 review checkpoint; preserve earlier days with capture-only exports |
 | Controlled devnet execution | Fixed two-cycle identity, cumulative spending reservations, explicit one-send paths and bounded unsigned recovery | Keep the completed rehearsal closed; any further execution needs a separately scoped design |
-| Accounting and readiness | Two-cycle receipt reconciliation, idempotent historical accounting and strictly read-only readiness; local key-excluded evidence snapshots with isolated restore checks | Verify the snapshot on the host; encrypted off-machine recovery and key custody remain separate work |
+| Accounting and readiness | Two-cycle receipt reconciliation, idempotent historical accounting and strictly read-only readiness; local key-excluded evidence snapshots with isolated restore checks | Host isolated restore accepted; encrypted off-machine recovery and key custody remain separate work |
 | Funded pilot | Not enabled | Separate strategy review, mainnet-specific validation, execution-cost evidence and explicit pilot scope/limits |
 
-The current quote quota permits at most 48 watches per cohort per day. Forward review keeps the existing minimum of 200 valid labels and seven distinct UTC dates per target/cohort, plus all other quality guards. A study starting October 22 can span only six UTC dates by October 27; that date is a checkpoint, not a promised qualification date. Do not lower guards, refit, or select a favorable review to force progress. Sparse failure labels may leave some targets unfitted.
+The current quote quota permits at most 48 watches per cohort per day. Forward review keeps the existing minimum of 200 valid labels and seven distinct UTC dates per target/cohort, plus all other quality guards. October 22–28 spans seven distinct UTC dates, not seven full 24-hour periods. The main checkpoint is late October 28, Amsterdam time; qualification is not promised by that date. Do not lower guards, refit, or select a favorable review to force progress. Sparse failure labels may leave some targets unfitted.
 
 Immediate sequence:
 
-1. Consolidation is complete on main. Validate the [private evidence snapshot and isolated restore check](PRIVATE-EVIDENCE-BACKUP.md) from the development checkout; no runtime deployment is needed.
-2. Preserve bounded local quote captures before earlier study days leave the helper's 72-hour window. Collection alone does not run predictions or change the frozen experiment. Keep existing captures intact.
-3. On October 27, run the existing review against all retained captures. Report gaps, insufficient evidence and failed targets explicitly.
+1. Consolidation and the host-accepted private evidence snapshot/isolated restore are on main. Validate the [consolidated operational report](OPERATIONAL-REVIEW.md); no runtime deployment is needed.
+2. Preserve bounded local quote captures before earlier study days leave the helper's 72-hour window. Collection alone does not run predictions or change the frozen experiment. Keep existing captures intact. Take another capture-only export on October 26 to bridge the earlier window with a late October 28 final capture.
+3. Late on October 28, run the existing review against all retained captures. Report gaps, insufficient evidence and failed targets explicitly.
 4. Use that review to choose a targeted engineering or research improvement. A positive paper/quote result alone does not establish executable profitability; a weak result may justify rejecting the approach.
 
 No calendar date or expected revenue is justified for a real-money pilot. Deployment layout migration, private journal disaster recovery, general portfolio management and arbitrary mainnet routes are not completed by this source consolidation.

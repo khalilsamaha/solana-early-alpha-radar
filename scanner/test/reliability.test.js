@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {once} from 'node:events';
+import {CREATE_IDENTITY_INDEX} from '../src/core/stats-compact-store.js';
 import {Storage} from '../src/core/storage.js';
 import {Radar} from '../src/core/radar.js';
 import {createEntry,updatePaper} from '../src/core/paper.js';
@@ -135,7 +136,7 @@ test('exit engine identifies deterioration and rejects stale conclusions',()=>{
  assert.equal(exitRisk(c,null,true).level,'high');assert.equal(exitRisk(c,null,false).level,'unknown');
 });
 test('HTTP auth, methods, readiness, and static allowlist',async t=>{
- const r=new Radar(cfg({dashboardToken:'secret'}),store(t));
+ const r=new Radar(cfg({dashboardToken:'secret'}),store(t));r.storage.db.exec(CREATE_IDENTITY_INDEX);
  const server=startServer(r,0,path.resolve('public'));t.after(()=>server.close());await once(server,'listening');
  const base=`http://127.0.0.1:${server.address().port}`;
  assert.equal((await fetch(base+'/api/stats')).status,401);

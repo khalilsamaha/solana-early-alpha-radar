@@ -1,5 +1,5 @@
 {
-  "release": "readiness-reconciliation-1",
+  "release": "statistics-compact-runtime-1",
   "scannerVersion": "0.2.9",
   "scannerFiles": {
     "Dockerfile": "b58a7c2f3a30c8fcc7d448d2cb0cfc114cf88e9070dddbb1faebf077f3835b7f",
@@ -48,12 +48,15 @@
     "src/core/research.js": "e31d0489b1512276cb179d81077ed75e49b27d666a4fe0508bf8299edcf36c64",
     "src/core/scoring.js": "aaa40f3ebef6183a07d7158219a10fcaa0295f8995127e64ddb9f8110ab0b086",
     "src/core/stats-memory.js": "0078f0b6b88366e154287ebcd29728fd81592abf10ec14e08bb702ec9a455252",
-    "src/core/stats-service.js": "a947609dda2d5e78433aba64f2af40d7387097665c31ef48eed249a232dbea5c",
-    "src/core/stats-worker.js": "ba28ef7b1d146e9e7a605b7f9d4a2a7e2751f289ddc297482af817ed25cefebd",
+    "src/core/stats-service.js": "56aa328e61c13358f768f7cc33dcdcadeabc0ec0c9f2bd0efa19b7e4e9ff7b4b",
+    "src/core/stats-worker.js": "d564be9d2359ae74fa67814ce0648a2e31c3774c87fa29e6c59e17e08e504d48",
     "src/core/storage.js": "e401d1acd31a6cfa1e318950495a500eabe5a9e196a3344c7550f9a5a8a371a1",
     "src/demo.js": "e4d27fd7e5f3de64b0056ff4c55d94c436cea829829e56cd1deb771e79af0dfc",
     "src/index.js": "068777bd023b39e0fba8e7454b75b36be304588e885d3ffbce1b6a674657dc0d",
-    "src/server/server.js": "755fec4d872c8ed18dba6ac51055eb6ecffb53f8b2a73c6f89203146c1cfa227"
+    "src/server/server.js": "da36cc80b0b99f3bc854899e94b707e2146e50de7e8481ecb50c42703f4a992f",
+    "src/core/stats-compact-store.js": "4d9a0e965a62a66398f0971e6d1c76a68966e7b3e2cd5ec86b2b52f7af3048df",
+    "src/core/stats-compact-runtime.js": "86f224801a6133a3412c9df5212694cc68ad4ec549b633d34763caf6c5d53513",
+    "src/core/stats-compact-manifest.json": "f827311939cbc21341a9fed73538261f284155c739104dce43a9fe801bca51c5"
   },
   "observerVersion": "0.9.0",
   "observerFiles": {

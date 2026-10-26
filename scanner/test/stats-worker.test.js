@@ -6,13 +6,14 @@ import path from 'node:path';
 import {EventEmitter,once} from 'node:events';
 import {setTimeout as delay} from 'node:timers/promises';
 import {Worker} from 'node:worker_threads';
+import {CREATE_IDENTITY_INDEX} from '../src/core/stats-compact-store.js';
 import {StatsService} from '../src/core/stats-service.js';
 import {Storage} from '../src/core/storage.js';
 import {Radar} from '../src/core/radar.js';
 import {readConfig} from '../src/config.js';
 import {startServer} from '../src/server/server.js';
-function database(t){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'radar-worker-'));const s=new Storage(dir);t.after(()=>{s.close();fs.rmSync(dir,{recursive:true,force:true});});return s;}
-function service(t,s,options={}){const x=new StatsService(path.join(s.dir,'radar.sqlite'),120000,options);t.after(()=>x.close());return x;}
+function database(t){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'radar-worker-'));const s=new Storage(dir);s.db.exec(CREATE_IDENTITY_INDEX);t.after(()=>{s.close();fs.rmSync(dir,{recursive:true,force:true});});return s;}
+function service(t,s,options={}){const x=new StatsService(path.join(s.dir,'radar.sqlite'),120000,{autoStart:false,...options});t.after(()=>x.close());return x;}
 function seed(s,n=20){const at=Date.now()-600000;s.transaction(()=>{for(let i=0;i<n;i++){
  const mint=`mint${i}`,id=`research:${i}`,cohort=i%2?'baseline':'early-activity';
  s.append('alerts',{id:`${mint}:${at}:1`,at,candidate:{mint},engineVersion:'0.2.9',qualification:{version:'qualification-1',disposition:i%2?'retain':'defer',state:'observing'}});
@@ -67,11 +68,11 @@ test('malformed or oversized database events fail explicitly without a partial r
 test('authenticated stats and metrics use worker; health remains responsive during its work',async t=>{
  const s=database(t);seed(s);const radar=new Radar({...readConfig({}),dashboardToken:'test',dashboardHost:'127.0.0.1'},s);
  radar.getStats=()=>{throw Error('Synchronous path must not be called');};
- const server=startServer(radar,0);await once(server,'listening');t.after(async()=>{await radar.statisticsService.close();await new Promise(r=>server.close(r));});
+ const server=startServer(radar,0,undefined,{statisticsOptions:{autoStart:false}});await once(server,'listening');t.after(async()=>{await radar.statisticsService.close();await new Promise(r=>server.close(r));});
  const url=`http://127.0.0.1:${server.address().port}`,headers={Authorization:'Bearer test'};
  assert.equal((await fetch(url+'/api/stats')).status,401);
  assert.equal(radar.statisticsService.attempts,0);
- radar.statisticsService.workerFactory=()=>new Worker(`const {parentPort}=require('node:worker_threads');const t=Date.now();while(Date.now()-t<250){};parentPort.postMessage({ok:true,data:{uniquePaperEntries:2,missing60m:0},snapshotAt:Date.now(),computeMs:250});`,{eval:true,env:{}});
+ radar.statisticsService.workerFactory=()=>new Worker(`const {parentPort}=require('node:worker_threads');const t=Date.now();while(Date.now()-t<250){};parentPort.postMessage({ok:true,data:{uniquePaperEntries:2,missing60m:0},snapshotAt:Date.now(),sourceMaxSeq:1,computeMs:250});`,{eval:true,env:{}});
  let complete=false;const request=fetch(url+'/api/stats',{headers}).then(r=>r.json()).then(x=>{complete=true;return x;});
  while(!radar.statisticsService.pending)await delay(2);
  const health=await fetch(url+'/api/health',{headers});assert.equal(health.status,200);assert.equal(complete,false);

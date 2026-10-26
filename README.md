@@ -27,6 +27,8 @@ The [local devnet readiness check](docs/DEVNET-READINESS.md) consolidates the fi
 
 The [private evidence snapshot and isolated restore check](docs/PRIVATE-EVIDENCE-BACKUP.md) preserves closed devnet journals and accounting locally, excludes the signing key, and verifies a disposable stopped copy. It does not restore into the active wallet or provide off-machine disaster recovery.
 
+The [consolidated operational review](docs/OPERATIONAL-REVIEW.md) checks local health, release files, backup stages and preserved capture windows without evaluating the frozen study. A separate explicit capture-only helper bridges evidence before the October 28 review.
+
 ## Checks
 
 Requires Node.js 24.10 or newer in the 24.x series and Python 3.12. There are no third-party runtime packages to install for these tests.
