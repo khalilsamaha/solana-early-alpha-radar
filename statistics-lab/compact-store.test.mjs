@@ -160,3 +160,31 @@ test('known native predecessor cache resumes validation without rebuilding commi
  const r=s.validateAndSummarize(summarize);assert(r.complete);assert.equal(r.catchupReadRows,0);assert.equal(r.result.alerts,1);
  assert.equal(s.get('previousProvenance'),predecessor);s.close();f.db.close();
 });
+
+test('partial source identity index covers all additions and warm identity pages without table reads',async t=>{
+ const {CREATE_IDENTITY_INDEX,COVERED_ADDITIONS_SQL,IDENTITY_INDEX}=await import('./compact-store.mjs');
+ const f=fixture(t);f.db.exec(CREATE_IDENTITY_INDEX);
+ for(const kind of KINDS)f.add(kind,{id:'synthetic',at:1000,candidate:{mint:'synthetic'},entryId:'synthetic',horizon:'1m',status:'missing'});
+ f.add('snapshots',{private:'unrelated'});const before=fs.readFileSync(f.source),s=f.open();
+ assert.equal(s.identityIndex,IDENTITY_INDEX);
+ for(const [sql,args] of [[COVERED_ADDITIONS_SQL,['alerts',513]],[s.identityPage,['alerts',0]]]){
+  const plan=s.cache.prepare('EXPLAIN QUERY PLAN '+(sql===s.identityPage?sql.replace('FROM events','FROM source_inventory.events'):sql)).all(...args).map(r=>r.detail).join('\n');
+  assert.match(plan,/USING COVERING INDEX events_statistics_identity/);assert.doesNotMatch(plan,/TEMP B-TREE/);
+ }
+ assert.equal(build(s).reads,4);let r=s.validateAndSummarize(summarize);assert.deepEqual(r.result,summarize(original(f.db),r.snapshotAt));
+ assert.deepEqual(build(s),{reads:0,reused:4});r=s.validateAndSummarize(summarize);assert.deepEqual(r.result,summarize(original(f.db),r.snapshotAt));
+ assert.deepEqual(fs.readFileSync(f.source),before);s.close();f.db.close();
+});
+test('covering index preserves the final WAL snapshot across concurrent inserts and retention',async t=>{
+ const {CREATE_IDENTITY_INDEX}=await import('./compact-store.mjs');const f=fixture(t);f.db.exec('PRAGMA journal_mode=WAL');f.db.exec(CREATE_IDENTITY_INDEX);
+ f.add('alerts',{id:'a:1:a',candidate:{mint:'a'}});f.add('research-events',{stage:'before'});
+ const s=f.open();build(s);
+ f.add('alerts',{id:'b:2:a',candidate:{mint:'b'}});f.db.exec('DELETE FROM events WHERE seq=1');
+ const r=s.validateAndSummarize((storage,now)=>{f.add('alerts',{id:'c:3:a',candidate:{mint:'c'}});return summarize(storage,now);});
+ assert.equal(r.result.alerts,1);assert.equal(r.catchupReadRows,1);assert.equal(r.catchupRemovedRows,1);
+ build(s);assert.equal(s.validateAndSummarize(summarize).result.alerts,2);s.close();f.db.close();
+});
+test('an unexpected same-named source index is refused without altering either source or cache rows',t=>{
+ const f=fixture(t);f.db.exec('CREATE INDEX events_statistics_identity ON events(at)');const before=fs.readFileSync(f.source);
+ assert.throws(()=>f.open(),/source-index-mismatch/);assert.deepEqual(fs.readFileSync(f.source),before);assert.equal(fs.statSync(f.cache).size,0);f.db.close();
+});

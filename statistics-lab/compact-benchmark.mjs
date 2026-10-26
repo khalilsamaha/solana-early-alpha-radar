@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
-const ERRORS=new Set(['read-timeout','wal-growth-limit','row-limit','row-size-limit','read-size-limit','source-replaced','cache-version','cache-source-alias','source-row-invalid','worker-timeout','worker-memory-limit','cache-busy','source-mismatch']);
+const ERRORS=new Set(['read-timeout','wal-growth-limit','row-limit','row-size-limit','read-size-limit','source-replaced','cache-version','cache-source-alias','source-row-invalid','worker-timeout','worker-memory-limit','cache-busy','source-mismatch','source-index-mismatch']);
 export async function benchmark(options,{watchdogMs=10000,workerFactory=o=>new Worker(WORKER,{...o,eval:true})}={}){
  return new Promise(resolve=>{
   const parentStarted=performance.now();let lastProgressAt=null;
@@ -27,14 +27,14 @@ const {createHash}=require('node:crypto');
 (async()=>{
  // Exact predecessor compatibility: unchanged scanner files and compact row semantics.
  const compatibleScanner='c93490a3d63c1b51afb64ee72dc05b20a03f89040de66b3286bf1397d82137ea';
- const compatibleReaders=['364b960e728f82212454463f985b927d61a696cc0b438f047a688f469441a955','c794dc1883cab815e52974a4a9eef0c02b53f4bc47348b72d8a16a8cabd39a02'];
+ const compatibleReaders=['364b960e728f82212454463f985b927d61a696cc0b438f047a688f469441a955','c794dc1883cab815e52974a4a9eef0c02b53f4bc47348b72d8a16a8cabd39a02','6e826d8b7c4f3da3897dd37a1ea3a248ef3fb6f0506afc1dfe221d1ab828c31e'];
  const started=performance.now(),rounds=[],kinds=['alerts','outcomes','research-entries','research-outcomes'];
- let store,batches=0,readRows=0,reusedRows=0,lastPost=0,inventoryReader='unknown',cacheReaderUpgraded=false,activePhase='opening',failedPhase=null,cursor=null,phaseStarted=started;
+ let store,batches=0,readRows=0,reusedRows=0,lastPost=0,inventoryReader='unknown',sourceIdentityIndex='unknown',cacheReaderUpgraded=false,activePhase='opening',failedPhase=null,cursor=null,phaseStarted=started;
  let inventoryQuery=null,inventoryQueries=[];
  const inventoryProgress=q=>{inventoryQuery=q;if(q.state==='complete'){inventoryQueries.push(q);inventoryQueries=inventoryQueries.slice(-16);}post(activePhase,true);};
  const timings={buildMs:0,maxBatchMs:0,inventoryMs:0,summaryMs:0,finalizeMs:0};
  const enter=phase=>{activePhase=phase;phaseStarted=performance.now();post(phase,true);};
- const post=(phase,force=false)=>{if(force||performance.now()-lastPost>250){lastPost=performance.now();parentPort.postMessage({progress:{phase,activePhase,failedPhase,phaseElapsedMs:performance.now()-phaseStarted,cursor,inventoryQuery,inventoryQueries:[...inventoryQueries],timings:{...timings},elapsedMs:performance.now()-started,batches,readRows,reusedRows,heapUsedBytes:process.memoryUsage().heapUsed,rounds,inventoryReader,cacheReaderUpgraded}});}};
+ const post=(phase,force=false)=>{if(force||performance.now()-lastPost>250){lastPost=performance.now();parentPort.postMessage({progress:{phase,activePhase,failedPhase,phaseElapsedMs:performance.now()-phaseStarted,cursor,inventoryQuery,inventoryQueries:[...inventoryQueries],timings:{...timings},elapsedMs:performance.now()-started,batches,readRows,reusedRows,heapUsedBytes:process.memoryUsage().heapUsed,rounds,inventoryReader,sourceIdentityIndex,cacheReaderUpgraded}});}};
  const stop=(state,error)=>{parentPort.postMessage({terminal:{state,error}});};
  try{
   post('opening',true);
@@ -44,7 +44,7 @@ const {createHash}=require('node:crypto');
   const {CompactStore,INVENTORY_READER}=await import('data:text/javascript;base64,'+Buffer.from(o.storeSource).toString('base64'));
   const {compactSummaryRow}=await import(o.compactUrl),{Radar}=await import(o.radarUrl);
   store=new CompactStore({source:o.database,cache:o.cache,compact:compactSummaryRow,onInventory:inventoryProgress,provenance:createHash('sha256').update(JSON.stringify(o.expected)).update(o.storeSource).digest('hex'),compatibleProvenance:createHash('sha256').update(JSON.stringify(o.expected)).digest('hex')===compatibleScanner?compatibleReaders:[]});
-  inventoryReader=INVENTORY_READER||'row-iterator-1';cacheReaderUpgraded=!!store.get('previousProvenance');
+  inventoryReader=INVENTORY_READER||'row-iterator-1';sourceIdentityIndex=store.identityIndex||'unreported';cacheReaderUpgraded=!!store.get('previousProvenance');
   for(let round=0;round<2;round++){
    const began=performance.now(),readStart=readRows,reuseStart=reusedRows;let retries=0;
    while(true){

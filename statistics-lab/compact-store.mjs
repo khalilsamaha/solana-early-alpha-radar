@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {performance} from 'node:perf_hooks';
 import {pathToFileURL} from 'node:url';
-export const INVENTORY_READER='sqlite-sequence-delta-2';
+export const INVENTORY_READER='sqlite-covering-delta-3';
 export const CACHE_VERSION='compact-statistics-1';
 export const KINDS=['alerts','outcomes','research-entries','research-outcomes'];
 export const ADDITIONS_SQL=`SELECT e.seq FROM source_inventory.events AS e INDEXED BY events_kind_seq
@@ -13,6 +13,11 @@ export const ADDITIONS_SQL=`SELECT e.seq FROM source_inventory.events AS e INDEX
 export const DELETIONS_SQL=`SELECT c.seq FROM main.rows AS c
  WHERE c.kind=? AND NOT EXISTS (SELECT 1 FROM source_inventory.events AS e INDEXED BY events_kind_seq WHERE e.seq=c.seq AND e.kind=c.kind)
  ORDER BY c.seq LIMIT ?`;
+export const IDENTITY_INDEX='events_statistics_identity';
+export const IDENTITY_PREDICATE="kind IN ('alerts','outcomes','research-entries','research-outcomes')";
+export const CREATE_IDENTITY_INDEX=`CREATE INDEX ${IDENTITY_INDEX} ON events(kind,seq,id,at) WHERE ${IDENTITY_PREDICATE}`;
+export const COVERED_ADDITIONS_SQL=ADDITIONS_SQL.replace('INDEXED BY events_kind_seq','INDEXED BY '+IDENTITY_INDEX).replace('WHERE e.kind=?',`WHERE e.${IDENTITY_PREDICATE} AND e.kind=?`);
+const normalizedSql=sql=>sql.replace(/\s+/g,'').replace(/;$/,'');
 const MAX_ROW=262144,MAX_BYTES=1073741824,MAX_ROWS=100000;
 export class CompactStore {
  constructor({source,cache,compact,provenance=CACHE_VERSION,compatibleProvenance=[],onInventory=()=>{},now=()=>performance.now()}) {
@@ -23,6 +28,10 @@ export class CompactStore {
   this.source=new DatabaseSync(source,{readOnly:true,timeout:500});
   try{
    this.source.exec('PRAGMA query_only=ON; PRAGMA cache_size=-4096');
+   const index=this.source.prepare('SELECT sql FROM sqlite_master WHERE type=? AND name=?').get('index',IDENTITY_INDEX);
+   if(index&&normalizedSql(index.sql)!==normalizedSql(CREATE_IDENTITY_INDEX))throw Error('source-index-mismatch');
+   this.identityIndex=index?IDENTITY_INDEX:'events_kind_seq';
+   this.identityPage=index?`SELECT seq,id,at FROM events INDEXED BY ${IDENTITY_INDEX} WHERE ${IDENTITY_PREDICATE} AND kind=? AND seq>? ORDER BY seq LIMIT 128`:'SELECT seq,id,at FROM events WHERE kind=? AND seq>? ORDER BY seq LIMIT 128';
    this.cache=new DatabaseSync(cache,{timeout:500});
    this.cache.exec(`PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA cache_size=-4096;
     CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
@@ -74,7 +83,7 @@ export class CompactStore {
  step(){return this.transaction(guard=>{
   let p=this.get('progress');
   if(p.kind>=KINDS.length)return {phase:'validation-required',readRows:0,reusedRows:0};
-  const kind=KINDS[p.kind],page=this.source.prepare('SELECT seq,id,at FROM events WHERE kind=? AND seq>? ORDER BY seq LIMIT 128').all(kind,p.cursor);
+  const kind=KINDS[p.kind],page=this.source.prepare(this.identityPage).all(kind,p.cursor);
   let readRows=0,reusedRows=0;
   const lookup=this.cache.prepare('SELECT id,at FROM rows WHERE kind=? AND seq=?');
   const raw=this.source.prepare('SELECT seq,id,at,length(CAST(data AS BLOB)) AS rawBytes,CASE WHEN length(CAST(data AS BLOB))<=262144 THEN data ELSE NULL END AS data FROM events WHERE kind=? AND seq=?');
@@ -109,7 +118,7 @@ export class CompactStore {
   // transaction as the inventory comparison and cache updates.
   const sourceMaxSeq=this.inventory('snapshot-max-sequence',null,()=>this.cache.prepare('SELECT COALESCE(MAX(seq),0) AS seq FROM source_inventory.events').get().seq),snapshotAt=Date.now();
   guard();const changes=[];
-  const additions=this.inventory('prepare-additions',null,()=>this.cache.prepare(ADDITIONS_SQL));
+  const additions=this.inventory('prepare-additions',null,()=>this.cache.prepare(this.identityIndex===IDENTITY_INDEX?COVERED_ADDITIONS_SQL:ADDITIONS_SQL));
   const deletions=this.inventory('prepare-deletions',null,()=>this.cache.prepare(DELETIONS_SQL));
   for(const kind of KINDS){
    for(const [statement,remove] of [[additions,false],[deletions,true]]){

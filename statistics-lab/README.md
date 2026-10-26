@@ -57,3 +57,7 @@ The projected reader did not meet the runtime target on the host. The next
 standalone candidate is documented in [COMPACT-STORE.md](COMPACT-STORE.md): a
 resumable compact row cache with source-inventory reconciliation. Neither
 candidate is connected to the production statistics worker.
+
+The optional partial source index and its explicit maintenance installer are
+covered in [SOURCE-INDEX.md](SOURCE-INDEX.md). This schema migration is separate
+from the read-only benchmark and does not deploy the compact statistics service.

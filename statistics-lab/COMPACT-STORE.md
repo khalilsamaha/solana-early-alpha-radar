@@ -220,3 +220,18 @@ parity, query-plan selection, summary equality, WAL snapshot consistency, bounde
 changes, failure rollback, native predecessor cache reuse, scanner fingerprint
 rejection, query failure privacy and parent/worker clocks. Scanner source,
 deployment manifests, observer and frozen-study files are unchanged by this batch.
+
+## Covering source identities (next candidate)
+
+`sqlite-covering-delta-3` detects the exact optional partial index documented in
+[SOURCE-INDEX.md](SOURCE-INDEX.md). When present, both additions and warm identity
+pages use covering scans, avoiding event-table payload pages. The benchmark stays
+read-only on the source and never creates the index itself. Without the index it
+reports `sourceIdentityIndex: events_kind_seq` and uses the earlier sequence scan;
+that fallback is not evidence the optimization was installed.
+
+Cache reuse additionally accepts the exact predecessor provenance from
+`8c5957d21e5ceae1f76333933d1266f24a66f762`, under the same scanner fingerprint gate.
+Row semantics, source identity, committed progress and all reader limits remain
+unchanged. The index-only source migration is explicit and requires brief scanner
+maintenance; it is not hidden inside a diagnostic command.
