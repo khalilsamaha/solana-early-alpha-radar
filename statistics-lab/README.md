@@ -61,3 +61,6 @@ candidate is connected to the production statistics worker.
 The optional partial source index and its explicit maintenance installer are
 covered in [SOURCE-INDEX.md](SOURCE-INDEX.md). This schema migration is separate
 from the read-only benchmark and does not deploy the compact statistics service.
+
+For host index-build timing without scanner downtime, see the disposable local
+backup [INDEX-REHEARSAL.md](INDEX-REHEARSAL.md).

@@ -105,3 +105,7 @@ validation plus summary took 2.227/2.030 seconds. Warm historical payload reads
 remained zero. These are synthetic measurements, not a promise of Kali timing.
 The scale fixture invokes the same bounded installer with `--large --sparse
 --covering-index` and removes only its own temporary databases afterward.
+
+If the bounded live installation times out, use the completed-backup rehearsal
+in [INDEX-REHEARSAL.md](INDEX-REHEARSAL.md) before planning further maintenance.
+The rehearsal's longer copy-only deadline does not change the live installer.

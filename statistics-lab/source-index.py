@@ -47,16 +47,18 @@ def check_schema(db):
         raise Refused('source-index-mismatch')
     return bool(obj)
 
-def run_index(file, apply=False, *, clock=time.monotonic, free_bytes=None):
+def run_index(file, apply=False, *, clock=time.monotonic, free_bytes=None, deadline_seconds=DEADLINE_SECONDS):
     """No arbitrary SQL, record edits, retries, index removal or checkpointing."""
     started = clock()
     report = {'format':'statistics-source-index-1', 'capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),
               'state':'stopped', 'error':None, 'index':NAME, 'applied':False,
-              'eventPayloadWrites':0, 'networkRequests':0, 'deadlineSeconds':DEADLINE_SECONDS}
+              'eventPayloadWrites':0, 'networkRequests':0, 'deadlineSeconds':deadline_seconds}
     db = None
     lock_started = None
     interrupted = None
     try:
+        if deadline_seconds not in (DEADLINE_SECONDS,180):
+            raise Refused('deadline-refused')
         before = identity(file)
         with closing(sqlite3.connect(file.as_uri()+'?mode=ro', uri=True, timeout=0.25)) as inspect:
             inspect.execute('PRAGMA query_only=ON')
@@ -78,7 +80,7 @@ def run_index(file, apply=False, *, clock=time.monotonic, free_bytes=None):
         initial_wal = wal.stat().st_size if wal.exists() else 0
         def guard():
             nonlocal interrupted
-            if clock()-started > DEADLINE_SECONDS:
+            if clock()-started > deadline_seconds:
                 interrupted = 'index-build-timeout'
             elif wal.exists() and wal.stat().st_size-initial_wal > MAX_WAL_GROWTH:
                 interrupted = 'wal-growth-limit'
