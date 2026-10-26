@@ -1,4 +1,4 @@
-# Project roadmap — updated 25 October 2026
+# Project roadmap — updated 26 October 2026
 
 The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
 
@@ -11,13 +11,14 @@ Goal: establish whether entry-time evidence identifies realistically enterable a
 | Frozen comparison | Installed private artifact; capture merging and unchanged fixed evaluation | Late October 28 review checkpoint; preserve earlier days with capture-only exports |
 | Controlled devnet execution | Fixed two-cycle identity, cumulative spending reservations, explicit one-send paths and bounded unsigned recovery | Keep the completed rehearsal closed; any further execution needs a separately scoped design |
 | Accounting and readiness | Two-cycle receipt reconciliation, idempotent historical accounting and strictly read-only readiness; local key-excluded evidence snapshots with isolated restore checks | Host isolated restore accepted; encrypted off-machine recovery and key custody remain separate work |
+| Execution economics | Standalone integer cost contract and synthetic cases; total-fee/priority separation, rent reserve, explicit unknown costs and break-even proceeds | Independent quote/message/cost evidence and future preflight integration; no live adapter or profitability conclusion |
 | Funded pilot | Not enabled | Separate strategy review, mainnet-specific validation, execution-cost evidence and explicit pilot scope/limits |
 
 The current quote quota permits at most 48 watches per cohort per day. Forward review keeps the existing minimum of 200 valid labels and seven distinct UTC dates per target/cohort, plus all other quality guards. October 22–28 spans seven distinct UTC dates, not seven full 24-hour periods. The main checkpoint is late October 28, Amsterdam time; qualification is not promised by that date. Do not lower guards, refit, or select a favorable review to force progress. Sparse failure labels may leave some targets unfitted.
 
 Immediate sequence:
 
-1. Consolidation and the host-accepted private evidence snapshot/isolated restore are on main. Validate the [consolidated operational report](OPERATIONAL-REVIEW.md); no runtime deployment is needed.
+1. Consolidation and the host-accepted private evidence snapshot/isolated restore are on main. Production compact statistics passed host acceptance on October 26: two complete refreshes, zero refresh failures and readiness throughout. The [execution cost contract](../execution-cost/README.md) can be developed and tested on synthetic inputs while the study remains frozen; no additional runtime deployment is needed for that module.
 2. Preserve bounded local quote captures before earlier study days leave the helper's 72-hour window. Collection alone does not run predictions or change the frozen experiment. Keep existing captures intact. Take another capture-only export on October 26 to bridge the earlier window with a late October 28 final capture.
 3. Late on October 28, run the existing review against all retained captures. Report gaps, insufficient evidence and failed targets explicitly.
 4. Use that review to choose a targeted engineering or research improvement. A positive paper/quote result alone does not establish executable profitability; a weak result may justify rejecting the approach.

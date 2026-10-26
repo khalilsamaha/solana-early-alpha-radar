@@ -24,6 +24,7 @@ node --test deployment/*.test.mjs
 (cd operational-review && python3 -m unittest discover -p 'test_*.py')
 (cd qualification-review && python3 -m unittest discover -p 'test_*.py')
 (cd research-dataset && python3 -m unittest discover -p 'test_*.py')
+(cd execution-cost && python3 -m unittest discover -p 'test_*.py')
 (
   cd scanner
   node --test test/*.test.js
