@@ -205,3 +205,13 @@ preflight/sender paths retain their prior pin. No source/build or behavior appro
 is inferred from a matching fingerprint. Host unsigned-simulation acceptance is
 still pending before cost/readiness integration. Production collection and the
 October 28, 17:30 Europe/Amsterdam frozen review remain unchanged.
+
+### October 27 controlled cost integration
+
+Host unsigned simulation on the explicitly refreshed deployment passed at 18:46
+UTC (1,000 in, 998 calculated/simulated out, 5,000 lamport fee, 7.557 seconds).
+Summary hashes/arithmetic/clocks were checked; uploaded raw RPC replay was not
+available. `position-book/cost_cli.py` now recomputes single-leg funding and costs
+from raw in-process evidence plus final locked reservations. Host acceptance is
+pending. No round-trip economics, sender activation, scanner deployment or frozen
+study change is implied. See [controlled cost readiness](CONTROLLED-COST-READINESS.md).

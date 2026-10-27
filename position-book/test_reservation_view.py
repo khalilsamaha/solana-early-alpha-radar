@@ -175,17 +175,21 @@ class ReservationViewCase(unittest.TestCase):
         before=self.files();stamp=m.now()
         from test_unsigned_simulation import SimulationOpener
         from swap_rehearsal import scope_for
-        for simulate in (False,True):
+        for simulate, costs in ((False,False),(True,False),(True,True)):
             opener=(SimulationOpener(first,second,scope_for(second['packet']['policy']))
                     if simulate else Opener(responses(first,second)))
             with (patch('preflight.BASELINE',base),patch('preflight_capture.BASELINE',base),
                   patch('core.signer',side_effect=AssertionError('sign'))):
                 r=fresh_quote.observe(self.home,self.wallet,self.pool,opener=opener,clock=lambda:stamp,
-                                      simulate=simulate)
-            self.assertEqual(r['state'],'unsigned-quote-simulation-consistent' if simulate else
+                                      simulate=simulate,assess_costs=costs)
+            self.assertEqual(r['state'],'controlled-cost-observation-consistent' if costs else
+                             'unsigned-quote-simulation-consistent' if simulate else
                              'fresh-quote-observation-consistent',r)
             self.assertEqual(r['networkRequests'],20 if simulate else 18)
             self.assertEqual(r['reservations']['confirmedFeeLamports'],'20000')
+            if costs:
+                self.assertEqual(r['costReadiness']['state'],'single-leg-cost-evidence-consistent')
+                self.assertEqual(r['costReadiness']['calculation']['requiredNativeForThisLegLamports'],'10000')
             self.assertFalse(r['nextCycleAuthorized']);self.assertFalse(r['privateKeyAccessed'])
             self.assertEqual(before,self.files())
 

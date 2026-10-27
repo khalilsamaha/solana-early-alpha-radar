@@ -31,7 +31,7 @@ DIAGNOSTICS = {'closed-controlled-cycles-required','initial-preflight-rejected',
     'quote-input-mint','quote-pool-roles','native-route-unsupported','input-vault-overflow',
     'input-consumed-by-fee','empty-or-invalid-output','combined-fee-rate',
     'zero-input-fee-denominator','observation-expired-before-completion','observation-time-budget',
-    'simulation-evidence-unavailable','simulation-clock-regression'}
+    'simulation-evidence-unavailable','simulation-clock-regression','single-leg-cost-evidence-rejected'}
 
 
 class ReadTransport:
@@ -77,8 +77,9 @@ def combine(first, built, second, scope, *, stamp, review=preflight.audit):
 
 @view.cycles.binding.operation
 def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.monotonic,
-            simulate=False, refreshed_deployment=False):
+            simulate=False, refreshed_deployment=False, assess_costs=False):
     check(type(simulate) is bool, 'simulation-mode')
+    check(type(assess_costs) is bool and (not assess_costs or simulate), 'costs-require-simulation')
     check(type(refreshed_deployment) is bool and (not refreshed_deployment or simulate),
           'refreshed-deployment-requires-unsigned-simulation')
     # Selection is explicit and fixed in source, never supplied by an RPC report.
@@ -109,6 +110,9 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
     if simulate:
         import unsigned_simulation as sim
         result.update(format=sim.VERSION, simulation=None)
+        if assess_costs:
+            import cost_readiness
+            result.update(format='controlled-cost-observation-1', costReadiness=None)
         result['limitations'][-3:] = [
             'At most 20 public devnet requests including one unsigned simulation; no retries.',
             'Original quote freshness remains 10 seconds through simulation and local ledger replay.',
@@ -156,8 +160,10 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             if simulate:
                 result['stage'] = 'unsigned-simulation'
                 deadline = min(checked['validUntilExclusiveMs'], binding['binding']['validUntilExclusiveMs'])
+                simulation_evidence = []
                 simulation = sim.collect(built['packet'], second, price, transport=transport,
-                                         clock=clock, deadline=deadline)
+                                         clock=clock, deadline=deadline,
+                                         _evidence_sink=simulation_evidence.append if assess_costs else None)
                 result['simulation'] = simulation
                 check(simulation['state'] == 'unsigned-effects-match-quote', 'simulation-evidence-unavailable')
                 result['stage'] = 'post-simulation-reservations'
@@ -167,6 +173,18 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                       'ledger-changed-during-quote')
                 result['reservationsAfterSimulation'] = final
                 check(not view.cycles.c.submit.swap.stop(root), 'stop-marker-present')
+            if assess_costs:
+                result['stage'] = 'cost-readiness'
+                check(len(simulation_evidence) == 1, 'single-leg-cost-evidence-rejected')
+                assessment = cost_readiness.assess(built['packet'],second,price,simulation_evidence[0],final,
+                    baseline=baseline,simulation_started=simulation['requestedAtMs'],
+                    simulation_received=simulation['receivedAtMs'],simulation_finished=simulation['finishedAtMs'],
+                    now_ms=clock())
+                simulation_evidence.clear()
+                result['costReadiness'] = assessment
+                check(assessment['state'] == 'single-leg-cost-evidence-consistent',
+                      'single-leg-cost-evidence-rejected')
+                check(not view.cycles.c.submit.swap.stop(root), 'stop-marker-present')
             finished = clock()
             if simulate:
                 check(simulation['finishedAtMs'] <= final['readStartedAtMs'] <= final['observedAtMs'] <= finished,
@@ -174,7 +192,8 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             check(stamp <= finished < min(checked['validUntilExclusiveMs'],
                   binding['binding']['validUntilExclusiveMs']), 'observation-expired-before-completion')
             check(0 <= monotonic()-transport.started < 30, 'observation-time-budget')
-            result.update(state='unsigned-quote-simulation-consistent' if simulate else
+            result.update(state='controlled-cost-observation-consistent' if assess_costs else
+                          'unsigned-quote-simulation-consistent' if simulate else
                           'fresh-quote-observation-consistent', stage='complete', reviewedAtMs=finished,
                           simulationVerified=simulate)
     except (ValueError, KeyError, TypeError, IndexError, OSError, view.sqlite3.Error) as exc:

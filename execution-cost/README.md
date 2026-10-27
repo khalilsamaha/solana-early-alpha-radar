@@ -193,3 +193,13 @@ intent; and recheck fresh evidence and reservations before the durable send
 boundary. Mainnet route validation, signing, actual paid-fee measurement and fill
 reconciliation are not implemented here. Cost caps and modeled margins are not on-chain loss
 limits. The existing completed devnet cycles remain closed.
+
+## Controlled devnet single-leg adapter
+
+The separate [controlled cost observation](../docs/CONTROLLED-COST-READINESS.md)
+now connects raw validated direct-pool quote/message/account/simulation evidence
+and final local reservation reads to a single-leg funding assessment. It reuses
+this module's canonical amount validation, but deliberately does not evaluate
+USDC round-trip economics for the controlled devnet token pair. No validated exit
+leg is present. This is an explicit standalone command with no scheduler or
+scanner integration and no signing/submission authority.
