@@ -47,13 +47,16 @@ No calendar date or expected revenue is justified for a real-money pilot. Deploy
    the devnet quote/account reviewer under the wallet lock. Public reservation
    summaries are not accepted as its authority. This is an observation, not a new
    atomic reservation or wallet-wide budget. See [integration and host command](LOCAL-RESERVATION-INTEGRATION.md).
-   **Fresh quote observation implemented, host live check pending:** the standalone
+   **Fresh quote observation implemented, host live check accepted October 27:** the standalone
    reader calculates a direct-pool exact-input quote, uses it in a fresh unsigned
    instruction and rechecks raw account/program evidence and current local
    commitments. It refuses changed economic pool inputs and stale original clocks.
    See [bounded host command and limitations](FRESH-CONTROLLED-QUOTE.md).
-   **Then execution integration:** validate the independently derived amounts with
-   unsigned simulation, then bind fresh cost evidence and the validated route
+   **Unsigned simulation implemented, host check pending:** the new standalone
+   [simulation command](UNSIGNED-QUOTE-SIMULATION.md) compares the simulation's own
+   token/native effects with a newly calculated quote, rechecks returned config/
+   deployment bytes, and rereads local reservations without signing or sending.
+   **Then execution integration:** accept the host comparison, then bind fresh cost evidence and the validated route
    to the durable intent and authoritative reservation ledger; recheck before the
    send boundary. Exercise stale evidence, insufficient balance, stop controls,
    unknown outcomes and idempotent recovery without reopening the closed rehearsals.

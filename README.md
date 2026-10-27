@@ -35,6 +35,10 @@ rechecks the pinned deployment, account balances and scoped local reservations.
 It makes at most 18 public devnet reads when explicitly invoked. It cannot sign,
 submit, reopen a completed cycle or activate a research model.
 
+The separate [unsigned quote simulation](docs/UNSIGNED-QUOTE-SIMULATION.md) adds
+one explicitly requested devnet simulation and checks its own token/native
+pre/post balances against a new quote. It cannot sign or send a transaction.
+
 ## Checks
 
 Requires Node.js 24.10 or newer in the 24.x series and Python 3.12. There are no third-party runtime packages to install for these tests.

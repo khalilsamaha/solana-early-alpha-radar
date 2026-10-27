@@ -172,16 +172,22 @@ class ReservationViewCase(unittest.TestCase):
         del first['evidence']['accounts']['result']['value'][8:11]
         second['evidence']['fee']['result']['value']=5000
         base=dict(copy.deepcopy(BASE),network='devnet',kind='observed-devnet-deployment',observedAtMs=0)
-        opener=Opener(responses(first,second))
         before=self.files();stamp=m.now()
-        with (patch('preflight.BASELINE',base),patch('preflight_capture.BASELINE',base),
-              patch('core.signer',side_effect=AssertionError('sign'))):
-            r=fresh_quote.observe(self.home,self.wallet,self.pool,opener=opener,clock=lambda:stamp)
-        self.assertEqual(r['state'],'fresh-quote-observation-consistent',r)
-        self.assertEqual(r['networkRequests'],18)
-        self.assertEqual(r['reservations']['confirmedFeeLamports'],'20000')
-        self.assertFalse(r['nextCycleAuthorized']);self.assertFalse(r['privateKeyAccessed'])
-        self.assertEqual(before,self.files())
+        from test_unsigned_simulation import SimulationOpener
+        from swap_rehearsal import scope_for
+        for simulate in (False,True):
+            opener=(SimulationOpener(first,second,scope_for(second['packet']['policy']))
+                    if simulate else Opener(responses(first,second)))
+            with (patch('preflight.BASELINE',base),patch('preflight_capture.BASELINE',base),
+                  patch('core.signer',side_effect=AssertionError('sign'))):
+                r=fresh_quote.observe(self.home,self.wallet,self.pool,opener=opener,clock=lambda:stamp,
+                                      simulate=simulate)
+            self.assertEqual(r['state'],'unsigned-quote-simulation-consistent' if simulate else
+                             'fresh-quote-observation-consistent',r)
+            self.assertEqual(r['networkRequests'],20 if simulate else 18)
+            self.assertEqual(r['reservations']['confirmedFeeLamports'],'20000')
+            self.assertFalse(r['nextCycleAuthorized']);self.assertFalse(r['privateKeyAccessed'])
+            self.assertEqual(before,self.files())
 
     def test_stop_arriving_during_binding_still_blocks(self):
         stamp=m.now();b=self.synthetic_bundle(stamp)
