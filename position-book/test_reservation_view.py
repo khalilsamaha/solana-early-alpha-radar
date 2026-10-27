@@ -156,6 +156,33 @@ class ReservationViewCase(unittest.TestCase):
         r=m.bind(self.home,self.wallet,self.pool,b,clock=lambda:stamp)
         self.assertEqual(r['state'],'unavailable');self.assertIsNone(r['binding'])
 
+    def test_fresh_quote_collectors_replay_real_test_journals_without_changes(self):
+        import fresh_quote
+        from test_fresh_quote import Opener, responses
+        from test_cycle_execution import BASE
+        from preflight_checks import edit
+        second=json.loads((self.home/binding.CYCLE/s.CHILD/'presend-preflight.json').read_text())
+        # This old disposable fixture used an all-zero fee config. Give the
+        # mocked current RPC snapshots a supported input-fee denominator; the
+        # stored setup/receipt evidence is not edited or used as live evidence.
+        edit(second,1,12,(2500).to_bytes(8,'little'))
+        first=copy.deepcopy(second)
+        first.update(packet=None,selection='explicit-pool',messageSha256=None)
+        del first['accountKeys'][8:11]
+        del first['evidence']['accounts']['result']['value'][8:11]
+        second['evidence']['fee']['result']['value']=5000
+        base=dict(copy.deepcopy(BASE),network='devnet',kind='observed-devnet-deployment',observedAtMs=0)
+        opener=Opener(responses(first,second))
+        before=self.files();stamp=m.now()
+        with (patch('preflight.BASELINE',base),patch('preflight_capture.BASELINE',base),
+              patch('core.signer',side_effect=AssertionError('sign'))):
+            r=fresh_quote.observe(self.home,self.wallet,self.pool,opener=opener,clock=lambda:stamp)
+        self.assertEqual(r['state'],'fresh-quote-observation-consistent',r)
+        self.assertEqual(r['networkRequests'],18)
+        self.assertEqual(r['reservations']['confirmedFeeLamports'],'20000')
+        self.assertFalse(r['nextCycleAuthorized']);self.assertFalse(r['privateKeyAccessed'])
+        self.assertEqual(before,self.files())
+
     def test_stop_arriving_during_binding_still_blocks(self):
         stamp=m.now();b=self.synthetic_bundle(stamp)
         real=m.quote_binding._review

@@ -2,7 +2,7 @@
 
 Private research system for discovering Solana tokens, recording paper signals and observing walletless route quotes. The scanner and quote observer do not trade. Separate, explicitly invoked tools can sign and submit tightly scoped **devnet** test transactions; they are not connected to trading signals or mainnet.
 
-**Current engineering release: 25 October 2026.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. Strategy profitability remains unproven; the next frozen-study review is October 27.
+**Current engineering release: 25 October 2026.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. Strategy profitability remains unproven; the frozen-study review is scheduled for **October 28 at 17:30 Europe/Amsterdam**.
 
 This repository imports the deployed source captured on **2026-10-09 at 21:59 UTC**. The original hashes are preserved in SOURCE-REVIEW-MANIFEST.json. Subsequent changes are reviewed separately; see docs/FAST30-UPDATE.md for the deployed follow-up and sampling update, and docs/EVIDENCE-UPDATE.md for the subsequent evidence diagnostics update.
 
@@ -28,6 +28,12 @@ The [local devnet readiness check](docs/DEVNET-READINESS.md) consolidates the fi
 The [private evidence snapshot and isolated restore check](docs/PRIVATE-EVIDENCE-BACKUP.md) preserves closed devnet journals and accounting locally, excludes the signing key, and verifies a disposable stopped copy. It does not restore into the active wallet or provide off-machine disaster recovery.
 
 The [consolidated operational review](docs/OPERATIONAL-REVIEW.md) checks local health, release files, backup stages and preserved capture windows without evaluating the frozen study. A separate explicit capture-only helper bridges evidence before the October 28 review.
+
+The [fresh controlled quote observation](docs/FRESH-CONTROLLED-QUOTE.md) derives an
+integer quote from current raw pool evidence, builds an unsigned instruction and
+rechecks the pinned deployment, account balances and scoped local reservations.
+It makes at most 18 public devnet reads when explicitly invoked. It cannot sign,
+submit, reopen a completed cycle or activate a research model.
 
 ## Checks
 

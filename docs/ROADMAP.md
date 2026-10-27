@@ -32,7 +32,7 @@ No calendar date or expected revenue is justified for a real-money pilot. Deploy
    are retained, but their association is not a verified swap. Missing evidence
    remains unavailable; devnet has no USDC-economic interpretation. See
    [integration release](EXECUTION-COST-EVIDENCE-UPDATE.md).
-2. **Development increment, host check pending:** a declared direct devnet quote
+2. **Development increment, host synthetic check accepted October 27:** a declared direct devnet quote
    now binds to raw unsigned instruction/account evidence, exact amounts and
    minimum output, and balances after declared reservations. This uses the
    existing controlled route to test the integration contract; it does not
@@ -42,12 +42,18 @@ No calendar date or expected revenue is justified for a real-money pilot. Deploy
    treatment, account creation/rent, token-account ownership and principal
    spendability. Unsupported routes and extensions remain blocked. Build and test
    read-only/simulation integration before connecting a signer.
-3. **Local reservation read integrated, host inspection pending:** the controlled
+3. **Local reservation read integrated, host inspection accepted October 27:** the controlled
    two-cycle ledger can now supply scoped token/native commitments directly to
    the devnet quote/account reviewer under the wallet lock. Public reservation
    summaries are not accepted as its authority. This is an observation, not a new
    atomic reservation or wallet-wide budget. See [integration and host command](LOCAL-RESERVATION-INTEGRATION.md).
-   **Then execution integration:** bind fresh cost evidence and the validated route
+   **Fresh quote observation implemented, host live check pending:** the standalone
+   reader calculates a direct-pool exact-input quote, uses it in a fresh unsigned
+   instruction and rechecks raw account/program evidence and current local
+   commitments. It refuses changed economic pool inputs and stale original clocks.
+   See [bounded host command and limitations](FRESH-CONTROLLED-QUOTE.md).
+   **Then execution integration:** validate the independently derived amounts with
+   unsigned simulation, then bind fresh cost evidence and the validated route
    to the durable intent and authoritative reservation ledger; recheck before the
    send boundary. Exercise stale evidence, insufficient balance, stop controls,
    unknown outcomes and idempotent recovery without reopening the closed rehearsals.
