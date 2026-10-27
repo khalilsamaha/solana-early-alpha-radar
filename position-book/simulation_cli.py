@@ -14,6 +14,8 @@ from report import publish
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--simulate-devnet',action='store_true')
+    parser.add_argument('--deployment-observation-20261027',action='store_true',
+                        help='Use the fixed October 27 deployment observation for unsigned simulation only')
     parser.add_argument('--directory',type=Path)
     parser.add_argument('--wallet')
     parser.add_argument('--pool')
@@ -25,9 +27,10 @@ def main():
         raise ValueError('report-must-be-outside-source-directory')
     if a.simulate_devnet:
         if not all((a.directory,a.wallet,a.pool)): raise ValueError('explicit-devnet-scope-required')
-        result = fresh_quote.observe(a.directory,a.wallet,a.pool,simulate=True)
+        result = fresh_quote.observe(a.directory,a.wallet,a.pool,simulate=True,
+                                     refreshed_deployment=a.deployment_observation_20261027)
     else:
-        if any((a.directory,a.wallet,a.pool)): raise ValueError('select-simulate-devnet')
+        if any((a.directory,a.wallet,a.pool,a.deployment_observation_20261027)): raise ValueError('select-simulate-devnet')
         result = run()
     result['capturedAt'] = datetime.now(timezone.utc).isoformat()
     publish(a.output,result)

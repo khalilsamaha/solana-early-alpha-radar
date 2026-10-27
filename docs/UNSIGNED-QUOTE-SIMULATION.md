@@ -118,3 +118,39 @@ with consolidated regression/PR/CI at the batch boundary. Production and the
 frozen protocol stay fixed. Review remains October 28 at 17:30 Europe/Amsterdam.
 Next: accept host simulation evidence, then connect validated execution evidence
 to the cost/readiness contract without opening another cycle or enabling a sender.
+
+## Reviewed deployment refresh — 27 October, 18:38 UTC
+
+The 18:19 UTC host run stopped before simulation because the deployment no longer
+matched the October 19 observation. The four-read diagnostic at 18:30 UTC and
+complete five-read program observation at 18:38 UTC identify the same new bytes.
+The complete report was independently replayed from its raw accounts; its review
+matched exactly. The old raw observation also replayed successfully. Payloads
+differ within the old allocation, not merely in newly allocated trailing bytes.
+
+The complete observation is bound to capture hash
+`8fd7e3437cd2fc4641a5e121267d52138e3e47e656daf7d38f91201c288e6294`,
+slot 515785731, deployment slot 515685818, and payload hash
+`30a9273dda17d7b3513889af1dab1185d9facc4756a6edf36c42f30ba228d8d1`.
+Program address, ProgramData address and upgrade authority are unchanged.
+This is a single-provider observation repeated at two times, not independent
+consensus, audited behavior, or verified source/build equivalence.
+
+`--deployment-observation-20261027` explicitly selects the new fixed observation
+**only together with `--simulate-devnet`**. No arbitrary pin, report, address or
+hash can be supplied through the CLI. The original preflight pin remains intact
+for every other path, including the default simulation command. Both account
+captures, diagnostic summaries and quote preflight reviews use the selected pin;
+subsequent drift still stops the run. No module-global pin is overwritten.
+
+Add this flag to the live simulation command above after fetching the supplied
+revision. The offline self-check remains unchanged (13 cases). The normal
+20-request ceiling, ten-second original quote validity, exact economic/effect
+checks, read-only journals and no-sign/no-send boundary all remain in effect.
+A fixture with the actual new account allocation size (1,766,685 bytes) passed
+through both collectors and the simulation response under existing byte limits.
+
+The next host result must establish compatibility for this one quoted input.
+It may still be unavailable if the upgraded program differs in behavior, required
+RPC fields are absent, or clocks/state change. Do not clear journals or use an
+execution command to resolve such a result. No scanner deployment is required.

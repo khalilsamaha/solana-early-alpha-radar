@@ -77,14 +77,27 @@ def combine(first, built, second, scope, *, stamp, review=preflight.audit):
 
 @view.cycles.binding.operation
 def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.monotonic,
-            simulate=False):
+            simulate=False, refreshed_deployment=False):
     check(type(simulate) is bool, 'simulation-mode')
+    check(type(refreshed_deployment) is bool and (not refreshed_deployment or simulate),
+          'refreshed-deployment-requires-unsigned-simulation')
+    # Selection is explicit and fixed in source, never supplied by an RPC report.
+    baseline = deepcopy(preflight.BASELINE)
+    collector = preflight_capture.collect
+    reviewer = preflight.audit
+    if refreshed_deployment:
+        from simulation_baseline import BASELINE as observed
+        baseline = deepcopy(observed)
+        collector = lambda **kw: preflight_capture._collect(**kw, baseline=baseline)
+        reviewer = lambda capture, now_ms: preflight._review(capture, baseline, now_ms)
     result = dict(format=VERSION, state='unavailable', stage='local-scope', reasons=[],
         network='devnet', networkRequests=0, requestMethods=[], quote=None, preflight=None,
         reservations=None, binding=None, signaturesCreated=0, transactionsSent=0,
         privateKeyAccessed=False, sourceStateChanged=False, databaseConnectionsReadOnly=True,
         executionApproved=False, nextCycleAuthorized=False, mainnetSupported=False,
         simulationVerified=False, sourceEquivalenceVerified=False, walletWideReservationsKnown=False,
+        deploymentObservationId=baseline['id'],
+        simulationDeploymentRefresh=refreshed_deployment,
         limitations=[
             'Locally calculated standard-SPL direct-pool quote, not an aggregator quote or fill.',
             'The pinned deployed bytes are checked; equivalence to the formula source is not proved.',
@@ -109,9 +122,9 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             scope_check(scope)
             transport = sim.Transport(opener, monotonic) if simulate else ReadTransport(opener, monotonic)
             result['stage'] = 'pool-quote'
-            first = preflight_capture.collect(pool=pool, opener=transport, now=clock, monotonic=monotonic)
-            result['captureDiagnostics'] = dict(poolQuote=capture_diagnostics(first,baseline=preflight.BASELINE))
-            initial = preflight.audit(first, now_ms=clock())
+            first = collector(pool=pool, opener=transport, now=clock, monotonic=monotonic)
+            result['captureDiagnostics'] = dict(poolQuote=capture_diagnostics(first,baseline=baseline))
+            initial = reviewer(first, now_ms=clock())
             result['preflight'] = initial
             check(initial['state'] == 'pinned-pool-snapshot', 'initial-preflight-rejected')
             raw, _ = preflight.split_capture(first)
@@ -122,14 +135,14 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             built = build(fresh_scope, opener=transport, now=clock)
             check(not view.cycles.c.submit.swap.stop(root), 'stop-marker-present')
             result['stage'] = 'account-preflight'
-            second = preflight_capture.collect(packet=built['packet'], opener=transport, now=clock, monotonic=monotonic)
-            result['captureDiagnostics']['accountPreflight'] = capture_diagnostics(second,baseline=preflight.BASELINE)
+            second = collector(packet=built['packet'], opener=transport, now=clock, monotonic=monotonic)
+            result['captureDiagnostics']['accountPreflight'] = capture_diagnostics(second,baseline=baseline)
             result['stage'] = 'local-binding'
             current = view.read_locked(root, wallet, pool, clock)
             check((before['ledgerHeadSha256'], before['cycleBindingSha256']) ==
                   (current['ledgerHeadSha256'], current['cycleBindingSha256']), 'ledger-changed-during-quote')
             stamp = clock()
-            price, checked, bundle = combine(first, built, second, scope, stamp=stamp)
+            price, checked, bundle = combine(first, built, second, scope, stamp=stamp, review=reviewer)
             q = price['quote']
             selected = [a for a in current['tokenAccounts'] if a['account'] == q['source'] and a['mint'] == q['inputMint']]
             check(len(selected) == 1 and selected[0]['heldAtomic'] is not None, 'local-token-reservation-unknown')

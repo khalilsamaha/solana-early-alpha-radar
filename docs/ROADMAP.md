@@ -194,3 +194,14 @@ Added a separate immutable `swap-execution-v1` lifecycle: fresh fixed-scope mess
 ## 21 October 2026 — receipt-bound reverse ready for host validation
 
 The actual forward swap and zero-send terminal recovery passed review. The next release reverses exactly the acquired test-token quantity in its own one-send journal and reconciles both finalized receipts, original-token net change, residual acquired tokens and native fees. Current host scope is 998 atomic input/minimum 988; it is a fixed controlled test, not a market strategy rule. 27 new offline cases cover reverse signing/accounting and interrupted/failed paths. Next gate: actual reverse and recovery reports, then receipt-to-position/budget integration and operational stop/reconciliation exercises. Mainnet readiness and forward strategy evidence remain separate gates. See [host sequence](CONTROLLED-REVERSE-SWAP-UPDATE.md).
+
+
+### October 27 deployment observation refresh
+
+The full 18:38 UTC public program capture replayed exactly and corroborated the
+18:30 deployment-drift diagnostic. A separate fixed observation is now selectable
+only for unsigned simulation via `--deployment-observation-20261027`; the legacy
+preflight/sender paths retain their prior pin. No source/build or behavior approval
+is inferred from a matching fingerprint. Host unsigned-simulation acceptance is
+still pending before cost/readiness integration. Production collection and the
+October 28, 17:30 Europe/Amsterdam frozen review remain unchanged.

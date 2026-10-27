@@ -57,12 +57,14 @@ def responses(first,second):
 
 class FreshQuoteTests(unittest.TestCase):
     def run_observe(self,mutate=None,clock=None,ledger_hook=None,stop=None,http_hook=None,
-                    opener_factory=None,simulate=False):
+                    opener_factory=None,simulate=False,refreshed_deployment=False,legacy_mismatch=False,selected_base=None):
         first,second,base,scope=setup(); clock=clock or Clock()
         if mutate:mutate(first,second,scope)
         opener=(opener_factory(first,second,scope) if opener_factory else
                 Opener(responses(first,second),http_hook))
         a=scope['accounts']; reads=[]
+        legacy=deepcopy(base)
+        if legacy_mismatch:legacy['identity']['payloadSha256']='0'*64
         def read(root,wallet,pool,cl):
             v=dict(phase='closed',wallet=wallet,pool=pool,nativeHeldLamports='0',
                    tokenAccounts=[dict(account=a['source'],mint=a['inputMint'],heldAtomic='0')],
@@ -73,7 +75,8 @@ class FreshQuoteTests(unittest.TestCase):
             return v
         with ExitStack() as stack:
             for target,value in (
-                ('preflight.BASELINE',base),('preflight_capture.BASELINE',base),
+                ('preflight.BASELINE',legacy),('preflight_capture.BASELINE',legacy),
+                ('simulation_baseline.BASELINE',selected_base or base),
                 ('fresh_quote.view.cycles.c.source_lock',lambda *args:nullcontext(Path('/synthetic'))),
                 ('fresh_quote.view.read_locked',read),
                 ('fresh_quote.view.cycles.c.submit.bridge.source_scope',lambda *args:(deepcopy(scope),{})),
@@ -81,7 +84,8 @@ class FreshQuoteTests(unittest.TestCase):
                 stack.enter_context(patch(target,value))
             stack.enter_context(patch('core.signer',side_effect=AssertionError('signer called')))
             stack.enter_context(patch('fresh_packet.prepare_fresh',side_effect=AssertionError('prepare called')))
-            r=m.observe(Path('/synthetic'),a['wallet'],a['pool'],opener=opener,clock=clock,simulate=simulate)
+            r=m.observe(Path('/synthetic'),a['wallet'],a['pool'],opener=opener,clock=clock,simulate=simulate,
+                        refreshed_deployment=refreshed_deployment)
         return r,opener
 
     def test_full_collect_price_reprice_fee_account_binding_has_no_send(self):
