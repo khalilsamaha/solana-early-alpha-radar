@@ -70,3 +70,10 @@ Official sources reviewed on 19 October 2026. SHA values are Git **blob** IDs id
 RPC contracts: [getMultipleAccounts](https://solana.com/docs/rpc/http/getmultipleaccounts), [getFeeForMessage](https://solana.com/docs/rpc/http/getfeeformessage), [isBlockhashValid](https://solana.com/docs/rpc/http/isblockhashvalid). Fixed PDA hash construction: [PDA derivation](https://solana.com/docs/core/pda). Program pointer layout: [loader-v3 interface source](https://docs.rs/crate/solana-loader-v3-interface/9.0.0/source/src/state.rs).
 
 Regression includes raw layout/role/owner tampering, authority bump, stale/expired policies, snapshot regression, missing/frozen accounts, native backing, fee accruals and supply, pool blockers, wallet balances, exact message-fee binding, discovery without resampling, RPC errors/caps/deadlines and atomic host report/replay behavior. None of the synthetic states is promoted to a real network observation.
+## Declared quote binding development increment
+
+`quote_binding.py` additionally checks one declared direct devnet quote against
+the exact unsigned policy and raw account evidence, including original clocks,
+minimum output and funding after declared reservations. `quote_cli.py` provides
+an offline eight-case host self-check. This does not activate trading or support
+mainnet routes. See [scope, schema and validation](../docs/QUOTE-STATE-BINDING-UPDATE.md).

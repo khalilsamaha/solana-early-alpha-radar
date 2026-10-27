@@ -1,4 +1,4 @@
-# Project roadmap — updated 26 October 2026
+# Project roadmap — updated 27 October 2026
 
 The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
 
@@ -32,7 +32,12 @@ No calendar date or expected revenue is justified for a real-money pilot. Deploy
    are retained, but their association is not a verified swap. Missing evidence
    remains unavailable; devnet has no USDC-economic interpretation. See
    [integration release](EXECUTION-COST-EVIDENCE-UPDATE.md).
-2. **Next engineering gate:** one narrowly supported mainnet route/message
+2. **Development increment, host check pending:** a declared direct devnet quote
+   now binds to raw unsigned instruction/account evidence, exact amounts and
+   minimum output, and balances after declared reservations. This uses the
+   existing controlled route to test the integration contract; it does not
+   complete or replace mainnet validation. See [scope and host check](QUOTE-STATE-BINDING-UPDATE.md).
+   **Remaining engineering gate:** one narrowly supported mainnet route/message
    validator, with input/output mint and amount/minimum-output checks, fee/tip
    treatment, account creation/rent, token-account ownership and principal
    spendability. Unsupported routes and extensions remain blocked. Build and test
