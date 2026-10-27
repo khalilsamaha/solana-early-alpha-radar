@@ -92,8 +92,17 @@ execution command or modify journals to resolve an observation failure.
 
 ## Next boundary
 
-Accept host cost observation, then consolidate this simulation/diagnostic/cost
-batch for regression and PR review under the agreed local-first workflow. A later
+The 18:58 UTC host cost observation passed review on October 27. The offline
+13-case report matched exactly; the live report bound 1,000 atomic input to 998
+output (minimum 989), a 5,000-lamport simulated fee within the 10,000-lamport cap,
+and unchanged closed reservations. The full observation took 7.337 seconds within
+the original ten-second window. Report arithmetic, hashes and clock relationships
+were checked; the uploaded summary did not include raw simulation responses for
+independent replay. No signing or submission occurred.
+
+This simulation/diagnostic/cost batch is now at consolidated regression and PR
+review under the agreed local-first workflow. No additional Kali command is
+required for documentation consolidation. A later
 adapter needs a fresh validated exit leg and total-round-trip funding/cost evidence;
 this result does not make either available. No mainnet pilot is enabled.
 The frozen study stays unchanged until October 28, 17:30 Europe/Amsterdam.

@@ -101,8 +101,8 @@ SH
 Upload both public reports. The offline check expects 13 cases. The live state
 may be `unsigned-quote-simulation-consistent` or `unavailable` (exit 2, with report).
 Do not edit journals, clear STOP, or repeat an execution command in response to
-an unavailable observation. The current host simulation is still pending until
-its report is reviewed.
+an unavailable observation. The accepted host checkpoint is recorded below;
+these commands are retained for reference and are not a request to rerun it.
 
 ## Validation and next gate
 
@@ -113,11 +113,12 @@ STOP, changed reservations and private CLI publication. A disposable actual
 two-cycle journal integration runs without the signing key and compares every
 source file before and after. No public RPC is used in the automated tests.
 
-This is the first increment in a new batch: local tests and a development commit,
-with consolidated regression/PR/CI at the batch boundary. Production and the
+This increment is included in the consolidated observation and cost-readiness
+batch, with local regression followed by one PR/CI cycle. Production and the
 frozen protocol stay fixed. Review remains October 28 at 17:30 Europe/Amsterdam.
-Next: accept host simulation evidence, then connect validated execution evidence
-to the cost/readiness contract without opening another cycle or enabling a sender.
+The host simulation and single-leg cost checkpoints have since passed review;
+see [cost readiness](CONTROLLED-COST-READINESS.md) and the
+[consolidation record](OBSERVATION-CONSOLIDATION-20261027.md).
 
 ## Reviewed deployment refresh — 27 October, 18:38 UTC
 
@@ -150,7 +151,10 @@ checks, read-only journals and no-sign/no-send boundary all remain in effect.
 A fixture with the actual new account allocation size (1,766,685 bytes) passed
 through both collectors and the simulation response under existing byte limits.
 
-The next host result must establish compatibility for this one quoted input.
-It may still be unavailable if the upgraded program differs in behavior, required
-RPC fields are absent, or clocks/state change. Do not clear journals or use an
-execution command to resolve such a result. No scanner deployment is required.
+The 18:46 UTC host report passed for this one quoted input: 1,000 atomic input,
+998 calculated and simulated output, minimum 989, and 5,000-lamport fee. Completion
+took 7.557 seconds within the original quote window, with closed journals
+unchanged. Summary bindings, arithmetic and timing were checked; raw simulation
+responses were not supplied for independent replay. Future observations still
+reject absent fields, changed deployment/state or expired clocks. No scanner
+deployment is required.

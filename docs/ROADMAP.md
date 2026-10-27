@@ -1,6 +1,6 @@
 # Project roadmap — updated 27 October 2026
 
-The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
+The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). The [October 27 observation batch](OBSERVATION-CONSOLIDATION-20261027.md) is now being consolidated in PR #58. Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
 
 Goal: establish whether entry-time evidence identifies realistically enterable and exitable opportunities. More alerts and faster detection alone have not established a profitable strategy.
 
@@ -11,7 +11,7 @@ Goal: establish whether entry-time evidence identifies realistically enterable a
 | Frozen comparison | Installed private artifact; capture merging and unchanged fixed evaluation | Late October 28 review checkpoint; preserve earlier days with capture-only exports |
 | Controlled devnet execution | Fixed two-cycle identity, cumulative spending reservations, explicit one-send paths and bounded unsigned recovery | Keep the completed rehearsal closed; any further execution needs a separately scoped design |
 | Accounting and readiness | Two-cycle receipt reconciliation, idempotent historical accounting and strictly read-only readiness; local key-excluded evidence snapshots with isolated restore checks | Host isolated restore accepted; encrypted off-machine recovery and key custody remain separate work |
-| Execution economics | Integer cost contract plus optional bounded exact-message fee/native-account RPC bridge; tested on synthetic transport, no host live capture claimed | Validate quote-to-instruction semantics, principal/token balances, account funding and ledger-backed reservations before joining any execution path |
+| Execution economics | Host-accepted controlled quote, exact unsigned simulation, scoped local reservations and single-leg fee-cap funding | Consolidated review, then fresh exit-leg evidence and explicit round-trip costs; no economic edge or execution approval claimed |
 | Funded pilot | Not enabled | Separate strategy review, mainnet-specific validation, execution-cost evidence and explicit pilot scope/limits |
 
 The current quote quota permits at most 48 watches per cohort per day. Forward review keeps the existing minimum of 200 valid labels and seven distinct UTC dates per target/cohort, plus all other quality guards. October 22–28 spans seven distinct UTC dates, not seven full 24-hour periods. The main checkpoint is late October 28, Amsterdam time; qualification is not promised by that date. Do not lower guards, refit, or select a favorable review to force progress. Sparse failure labels may leave some targets unfitted.
@@ -52,19 +52,21 @@ No calendar date or expected revenue is justified for a real-money pilot. Deploy
    instruction and rechecks raw account/program evidence and current local
    commitments. It refuses changed economic pool inputs and stale original clocks.
    See [bounded host command and limitations](FRESH-CONTROLLED-QUOTE.md).
-   **Unsigned simulation implemented, host check pending:** the new standalone
-   [simulation command](UNSIGNED-QUOTE-SIMULATION.md) compares the simulation's own
-   token/native effects with a newly calculated quote, rechecks returned config/
-   deployment bytes, and rereads local reservations without signing or sending.
-   The October 27 18:19 UTC host attempt stopped after four initial reads, before
-   any simulation. All 13 offline cases replayed exactly, but the live gate remains
-   open. [Bounded preflight diagnostics](PREFLIGHT-FAILURE-DIAGNOSTICS.md) now expose
-   the collector stop reason and safely decoded deployment differences; the
-   existing pin and acceptance rules are unchanged.
-   **Then execution integration:** accept the host comparison, then bind fresh cost evidence and the validated route
-   to the durable intent and authoritative reservation ledger; recheck before the
-   send boundary. Exercise stale evidence, insufficient balance, stop controls,
-   unknown outcomes and idempotent recovery without reopening the closed rehearsals.
+   **Unsigned simulation and single-leg costs accepted October 27:** the standalone
+   [simulation command](UNSIGNED-QUOTE-SIMULATION.md) compares its own token/native
+   effects with a newly calculated quote, rechecks returned config/deployment bytes
+   and rereads local reservations without signing or sending. A deployment change
+   first stopped the run. Raw program evidence was reviewed, and a new fixed pin
+   is selectable only for unsigned simulation. The 18:46 and 18:58 UTC host
+   checkpoints passed; the original sender pin remains unchanged.
+   [Cost readiness](CONTROLLED-COST-READINESS.md) funds the full message fee cap
+   from final locked reservations; exit costs and round-trip economics stay unknown.
+   **Next engineering gate:** finish consolidated regression/PR review, then build
+   fresh exit-leg evidence and explicit round-trip funding/cost assessment. Later
+   execution integration must bind a validated route to durable intent and
+   authoritative reservations, recheck before the send boundary, and exercise
+   stale evidence, insufficient balance, STOP, unknown outcomes and idempotent
+   recovery. None of this reopens the completed rehearsals.
 4. **Independent research gate:** October 28 at 17:30 Europe/Amsterdam, review the
    frozen study using preserved captures and original guards. A failed or sparse
    result requires an explicit research decision, not relaxed thresholds.
@@ -202,8 +204,9 @@ The full 18:38 UTC public program capture replayed exactly and corroborated the
 18:30 deployment-drift diagnostic. A separate fixed observation is now selectable
 only for unsigned simulation via `--deployment-observation-20261027`; the legacy
 preflight/sender paths retain their prior pin. No source/build or behavior approval
-is inferred from a matching fingerprint. Host unsigned-simulation acceptance is
-still pending before cost/readiness integration. Production collection and the
+is inferred from a matching fingerprint. Host unsigned simulation and single-leg
+cost observations passed at 18:46 and 18:58 UTC respectively; report-level
+verification limits remain explicit. Production collection and the
 October 28, 17:30 Europe/Amsterdam frozen review remain unchanged.
 
 ### October 27 controlled cost integration
@@ -212,6 +215,9 @@ Host unsigned simulation on the explicitly refreshed deployment passed at 18:46
 UTC (1,000 in, 998 calculated/simulated out, 5,000 lamport fee, 7.557 seconds).
 Summary hashes/arithmetic/clocks were checked; uploaded raw RPC replay was not
 available. `position-book/cost_cli.py` now recomputes single-leg funding and costs
-from raw in-process evidence plus final locked reservations. Host acceptance is
-pending. No round-trip economics, sender activation, scanner deployment or frozen
-study change is implied. See [controlled cost readiness](CONTROLLED-COST-READINESS.md).
+from raw in-process evidence plus final locked reservations. The 18:58 UTC host
+checkpoint passed: 13 offline cases, matching 998 output, 5,000 fee within 10,000
+cap, unchanged closed journals and 7.337-second completion. The batch is now
+under consolidated regression and PR review; see
+[consolidation record](OBSERVATION-CONSOLIDATION-20261027.md). No round-trip
+economics, sender activation, scanner deployment or frozen study change is implied. See [controlled cost readiness](CONTROLLED-COST-READINESS.md).
