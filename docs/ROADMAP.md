@@ -42,7 +42,12 @@ No calendar date or expected revenue is justified for a real-money pilot. Deploy
    treatment, account creation/rent, token-account ownership and principal
    spendability. Unsupported routes and extensions remain blocked. Build and test
    read-only/simulation integration before connecting a signer.
-3. **Then execution integration:** bind fresh cost evidence and the validated route
+3. **Local reservation read integrated, host inspection pending:** the controlled
+   two-cycle ledger can now supply scoped token/native commitments directly to
+   the devnet quote/account reviewer under the wallet lock. Public reservation
+   summaries are not accepted as its authority. This is an observation, not a new
+   atomic reservation or wallet-wide budget. See [integration and host command](LOCAL-RESERVATION-INTEGRATION.md).
+   **Then execution integration:** bind fresh cost evidence and the validated route
    to the durable intent and authoritative reservation ledger; recheck before the
    send boundary. Exercise stale evidence, insufficient balance, stop controls,
    unknown outcomes and idempotent recovery without reopening the closed rehearsals.

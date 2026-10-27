@@ -12,6 +12,11 @@ MAX_AGE_MS = 10000
 
 
 def review(bundle, *, now_ms):
+    return _review(bundle, now_ms=now_ms)
+
+
+def _review(bundle, *, now_ms, current_local_reservations=False):
+    """Internal seam for a locked local reader; public declarations stay prior-only."""
     result = dict(format=VERSION, state='unavailable', reasons=[], binding=None,
                   networkRequests=0, signaturesCreated=0, transactionsSent=0,
                   signingApproved=False, executionApproved=False, ledgerUpdated=False,
@@ -77,7 +82,12 @@ def review(bundle, *, now_ms):
         token_reserved = atomic(r['otherTokenAtomic'], 'invalid-token-reservation')
         native_reserved = atomic(r['otherNativeLamports'], 'invalid-native-reservation')
         reserve_at = uint(r['asOfMs'], MAX_CLOCK, 'reservation-clock')
-        require(reserve_at <= start and 0 <= now - reserve_at <= MAX_AGE_MS, 'reservation-stale-or-after-capture')
+        if current_local_reservations:
+            require(finish <= reserve_at <= now and now - reserve_at <= MAX_AGE_MS,
+                    'local-reservation-observation-order')
+        else:
+            require(reserve_at <= start and 0 <= now - reserve_at <= MAX_AGE_MS,
+                    'reservation-stale-or-after-capture')
         token_balance = int(state['sourceBalanceAtomic'])
         native_balance = c['evidence']['accounts']['result']['value'][8]['lamports']
         require(token_reserved + amounts['inAmount'] <= token_balance, 'token-funding-shortfall')
