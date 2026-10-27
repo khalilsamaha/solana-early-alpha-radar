@@ -104,6 +104,24 @@ class FreshQuoteTests(unittest.TestCase):
         r,o=self.run_observe(lambda f,s,scope:edit(f,-1,120,b'\x01'))
         self.assertEqual(r['state'],'unavailable');self.assertEqual(r['stage'],'pool-quote')
         self.assertEqual(len(o.calls),4)
+        d=r['captureDiagnostics']['poolQuote']
+        self.assertEqual(d['stoppedReason'],'deployment-differs-from-pinned-observation')
+        self.assertEqual(d['deploymentComparison']['changedFields'],['payloadSha256'])
+        self.assertFalse(d['baselineChanged'])
+
+    def test_four_read_rpc_failure_is_not_mislabelled_as_program_change(self):
+        import urllib.error
+        def failing(f,s,scope):
+            rows=responses(f,s);rows[3]=urllib.error.URLError('private provider detail')
+            return Opener(rows)
+        r,o=self.run_observe(opener_factory=failing,simulate=True)
+        self.assertEqual(r['state'],'unavailable');self.assertEqual(len(o.calls),4)
+        self.assertIsNone(r['simulation']);self.assertFalse(r['simulationVerified'])
+        d=r['captureDiagnostics']['poolQuote']
+        self.assertEqual(d['stoppedReason'],'rpc-stopped-accounts')
+        self.assertEqual(d['evidenceStates']['accounts'],'network-error')
+        self.assertEqual(d['deploymentComparison']['state'],'unavailable')
+        self.assertNotIn('private provider detail',json.dumps(r))
 
     def test_new_account_shortfall_and_blockhash_failure_block(self):
         for what in ('token','native','blockhash'):

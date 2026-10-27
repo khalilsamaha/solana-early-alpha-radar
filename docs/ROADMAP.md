@@ -56,6 +56,11 @@ No calendar date or expected revenue is justified for a real-money pilot. Deploy
    [simulation command](UNSIGNED-QUOTE-SIMULATION.md) compares the simulation's own
    token/native effects with a newly calculated quote, rechecks returned config/
    deployment bytes, and rereads local reservations without signing or sending.
+   The October 27 18:19 UTC host attempt stopped after four initial reads, before
+   any simulation. All 13 offline cases replayed exactly, but the live gate remains
+   open. [Bounded preflight diagnostics](PREFLIGHT-FAILURE-DIAGNOSTICS.md) now expose
+   the collector stop reason and safely decoded deployment differences; the
+   existing pin and acceptance rules are unchanged.
    **Then execution integration:** accept the host comparison, then bind fresh cost evidence and the validated route
    to the durable intent and authoritative reservation ledger; recheck before the
    send boundary. Exercise stale evidence, insufficient balance, stop controls,

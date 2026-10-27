@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'swap-preflight'))
 import preflight
 import preflight_capture
+from preflight_diagnostics import describe as capture_diagnostics
 from fresh_packet import build, scope_check
 from cpmm_quote import derive
 from recorded_capture import NoRedirect, ENDPOINTS
@@ -109,6 +110,7 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             transport = sim.Transport(opener, monotonic) if simulate else ReadTransport(opener, monotonic)
             result['stage'] = 'pool-quote'
             first = preflight_capture.collect(pool=pool, opener=transport, now=clock, monotonic=monotonic)
+            result['captureDiagnostics'] = dict(poolQuote=capture_diagnostics(first,baseline=preflight.BASELINE))
             initial = preflight.audit(first, now_ms=clock())
             result['preflight'] = initial
             check(initial['state'] == 'pinned-pool-snapshot', 'initial-preflight-rejected')
@@ -121,6 +123,7 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             check(not view.cycles.c.submit.swap.stop(root), 'stop-marker-present')
             result['stage'] = 'account-preflight'
             second = preflight_capture.collect(packet=built['packet'], opener=transport, now=clock, monotonic=monotonic)
+            result['captureDiagnostics']['accountPreflight'] = capture_diagnostics(second,baseline=preflight.BASELINE)
             result['stage'] = 'local-binding'
             current = view.read_locked(root, wallet, pool, clock)
             check((before['ledgerHeadSha256'], before['cycleBindingSha256']) ==
