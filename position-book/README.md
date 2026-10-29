@@ -55,3 +55,11 @@ See [scope and Kali inspection](../docs/LOCAL-RESERVATION-INTEGRATION.md).
 and optionally validates one unsigned reverse simulation using existing actual
 tokens and current reservations. It never executes the reference entry or claims
 a post-entry round trip. See [scope and host commands](../docs/REVERSE-COST-OBSERVATION.md).
+
+## Independent paired cost scenario
+
+`paired_cost_cli.py` combines two fresh independent unsigned observations through
+an internal raw-evidence handoff and models an explicitly selected failed-exit fee
+allowance. It retains each quote's clock and rejects mismatched economics, full
+quantity or ledger identity. It does not establish a post-entry exit or authorize
+spending. See [the scope and host sequence](../docs/PAIRED-COST-OBSERVATION.md).

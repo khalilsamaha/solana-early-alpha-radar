@@ -5,6 +5,12 @@ controlled devnet route. It does not reopen either completed cycle or activate a
 sender. Use `position-book/reverse_cost_cli.py`; no scanner rebuild, service restart,
 key access, journal mutation or new reservation is required.
 
+Host checkpoint accepted October 29 at 18:59 UTC: 998 atomic input, 996 quoted/
+simulated output, 5,000 lamport fee within the 10,000 cap, 7.671-second completion,
+unchanged closed journals and zero sends/signatures. Public arithmetic/hash/clock
+checks passed; raw RPC/journal replay was not included in the uploaded summary.
+Next: [independent paired costs](PAIRED-COST-OBSERVATION.md).
+
 ## What is established
 
 1. Revalidate the locally reconciled closed cycles and pinned deployed program.

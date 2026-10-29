@@ -18,7 +18,7 @@ from test_unsigned_simulation import SimulationOpener
 
 class ReverseOpener(SimulationOpener):
     def __init__(self,first,second,scope,change=None,hook=None,funds=1000):
-        reverse, _, _ = prepare(fresh_quote.preflight.split_capture(first)[0],scope,now_ms=NOW)
+        reverse, _, _ = prepare(fresh_quote.preflight.split_capture(first)[0],scope,now_ms=first['finishedAtMs'])
         # Source is now the existing destination account. No hypothetical credit.
         edit(second,10,64,funds.to_bytes(8,'little'))
         second['accountKeys'][9],second['accountKeys'][10]=second['accountKeys'][10],second['accountKeys'][9]

@@ -78,7 +78,8 @@ def combine(first, built, second, scope, *, stamp, review=preflight.audit):
 
 @view.cycles.binding.operation
 def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.monotonic,
-            simulate=False, refreshed_deployment=False, assess_costs=False, reverse_reference=False):
+            simulate=False, refreshed_deployment=False, assess_costs=False, reverse_reference=False, _evidence_sink=None):
+    check(_evidence_sink is None or (callable(_evidence_sink) and assess_costs), 'cost-evidence-sink-mode')
     check(type(simulate) is bool, 'simulation-mode')
     check(type(assess_costs) is bool and (not assess_costs or simulate), 'costs-require-simulation')
     check(type(refreshed_deployment) is bool and (not refreshed_deployment or simulate),
@@ -195,10 +196,11 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             if assess_costs:
                 result['stage'] = 'cost-readiness'
                 check(len(simulation_evidence) == 1, 'single-leg-cost-evidence-rejected')
-                assessment = cost_readiness.assess(built['packet'],second,price,simulation_evidence[0],final,
-                    baseline=baseline,simulation_started=simulation['requestedAtMs'],
-                    simulation_received=simulation['receivedAtMs'],simulation_finished=simulation['finishedAtMs'],
-                    now_ms=clock())
+                cost_inputs = dict(packet=built['packet'],capture=second,price=price,
+                    simulation_item=simulation_evidence[0],reservations=final,baseline=baseline,
+                    simulation_started=simulation['requestedAtMs'],simulation_received=simulation['receivedAtMs'],
+                    simulation_finished=simulation['finishedAtMs'],now_ms=clock())
+                assessment = cost_readiness.assess(**cost_inputs)
                 simulation_evidence.clear()
                 result['costReadiness'] = assessment
                 check(assessment['state'] == 'single-leg-cost-evidence-consistent',
@@ -222,6 +224,10 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             check(stamp <= finished < min(checked['validUntilExclusiveMs'],
                   binding['binding']['validUntilExclusiveMs']), 'observation-expired-before-completion')
             check(0 <= monotonic()-transport.started < 30, 'observation-time-budget')
+            if _evidence_sink is not None:
+                # In-process only, emitted after all checks; never exported in the public report.
+                _evidence_sink(dict(costInputs=cost_inputs,initialPool=raw,entryScope=entry_scope,
+                    scope=fresh_scope,completedAtMs=finished))
             result.update(state='controlled-reverse-cost-observation-consistent' if reverse_reference else
                           'controlled-cost-observation-consistent' if assess_costs else
                           'unsigned-quote-simulation-consistent' if simulate else
