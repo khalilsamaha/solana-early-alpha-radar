@@ -2,7 +2,7 @@
 
 The host's 19:39 UTC nine-case offline report reproduced exactly. This increment
 connects the accepted pure post-entry reviewer to a distinct opt-in live devnet
-collector. Local fake-HTTP integration passes; actual host observation is pending.
+collector. Local fake-HTTP integration passes. The host observation was accepted at 19:49 UTC on October 29; details follow below.
 
 ## Behavior and bounds
 
@@ -82,3 +82,22 @@ simulation persist for a second simulation: sequential exit proof requires a
 separate supported stateful rehearsal or explicitly scoped controlled cycle.
 Mainnet, signed execution and a funded pilot remain separate gates. The frozen
 availability confirmation and November 6 review are unchanged.
+
+## Accepted host observation — October 29, 19:49 UTC
+
+The entry simulated 1,000 → 998, minimum 989. The same simulation returned
+post-entry effective reserves of 500,001,006 and 499,999,002 atomic units;
+protocol/fund fee increments were zero after integer rounding. Reverse arithmetic
+from those reserves produced 998 → 997, minimum 988. This differs from the
+earlier independent reverse observation because its reserve basis differs.
+
+The observation completed in 7,589 ms from original quote request, within the
+ten-second deadline. There were 20 RPC requests, one unsigned simulation,
+a 5,000-lamport simulated/observed entry fee within a 10,000 cap, zero signatures
+and zero sends. The closed ledger identities and reservations were unchanged.
+
+Public arithmetic, projection/quote hashes, baseline identity, cross-report
+bindings, clocks and flags were independently checked. Raw RPC/pool bytes were
+not included in the public report; their validation remains host-side evidence.
+No exit was simulated, and no source/binary equivalence or profitability was
+established. The next step is the separately scoped projected exit-message check.

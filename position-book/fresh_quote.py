@@ -33,7 +33,7 @@ DIAGNOSTICS = {'closed-controlled-cycles-required','initial-preflight-rejected',
     'zero-input-fee-denominator','observation-expired-before-completion','observation-time-budget',
     'simulation-evidence-unavailable','simulation-clock-regression','single-leg-cost-evidence-rejected',
     'reverse-reference-quantity-over-cap','reverse-reference-changed','reverse-cost-required','reverse-cost-scope',
-    'post-entry-projection-rejected','post-entry-response-binding'}
+    'post-entry-projection-rejected','post-entry-response-binding','projected-exit-message-rejected'}
 
 
 class ReadTransport:
@@ -80,7 +80,7 @@ def combine(first, built, second, scope, *, stamp, review=preflight.audit):
 @view.cycles.binding.operation
 def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.monotonic,
             simulate=False, refreshed_deployment=False, assess_costs=False, reverse_reference=False, _evidence_sink=None,
-            post_entry_projection=False):
+            post_entry_projection=False, projected_exit_message=False):
     check(_evidence_sink is None or (callable(_evidence_sink) and assess_costs), 'cost-evidence-sink-mode')
     check(type(simulate) is bool, 'simulation-mode')
     check(type(assess_costs) is bool and (not assess_costs or simulate), 'costs-require-simulation')
@@ -91,6 +91,8 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
     check(type(post_entry_projection) is bool and (not post_entry_projection or
           (simulate and assess_costs and not reverse_reference and _evidence_sink is None)),
           'post-entry-requires-entry-simulation-and-costs')
+    check(type(projected_exit_message) is bool and (not projected_exit_message or post_entry_projection),
+          'projected-exit-requires-post-entry')
     # Selection is explicit and fixed in source, never supplied by an RPC report.
     baseline = deepcopy(preflight.BASELINE)
     collector = preflight_capture.collect
@@ -128,6 +130,8 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             import cost_readiness
             result.update(format='controlled-cost-observation-1', costReadiness=None)
         if post_entry_projection:result['format']='controlled-post-entry-observation-1'
+        if projected_exit_message:
+            result.update(format='controlled-projected-exit-observation-1',projectedExitMessage=None)
         if reverse_reference:
             import reverse_quote
             result.update(format='controlled-reverse-cost-observation-1', reverseReference=None, feePlan=None)
@@ -229,6 +233,14 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                     check(pe['fullSimulationSha256']==simulation['fullSimulationEvidenceSha256'] and
                           pe['requestParametersSha256']==simulation['requestParametersSha256'],
                           'post-entry-response-binding')
+                    if projected_exit_message:
+                        import projected_exit
+                        result['stage']='projected-exit-message'
+                        draft=projected_exit.build(cost_inputs,transport.expected)
+                        exit_assessment=projected_exit.assess(cost_inputs,transport.expected,draft)
+                        del draft
+                        check(exit_assessment['state']=='projected-reverse-message-consistent',
+                              'projected-exit-message-rejected')
                 if reverse_reference:
                     assessment['legRole'] = 'current-state-reverse-only'
                     assessment['economics']['reasons'] = [
@@ -258,7 +270,9 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                 result.update(postEntryProjection=post_assessment,liveCollectorVerified=True,
                               postEntryObservedInSimulation=True)
                 simulation['postEntryPoolReviewed']=True
-            result.update(state='controlled-post-entry-observation-consistent' if post_entry_projection else
+            if projected_exit_message:result['projectedExitMessage']=exit_assessment
+            result.update(state='controlled-projected-exit-observation-consistent' if projected_exit_message else
+                          'controlled-post-entry-observation-consistent' if post_entry_projection else
                           'controlled-reverse-cost-observation-consistent' if reverse_reference else
                           'controlled-cost-observation-consistent' if assess_costs else
                           'unsigned-quote-simulation-consistent' if simulate else
