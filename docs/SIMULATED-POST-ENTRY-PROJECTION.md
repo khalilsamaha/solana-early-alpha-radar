@@ -8,9 +8,10 @@ vaults. A reverse amount can then be projected from those simulated reserves.
 ## Implemented boundary
 
 `position-book/post_entry.py` defines a distinct nine-account request contract.
-The pool is appended to the existing eight-account response. This does not alter
-the existing transport, observer, scanner or paired-cost command. There is no live
-collector for this new contract yet, and no report-input interface.
+The pool is appended to the existing eight-account response. The existing
+eight-account behavior remains the default. The separate opt-in
+[live collector](POST-ENTRY-COLLECTOR.md) now implements the nine-account contract;
+its host observation is pending. There is no report-input interface.
 
 The pure reviewer checks the exact declared request parameters and recomputes the
 existing raw entry checks: unsigned message, pinned deployment observation, fee,
@@ -41,9 +42,10 @@ Matching that source does not prove deployed binary equivalence.
 ## What this does not establish
 
 The pure function cannot authenticate a caller-supplied request/response pair.
-The next collector must bind its single response to the exact armed request,
-retain the existing read deadline and request cap, sanitize bounded rows and
-recheck the closed source ledger. `liveCollectorVerified` stays false here.
+The live collector binds its single response to the exact armed request,
+retains the existing read deadline and request cap, sanitizes bounded rows and
+rechecks the closed source ledger. `liveCollectorVerified` stays false in the
+pure reviewer and is set true only by a successful complete collector operation.
 
 A simulation-returned state is hypothetical, not committed chain state. The epoch
 has only a monotonicity check. Oracle effects are not reviewed. The projection
@@ -81,5 +83,5 @@ SH
 Expected: `offline-checks-passed`, nine cases. This is only a portability check;
 it makes no RPC request and does not read the wallet or journals. No rebuild,
 service restart, live simulation or additional data-collection wait is needed.
-The next increment is the opt-in bounded live collector. The availability study,
+The opt-in bounded live collector now has a separate host command. The availability study,
 its sampling, weights and November 6 review stay unchanged.
