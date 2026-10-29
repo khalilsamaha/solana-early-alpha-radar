@@ -9,6 +9,7 @@ import sys
 import time
 from preflight import audit,flags,BASELINE,digest
 from preflight_capture import collect
+from preflight_diagnostics import describe
 from preflight_checks import run
 from recorded_capture import loads
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'launch-study'))
@@ -40,6 +41,7 @@ def main():
         else:
             c=collect(pool=a.pool,packet=read(a.packet) if a.packet else None);at=time.time_ns()//1000000
         result=dict(format='swap-preflight-report-1',capture=c,review=audit(c,now_ms=at),
+                    captureDiagnostics=describe(c),
                     baselineId=BASELINE['id'],baselineSha256=digest(BASELINE),replayOnly=bool(a.input),
                     currentRunNetworkRequests=0 if a.input else c['rpcRequestsAttempted'])
     else:result=run()

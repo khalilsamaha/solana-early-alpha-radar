@@ -41,3 +41,10 @@ Tests cover complete entry/exit, failed fees, unknown outcomes, exact signed bin
 ## Two closed controlled cycles
 
 `cycles_cli.py` reconciles the first historical round trip and the fixed prepared cycle two into a separate bounded ledger. It preserves the original single-position ledger, keeps verified external credits separate from returns, and never signs or calls RPC. See [the two-cycle accounting guide](../docs/TWO-CYCLE-ACCOUNTING.md) for commands, repeat-import behavior and quarantine handling.
+## Scoped reservation reader
+
+The separate `reservation_cli.py` observes the existing two controlled devnet
+cycles under the wallet lock using read-only journal connections. It does not
+create a book or reserve funds. Its optional quote binding derives commitments
+directly from local evidence, while leaving execution and new-cycle approval false.
+See [scope and Kali inspection](../docs/LOCAL-RESERVATION-INTEGRATION.md).

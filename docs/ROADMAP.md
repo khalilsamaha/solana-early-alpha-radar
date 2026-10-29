@@ -1,6 +1,6 @@
-# Project roadmap — updated 25 October 2026
+# Project roadmap — updated 27 October 2026
 
-The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
+The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). The [October 27 observation batch](OBSERVATION-CONSOLIDATION-20261027.md) is now being consolidated in PR #58. Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
 
 Goal: establish whether entry-time evidence identifies realistically enterable and exitable opportunities. More alerts and faster detection alone have not established a profitable strategy.
 
@@ -11,18 +11,74 @@ Goal: establish whether entry-time evidence identifies realistically enterable a
 | Frozen comparison | Installed private artifact; capture merging and unchanged fixed evaluation | Late October 28 review checkpoint; preserve earlier days with capture-only exports |
 | Controlled devnet execution | Fixed two-cycle identity, cumulative spending reservations, explicit one-send paths and bounded unsigned recovery | Keep the completed rehearsal closed; any further execution needs a separately scoped design |
 | Accounting and readiness | Two-cycle receipt reconciliation, idempotent historical accounting and strictly read-only readiness; local key-excluded evidence snapshots with isolated restore checks | Host isolated restore accepted; encrypted off-machine recovery and key custody remain separate work |
+| Execution economics | Host-accepted controlled quote, exact unsigned simulation, scoped local reservations and single-leg fee-cap funding | Consolidated review, then fresh exit-leg evidence and explicit round-trip costs; no economic edge or execution approval claimed |
 | Funded pilot | Not enabled | Separate strategy review, mainnet-specific validation, execution-cost evidence and explicit pilot scope/limits |
 
 The current quote quota permits at most 48 watches per cohort per day. Forward review keeps the existing minimum of 200 valid labels and seven distinct UTC dates per target/cohort, plus all other quality guards. October 22–28 spans seven distinct UTC dates, not seven full 24-hour periods. The main checkpoint is late October 28, Amsterdam time; qualification is not promised by that date. Do not lower guards, refit, or select a favorable review to force progress. Sparse failure labels may leave some targets unfitted.
 
 Immediate sequence:
 
-1. Consolidation and the host-accepted private evidence snapshot/isolated restore are on main. Validate the [consolidated operational report](OPERATIONAL-REVIEW.md); no runtime deployment is needed.
+1. Consolidation and the host-accepted private evidence snapshot/isolated restore are on main. Production compact statistics passed host acceptance on October 26: two complete refreshes, zero refresh failures and readiness throughout. The [execution cost contract and read-only evidence bridge](../execution-cost/README.md) can be developed and tested on synthetic inputs while the study remains frozen; no additional runtime deployment is needed for those modules.
 2. Preserve bounded local quote captures before earlier study days leave the helper's 72-hour window. Collection alone does not run predictions or change the frozen experiment. Keep existing captures intact. Take another capture-only export on October 26 to bridge the earlier window with a late October 28 final capture.
 3. Late on October 28, run the existing review against all retained captures. Report gaps, insufficient evidence and failed targets explicitly.
 4. Use that review to choose a targeted engineering or research improvement. A positive paper/quote result alone does not establish executable profitability; a weak result may justify rejecting the approach.
 
 No calendar date or expected revenue is justified for a real-money pilot. Deployment layout migration, private journal disaster recovery, general portfolio management and arbitrary mainnet routes are not completed by this source consolidation.
+
+## Next execution integration sequence
+
+1. **Implemented, not deployed:** exact-message network-fee observations and native
+   account evidence feed the standalone cost model. Both message/quote identities
+   are retained, but their association is not a verified swap. Missing evidence
+   remains unavailable; devnet has no USDC-economic interpretation. See
+   [integration release](EXECUTION-COST-EVIDENCE-UPDATE.md).
+2. **Development increment, host synthetic check accepted October 27:** a declared direct devnet quote
+   now binds to raw unsigned instruction/account evidence, exact amounts and
+   minimum output, and balances after declared reservations. This uses the
+   existing controlled route to test the integration contract; it does not
+   complete or replace mainnet validation. See [scope and host check](QUOTE-STATE-BINDING-UPDATE.md).
+   **Remaining engineering gate:** one narrowly supported mainnet route/message
+   validator, with input/output mint and amount/minimum-output checks, fee/tip
+   treatment, account creation/rent, token-account ownership and principal
+   spendability. Unsupported routes and extensions remain blocked. Build and test
+   read-only/simulation integration before connecting a signer.
+3. **Local reservation read integrated, host inspection accepted October 27:** the controlled
+   two-cycle ledger can now supply scoped token/native commitments directly to
+   the devnet quote/account reviewer under the wallet lock. Public reservation
+   summaries are not accepted as its authority. This is an observation, not a new
+   atomic reservation or wallet-wide budget. See [integration and host command](LOCAL-RESERVATION-INTEGRATION.md).
+   **Fresh quote observation implemented, host live check accepted October 27:** the standalone
+   reader calculates a direct-pool exact-input quote, uses it in a fresh unsigned
+   instruction and rechecks raw account/program evidence and current local
+   commitments. It refuses changed economic pool inputs and stale original clocks.
+   See [bounded host command and limitations](FRESH-CONTROLLED-QUOTE.md).
+   **Unsigned simulation and single-leg costs accepted October 27:** the standalone
+   [simulation command](UNSIGNED-QUOTE-SIMULATION.md) compares its own token/native
+   effects with a newly calculated quote, rechecks returned config/deployment bytes
+   and rereads local reservations without signing or sending. A deployment change
+   first stopped the run. Raw program evidence was reviewed, and a new fixed pin
+   is selectable only for unsigned simulation. The 18:46 and 18:58 UTC host
+   checkpoints passed; the original sender pin remains unchanged.
+   [Cost readiness](CONTROLLED-COST-READINESS.md) funds the full message fee cap
+   from final locked reservations; exit costs and round-trip economics stay unknown.
+   **Next engineering gate:** finish consolidated regression/PR review, then build
+   fresh exit-leg evidence and explicit round-trip funding/cost assessment. Later
+   execution integration must bind a validated route to durable intent and
+   authoritative reservations, recheck before the send boundary, and exercise
+   stale evidence, insufficient balance, STOP, unknown outcomes and idempotent
+   recovery. None of this reopens the completed rehearsals.
+4. **Independent research gate:** October 28 at 17:30 Europe/Amsterdam, review the
+   frozen study using preserved captures and original guards. A failed or sparse
+   result requires an explicit research decision, not relaxed thresholds.
+5. **Funded test gate:** only after route, simulation, accounting, operational and
+   strategy reviews, agree a separate disposable test budget and hard exposure
+   limits. A small execution-mechanics test would establish actual fee/fill behavior,
+   not expected profitability. Positive execution readiness cannot substitute for
+   evidence that the strategy works.
+
+This sequence separates two questions: can the system execute and reconcile the
+intended trade reliably, and do its signals identify an economic edge? Both need
+evidence. The current release advances the first without changing the second.
 
 ## 15 October 2026 update
 
@@ -140,3 +196,28 @@ Added a separate immutable `swap-execution-v1` lifecycle: fresh fixed-scope mess
 ## 21 October 2026 — receipt-bound reverse ready for host validation
 
 The actual forward swap and zero-send terminal recovery passed review. The next release reverses exactly the acquired test-token quantity in its own one-send journal and reconciles both finalized receipts, original-token net change, residual acquired tokens and native fees. Current host scope is 998 atomic input/minimum 988; it is a fixed controlled test, not a market strategy rule. 27 new offline cases cover reverse signing/accounting and interrupted/failed paths. Next gate: actual reverse and recovery reports, then receipt-to-position/budget integration and operational stop/reconciliation exercises. Mainnet readiness and forward strategy evidence remain separate gates. See [host sequence](CONTROLLED-REVERSE-SWAP-UPDATE.md).
+
+
+### October 27 deployment observation refresh
+
+The full 18:38 UTC public program capture replayed exactly and corroborated the
+18:30 deployment-drift diagnostic. A separate fixed observation is now selectable
+only for unsigned simulation via `--deployment-observation-20261027`; the legacy
+preflight/sender paths retain their prior pin. No source/build or behavior approval
+is inferred from a matching fingerprint. Host unsigned simulation and single-leg
+cost observations passed at 18:46 and 18:58 UTC respectively; report-level
+verification limits remain explicit. Production collection and the
+October 28, 17:30 Europe/Amsterdam frozen review remain unchanged.
+
+### October 27 controlled cost integration
+
+Host unsigned simulation on the explicitly refreshed deployment passed at 18:46
+UTC (1,000 in, 998 calculated/simulated out, 5,000 lamport fee, 7.557 seconds).
+Summary hashes/arithmetic/clocks were checked; uploaded raw RPC replay was not
+available. `position-book/cost_cli.py` now recomputes single-leg funding and costs
+from raw in-process evidence plus final locked reservations. The 18:58 UTC host
+checkpoint passed: 13 offline cases, matching 998 output, 5,000 fee within 10,000
+cap, unchanged closed journals and 7.337-second completion. The batch is now
+under consolidated regression and PR review; see
+[consolidation record](OBSERVATION-CONSOLIDATION-20261027.md). No round-trip
+economics, sender activation, scanner deployment or frozen study change is implied. See [controlled cost readiness](CONTROLLED-COST-READINESS.md).
