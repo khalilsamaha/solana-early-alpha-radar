@@ -1,6 +1,6 @@
-# Project roadmap — updated 27 October 2026
+# Project roadmap — updated 29 October 2026
 
-The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). The [October 27 observation batch](OBSERVATION-CONSOLIDATION-20261027.md) is now being consolidated in PR #58. Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
+The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). The [October 27 observation batch](OBSERVATION-CONSOLIDATION-20261027.md) was merged in PR #58. The [October 29 consolidation](ENGINEERING-CONSOLIDATION-20261029.md) records the accepted research and independent paired-cost batch. Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
 
 Goal: establish whether entry-time evidence identifies realistically enterable and exitable opportunities. More alerts and faster detection alone have not established a profitable strategy.
 
@@ -8,20 +8,20 @@ Goal: establish whether entry-time evidence identifies realistically enterable a
 | --- | --- | --- |
 | Hosting and backups | Existing Kali services and backup tooling; no deployment change in this release | Current host health and backup success need their own operational evidence |
 | Scanner and walletless quotes | Existing discovery, paper signals, three-cohort sampling and explicit failures | Preserve timing, versioned denominators and retained evidence |
-| Frozen comparison | Installed private artifact; capture merging and unchanged fixed evaluation | Late October 28 review checkpoint; preserve earlier days with capture-only exports |
+| Frozen comparison | October 28 review complete; four fitted groups reached evidence minimums, no model promoted | Confirmation registered October 29; observe October 30–November 5 UTC, review November 6 00:05 UTC |
 | Controlled devnet execution | Fixed two-cycle identity, cumulative spending reservations, explicit one-send paths and bounded unsigned recovery | Keep the completed rehearsal closed; any further execution needs a separately scoped design |
 | Accounting and readiness | Two-cycle receipt reconciliation, idempotent historical accounting and strictly read-only readiness; local key-excluded evidence snapshots with isolated restore checks | Host isolated restore accepted; encrypted off-machine recovery and key custody remain separate work |
-| Execution economics | Host-accepted controlled quote, exact unsigned simulation, scoped local reservations and single-leg fee-cap funding | Consolidated review, then fresh exit-leg evidence and explicit round-trip costs; no economic edge or execution approval claimed |
+| Execution economics | Host-accepted controlled quote, exact unsigned simulation, scoped local reservations and single-leg fee-cap funding | Host reverse and independent paired cost/failure scenario accepted October 29; next: validate simulation-returned pool state before projecting an exit |
 | Funded pilot | Not enabled | Separate strategy review, mainnet-specific validation, execution-cost evidence and explicit pilot scope/limits |
 
-The current quote quota permits at most 48 watches per cohort per day. Forward review keeps the existing minimum of 200 valid labels and seven distinct UTC dates per target/cohort, plus all other quality guards. October 22–28 spans seven distinct UTC dates, not seven full 24-hour periods. The main checkpoint is late October 28, Amsterdam time; qualification is not promised by that date. Do not lower guards, refit, or select a favorable review to force progress. Sparse failure labels may leave some targets unfitted.
+The completed frozen review used 781 forward watches. Four fitted groups met the original 200-label and seven-UTC-date minimums; two availability models remain unfitted. Meeting those minimums did not establish an economic edge. Richer context models did not improve the profit prediction, while the simpler early-activity exit-availability model offers a specific failure-filter hypothesis. See the [decision and limitations](FROZEN-REVIEW-DECISION-20261028.md).
 
 Immediate sequence:
 
-1. Consolidation and the host-accepted private evidence snapshot/isolated restore are on main. Production compact statistics passed host acceptance on October 26: two complete refreshes, zero refresh failures and readiness throughout. The [execution cost contract and read-only evidence bridge](../execution-cost/README.md) can be developed and tested on synthetic inputs while the study remains frozen; no additional runtime deployment is needed for those modules.
-2. Preserve bounded local quote captures before earlier study days leave the helper's 72-hour window. Collection alone does not run predictions or change the frozen experiment. Keep existing captures intact. Take another capture-only export on October 26 to bridge the earlier window with a late October 28 final capture.
-3. Late on October 28, run the existing review against all retained captures. Report gaps, insufficient evidence and failed targets explicitly.
-4. Use that review to choose a targeted engineering or research improvement. A positive paper/quote result alone does not establish executable profitability; a weak result may justify rejecting the approach.
+1. The October 29 diagnostic replay passed. The original report/model identities and all forward group counts and fixed-threshold partitions agree. Partial training captures remain explicitly unavailable for full training-distribution comparison.
+2. Registered October 29: the [separate availability confirmation](../availability-study/README.md): unchanged early-activity legacy weights and threshold, seven full future UTC days, development-token exclusions, fixed review time and separate availability/economic reporting. Production sampling and alerts stay unchanged.
+3. Preserve bounded captures every 48 hours and at the final review. No automatic timer is added in this increment. The completed October study is development evidence; do not extend or reinterpret it as a fresh holdout. Study registration prints the authoritative dates.
+4. The [reverse observation](REVERSE-COST-OBSERVATION.md) passed on October 29. The [independent paired cost scenario](PAIRED-COST-OBSERVATION.md) also passed on the host. Implement explicit simulated post-entry state provenance, then integrate its bounded collector. The existing controlled devnet cycles remain closed. Mainnet validation and a separately agreed mechanics pilot still have their own gates.
 
 No calendar date or expected revenue is justified for a real-money pilot. Deployment layout migration, private journal disaster recovery, general portfolio management and arbitrary mainnet routes are not completed by this source consolidation.
 
@@ -67,9 +67,9 @@ No calendar date or expected revenue is justified for a real-money pilot. Deploy
    authoritative reservations, recheck before the send boundary, and exercise
    stale evidence, insufficient balance, STOP, unknown outcomes and idempotent
    recovery. None of this reopens the completed rehearsals.
-4. **Independent research gate:** October 28 at 17:30 Europe/Amsterdam, review the
-   frozen study using preserved captures and original guards. A failed or sparse
-   result requires an explicit research decision, not relaxed thresholds.
+4. **Independent research gate:** the October 28 review did not justify promotion.
+   Replay the preserved evidence, then audit the specific availability hypothesis.
+   Revised models or filters require a new prospective comparison; retain all original results.
 5. **Funded test gate:** only after route, simulation, accounting, operational and
    strategy reviews, agree a separate disposable test budget and hard exposure
    limits. A small execution-mechanics test would establish actual fee/fill behavior,

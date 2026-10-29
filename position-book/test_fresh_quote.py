@@ -57,7 +57,7 @@ def responses(first,second):
 
 class FreshQuoteTests(unittest.TestCase):
     def run_observe(self,mutate=None,clock=None,ledger_hook=None,stop=None,http_hook=None,
-                    opener_factory=None,simulate=False,refreshed_deployment=False,legacy_mismatch=False,selected_base=None,assess_costs=False):
+                    opener_factory=None,simulate=False,refreshed_deployment=False,legacy_mismatch=False,selected_base=None,assess_costs=False,reverse_reference=False,evidence_sink=None,observer=None):
         first,second,base,scope=setup(); clock=clock or Clock()
         if mutate:mutate(first,second,scope)
         opener=(opener_factory(first,second,scope) if opener_factory else
@@ -69,6 +69,8 @@ class FreshQuoteTests(unittest.TestCase):
             v=dict(phase='closed',wallet=wallet,pool=pool,nativeHeldLamports='0',
                    tokenAccounts=[dict(account=a['source'],mint=a['inputMint'],heldAtomic='0')],
                    observedAtMs=cl(),ledgerHeadSha256='a'*64,cycleBindingSha256='b'*64)
+            if reverse_reference:
+                v['tokenAccounts'].append(dict(account=a['destination'],mint=a['outputMint'],heldAtomic='0'))
             v['readStartedAtMs']=v['observedAtMs']
             reads.append(v)
             if ledger_hook:ledger_hook(len(reads),v)
@@ -84,8 +86,8 @@ class FreshQuoteTests(unittest.TestCase):
                 stack.enter_context(patch(target,value))
             stack.enter_context(patch('core.signer',side_effect=AssertionError('signer called')))
             stack.enter_context(patch('fresh_packet.prepare_fresh',side_effect=AssertionError('prepare called')))
-            r=m.observe(Path('/synthetic'),a['wallet'],a['pool'],opener=opener,clock=clock,simulate=simulate,
-                        refreshed_deployment=refreshed_deployment,assess_costs=assess_costs)
+            r=(observer or m.observe)(Path('/synthetic'),a['wallet'],a['pool'],opener=opener,clock=clock,simulate=simulate,
+                        refreshed_deployment=refreshed_deployment,assess_costs=assess_costs,reverse_reference=reverse_reference,_evidence_sink=evidence_sink)
         return r,opener
 
     def test_full_collect_price_reprice_fee_account_binding_has_no_send(self):
