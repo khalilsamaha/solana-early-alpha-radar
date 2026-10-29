@@ -93,9 +93,27 @@ explicit shortfalls, stale-entry labelling, no-send transport, exclusive private
 outputs and early termination. Existing entry, reverse, simulation and single-leg
 cost regressions pass: 53 focused tests across the five affected suites, including
 12 paired-cost tests, plus the ten-case offline CLI self-check. Source hygiene and
-whitespace checks pass. The host paired observation is still pending.
+whitespace checks pass. The host paired observation passed at 19:20 UTC on October 29; see the accepted evidence below.
 
-Next: verify the paired host report and consolidate the development batch. Then
-implement explicit post-entry pool/state provenance before claiming sequential
+Next: implement explicit post-entry pool/state provenance before claiming sequential
 entry/exit readiness. Mainnet route validation, independently qualified strategy
 results and a separately scoped funded pilot remain separate gates.
+
+## Accepted host evidence — 29 October, 19:20 UTC
+
+The ten-case self-check reproduced exactly. Both independent legs passed: entry
+1,000 → 998 (minimum 989), reverse 998 → 996 (minimum 987). Each observed and
+simulated network fee was 5,000 lamports; each cap was 10,000. One additional
+failed-exit scenario produced a 30,000-lamport modelled cap budget and zero
+shortfall. The actual native debit was zero.
+
+The per-leg quote-to-completion intervals were 7,784 ms and 7,612 ms. The entry
+quote was expired at combined report completion and remained labelled so. Both
+legs referenced the same closed ledger. There were 40 RPC requests, two unsigned
+simulations, zero signatures, zero sends and no reservation changes.
+
+The public summaries' arithmetic, hashes, clocks and flags were independently
+checked. They do not contain raw RPC or private journal evidence for independent
+replay. Current funding, post-entry pool observation, complete round-trip funding
+and execution approval remain false. This acceptance is an engineering gate,
+not evidence of profitable execution.
