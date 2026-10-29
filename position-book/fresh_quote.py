@@ -31,7 +31,8 @@ DIAGNOSTICS = {'closed-controlled-cycles-required','initial-preflight-rejected',
     'quote-input-mint','quote-pool-roles','native-route-unsupported','input-vault-overflow',
     'input-consumed-by-fee','empty-or-invalid-output','combined-fee-rate',
     'zero-input-fee-denominator','observation-expired-before-completion','observation-time-budget',
-    'simulation-evidence-unavailable','simulation-clock-regression','single-leg-cost-evidence-rejected'}
+    'simulation-evidence-unavailable','simulation-clock-regression','single-leg-cost-evidence-rejected',
+    'reverse-reference-quantity-over-cap','reverse-reference-changed','reverse-cost-required','reverse-cost-scope'}
 
 
 class ReadTransport:
@@ -77,11 +78,13 @@ def combine(first, built, second, scope, *, stamp, review=preflight.audit):
 
 @view.cycles.binding.operation
 def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.monotonic,
-            simulate=False, refreshed_deployment=False, assess_costs=False):
+            simulate=False, refreshed_deployment=False, assess_costs=False, reverse_reference=False):
     check(type(simulate) is bool, 'simulation-mode')
     check(type(assess_costs) is bool and (not assess_costs or simulate), 'costs-require-simulation')
     check(type(refreshed_deployment) is bool and (not refreshed_deployment or simulate),
           'refreshed-deployment-requires-unsigned-simulation')
+    check(type(reverse_reference) is bool and (not reverse_reference or (simulate and assess_costs)),
+          'reverse-requires-simulation-and-costs')
     # Selection is explicit and fixed in source, never supplied by an RPC report.
     baseline = deepcopy(preflight.BASELINE)
     collector = preflight_capture.collect
@@ -113,17 +116,23 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
         if assess_costs:
             import cost_readiness
             result.update(format='controlled-cost-observation-1', costReadiness=None)
+        if reverse_reference:
+            import reverse_quote
+            result.update(format='controlled-reverse-cost-observation-1', reverseReference=None, feePlan=None)
         result['limitations'][-3:] = [
             'At most 20 public devnet requests including one unsigned simulation; no retries.',
             'Original quote freshness remains 10 seconds through simulation and local ledger replay.',
             'Simulation is not a fill, signature verification, new cycle or execution approval.',
             'Matching sampled effects do not prove deployed-source equivalence for all inputs.']
+        if reverse_reference:
+            result['limitations'].append('Reverse uses existing actual token funds; no entry is executed or post-entry pool assumed.')
     try:
         with view.cycles.c.source_lock(home, wallet) as root, read_only_journals():
             before = view.read_locked(root, wallet, pool, clock)
             check(before['phase'] == 'closed', 'closed-controlled-cycles-required')
             scope, _ = view.cycles.c.submit.bridge.source_scope(SimpleNamespace(home=root, wallet=wallet), pool)
             scope_check(scope)
+            entry_scope = deepcopy(scope)
             transport = sim.Transport(opener, monotonic) if simulate else ReadTransport(opener, monotonic)
             result['stage'] = 'pool-quote'
             first = collector(pool=pool, opener=transport, now=clock, monotonic=monotonic)
@@ -132,7 +141,11 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             result['preflight'] = initial
             check(initial['state'] == 'pinned-pool-snapshot', 'initial-preflight-rejected')
             raw, _ = preflight.split_capture(first)
-            price = derive(raw, scope, slippage_bps=100, now_ms=clock())
+            if reverse_reference:
+                scope, price, reference = reverse_quote.prepare(raw, entry_scope, now_ms=clock())
+                result['reverseReference'] = reference
+            else:
+                price = derive(raw, scope, slippage_bps=100, now_ms=clock())
             result['quote'] = price
             fresh_scope = deepcopy(scope); fresh_scope['minimumAmountOut'] = price['quote']['minimumOutAmount']
             result['stage'] = 'unsigned-packet'
@@ -147,6 +160,12 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                   (current['ledgerHeadSha256'], current['cycleBindingSha256']), 'ledger-changed-during-quote')
             stamp = clock()
             price, checked, bundle = combine(first, built, second, scope, stamp=stamp, review=reviewer)
+            if reverse_reference:
+                # Recompute the entry-to-exit quantity link from the original raw
+                # snapshot, without trusting a previously exported reference.
+                expected_scope, expected_price, expected_reference = reverse_quote.prepare(raw, entry_scope, now_ms=stamp)
+                check(scope == expected_scope and price == expected_price and reference == expected_reference,
+                      'reverse-reference-changed')
             q = price['quote']
             selected = [a for a in current['tokenAccounts'] if a['account'] == q['source'] and a['mint'] == q['inputMint']]
             check(len(selected) == 1 and selected[0]['heldAtomic'] is not None, 'local-token-reservation-unknown')
@@ -184,6 +203,17 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                 result['costReadiness'] = assessment
                 check(assessment['state'] == 'single-leg-cost-evidence-consistent',
                       'single-leg-cost-evidence-rejected')
+                if reverse_reference:
+                    assessment['legRole'] = 'current-state-reverse-only'
+                    assessment['economics']['reasons'] = [
+                        'controlled-devnet-assets-not-usdc-economics',
+                        'paired-entry-fee-and-simulation-absent', 'post-entry-pool-not-observed',
+                        'failed-attempt-budget-unknown', 'native-fee-valuation-absent']
+                    assessment['limitations'] = [
+                        'Paired entry and failed-attempt budgets are unknown; no round-trip reserve or profitability pass.'
+                        if x == 'Exit and failed-attempt budgets are unknown; no round-trip reserve or profitability pass.'
+                        else x for x in assessment['limitations']]
+                    result['feePlan'] = reverse_quote.fee_plan(entry_scope, scope, reference, assessment)
                 check(not view.cycles.c.submit.swap.stop(root), 'stop-marker-present')
             finished = clock()
             if simulate:
@@ -192,7 +222,8 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             check(stamp <= finished < min(checked['validUntilExclusiveMs'],
                   binding['binding']['validUntilExclusiveMs']), 'observation-expired-before-completion')
             check(0 <= monotonic()-transport.started < 30, 'observation-time-budget')
-            result.update(state='controlled-cost-observation-consistent' if assess_costs else
+            result.update(state='controlled-reverse-cost-observation-consistent' if reverse_reference else
+                          'controlled-cost-observation-consistent' if assess_costs else
                           'unsigned-quote-simulation-consistent' if simulate else
                           'fresh-quote-observation-consistent', stage='complete', reviewedAtMs=finished,
                           simulationVerified=simulate)

@@ -8,10 +8,10 @@ Goal: establish whether entry-time evidence identifies realistically enterable a
 | --- | --- | --- |
 | Hosting and backups | Existing Kali services and backup tooling; no deployment change in this release | Current host health and backup success need their own operational evidence |
 | Scanner and walletless quotes | Existing discovery, paper signals, three-cohort sampling and explicit failures | Preserve timing, versioned denominators and retained evidence |
-| Frozen comparison | October 28 review complete; four fitted groups reached evidence minimums, no model promoted | Diagnostic replay accepted October 29; register the separate fixed-window availability confirmation |
+| Frozen comparison | October 28 review complete; four fitted groups reached evidence minimums, no model promoted | Confirmation registered October 29; observe October 30–November 5 UTC, review November 6 00:05 UTC |
 | Controlled devnet execution | Fixed two-cycle identity, cumulative spending reservations, explicit one-send paths and bounded unsigned recovery | Keep the completed rehearsal closed; any further execution needs a separately scoped design |
 | Accounting and readiness | Two-cycle receipt reconciliation, idempotent historical accounting and strictly read-only readiness; local key-excluded evidence snapshots with isolated restore checks | Host isolated restore accepted; encrypted off-machine recovery and key custody remain separate work |
-| Execution economics | Host-accepted controlled quote, exact unsigned simulation, scoped local reservations and single-leg fee-cap funding | Consolidated review, then fresh exit-leg evidence and explicit round-trip costs; no economic edge or execution approval claimed |
+| Execution economics | Host-accepted controlled quote, exact unsigned simulation, scoped local reservations and single-leg fee-cap funding | Current-state reverse quote/simulation and known-cap subtotal implemented; host observation pending, paired-leg costs remain incomplete |
 | Funded pilot | Not enabled | Separate strategy review, mainnet-specific validation, execution-cost evidence and explicit pilot scope/limits |
 
 The completed frozen review used 781 forward watches. Four fitted groups met the original 200-label and seven-UTC-date minimums; two availability models remain unfitted. Meeting those minimums did not establish an economic edge. Richer context models did not improve the profit prediction, while the simpler early-activity exit-availability model offers a specific failure-filter hypothesis. See the [decision and limitations](FROZEN-REVIEW-DECISION-20261028.md).
@@ -19,9 +19,9 @@ The completed frozen review used 781 forward watches. Four fitted groups met the
 Immediate sequence:
 
 1. The October 29 diagnostic replay passed. The original report/model identities and all forward group counts and fixed-threshold partitions agree. Partial training captures remain explicitly unavailable for full training-distribution comparison.
-2. Register the [separate availability confirmation](../availability-study/README.md): unchanged early-activity legacy weights and threshold, seven full future UTC days, development-token exclusions, fixed review time and separate availability/economic reporting. Production sampling and alerts stay unchanged.
+2. Registered October 29: the [separate availability confirmation](../availability-study/README.md): unchanged early-activity legacy weights and threshold, seven full future UTC days, development-token exclusions, fixed review time and separate availability/economic reporting. Production sampling and alerts stay unchanged.
 3. Preserve bounded captures every 48 hours and at the final review. No automatic timer is added in this increment. The completed October study is development evidence; do not extend or reinterpret it as a fresh holdout. Study registration prints the authoritative dates.
-4. Continue fresh exit-leg and round-trip execution-cost engineering independently. The existing controlled devnet cycles remain closed. Mainnet validation and a separately agreed mechanics pilot still have their own gates.
+4. Validate the [current-state reverse observation](REVERSE-COST-OBSERVATION.md) on the host, then implement paired-leg state provenance and full cost budgets independently. The existing controlled devnet cycles remain closed. Mainnet validation and a separately agreed mechanics pilot still have their own gates.
 
 No calendar date or expected revenue is justified for a real-money pilot. Deployment layout migration, private journal disaster recovery, general portfolio management and arbitrary mainnet routes are not completed by this source consolidation.
 

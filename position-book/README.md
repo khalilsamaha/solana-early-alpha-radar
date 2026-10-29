@@ -48,3 +48,10 @@ cycles under the wallet lock using read-only journal connections. It does not
 create a book or reserve funds. Its optional quote binding derives commitments
 directly from local evidence, while leaving execution and new-cycle approval false.
 See [scope and Kali inspection](../docs/LOCAL-RESERVATION-INTEGRATION.md).
+
+## Current-state reverse cost observation
+
+`reverse_cost_cli.py` derives a fresh reference entry quantity, reverses it exactly,
+and optionally validates one unsigned reverse simulation using existing actual
+tokens and current reservations. It never executes the reference entry or claims
+a post-entry round trip. See [scope and host commands](../docs/REVERSE-COST-OBSERVATION.md).
