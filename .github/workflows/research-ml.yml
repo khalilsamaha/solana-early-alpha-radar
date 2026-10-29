@@ -4,6 +4,7 @@ on:
     paths:
       - 'research-ml/**'
       - 'forward-study/**'
+      - 'availability-study/**'
       - 'research-dataset/**'
       - 'qualification-review/**'
       - 'launch-study/**'
@@ -12,6 +13,7 @@ on:
     paths:
       - 'research-ml/**'
       - 'forward-study/**'
+      - 'availability-study/**'
       - 'research-dataset/**'
       - 'qualification-review/**'
       - 'launch-study/**'
@@ -44,3 +46,4 @@ jobs:
           /tmp/radar-ml-venv/bin/python -m unittest discover -s forward-study -p 'test_model.py'
           /tmp/radar-ml-venv/bin/python -m unittest discover -s forward-study -p 'test_experiment.py'
           /tmp/radar-ml-venv/bin/python -m unittest discover -s forward-study -p 'test_failure_audit.py'
+          /tmp/radar-ml-venv/bin/python -m unittest discover -s availability-study -p 'test_*.py'

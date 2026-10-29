@@ -1,4 +1,4 @@
-# Project roadmap — updated 28 October 2026
+# Project roadmap — updated 29 October 2026
 
 The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). The [October 27 observation batch](OBSERVATION-CONSOLIDATION-20261027.md) is now being consolidated in PR #58. Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
 
@@ -8,7 +8,7 @@ Goal: establish whether entry-time evidence identifies realistically enterable a
 | --- | --- | --- |
 | Hosting and backups | Existing Kali services and backup tooling; no deployment change in this release | Current host health and backup success need their own operational evidence |
 | Scanner and walletless quotes | Existing discovery, paper signals, three-cohort sampling and explicit failures | Preserve timing, versioned denominators and retained evidence |
-| Frozen comparison | October 28 review complete; four fitted groups reached evidence minimums, no model promoted | Replay preserved evidence and audit failures/input distributions; any revised hypothesis needs a separate prospective study |
+| Frozen comparison | October 28 review complete; four fitted groups reached evidence minimums, no model promoted | Diagnostic replay accepted October 29; register the separate fixed-window availability confirmation |
 | Controlled devnet execution | Fixed two-cycle identity, cumulative spending reservations, explicit one-send paths and bounded unsigned recovery | Keep the completed rehearsal closed; any further execution needs a separately scoped design |
 | Accounting and readiness | Two-cycle receipt reconciliation, idempotent historical accounting and strictly read-only readiness; local key-excluded evidence snapshots with isolated restore checks | Host isolated restore accepted; encrypted off-machine recovery and key custody remain separate work |
 | Execution economics | Host-accepted controlled quote, exact unsigned simulation, scoped local reservations and single-leg fee-cap funding | Consolidated review, then fresh exit-leg evidence and explicit round-trip costs; no economic edge or execution approval claimed |
@@ -18,9 +18,9 @@ The completed frozen review used 781 forward watches. Four fitted groups met the
 
 Immediate sequence:
 
-1. Run the offline failure/feature diagnostic against the exact preserved captures and original reviewed report. It must reproduce predictions and summaries before reporting feature distributions. No new collection, refitting, runtime change or signing is involved.
-2. Inspect quote failures, unknown outcomes, missing features and differences from the frozen input transform. Do not reinterpret failed quotes as actual losses or confirmed unsellability.
-3. If the audit supports it, register a narrow new prospective exit-availability comparison with fixed rules and economic evaluation. The completed study is now development evidence, not an untouched test set for revised rules.
+1. The October 29 diagnostic replay passed. The original report/model identities and all forward group counts and fixed-threshold partitions agree. Partial training captures remain explicitly unavailable for full training-distribution comparison.
+2. Register the [separate availability confirmation](../availability-study/README.md): unchanged early-activity legacy weights and threshold, seven full future UTC days, development-token exclusions, fixed review time and separate availability/economic reporting. Production sampling and alerts stay unchanged.
+3. Preserve bounded captures every 48 hours and at the final review. No automatic timer is added in this increment. The completed October study is development evidence; do not extend or reinterpret it as a fresh holdout. Study registration prints the authoritative dates.
 4. Continue fresh exit-leg and round-trip execution-cost engineering independently. The existing controlled devnet cycles remain closed. Mainnet validation and a separately agreed mechanics pilot still have their own gates.
 
 No calendar date or expected revenue is justified for a real-money pilot. Deployment layout migration, private journal disaster recovery, general portfolio management and arbitrary mainnet routes are not completed by this source consolidation.
