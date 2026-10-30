@@ -269,3 +269,44 @@ private ledger: recomputed prices and simulation fees, all exit fee caps held,
 exact message identities, a durable signing-unknown boundary and no automatic
 release on expiry or process death. This prototype has no live reader/signer
 handoff. See [scope, tests and host command](PRE-SIGN-ADMISSION.md).
+
+### October 30 — handoff consolidated; receipt integration built
+
+PR #63 merged the three host-accepted admission/handoff increments after both CI
+groups passed. Main `c632bd7388faea410a5bc401e66e27fdff445807` matches the reviewed
+tree. The next receipt gate validates exact raw signed evidence against the saved
+handoff, stores terminal evidence atomically in the same ledger, and replays it
+on reopening. Unknown/conflicting outcomes never release the original reservation.
+Its synthetic host check is pending. Key-backend integration, actual submission
+provenance, trusted RPC collection and authoritative allocation transitions remain
+separate gates. See [receipt integration](ADMISSION-RECEIPT-GATE.md).
+
+
+### October 30 — receipt gate accepted; restricted signer built
+
+The 15:51 UTC host report matched all 14 receipt-gate cases. The next increment
+connects the locked admission to an independent restricted devnet key process. It
+reconstructs the message from the saved scope, checks the controlled pair/pool,
+commits a one-shot attempt before signing, and supports existing-acknowledgment
+recovery without key access. Only disposable keys and synthetic journals have been
+used. The 19-case host check is pending; production wiring, one-send provenance,
+trusted receipt collection and authoritative allocation transitions remain open.
+See [signer gate and test scope](RESTRICTED-ADMISSION-SIGNER.md).
+
+
+### October 30 — restricted signer accepted; submission/collection built
+
+The 18:38 UTC signer host report matched all 19 cases and flags. The next internal
+gate records an immutable send boundary in the existing admission database before
+one fixed-devnet transport call. It checks genesis, blockhash and exact-message
+fee under the original deadline, preserves unknown outcomes after interruption,
+and never resends during recovery. A bounded genesis/base64 receipt collector
+commits raw evidence before idempotent receipt application. All principal/fee
+reservations stay held. The 18-case synthetic host check is pending; production
+services and the frozen study are unchanged. Allocation ownership, sibling-ledger
+recovery and delayed-exit integration remain open. See
+[submission/receipt gate](ADMISSION-SUBMISSION-GATE.md).
+
+The submission host report captured October 30 at 19:10:35 UTC matched all 18
+cases and flags exactly. The three-increment admission lifecycle batch is ready
+for consolidated CI/review; passing synthetic checks does not deploy it.

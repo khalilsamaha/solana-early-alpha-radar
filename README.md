@@ -44,9 +44,17 @@ pre/post balances against a new quote. It cannot sign or send a transaction.
 The [locked admission and signed acknowledgment checkpoint](docs/LOCKED-ADMISSION-BINDING.md)
 connects raw evidence to a separate durable reservation under the controlled wallet
 lock, then verifies an existing signature against the exact reserved message.
-Its synthetic host check passed. The next [durable handoff](docs/DURABLE-SIGNER-HANDOFF.md)
-adds one-call adapter dispatch and a same-ledger accounting outbox. The production
-key backend, sender and receipt application remain unconnected.
+The [durable handoff](docs/DURABLE-SIGNER-HANDOFF.md) adds one-call adapter dispatch
+and a same-ledger accounting outbox; its host check passed and PR #63 consolidated
+the batch. The next [receipt gate](docs/ADMISSION-RECEIPT-GATE.md) binds raw receipts
+to that handoff and replays entry effects in the same ledger while retaining all
+commitments. Its host check passed. The [restricted signer backend](docs/RESTRICTED-ADMISSION-SIGNER.md)
+now independently reconstructs the message and saves a one-shot acknowledgment.
+Its 19-case disposable-key host check passed. The next
+[admission submission and receipt gate](docs/ADMISSION-SUBMISSION-GATE.md) adds an
+internal one-attempt devnet transport and bounded receipt collection. Its synthetic
+host check passed all 18 cases. There is no service or execution CLI wiring; allocations
+remain reserved and no new cycle is approved.
 
 ## Checks
 
