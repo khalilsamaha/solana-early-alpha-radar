@@ -23,8 +23,10 @@ offline ledger; its 09:17 UTC host report passed all 14 cases and matched the lo
 portable result exactly. PR #62 consolidated the three accepted increments after
 both CI groups passed;
 main commit `6ca918927786be8c93ab28765dc47bd5e44a3cde` matches the reviewed tree.
-A separate raw-evidence pre-sign admission prototype is now built; its host
-check and live locked-reader/signer integration remain outstanding.
+The pre-sign admission, locked reader and durable signer-adapter handoff have
+passed their 15-, 17- and 15-case host checks. The three-increment batch is ready
+for consolidated CI. A production private-key backend and authoritative receipt
+accounting remain unconnected.
 
 Status definitions: **accepted** means the stated scope has test/host evidence;
 **built** means code exists but the stated acceptance gate is outstanding;
@@ -84,7 +86,7 @@ An earlier successful operational check does not prove present host health.
 | 6.9.1 | Bounded exit-attempt fee commitments | Accepted offline: 257 local regressions and exact 14-case host replay; v2 reserves all 1–3 exit caps and retains unknown exposure | Live admission/sender integration remains pending; no production migration |
 | 6.9.2 | Quote/funding-to-durable-admission adapter | 15-case host check accepted October 30; raw pricing/effects and durable reservation | Preserve the original expiry and unknown commitments |
 | 6.9.2a | Locked reader and signed acknowledgment binding | Accepted: 17-case host report matched October 30 | Keep source checks under the cooperating wallet lock |
-| 6.9.2b | Signer-adapter and durable accounting handoff | Built: one fixed dispatch ledger, request before adapter call, exact response recovery and private accounting outbox | 15-case host check pending; production key backend and authoritative receipt application remain unconnected |
+| 6.9.2b | Signer-adapter and durable accounting handoff | Accepted synthetic gate: all 15 host cases matched at 13:30 UTC on October 30 | Production key backend and authoritative receipt application remain unconnected |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
@@ -103,8 +105,8 @@ An earlier successful operational check does not prove present host health.
    as evidence; the original freshness limit remains unchanged.
 2. The live atomic gate and [bounded exit-budget host self-check](BOUNDED-EXIT-BUDGET.md) passed.
    PR #62 consolidated the batch. The [pre-sign admission check](PRE-SIGN-ADMISSION.md) passed on the host.
-   The [locked admission check](LOCKED-ADMISSION-BINDING.md) passed. Run the
-   [durable handoff check](DURABLE-SIGNER-HANDOFF.md), then consolidate this batch.
+   The [locked admission check](LOCKED-ADMISSION-BINDING.md) passed. The
+   [durable handoff check](DURABLE-SIGNER-HANDOFF.md) passed at 13:30 UTC; consolidate this batch.
    Private-key backend connection and authoritative receipt/allocation integration
    remain explicit subsequent gates.
 3. Preserve the fixed availability-study captures on the agreed dates. Production

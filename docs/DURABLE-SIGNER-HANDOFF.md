@@ -82,7 +82,7 @@ production transfer between two accounting systems or evidence of a real fill.
 Local validation passed: 311 position-book regression tests, an additional
 real-source observer-to-dispatch integration test, 52 token-reconciliation tests,
 source hygiene and package manifests. The focused dispatcher suite contains 19
-tests already included in the position-book run. Host acceptance is pending.
+tests already included in the position-book run. The host report captured at 2026-10-30 13:30:54 UTC matched all 15 cases and every safety flag exactly. No live signing or submission was exercised.
 
 After checking out the pinned commit supplied with this release, run:
 
