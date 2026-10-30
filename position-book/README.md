@@ -76,3 +76,13 @@ Existing v1 books are never migrated automatically. This remains an offline API;
 the controlled sender, scanner and research experiment are unchanged. The separate
 `exit_budget_cli.py` runs 14 cases in temporary synthetic ledgers and has no live
 input option. See [semantics, limits and host check](../docs/BOUNDED-EXIT-BUDGET.md).
+
+
+## Raw pre-sign admission prototype
+
+`pre_sign_admission.py` replays private raw quote/account/fee/simulation evidence
+and commits a bounded entry-plus-exit-fee reservation in a separate admission
+ledger. A second durable boundary marks signing uncertainty and survives process
+death without releasing funds or permitting another attempt. This is not wired
+to the live signer or the signed position book. `pre_sign_cli.py` runs 15 synthetic
+cases only. See [scope, trust boundary and next integration](../docs/PRE-SIGN-ADMISSION.md).

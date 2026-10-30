@@ -252,3 +252,13 @@ retaining open exposure. V1 ledgers/senders are unchanged. The 09:17 UTC host
 report passed all 14 cases and matched the local result exactly. Next: batch
 consolidation after CI, then a fresh raw-admission adapter. See
 [scope and commands](BOUNDED-EXIT-BUDGET.md).
+
+
+### October 30 — pre-sign admission prototype
+
+PR #62 consolidated atomic rehearsal and bounded exit commitments after both CI
+groups passed. The next development adds raw-evidence admission to a separate
+private ledger: recomputed prices and simulation fees, all exit fee caps held,
+exact message identities, a durable signing-unknown boundary and no automatic
+release on expiry or process death. This prototype has no live reader/signer
+handoff. See [scope, tests and host command](PRE-SIGN-ADMISSION.md).

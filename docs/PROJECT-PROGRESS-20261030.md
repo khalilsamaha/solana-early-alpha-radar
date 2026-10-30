@@ -20,8 +20,11 @@ The atomic rehearsal contract passed its 18-case host check at 06:46 UTC. The
 live collector passed at 08:27 UTC: 23 requests, 7.626 seconds and 2.375 seconds
 remaining. A third increment adds an opt-in bounded exit-attempt policy to the
 offline ledger; its 09:17 UTC host report passed all 14 cases and matched the local
-portable result exactly. The three accepted increments are ready for batch CI
-and consolidation; the live admission adapter remains pending.
+portable result exactly. PR #62 consolidated the three accepted increments after
+both CI groups passed;
+main commit `6ca918927786be8c93ab28765dc47bd5e44a3cde` matches the reviewed tree.
+A separate raw-evidence pre-sign admission prototype is now built; its host
+check and live locked-reader/signer integration remain outstanding.
 
 Status definitions: **accepted** means the stated scope has test/host evidence;
 **built** means code exists but the stated acceptance gate is outstanding;
@@ -79,7 +82,7 @@ An earlier successful operational check does not prove present host health.
 | 6.8.4 | Separate delayed-entry/exit workflow | Pending | Independent fee/blockhash lifecycle, failed exit exposure, stop/recovery; not satisfied by atomic rehearsal |
 | 6.9 | Complete funding and economic reconciliation | In progress | Include raw admission, durable integration, fee/rent/tip treatment, residual positions and explicit valuation |
 | 6.9.1 | Bounded exit-attempt fee commitments | Accepted offline: 257 local regressions and exact 14-case host replay; v2 reserves all 1–3 exit caps and retains unknown exposure | Live admission/sender integration remains pending; no production migration |
-| 6.9.2 | Quote/funding-to-durable-admission adapter | Pending | Fresh raw evidence, exact scope and before-sign reservation; public summaries are not authority |
+| 6.9.2 | Quote/funding-to-durable-admission adapter | Built offline: raw pricing, fee/effect checks and persistent pre-sign reservation/unknown boundary | 15-case host check, locked-reader provenance and signer/receipt handoff |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
@@ -97,8 +100,8 @@ An earlier successful operational check does not prove present host health.
 1. The corrected fee observation passed. Preserve the failed and successful reports
    as evidence; the original freshness limit remains unchanged.
 2. The live atomic gate and [bounded exit-budget host self-check](BOUNDED-EXIT-BUDGET.md) passed.
-   Consolidate this three-increment batch after CI. Next bind raw funding/fee evidence
-   to durable admission and separately rehearse failure handling before sender integration.
+   PR #62 consolidated the batch. Run the [pre-sign admission check](PRE-SIGN-ADMISSION.md),
+   then integrate the locked reader and restricted signer/receipt handoff with failure rehearsals.
 3. Preserve the fixed availability-study captures on the agreed dates. Production
    research collection continues while execution engineering progresses.
 4. Review the confirmation on November 6 at 01:05 Amsterdam. A failure-filter result
