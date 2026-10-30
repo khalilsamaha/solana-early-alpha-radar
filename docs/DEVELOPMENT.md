@@ -1,5 +1,17 @@
 # Development and release workflow
 
+## Agreed batch rhythm
+
+The user-approved workflow update supersedes the per-increment PR cadence
+below. Make small local commits with relevant local tests and source hygiene;
+publish pinned development heads when Kali acceptance is needed. Build related
+increments on their reviewed predecessor, recording that lineage. Consolidate
+about three successful increments into one PR, run the full repository checks and
+CI for that batch, and review before merging. A required host check remains an
+acceptance gate. Neither publishing a branch nor merging deploys to Kali.
+
+The numbered workflow below describes the consolidated release cycle.
+
 1. Branch from the current `main` and target `main` with a short-lived branch for one change. Record the hypothesis and success/failure measures before changing signal rules.
 2. Run `bash scripts/check.sh` from the repository root. Tests use temporary databases, mocked external providers and local HTTP servers.
 3. Open a pull request describing behavior, tests, evidence compatibility and rollback. Separate fixes to measurement from changes to signal selection.

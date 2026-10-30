@@ -106,7 +106,9 @@ python3 -E -s \
 
 Expected: `offline-checks-passed`, **19 cases**, `signaturesCreated: 1`,
 `productionWalletAccessed: false`, `networkRequests: 0`, `transactionsSent: 0`.
-No sudo, Docker rebuild or service restart is needed. Host acceptance is pending.
+No sudo, Docker rebuild or service restart is needed. The host report captured at
+2026-10-30 18:38:34 UTC matched all 19 cases and flags exactly; this host gate is
+accepted. Submission integration follows in [the next release](ADMISSION-SUBMISSION-GATE.md).
 
 ## Remaining integration gates
 

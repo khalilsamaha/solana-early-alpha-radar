@@ -50,8 +50,11 @@ the batch. The next [receipt gate](docs/ADMISSION-RECEIPT-GATE.md) binds raw rec
 to that handoff and replays entry effects in the same ledger while retaining all
 commitments. Its host check passed. The [restricted signer backend](docs/RESTRICTED-ADMISSION-SIGNER.md)
 now independently reconstructs the message and saves a one-shot acknowledgment.
-It is tested only with disposable keys; production wiring, submission provenance
-and allocation release remain unconnected.
+Its 19-case disposable-key host check passed. The next
+[admission submission and receipt gate](docs/ADMISSION-SUBMISSION-GATE.md) adds an
+internal one-attempt devnet transport and bounded receipt collection. Its synthetic
+host check is pending. There is no service or execution CLI wiring; allocations
+remain reserved and no new cycle is approved.
 
 ## Checks
 

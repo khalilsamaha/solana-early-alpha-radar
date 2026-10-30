@@ -292,3 +292,17 @@ recovery without key access. Only disposable keys and synthetic journals have be
 used. The 19-case host check is pending; production wiring, one-send provenance,
 trusted receipt collection and authoritative allocation transitions remain open.
 See [signer gate and test scope](RESTRICTED-ADMISSION-SIGNER.md).
+
+
+### October 30 — restricted signer accepted; submission/collection built
+
+The 18:38 UTC signer host report matched all 19 cases and flags. The next internal
+gate records an immutable send boundary in the existing admission database before
+one fixed-devnet transport call. It checks genesis, blockhash and exact-message
+fee under the original deadline, preserves unknown outcomes after interruption,
+and never resends during recovery. A bounded genesis/base64 receipt collector
+commits raw evidence before idempotent receipt application. All principal/fee
+reservations stay held. The 18-case synthetic host check is pending; production
+services and the frozen study are unchanged. Allocation ownership, sibling-ledger
+recovery and delayed-exit integration remain open. See
+[submission/receipt gate](ADMISSION-SUBMISSION-GATE.md).
