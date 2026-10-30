@@ -1,9 +1,10 @@
 # Project roadmap — updated 30 October 2026
 
-Latest checkpoint: the 15-case pre-sign admission host report was accepted on
-October 30. The [locked source and signed acknowledgment adapter](LOCKED-ADMISSION-BINDING.md)
-is built for offline integration testing. PR #62 is the consolidated base;
-restricted signer invocation and receipt handoff remain the next integration gate.
+Latest checkpoint: the pre-sign admission and 17-case locked-source host reports
+were accepted October 30. The [durable signer-adapter handoff](DURABLE-SIGNER-HANDOFF.md)
+adds one-call dispatch and a same-ledger accounting outbox; its 15-case host check
+is pending. PR #62 is the consolidated base. The private-key backend and
+authoritative receipt/allocation integration remain separate gates.
 The dated sections below preserve prior milestones.
 
 Current task/subtask status is in the [October 30 progress overview](PROJECT-PROGRESS-20261030.md). PR #60 merged the host-accepted post-entry and reverse-message batch after CI passed. The corrected fee observer passed the October 30 host check in 9.419 seconds. PR #61 merged and consolidated that accepted work. The new [atomic rehearsal contract](ATOMIC-REHEARSAL-CONTRACT.md) begins ordered entry/exit validation; live combined simulation is still pending.

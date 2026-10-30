@@ -83,8 +83,8 @@ An earlier successful operational check does not prove present host health.
 | 6.9 | Complete funding and economic reconciliation | In progress | Include raw admission, durable integration, fee/rent/tip treatment, residual positions and explicit valuation |
 | 6.9.1 | Bounded exit-attempt fee commitments | Accepted offline: 257 local regressions and exact 14-case host replay; v2 reserves all 1–3 exit caps and retains unknown exposure | Live admission/sender integration remains pending; no production migration |
 | 6.9.2 | Quote/funding-to-durable-admission adapter | 15-case host check accepted October 30; raw pricing/effects and durable reservation | Preserve the original expiry and unknown commitments |
-| 6.9.2a | Locked reader and signed acknowledgment binding | Implemented: real source replay under the wallet lock; exact signature/message verification; restart and conflict handling | 17-case host check pending; no live signer invocation |
-| 6.9.2b | Restricted signer and accounting handoff | Pending | Single authoritative allocation, lock held through invocation, durable receipt linkage and no automatic re-signing |
+| 6.9.2a | Locked reader and signed acknowledgment binding | Accepted: 17-case host report matched October 30 | Keep source checks under the cooperating wallet lock |
+| 6.9.2b | Signer-adapter and durable accounting handoff | Built: one fixed dispatch ledger, request before adapter call, exact response recovery and private accounting outbox | 15-case host check pending; production key backend and authoritative receipt application remain unconnected |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
@@ -103,8 +103,10 @@ An earlier successful operational check does not prove present host health.
    as evidence; the original freshness limit remains unchanged.
 2. The live atomic gate and [bounded exit-budget host self-check](BOUNDED-EXIT-BUDGET.md) passed.
    PR #62 consolidated the batch. The [pre-sign admission check](PRE-SIGN-ADMISSION.md) passed on the host.
-   Run the [locked admission check](LOCKED-ADMISSION-BINDING.md), then connect
-   restricted signer invocation and receipt handoff with failure rehearsals.
+   The [locked admission check](LOCKED-ADMISSION-BINDING.md) passed. Run the
+   [durable handoff check](DURABLE-SIGNER-HANDOFF.md), then consolidate this batch.
+   Private-key backend connection and authoritative receipt/allocation integration
+   remain explicit subsequent gates.
 3. Preserve the fixed availability-study captures on the agreed dates. Production
    research collection continues while execution engineering progresses.
 4. Review the confirmation on November 6 at 01:05 Amsterdam. A failure-filter result

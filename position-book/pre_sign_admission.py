@@ -140,6 +140,7 @@ A signing boundary marks uncertainty; it is not a callable signing capability.
             if enforce_deadline and value != state:
                 check(end < value['validUntilExclusiveMs'], 'admission-deadline-elapsed')
             if value != state:
+                check(len(encoded(value))<=8192, 'admission-state-size')
                 check(count < MAX_EVENTS, 'admission-event-cap')
                 h = digest(dict(seq=count+1, atMs=end, value=value, previousHash=previous))
                 self.db.execute('INSERT INTO admission_events VALUES (?,?,?,?,?)',
@@ -169,6 +170,54 @@ A signing boundary marks uncertainty; it is not a callable signing capability.
             state.update(state='signing-unknown', signingBoundaryAtMs=now)
             return state
         return self.change(apply)
+
+    def arm_handoff(self, evidence):
+        """Persist the exact request and receipt template BEFORE a signing boundary."""
+        import handoff_contract
+        check(len(encoded(evidence).encode())<=MAX_EVIDENCE_BYTES, 'admission-evidence-cap')
+        evidence=deepcopy(evidence)
+        def apply(state, now):
+            check(state is not None and state['state']=='reserved', 'handoff-not-reserved')
+            bound=review(evidence,self.policy,now)
+            check(all(state[k]==v for k,v in bound.items()), 'handoff-evidence-changed')
+            request=handoff_contract.request(evidence,self.policy,state)
+            previous=state.get('signingRequest')
+            check(previous is None or previous==request, 'handoff-request-changed')
+            state.update(signingRequest=request,signingRequestSha256=digest(request))
+            return state
+        return self.change(apply)
+
+    def stage_accounting_handoff(self):
+        """Same-ledger outbox; keep every commitment, do not apply a receipt."""
+        import handoff_contract
+        def apply(state, now):
+            check(state is not None and state['state'] in ('signed-recorded','stopped') and
+                  state.get('signedWireBase64') is not None and state.get('signingRequest') is not None,
+                  'handoff-signed-request-required')
+            handoff=handoff_contract.accounting(state)
+            previous=state.get('accountingHandoff')
+            check(previous is None or previous==handoff, 'handoff-accounting-conflict')
+            state.update(accountingHandoff=handoff,accountingHandoffSha256=digest(handoff))
+            return state
+        return self.change(apply,enforce_deadline=False)
+
+    def private_accounting_handoff(self):
+        """Private internal read. Never a CLI export or submission authorization."""
+        import handoff_contract
+        with self.j.transaction():
+            state,_,_,_=self.read()
+            check(state is not None and state['state'] in ('signed-recorded','stopped') and
+                  state.get('accountingHandoff') is not None, 'handoff-not-ready')
+            expected=handoff_contract.accounting(state)
+            check(expected==state['accountingHandoff'] and digest(expected)==state['accountingHandoffSha256'],
+                  'handoff-accounting-conflict')
+            signed=verify_wire(state['signedWireBase64'])
+            check(signed['wireSha256']==expected['wireSha256'] and
+                  signed['wireMessageSha256']==expected['messageSha256'] and
+                  signed['canonicalMessageSha256']==expected['intent']['messageSha256'] and
+                  signed['signatures'][0]==expected['intent']['signature'] and
+                  signed['wallet']==expected['intent']['wallet'], 'handoff-wire-conflict')
+            return dict(deepcopy(expected),signedTransactionBase64=state['signedWireBase64'])
 
     def record_signed(self, signed_wire):
         """Recover one bounded signer response, even after expiry; never sign/send.
@@ -212,7 +261,7 @@ A signing boundary marks uncertainty; it is not a callable signing capability.
 
     @staticmethod
     def public(state, count):
-        public=None if state is None else {k:deepcopy(v) for k,v in state.items() if k!='signedWireBase64'}
+        public=None if state is None else {k:deepcopy(v) for k,v in state.items() if k not in ('signedWireBase64','signingRequest','accountingHandoff')}
         return dict(format=VERSION, state='empty' if state is None else state['state'],
                     eventCount=count, reservation=public,
                     **FLAGS)

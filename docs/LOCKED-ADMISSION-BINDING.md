@@ -1,5 +1,10 @@
 # Locked source admission and signed acknowledgment — 30 October 2026
 
+Host acceptance: the October 30 11:34:06 UTC report matched all 17 cases exactly,
+excluding capture time. The next [durable adapter handoff](DURABLE-SIGNER-HANDOFF.md)
+adds one-call dispatch and a same-ledger accounting record. The production key
+backend and receipt application are still disabled.
+
 ## Accepted starting point
 
 The 15-case `pre-sign-admission-1-self-check` host report captured on October 30

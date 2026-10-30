@@ -44,7 +44,9 @@ pre/post balances against a new quote. It cannot sign or send a transaction.
 The [locked admission and signed acknowledgment checkpoint](docs/LOCKED-ADMISSION-BINDING.md)
 connects raw evidence to a separate durable reservation under the controlled wallet
 lock, then verifies an existing signature against the exact reserved message.
-It has a synthetic host check only; the live signer/sender is not connected.
+Its synthetic host check passed. The next [durable handoff](docs/DURABLE-SIGNER-HANDOFF.md)
+adds one-call adapter dispatch and a same-ledger accounting outbox. The production
+key backend, sender and receipt application remain unconnected.
 
 ## Checks
 
