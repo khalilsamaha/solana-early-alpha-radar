@@ -53,8 +53,13 @@ now independently reconstructs the message and saves a one-shot acknowledgment.
 Its 19-case disposable-key host check passed. The next
 [admission submission and receipt gate](docs/ADMISSION-SUBMISSION-GATE.md) adds an
 internal one-attempt devnet transport and bounded receipt collection. Its synthetic
-host check passed all 18 cases. There is no service or execution CLI wiring; allocations
+host check passed all 18 cases; PR #64 consolidated this batch with passing CI.
+There is no service or execution CLI wiring; allocations
 remain reserved and no new cycle is approved.
+
+The next [collected entry accounting](docs/ADMISSION-ENTRY-ACCOUNTING.md) increment
+records acquired token deltas and paid versus retained fees in the same admission
+ledger. It has an offline host check only; delayed exits and release remain gated.
 
 ## Checks
 
