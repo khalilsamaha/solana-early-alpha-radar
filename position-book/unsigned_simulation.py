@@ -56,6 +56,7 @@ class Transport(ReadTransport):
 class SimulationRpc(Client):
     METHODS = ('simulateTransaction', 'getGenesisHash')
     REQUEST_CAP = 2
+    ACCOUNT_COUNT = 8
 
     def __init__(self, opener):
         super().__init__('devnet', opener)
@@ -77,7 +78,7 @@ class SimulationRpc(Client):
                           all(integer(n) for n in v[name]), 'simulation-balances')
                     clean[name] = v[name]
             if v.get('accounts') is not None:
-                rows = v['accounts']; check(type(rows) is list and len(rows) == 8, 'simulation-accounts')
+                rows = v['accounts']; check(type(rows) is list and len(rows) == self.ACCOUNT_COUNT, 'simulation-accounts')
                 clean['accounts'] = []
                 for i, row in enumerate(rows):
                     check(type(row) is dict and type(row.get('data')) is list and len(row['data']) == 2 and

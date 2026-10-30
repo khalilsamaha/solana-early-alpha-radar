@@ -32,7 +32,8 @@ DIAGNOSTICS = {'closed-controlled-cycles-required','initial-preflight-rejected',
     'input-consumed-by-fee','empty-or-invalid-output','combined-fee-rate',
     'zero-input-fee-denominator','observation-expired-before-completion','observation-time-budget',
     'simulation-evidence-unavailable','simulation-clock-regression','single-leg-cost-evidence-rejected',
-    'reverse-reference-quantity-over-cap','reverse-reference-changed','reverse-cost-required','reverse-cost-scope'}
+    'reverse-reference-quantity-over-cap','reverse-reference-changed','reverse-cost-required','reverse-cost-scope',
+    'post-entry-projection-rejected','post-entry-response-binding','projected-exit-message-rejected'}
 
 
 class ReadTransport:
@@ -78,7 +79,8 @@ def combine(first, built, second, scope, *, stamp, review=preflight.audit):
 
 @view.cycles.binding.operation
 def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.monotonic,
-            simulate=False, refreshed_deployment=False, assess_costs=False, reverse_reference=False, _evidence_sink=None):
+            simulate=False, refreshed_deployment=False, assess_costs=False, reverse_reference=False, _evidence_sink=None,
+            post_entry_projection=False, projected_exit_message=False):
     check(_evidence_sink is None or (callable(_evidence_sink) and assess_costs), 'cost-evidence-sink-mode')
     check(type(simulate) is bool, 'simulation-mode')
     check(type(assess_costs) is bool and (not assess_costs or simulate), 'costs-require-simulation')
@@ -86,6 +88,11 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
           'refreshed-deployment-requires-unsigned-simulation')
     check(type(reverse_reference) is bool and (not reverse_reference or (simulate and assess_costs)),
           'reverse-requires-simulation-and-costs')
+    check(type(post_entry_projection) is bool and (not post_entry_projection or
+          (simulate and assess_costs and not reverse_reference and _evidence_sink is None)),
+          'post-entry-requires-entry-simulation-and-costs')
+    check(type(projected_exit_message) is bool and (not projected_exit_message or post_entry_projection),
+          'projected-exit-requires-post-entry')
     # Selection is explicit and fixed in source, never supplied by an RPC report.
     baseline = deepcopy(preflight.BASELINE)
     collector = preflight_capture.collect
@@ -113,10 +120,18 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
     transport = None
     if simulate:
         import unsigned_simulation as sim
+        if post_entry_projection:
+            import post_entry_simulation as sim
+            import post_entry
+            result.update(postEntryProjection=None,liveCollectorVerified=False,
+                          postEntryObservedInSimulation=False,exitSimulationVerified=False)
         result.update(format=sim.VERSION, simulation=None)
         if assess_costs:
             import cost_readiness
             result.update(format='controlled-cost-observation-1', costReadiness=None)
+        if post_entry_projection:result['format']='controlled-post-entry-observation-1'
+        if projected_exit_message:
+            result.update(format='controlled-projected-exit-observation-1',projectedExitMessage=None)
         if reverse_reference:
             import reverse_quote
             result.update(format='controlled-reverse-cost-observation-1', reverseReference=None, feePlan=None)
@@ -200,11 +215,32 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                     simulation_item=simulation_evidence[0],reservations=final,baseline=baseline,
                     simulation_started=simulation['requestedAtMs'],simulation_received=simulation['receivedAtMs'],
                     simulation_finished=simulation['finishedAtMs'],now_ms=clock())
-                assessment = cost_readiness.assess(**cost_inputs)
+                entry_cost_inputs = cost_inputs
+                if post_entry_projection:
+                    entry_cost_inputs = deepcopy(cost_inputs)
+                    entry_cost_inputs['simulation_item']['result']['value']['accounts'].pop()
+                assessment = cost_readiness.assess(**entry_cost_inputs)
                 simulation_evidence.clear()
                 result['costReadiness'] = assessment
                 check(assessment['state'] == 'single-leg-cost-evidence-consistent',
                       'single-leg-cost-evidence-rejected')
+                if post_entry_projection:
+                    result['stage']='post-entry-projection'
+                    post_assessment=post_entry.assess(cost_inputs,transport.expected)
+                    check(post_assessment['state']=='simulated-post-entry-projection-consistent',
+                          'post-entry-projection-rejected')
+                    pe=post_assessment['evidence']
+                    check(pe['fullSimulationSha256']==simulation['fullSimulationEvidenceSha256'] and
+                          pe['requestParametersSha256']==simulation['requestParametersSha256'],
+                          'post-entry-response-binding')
+                    if projected_exit_message:
+                        import projected_exit
+                        result['stage']='projected-exit-message'
+                        draft=projected_exit.build(cost_inputs,transport.expected)
+                        exit_assessment=projected_exit.assess(cost_inputs,transport.expected,draft)
+                        del draft
+                        check(exit_assessment['state']=='projected-reverse-message-consistent',
+                              'projected-exit-message-rejected')
                 if reverse_reference:
                     assessment['legRole'] = 'current-state-reverse-only'
                     assessment['economics']['reasons'] = [
@@ -228,7 +264,16 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                 # In-process only, emitted after all checks; never exported in the public report.
                 _evidence_sink(dict(costInputs=cost_inputs,initialPool=raw,entryScope=entry_scope,
                     scope=fresh_scope,completedAtMs=finished))
-            result.update(state='controlled-reverse-cost-observation-consistent' if reverse_reference else
+            if post_entry_projection:
+                post_assessment['liveCollectorVerified']=True
+                post_assessment['limitations'][0]='Exact armed request and bounded same-response collection verified by the live collector.'
+                result.update(postEntryProjection=post_assessment,liveCollectorVerified=True,
+                              postEntryObservedInSimulation=True)
+                simulation['postEntryPoolReviewed']=True
+            if projected_exit_message:result['projectedExitMessage']=exit_assessment
+            result.update(state='controlled-projected-exit-observation-consistent' if projected_exit_message else
+                          'controlled-post-entry-observation-consistent' if post_entry_projection else
+                          'controlled-reverse-cost-observation-consistent' if reverse_reference else
                           'controlled-cost-observation-consistent' if assess_costs else
                           'unsigned-quote-simulation-consistent' if simulate else
                           'fresh-quote-observation-consistent', stage='complete', reviewedAtMs=finished,
