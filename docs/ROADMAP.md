@@ -269,3 +269,14 @@ private ledger: recomputed prices and simulation fees, all exit fee caps held,
 exact message identities, a durable signing-unknown boundary and no automatic
 release on expiry or process death. This prototype has no live reader/signer
 handoff. See [scope, tests and host command](PRE-SIGN-ADMISSION.md).
+
+### October 30 — handoff consolidated; receipt integration built
+
+PR #63 merged the three host-accepted admission/handoff increments after both CI
+groups passed. Main `c632bd7388faea410a5bc401e66e27fdff445807` matches the reviewed
+tree. The next receipt gate validates exact raw signed evidence against the saved
+handoff, stores terminal evidence atomically in the same ledger, and replays it
+on reopening. Unknown/conflicting outcomes never release the original reservation.
+Its synthetic host check is pending. Key-backend integration, actual submission
+provenance, trusted RPC collection and authoritative allocation transitions remain
+separate gates. See [receipt integration](ADMISSION-RECEIPT-GATE.md).
