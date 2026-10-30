@@ -280,3 +280,15 @@ on reopening. Unknown/conflicting outcomes never release the original reservatio
 Its synthetic host check is pending. Key-backend integration, actual submission
 provenance, trusted RPC collection and authoritative allocation transitions remain
 separate gates. See [receipt integration](ADMISSION-RECEIPT-GATE.md).
+
+
+### October 30 — receipt gate accepted; restricted signer built
+
+The 15:51 UTC host report matched all 14 receipt-gate cases. The next increment
+connects the locked admission to an independent restricted devnet key process. It
+reconstructs the message from the saved scope, checks the controlled pair/pool,
+commits a one-shot attempt before signing, and supports existing-acknowledgment
+recovery without key access. Only disposable keys and synthetic journals have been
+used. The 19-case host check is pending; production wiring, one-send provenance,
+trusted receipt collection and authoritative allocation transitions remain open.
+See [signer gate and test scope](RESTRICTED-ADMISSION-SIGNER.md).

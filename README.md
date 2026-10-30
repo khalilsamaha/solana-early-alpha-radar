@@ -48,8 +48,10 @@ The [durable handoff](docs/DURABLE-SIGNER-HANDOFF.md) adds one-call adapter disp
 and a same-ledger accounting outbox; its host check passed and PR #63 consolidated
 the batch. The next [receipt gate](docs/ADMISSION-RECEIPT-GATE.md) binds raw receipts
 to that handoff and replays entry effects in the same ledger while retaining all
-commitments. Production keys, submission provenance and allocation release remain
-unconnected.
+commitments. Its host check passed. The [restricted signer backend](docs/RESTRICTED-ADMISSION-SIGNER.md)
+now independently reconstructs the message and saves a one-shot acknowledgment.
+It is tested only with disposable keys; production wiring, submission provenance
+and allocation release remain unconnected.
 
 ## Checks
 

@@ -95,8 +95,8 @@ alter the scanner, observer, backups, notifications or fixed research study.
 Local validation passed 333 position-book regressions and 52 token-reconciliation
 tests. After adding the exact-vault restriction, the complete 22-test receipt-gate
 suite passed again, including all 14 portable cases. Source hygiene and package
-manifests passed. Host acceptance is pending; these synthetic checks do not
-substitute for a future actual receipt integration.
+manifests passed. The host report at 2026-10-30 15:51:38 UTC matched all 14 cases and flags exactly.
+These synthetic checks do not substitute for a future actual receipt integration.
 
 ## Next integration gates
 

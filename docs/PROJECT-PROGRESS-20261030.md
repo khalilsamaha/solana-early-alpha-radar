@@ -87,7 +87,8 @@ An earlier successful operational check does not prove present host health.
 | 6.9.2 | Quote/funding-to-durable-admission adapter | 15-case host check accepted October 30; raw pricing/effects and durable reservation | Preserve the original expiry and unknown commitments |
 | 6.9.2a | Locked reader and signed acknowledgment binding | Accepted: 17-case host report matched October 30 | Keep source checks under the cooperating wallet lock |
 | 6.9.2b | Signer-adapter and durable accounting handoff | Accepted synthetic gate: all 15 host cases matched at 13:30 UTC on October 30 | Production key backend and authoritative receipt application remain unconnected |
-| 6.9.2c | Same-ledger receipt integration | Built: exact wire/intent binding, atomic raw receipt retention and replay; original commitments held | 14-case synthetic host check pending; submission/RPC provenance and allocation release remain unconnected |
+| 6.9.2c | Same-ledger receipt integration | Accepted synthetic gate: all 14 host cases matched October 30 at 15:51 UTC | Submission/RPC provenance and allocation release remain unconnected |
+| 6.9.2d | Restricted key backend | Built: independent message reconstruction, saved attempt before signing, durable acknowledgment and recovery | 19-case disposable-key host check pending; no production command or deployment |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
@@ -108,9 +109,11 @@ An earlier successful operational check does not prove present host health.
    PR #62 consolidated the batch. The [pre-sign admission check](PRE-SIGN-ADMISSION.md) passed on the host.
    The [locked admission check](LOCKED-ADMISSION-BINDING.md) passed. The
    [durable handoff check](DURABLE-SIGNER-HANDOFF.md) passed at 13:30 UTC; PR #63 consolidated this batch.
-   Run the new [receipt integration check](ADMISSION-RECEIPT-GATE.md).
-   Private-key backend connection and authoritative receipt/allocation integration
-   remain explicit subsequent gates.
+   The [receipt integration check](ADMISSION-RECEIPT-GATE.md) passed. Run the
+   [restricted signer self-check](RESTRICTED-ADMISSION-SIGNER.md) using disposable test keys only.
+   The key backend is built but not deployed. Durable submission/RPC provenance,
+   authoritative receipt/allocation integration and private recovery coverage
+   remain subsequent gates.
 3. Preserve the fixed availability-study captures on the agreed dates. Production
    research collection continues while execution engineering progresses.
 4. Review the confirmation on November 6 at 01:05 Amsterdam. A failure-filter result
