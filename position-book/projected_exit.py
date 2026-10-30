@@ -41,7 +41,11 @@ def expected(inputs, request):
 
 def build(inputs, request):
     """Internal draft only. Never call fresh_packet.build or attach a fee assertion."""
-    post,scope=expected(inputs,request)
+    return _Review(inputs,request).build()
+
+
+def _build(inputs,post,scope):
+    scope=deepcopy(scope)
     blockhash=inputs['packet']['policy']['blockhash']
     wire=b'\x01'+bytes(64)+message(scope,blockhash)
     return dict(format=VERSION+'-draft',network='devnet',scope=scope,
@@ -50,8 +54,8 @@ def build(inputs, request):
         unsignedTransactionBase64=base64.b64encode(wire).decode())
 
 
-def assess(inputs, request, draft):
-    result=dict(format=VERSION,state='unavailable',reasons=[],binding=None,
+def _empty():
+    return dict(format=VERSION,state='unavailable',reasons=[],binding=None,
         draftOnly=True,validForSubmission=False,signingApproved=False,executionApproved=False,
         exitSimulationVerified=False,exitFeeVerified=False,blockhashValidityVerified=False,
         actualEntryExecuted=False,roundTripFundingEstablished=False,mainnetSupported=False,
@@ -63,14 +67,17 @@ def assess(inputs, request, draft):
             'No exit fee assertion is copied from entry; complete round-trip funding is unknown.',
             'Draft wire is neither exported nor passed to an RPC, signer, sender or durable journal.',
             'No exit simulation, oracle-effect review, deployed-source equivalence or profitability pass.'])
-    try:result.update(_assess(inputs,request,draft))
+
+
+def assess(inputs, request, draft):
+    result=_empty()
+    try:return _Review(inputs,request).assess(draft)
     except (ValueError,KeyError,TypeError,IndexError,OverflowError):
         result['reasons']=['projected-exit-message-rejected']
     return result
 
 
-def _assess(inputs,request,draft):
-    post,scope=expected(inputs,request)
+def _assess(inputs,post,scope,draft):
     fields(draft,DRAFT_FIELDS,'exit-draft-schema')
     check(draft['format']==VERSION+'-draft' and draft['network']=='devnet','exit-draft-network')
     check(digest(draft['scope'])==digest(scope),'exit-draft-scope')
@@ -110,3 +117,29 @@ def _assess(inputs,request,draft):
         quantityBasis='exact-simulated-entry-acquisition',
         blockhashBasis='entry-message-reference-only',feeBasis='not-observed',
         evaluatedAtMs=post['evidence']['evaluatedAtMs']))
+
+
+class _Review:
+    """One private raw-evidence snapshot, validated once at its original timestamp.
+
+    No exported summary constructor and no cache shared across observations.
+    Callers changing reservations/time must create a NEW review from raw inputs.
+    Copies on construction and output prevent accidental mutation/reuse of state.
+    """
+    def __init__(self,inputs,request):
+        self.__inputs=deepcopy(inputs)
+        self.__post,self.__scope=expected(self.__inputs,deepcopy(request))
+
+    def build(self):return _build(self.__inputs,self.__post,self.__scope)
+
+    def post(self):return deepcopy(self.__post)
+
+    def clocks(self):
+        return self.__inputs['simulation_finished'],self.__inputs['now_ms']
+
+    def assess(self,draft):
+        result=_empty()
+        try:result.update(deepcopy(_assess(self.__inputs,self.__post,self.__scope,draft)))
+        except (ValueError,KeyError,TypeError,IndexError,OverflowError):
+            result['reasons']=['projected-exit-message-rejected']
+        return result

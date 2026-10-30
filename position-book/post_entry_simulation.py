@@ -32,7 +32,7 @@ def collect(packet, capture, price, *, transport, clock, deadline, _evidence_sin
         transactionsSent=0,signaturesCreated=0,executionApproved=False,
         postEntryPoolReviewed=False)
     try:
-        check(type(transport) is Transport, 'post-entry-transport')
+        check(type(transport) in (Transport, FeeTransport), 'post-entry-transport')
         check(start < deadline, 'simulation-evidence-expired')
         transport.arm(packet,capture,start)
         rpc = SimulationRpc(transport)
@@ -57,3 +57,23 @@ def collect(packet, capture, price, *, transport, clock, deadline, _evidence_sin
     except (ValueError,KeyError,TypeError,IndexError):
         result.update(state='unavailable',reason='post-entry-simulation-unavailable')
     return result
+
+
+class FeeTransport(Transport):
+    """Explicit opt-in: after entry collection allow one bound fee read and genesis."""
+    REQUEST_CAP=22
+
+    def arm_fee(self,params):
+        check(len(self.calls)==20 and not hasattr(self,'fee_expected'),'exit-fee-order')
+        self.fee_expected=deepcopy(params)
+
+    def open(self,request,timeout):
+        if len(self.calls)<20:return super().open(request,timeout)
+        from fresh_quote import ReadTransport
+        body=json.loads(request.data)
+        check(hasattr(self,'fee_expected'),'exit-fee-unarmed')
+        if len(self.calls)==20:
+            check(body['method']=='getFeeForMessage' and body['params']==self.fee_expected,'exit-fee-request')
+        else:
+            check(len(self.calls)==21 and body['method']=='getGenesisHash' and body['params']==[],'exit-fee-final-cluster')
+        return ReadTransport.open(self,request,timeout)
