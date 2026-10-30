@@ -6,14 +6,16 @@ approval or profitability forecast. Earlier dated roadmap sections remain histor
 ## Where we are
 
 The project has a working collection and research platform, plus a controlled
-devnet execution and accounting foundation. The immediate engineering blocker is
-finishing the projected exit-fee observation inside its original freshness window.
+devnet execution and accounting foundation. The projected exit-fee observation
+passed its October 30 host gate within the original freshness window. The immediate
+engineering work is now a supported sequential rehearsal.
 The larger product blocker is economic: the completed forward study did not
 establish a profitable selection rule. These are separate problems and both matter.
 
 PR #60 consolidated the three host-accepted post-entry/reverse-message increments
-after CI passed at the exact reviewed head. The fee increment and timing correction
-remain development work until a complete host observation passes.
+after CI passed at the exact reviewed head. PR #61 merged and consolidated the fee increment
+and timing correction after the corrected host pass: 9.419 seconds, 582 ms remaining.
+The atomic rehearsal contract is a separate new development increment.
 
 Status definitions: **accepted** means the stated scope has test/host evidence;
 **built** means code exists but the stated acceptance gate is outstanding;
@@ -63,8 +65,12 @@ An earlier successful operational check does not prove present host health.
 | 6.4 | Independent reverse/paired cost observations | Accepted for their stated independent-state scope | Must not be presented as a sequential round trip |
 | 6.5 | Same-simulation post-entry pool transition and reverse quantity | Accepted | Returned simulated accounts are not committed chain state |
 | 6.6 | Reverse-message draft with exact acquired quantity/minimum | Accepted October 30: 998 input, projected 997 output, minimum 988 | No exit execution or future blockhash guarantee |
-| 6.7 | Exact reverse-message fee and conditional two-leg caps | Built; first host attempt rejected for late completion | Timing correction built; require a complete new host pass under the unchanged ten-second deadline |
-| 6.8 | Supported sequential rehearsal | Pending | Bind entry and exit to the same supported state progression; independent public RPC simulations do not establish this |
+| 6.7 | Exact reverse-message fee and conditional two-leg caps | Accepted October 30: 11 offline cases, 22 requests, 9.419-second complete observation; 5,000 lamports per leg and 20,000 combined caps | 582 ms headroom is one passing sample, not sustained latency reliability |
+| 6.8 | Supported sequential rehearsal | Ordered atomic message and transfer-trace contract built and locally tested | Live combined simulation, exact combined fee, final accounts and oracle effects remain pending; atomic success does not prove two delayed transactions |
+| 6.8.1 | Ordered message and acquired-quantity binding | Built: one zero-signature transaction, shared compute budget, two exact swaps | Portable host self-check; no signer/sender connection |
+| 6.8.2 | Intermediate token-flow and residual review | Built: exact four-transfer trace, both mint directions, existing inventory kept separate | Authenticate collected trace against exact request and final raw effects |
+| 6.8.3 | Bounded live atomic collector | Pending | Freshness, final cluster/local reservation checks, complete account/fee reconciliation, no partial pass |
+| 6.8.4 | Separate delayed-entry/exit workflow | Pending | Independent fee/blockhash lifecycle, failed exit exposure, stop/recovery; not satisfied by atomic rehearsal |
 | 6.9 | Complete funding and economic reconciliation | Pending | Include failed-attempt budget, fee/rent/tip treatment, residual positions and explicit valuation; no double-counted costs |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
@@ -79,12 +85,12 @@ An earlier successful operational check does not prove present host health.
 
 ## Immediate sequence
 
-1. Run the corrected projected-fee offline/live commands and inspect the new timing
-   fields. Keep the ten-second quote limit. If the observer still expires, profile
-   the recorded phase that consumed the budget instead of declaring success.
-2. Accept the fee/funding observation only if all message, raw parent, reservation,
-   cluster and freshness checks pass. Then design the supported sequential
-   rehearsal against those same invariants.
+1. The corrected fee observation passed. Preserve the failed and successful reports
+   as evidence; the original freshness limit remains unchanged.
+2. Validate the new atomic draft and ordered transfer-trace contract, then integrate
+   a bounded unsigned live simulation collector with exact combined-message fee,
+   final account effects, oracle checks and original deadline enforcement. Do not
+   copy two separate message fees onto this one-transaction rehearsal.
 3. Preserve the fixed availability-study captures on the agreed dates. Production
    research collection continues while execution engineering progresses.
 4. Review the confirmation on November 6 at 01:05 Amsterdam. A failure-filter result
@@ -99,7 +105,7 @@ value: they improve observability, reproducibility and failure handling. Their
 remaining limitations are explicit. They do not establish a profitable strategy.
 
 The next dated milestone is the November 6 research review. The next engineering
-milestone is a successful bounded fee observation, followed by sequential evidence.
+milestone is collected sequential evidence, following the accepted fee observation.
 There is no evidence-based date or success probability for a profitable real-money
 pilot yet. Advancing those two tracks in parallel avoids waiting unnecessarily
 without confusing engineering progress with economic validation.
