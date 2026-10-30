@@ -33,7 +33,7 @@ DIAGNOSTICS = {'closed-controlled-cycles-required','initial-preflight-rejected',
     'zero-input-fee-denominator','observation-expired-before-completion','observation-time-budget',
     'simulation-evidence-unavailable','simulation-clock-regression','single-leg-cost-evidence-rejected',
     'reverse-reference-quantity-over-cap','reverse-reference-changed','reverse-cost-required','reverse-cost-scope',
-    'post-entry-projection-rejected','post-entry-response-binding','projected-exit-message-rejected'}
+    'post-entry-projection-rejected','post-entry-response-binding','projected-exit-message-rejected','projected-exit-fee-rejected'}
 
 
 class ReadTransport:
@@ -80,7 +80,7 @@ def combine(first, built, second, scope, *, stamp, review=preflight.audit):
 @view.cycles.binding.operation
 def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.monotonic,
             simulate=False, refreshed_deployment=False, assess_costs=False, reverse_reference=False, _evidence_sink=None,
-            post_entry_projection=False, projected_exit_message=False):
+            post_entry_projection=False, projected_exit_message=False, projected_exit_fee=False):
     check(_evidence_sink is None or (callable(_evidence_sink) and assess_costs), 'cost-evidence-sink-mode')
     check(type(simulate) is bool, 'simulation-mode')
     check(type(assess_costs) is bool and (not assess_costs or simulate), 'costs-require-simulation')
@@ -93,6 +93,8 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
           'post-entry-requires-entry-simulation-and-costs')
     check(type(projected_exit_message) is bool and (not projected_exit_message or post_entry_projection),
           'projected-exit-requires-post-entry')
+    check(type(projected_exit_fee) is bool and (not projected_exit_fee or projected_exit_message),
+          'projected-fee-requires-exit-message')
     # Selection is explicit and fixed in source, never supplied by an RPC report.
     baseline = deepcopy(preflight.BASELINE)
     collector = preflight_capture.collect
@@ -132,6 +134,8 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
         if post_entry_projection:result['format']='controlled-post-entry-observation-1'
         if projected_exit_message:
             result.update(format='controlled-projected-exit-observation-1',projectedExitMessage=None)
+        if projected_exit_fee:
+            result.update(format='controlled-projected-fee-observation-1',projectedExitFee=None)
         if reverse_reference:
             import reverse_quote
             result.update(format='controlled-reverse-cost-observation-1', reverseReference=None, feePlan=None)
@@ -140,6 +144,9 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             'Original quote freshness remains 10 seconds through simulation and local ledger replay.',
             'Simulation is not a fill, signature verification, new cycle or execution approval.',
             'Matching sampled effects do not prove deployed-source equivalence for all inputs.']
+        if projected_exit_fee:
+            result['limitations'].append('Fee mode allows 22 requests: the exact reverse-message fee and final cluster read are added; the ten-second deadline is unchanged.')
+            result['limitations']=[x.replace('At most 20 public devnet requests','At most 22 public devnet requests') for x in result['limitations']]
         if reverse_reference:
             result['limitations'].append('Reverse uses existing actual token funds; no entry is executed or post-entry pool assumed.')
     try:
@@ -149,7 +156,7 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             scope, _ = view.cycles.c.submit.bridge.source_scope(SimpleNamespace(home=root, wallet=wallet), pool)
             scope_check(scope)
             entry_scope = deepcopy(scope)
-            transport = sim.Transport(opener, monotonic) if simulate else ReadTransport(opener, monotonic)
+            transport = (sim.FeeTransport(opener, monotonic) if projected_exit_fee else sim.Transport(opener, monotonic)) if simulate else ReadTransport(opener, monotonic)
             result['stage'] = 'pool-quote'
             first = collector(pool=pool, opener=transport, now=clock, monotonic=monotonic)
             result['captureDiagnostics'] = dict(poolQuote=capture_diagnostics(first,baseline=baseline))
@@ -238,9 +245,35 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                         result['stage']='projected-exit-message'
                         draft=projected_exit.build(cost_inputs,transport.expected)
                         exit_assessment=projected_exit.assess(cost_inputs,transport.expected,draft)
-                        del draft
                         check(exit_assessment['state']=='projected-reverse-message-consistent',
                               'projected-exit-message-rejected')
+                        if projected_exit_fee:
+                            import projected_fee
+                            result['stage']='projected-exit-fee'
+                            fee_evidence=projected_fee.collect(cost_inputs,transport.expected,draft,
+                                transport=transport,clock=clock,deadline=deadline)
+                            check(not view.cycles.c.submit.swap.stop(root),'stop-marker-present')
+                            fee_final=view.read_locked(root,wallet,pool,clock)
+                            check(fee_final['phase']=='closed' and
+                                  (final['ledgerHeadSha256'],final['cycleBindingSha256'])==
+                                  (fee_final['ledgerHeadSha256'],fee_final['cycleBindingSha256']),
+                                  'ledger-changed-during-quote')
+                            check(fee_evidence['finishedAtMs']<=fee_final['readStartedAtMs']<=fee_final['observedAtMs'],
+                                  'simulation-clock-regression')
+                            # Revalidate raw evidence with the final locked reservation view.
+                            cost_inputs.update(reservations=fee_final,now_ms=clock())
+                            final=fee_final
+                            result['reservationsAfterSimulation']=final
+                            updated=deepcopy(cost_inputs)
+                            updated['simulation_item']['result']['value']['accounts'].pop()
+                            assessment=cost_readiness.assess(**updated)
+                            check(assessment['state']=='single-leg-cost-evidence-consistent','single-leg-cost-evidence-rejected')
+                            result['costReadiness']=assessment
+                            post_assessment=post_entry.assess(cost_inputs,transport.expected)
+                            exit_assessment=projected_exit.assess(cost_inputs,transport.expected,draft)
+                            fee_assessment=projected_fee.assess(cost_inputs,transport.expected,draft,fee_evidence)
+                            check(fee_assessment['state']=='projected-exit-fee-consistent','projected-exit-fee-rejected')
+                        del draft
                 if reverse_reference:
                     assessment['legRole'] = 'current-state-reverse-only'
                     assessment['economics']['reasons'] = [
@@ -271,7 +304,11 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                               postEntryObservedInSimulation=True)
                 simulation['postEntryPoolReviewed']=True
             if projected_exit_message:result['projectedExitMessage']=exit_assessment
-            result.update(state='controlled-projected-exit-observation-consistent' if projected_exit_message else
+            if projected_exit_fee:
+                fee_assessment['liveCollectorVerified']=True
+                result['projectedExitFee']=fee_assessment
+            result.update(state='controlled-projected-fee-observation-consistent' if projected_exit_fee else
+                          'controlled-projected-exit-observation-consistent' if projected_exit_message else
                           'controlled-post-entry-observation-consistent' if post_entry_projection else
                           'controlled-reverse-cost-observation-consistent' if reverse_reference else
                           'controlled-cost-observation-consistent' if assess_costs else

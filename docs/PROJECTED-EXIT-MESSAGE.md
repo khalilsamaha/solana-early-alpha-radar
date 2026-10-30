@@ -49,8 +49,10 @@ The full position/accounting suite passed: **207 tests**. This includes nine new
 tests covering wire/account mutations, parent evidence, both orientations,
 deadline/stop failures, the bounded fake-RPC collector and CLI output handling.
 The portable offline command passed all ten cases. Source hygiene and whitespace
-checks passed. Live host acceptance remains pending; local tests do not establish
-exit execution or profitability.
+checks passed. The October 30 host reports also passed: ten offline cases and the live
+observation in 8.015 seconds, with entry 1,000 → 998 and reverse draft
+998 → 997/minimum 988. Public summary bindings were checked; raw RPC replay
+remains host-side. Neither test layer establishes exit execution or profitability.
 
 ## Kali check
 
@@ -83,7 +85,8 @@ or invoking an execution command. No rebuild or service restart is needed.
 
 ## Next gates
 
-After host acceptance, separately observe the exact exit-message fee and assess
+The host message gate passed. The [next fee increment](PROJECTED-EXIT-FEE.md)
+separately observes the exact exit-message fee and assesses
 conditional funding without borrowing the entry fee or claiming a real round
 trip. Actual sequential exit evidence requires a supported stateful rehearsal
 or an explicitly scoped controlled cycle. Mainnet route validation and strategy
