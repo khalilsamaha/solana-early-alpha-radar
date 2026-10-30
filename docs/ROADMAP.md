@@ -1,5 +1,12 @@
 # Project roadmap — updated 30 October 2026
 
+Latest checkpoint: the pre-sign admission and 17-case locked-source host reports
+were accepted October 30. The [durable signer-adapter handoff](DURABLE-SIGNER-HANDOFF.md)
+adds one-call dispatch and a same-ledger accounting outbox; its 15-case host check
+is pending. PR #62 is the consolidated base. The private-key backend and
+authoritative receipt/allocation integration remain separate gates.
+The dated sections below preserve prior milestones.
+
 Current task/subtask status is in the [October 30 progress overview](PROJECT-PROGRESS-20261030.md). PR #60 merged the host-accepted post-entry and reverse-message batch after CI passed. The corrected fee observer passed the October 30 host check in 9.419 seconds. PR #61 merged and consolidated that accepted work. The new [atomic rehearsal contract](ATOMIC-REHEARSAL-CONTRACT.md) begins ordered entry/exit validation; live combined simulation is still pending.
 
 The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). The [October 27 observation batch](OBSERVATION-CONSOLIDATION-20261027.md) was merged in PR #58. The [October 29 consolidation](ENGINEERING-CONSOLIDATION-20261029.md) records the accepted research and independent paired-cost batch. Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
@@ -252,3 +259,13 @@ retaining open exposure. V1 ledgers/senders are unchanged. The 09:17 UTC host
 report passed all 14 cases and matched the local result exactly. Next: batch
 consolidation after CI, then a fresh raw-admission adapter. See
 [scope and commands](BOUNDED-EXIT-BUDGET.md).
+
+
+### October 30 — pre-sign admission prototype
+
+PR #62 consolidated atomic rehearsal and bounded exit commitments after both CI
+groups passed. The next development adds raw-evidence admission to a separate
+private ledger: recomputed prices and simulation fees, all exit fee caps held,
+exact message identities, a durable signing-unknown boundary and no automatic
+release on expiry or process death. This prototype has no live reader/signer
+handoff. See [scope, tests and host command](PRE-SIGN-ADMISSION.md).

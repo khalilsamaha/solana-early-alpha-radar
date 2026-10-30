@@ -41,6 +41,13 @@ The separate [unsigned quote simulation](docs/UNSIGNED-QUOTE-SIMULATION.md) adds
 one explicitly requested devnet simulation and checks its own token/native
 pre/post balances against a new quote. It cannot sign or send a transaction.
 
+The [locked admission and signed acknowledgment checkpoint](docs/LOCKED-ADMISSION-BINDING.md)
+connects raw evidence to a separate durable reservation under the controlled wallet
+lock, then verifies an existing signature against the exact reserved message.
+Its synthetic host check passed. The next [durable handoff](docs/DURABLE-SIGNER-HANDOFF.md)
+adds one-call adapter dispatch and a same-ledger accounting outbox. The production
+key backend, sender and receipt application remain unconnected.
+
 ## Checks
 
 Requires Node.js 24.10 or newer in the 24.x series and Python 3.12. There are no third-party runtime packages to install for these tests.
