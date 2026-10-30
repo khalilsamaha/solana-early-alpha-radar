@@ -16,6 +16,7 @@ from cpmm_quote import derive
 from fresh_packet import scope_check
 from swap_rehearsal import scope_for
 from journal import Journal, encoded
+from wire import verify_wire
 
 VERSION = 'pre-sign-admission-1'
 MAX_EVENTS = 8
@@ -48,8 +49,9 @@ def review(evidence, policy, now):
     fields(args, {'packet','capture','price','simulation_item','reservations','baseline',
                   'simulation_started','simulation_received','simulation_finished','now_ms'}, 'admission-cost-schema')
     check(args['baseline'] == BASELINE, 'admission-pinned-baseline')
-    check(type(evidence['completedAtMs']) is int and args['now_ms'] == evidence['completedAtMs']
-          <= now, 'admission-completion-clock')
+    uint(args['now_ms'], 2**53-1, 'admission-calculation-clock', minimum=1)
+    uint(evidence['completedAtMs'], 2**53-1, 'admission-completion-clock', minimum=1)
+    check(args['now_ms'] <= evidence['completedAtMs'] <= now, 'admission-completion-clock')
     scope = scope_for(args['packet']['policy'])
     check(scope == evidence['scope'] == policy['scope'], 'admission-scope')
     # The observer's reference scope can carry a placeholder minimum, but all
@@ -84,7 +86,7 @@ def review(evidence, policy, now):
 class Admission:
     """One immutable unsigned entry admission per separate private ledger.
 
-No reset/release, signed binding, receipt application or production handoff yet.
+No reset/release, receipt application or production signer handoff yet.
 A signing boundary marks uncertainty; it is not a callable signing capability.
 """
     def __init__(self, path, policy=None, clock=None):
@@ -122,7 +124,7 @@ A signing boundary marks uncertainty; it is not a callable signing capability.
             check(row['seq']==seq and type(row['at_ms']) is int and row['at_ms']>=stamp and
                   len(row['value'])<=8192 and encoded(value)==row['value'], 'admission-event-shape')
             check(value['policySha256']==digest(self.policy) and value['state'] in
-                  ('reserved','signing-unknown','stopped'), 'admission-state-policy')
+                  ('reserved','signing-unknown','signed-recorded','stopped','quarantined'), 'admission-state-policy')
             h = digest(dict(seq=seq, atMs=row['at_ms'], value=value, previousHash=previous))
             check(row['previous_hash']==previous and row['hash']==h, 'admission-event-integrity')
             previous=h; stamp=row['at_ms']; state=value
@@ -168,18 +170,51 @@ A signing boundary marks uncertainty; it is not a callable signing capability.
             return state
         return self.change(apply)
 
+    def record_signed(self, signed_wire):
+        """Recover one bounded signer response, even after expiry; never sign/send.
+
+        A contradictory response quarantines the held allocation. The full signed
+        wire stays private for future receipt linkage, never in a public summary.
+        """
+        check(type(signed_wire) is str and len(signed_wire)<=1644, 'admission-signed-size')
+        def apply(state, now):
+            check(state is not None and state.get('signingBoundaryAtMs') is not None
+                  and state['state'] in ('signing-unknown','signed-recorded','stopped','quarantined'),
+                  'admission-signing-boundary-required')
+            if state['state']=='quarantined': return state
+            previous=state.get('signedWireBase64')
+            if previous == signed_wire: return state  # already verified and committed
+            try:
+                signed=verify_wire(signed_wire)
+                check(signed['requiredSignatures']==1 and signed['wallet']==self.policy['scope']['accounts']['wallet']
+                      and signed['wireMessageSha256']==state['messageSha256'], 'admission-signed-binding')
+                check(previous is None, 'admission-signed-conflict')
+            except (ValueError, KeyError, TypeError) as exc:
+                if isinstance(exc, ValueError) and str(exc)=='node-runtime-unavailable': raise
+                state.update(state='quarantined', quarantineReason='signed-response-rejected')
+                return state
+            state.update(signedWireBase64=signed_wire, signedWireSha256=signed['wireSha256'],
+                         signature=signed['signatures'][0], signedRecordedAtMs=now)
+            if state['state']!='stopped': state['state']='signed-recorded'
+            return state
+        # An expired signature may still exist and must be recorded. Recording
+        # is not a freshness pass for submission, and never releases its budget.
+        return self.change(apply, enforce_deadline=False)
+
     def stop(self):
         def stop(state, now):
             if state is None:
                 return dict(state='stopped',policySha256=digest(self.policy),
                             reservedPrincipalAtomic='0',reservedFeeLamports='0')
-            state['state']='stopped'; return state
+            if state['state']!='quarantined': state['state']='stopped'
+            return state
         return self.change(stop, enforce_deadline=False)
 
     @staticmethod
     def public(state, count):
+        public=None if state is None else {k:deepcopy(v) for k,v in state.items() if k!='signedWireBase64'}
         return dict(format=VERSION, state='empty' if state is None else state['state'],
-                    eventCount=count, reservation=None if state is None else deepcopy(state),
+                    eventCount=count, reservation=public,
                     **FLAGS)
 
     def status(self):

@@ -1,5 +1,10 @@
 # Raw evidence to durable pre-sign admission — 30 October 2026
 
+This records the first admission increment. Its 15-case host check is accepted.
+The [follow-up integration](LOCKED-ADMISSION-BINDING.md) adds locked source replay
+and signed acknowledgment recording; restrictions below describe the original
+prototype unless explicitly updated there.
+
 ## Consolidated base and purpose
 
 PR #62 merged the host-accepted atomic rehearsal and bounded exit-budget batch at
@@ -120,7 +125,9 @@ The temporary test ledgers are removed. Existing output paths are refused.
 
 ## Next sequence
 
-1. Accept the portable host result for this admission prototype.
+1. Accepted: the 15-case portable host report captured October 30 at 10:22:25 UTC
+   matched the local result. The next [locked admission increment](LOCKED-ADMISSION-BINDING.md)
+   adds source replay and exact signed-response binding; live invocation is still pending.
 2. Wire the live locked reader into this boundary, then bind the restricted
    signer's result to the exact reserved message without re-signing after an
    unknown acknowledgment. Preserve a durable handoff to receipt accounting.
