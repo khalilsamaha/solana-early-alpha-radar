@@ -53,7 +53,7 @@ now independently reconstructs the message and saves a one-shot acknowledgment.
 Its 19-case disposable-key host check passed. The next
 [admission submission and receipt gate](docs/ADMISSION-SUBMISSION-GATE.md) adds an
 internal one-attempt devnet transport and bounded receipt collection. Its synthetic
-host check is pending. There is no service or execution CLI wiring; allocations
+host check passed all 18 cases. There is no service or execution CLI wiring; allocations
 remain reserved and no new cycle is approved.
 
 ## Checks

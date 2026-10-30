@@ -10,7 +10,8 @@ No production wallet was accessed. That accepts the host signing mechanics.
 This release is the third development increment after PR #63: receipt binding,
 restricted signer, then submission and receipt collection. It is not a deployment,
 third-cycle approval or mainnet release. The scanner, observer, alerts, production
-services and fixed study are unchanged. The host check below is offline only.
+services and fixed study are unchanged. The host check below is offline only. Its October 30 19:10:35 UTC report matched
+all 18 expected cases and flags exactly; the host gate is accepted.
 
 ## New internal integration
 
@@ -121,8 +122,8 @@ needed. The CLI has no execution, wallet, directory or receipt-import arguments.
 
 ## Remaining acceptance and integration
 
-1. Host acceptance of the synthetic transport check, then consolidate this
-   three-increment batch with the agreed PR/CI review. Main is unchanged meanwhile.
+1. The synthetic transport host check is accepted. Consolidate this three-increment
+   batch with the agreed PR/CI review. A merge does not deploy this path.
 2. Authoritative entry/exit accounting and allocation ownership. This release
    deliberately retains all original principal and fee reservations even after
    a consistent receipt. It does not update the production position ledger.

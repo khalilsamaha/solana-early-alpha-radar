@@ -306,3 +306,7 @@ reservations stay held. The 18-case synthetic host check is pending; production
 services and the frozen study are unchanged. Allocation ownership, sibling-ledger
 recovery and delayed-exit integration remain open. See
 [submission/receipt gate](ADMISSION-SUBMISSION-GATE.md).
+
+The submission host report captured October 30 at 19:10:35 UTC matched all 18
+cases and flags exactly. The three-increment admission lifecycle batch is ready
+for consolidated CI/review; passing synthetic checks does not deploy it.
