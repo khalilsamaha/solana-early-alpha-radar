@@ -1,5 +1,11 @@
 # Bounded unsigned atomic rehearsal — 30 October 2026
 
+Host acceptance update: the 08:27 UTC report passed in 7.626 seconds with 2.375
+seconds remaining, four matching transfers and a 5,000-lamport combined fee.
+All 21 portable cases matched. See the [acceptance and next increment](BOUNDED-EXIT-BUDGET.md)
+for public-report verification limits and the separate-transaction budget work.
+The original release description below distinguishes that host result from local tests.
+
 ## Accepted evidence and scope
 
 The supplied `radar-atomic-rehearsal-check-20261030T064621Z-1864971.json.gz`

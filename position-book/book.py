@@ -33,12 +33,16 @@ def validate_policy(p):
               'initialQuoteAtomic', 'initialNativeLamports', 'maximumPrincipalAtomic',
               'maximumGrossLossAtomic', 'maximumTotalFeeLamports', 'maximumLegFeeLamports',
               'maximumIntentAgeMs'}
-    check(isinstance(p, dict) and set(p) == fields and p['format'] == 'position-book-policy-1', 'policy-schema')
+    check(isinstance(p, dict) and p.get('format') in ('position-book-policy-1','position-book-policy-2'), 'policy-schema')
+    if p['format']=='position-book-policy-2':
+        fields.add('maximumExitAttempts')
+        check(type(p.get('maximumExitAttempts')) is int and 1<=p['maximumExitAttempts']<=3, 'exit-attempt-policy')
+    check(set(p)==fields, 'policy-schema')
     check(p['network'] == 'devnet', 'devnet-labelled-evidence-only')
     for k in ('wallet', 'quoteAccount', 'quoteMint'): base58(p[k], 32)
     check(len({p['wallet'], p['quoteAccount'], p['quoteMint']}) == 3 and p['quoteMint'] != NATIVE, 'policy-identities')
     check(type(p['quoteDecimals']) is int and 0 <= p['quoteDecimals'] <= 18, 'policy-decimals')
-    for k in fields - {'format','network','wallet','quoteAccount','quoteMint','quoteDecimals','maximumIntentAgeMs'}:
+    for k in fields - {'format','network','wallet','quoteAccount','quoteMint','quoteDecimals','maximumIntentAgeMs','maximumExitAttempts'}:
         check(0 < atomic(p[k]) < 2**63, 'policy-amount')
     check(atomic(p['maximumPrincipalAtomic']) <= atomic(p['initialQuoteAtomic']), 'principal-exceeds-cash')
     check(type(p['maximumIntentAgeMs']) is int and 1 <= p['maximumIntentAgeMs'] <= 15000, 'intent-age-cap')
@@ -102,6 +106,9 @@ class Book:
               'decimals':p['quoteDecimals'],'programId':TOKEN}.items()), 'quote-identity-mismatch')
         check(int(a['preAmountAtomic']) == int(self.meta()['cash']), 'quote-continuity-mismatch')
 
+    def exit_attempts(self, pid):
+        return self.db.execute("SELECT COUNT(*) FROM legs WHERE position_id=? AND side='exit'",(pid,)).fetchone()[0]
+
     def reserve(self, pid, side, registration):
         check(isinstance(pid, str) and re.fullmatch('[a-zA-Z0-9_-]{1,80}', pid), 'position-id')
         check(side in ('entry','exit'), 'leg-side')
@@ -128,14 +135,18 @@ class Book:
                 principal = int(i['inputAtomic'])
                 check(principal <= min(int(m['cash']),int(p['maximumPrincipalAtomic'])), 'principal-limit')
                 check(int(i['destination']['preAmountAtomic']) == 0, 'position-account-not-empty')
-                # Reserve one possible exit fee in addition to the entry fee.
-                fee += int(p['maximumLegFeeLamports'])
+                # v1 is unchanged. v2 reserves every allowed exit attempt before entry.
+                fee += int(p['maximumLegFeeLamports'])*p.get('maximumExitAttempts',1)
                 asset = {k:i['destination'][k] for k in ('account','mint','programId','decimals')}
                 self.db.execute('INSERT INTO positions VALUES (?,?,?,?,?,NULL,NULL)',
                     (pid,'entry-prepared',str(principal),encoded(asset),'0'))
             else:
                 pos = self.position(pid)
                 check(pos['state'] == 'open', 'position-not-open')
+                if p['format']=='position-book-policy-2':
+                    used=self.exit_attempts(pid)
+                    check(used<p['maximumExitAttempts'], 'exit-attempt-cap')
+                    fee += (p['maximumExitAttempts']-used-1)*int(p['maximumLegFeeLamports'])
                 self.quote(i['destination'])
                 asset = json.loads(pos['asset'])
                 check(all(i['source'][k] == v for k,v in asset.items()), 'exit-asset-mismatch')
@@ -237,8 +248,26 @@ class Book:
         rows = self.db.execute('SELECT * FROM positions ORDER BY id').fetchall()
         pending = self.db.execute("SELECT i.intent FROM intents i JOIN legs l ON l.id=i.id WHERE i.state IN ('prepared','submission-unknown','quarantined')").fetchall()
         reserved_fee = sum(int(json.loads(r[0])['maximumFeeLamports']) for r in pending)
-        reserved_fee += sum(int(self.policy['maximumLegFeeLamports']) for r in rows if r['state'] in ('entry-prepared','entry-unknown','open'))
+        bounded=self.policy['format']=='position-book-policy-2'
+        if bounded:
+            # A registered pending exit already has its own fee above. Reserve
+            # only unregistered capacity here; unknown or expired is not released.
+            future=[]
+            for r in rows:
+                used=self.exit_attempts(r['id']);remaining=self.policy['maximumExitAttempts']-used
+                check(remaining>=0,'exit-attempt-ledger-conflict')
+                hold=remaining*int(self.policy['maximumLegFeeLamports']) if r['state'] not in ('closed','entry-failed') else 0
+                reserved_fee+=hold
+                future.append(dict(positionId=r['id'],registeredExitAttempts=used,
+                    unregisteredExitAttemptsRemaining=remaining,futureExitFeeHeldLamports=str(hold),
+                    exitAttemptsExhausted=remaining==0,openExposure=r['state'] not in ('closed','entry-failed'),
+                    furtherExitRegistrationBlocked=bool(m['quarantined']) or r['state']!='open' or remaining==0,
+                    registrationEligibilityVerified=False))
+        else:
+            reserved_fee += sum(int(self.policy['maximumLegFeeLamports']) for r in rows if r['state'] in ('entry-prepared','entry-unknown','open'))
         reserved_cash = sum(int(r['principal']) for r in rows if r['state'] in ('entry-prepared','entry-unknown'))
+        if bounded:
+            reserved_cash+=sum(int(r['principal']) for r in rows if r['state']=='quarantined' and r['entry_slot'] is None)
         exposure = sum(int(r['principal']) for r in rows if r['state'] not in ('closed','entry-failed'))
         result = {'format':'position-book-status-1','mode':'offline-signed-evidence',
             'lastReconciledSlot':m['last_slot'],'policySha256':digest(self.policy),'entriesStopped':bool(m['stopped']),
@@ -251,4 +280,8 @@ class Book:
                 int(self.policy['maximumTotalFeeLamports'])-int(m['fees'])) >= reserved_fee,
             'cumulativeGrossLossAtomic':m['gross_loss'],
             'positions':[dict(r) for r in rows if pid is None or r['id']==pid],**FLAGS}
+        if bounded:
+            result.update(format='position-book-status-2',maximumExitAttempts=self.policy['maximumExitAttempts'],
+                positionExitBudgets=[v for v in future if pid is None or v['positionId']==pid],
+                automaticRetryAllowed=False,liveSenderIntegrated=False,roundTripFundingEstablished=False)
         return result

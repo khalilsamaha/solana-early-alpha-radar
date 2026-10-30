@@ -237,3 +237,17 @@ Actual host success remains an acceptance gate. Atomic rehearsal does not satisf
 independent two-transaction exposure/funding or profitable strategy requirements.
 See [scope and host sequence](ATOMIC-LIVE-REHEARSAL.md) and the
 [current task roadmap](PROJECT-PROGRESS-20261030.md).
+
+
+### October 30 — atomic host accepted; bounded exit commitments
+
+The 08:27 UTC host observation met the original freshness window at 7.626 seconds
+with 2.375 seconds remaining. Four transfers, zero acquired residual, exact 5,000
+combined fee and final effect flags were consistent; all 21 portable cases matched.
+Public arithmetic/hashes/clocks were reviewed; raw RPC replay remains host-side.
+Added an opt-in v2 offline position policy with 1–3 explicitly budgeted exit attempts.
+It reserves all caps before entry, counts durable registrations, keeps unknown
+commitments, reconciles failed fees once and blocks exhausted capacity while
+retaining open exposure. V1 ledgers/senders are unchanged. Next: 14-case host check,
+batch consolidation and a fresh raw-admission adapter. See
+[scope and commands](BOUNDED-EXIT-BUDGET.md).
