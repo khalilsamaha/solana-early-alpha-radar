@@ -88,7 +88,10 @@ route, loss-stop fill guarantee or external-wallet concurrency support is added.
 
 Local validation passed: **257 position-ledger regression tests**, including the
 14 new adverse-case tests. Source hygiene and staged whitespace checks passed.
-The Kali portable check remains the host acceptance gate.
+The Kali report captured at 2026-10-30T09:17:41.682641+00:00 passed all
+14 cases and matched the local portable result exactly (excluding capture time).
+It records zero network requests, signatures, sends and production-ledger writes.
+This accepts the offline scope; it does not establish actual-wallet funding.
 
 The existing position tests and new adverse-case tests cover fee/native shortfall
 rollback, immutable policies, all 1–3 attempt limits, unknown states, raw receipt
@@ -119,7 +122,7 @@ Docker rebuild, service restart, airdrop or repeat atomic simulation is required
 
 ## Next sequence
 
-1. Accept the host v2 self-check, then consolidate the three development increments
+1. The host v2 self-check is accepted. Consolidate the three development increments
    with one PR/CI cycle under the agreed local-first working rhythm.
 2. Bind a narrowly scoped fresh raw quote/fee/funding admission to the durable
    reservation and restricted signing boundary. Public success reports must never

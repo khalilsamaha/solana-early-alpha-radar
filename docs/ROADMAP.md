@@ -248,6 +248,7 @@ Public arithmetic/hashes/clocks were reviewed; raw RPC replay remains host-side.
 Added an opt-in v2 offline position policy with 1–3 explicitly budgeted exit attempts.
 It reserves all caps before entry, counts durable registrations, keeps unknown
 commitments, reconciles failed fees once and blocks exhausted capacity while
-retaining open exposure. V1 ledgers/senders are unchanged. Next: 14-case host check,
-batch consolidation and a fresh raw-admission adapter. See
+retaining open exposure. V1 ledgers/senders are unchanged. The 09:17 UTC host
+report passed all 14 cases and matched the local result exactly. Next: batch
+consolidation after CI, then a fresh raw-admission adapter. See
 [scope and commands](BOUNDED-EXIT-BUDGET.md).
