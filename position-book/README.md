@@ -63,3 +63,16 @@ an internal raw-evidence handoff and models an explicitly selected failed-exit f
 allowance. It retains each quote's clock and rejects mismatched economics, full
 quantity or ledger identity. It does not establish a post-entry exit or authorize
 spending. See [the scope and host sequence](../docs/PAIRED-COST-OBSERVATION.md).
+
+
+## Opt-in bounded exit budget (policy v2)
+
+`position-book-policy-2` adds `maximumExitAttempts` (1–3, including the first exit).
+It reserves every allowed exit cap before entry and consumes capacity at durable
+registration, not only after a successful send. Unknown/expired attempts retain
+commitments; finalized failures retain exposure and remaining allowance. Once
+capacity is exhausted, another exit is blocked even if native balance is ample.
+Existing v1 books are never migrated automatically. This remains an offline API;
+the controlled sender, scanner and research experiment are unchanged. The separate
+`exit_budget_cli.py` runs 14 cases in temporary synthetic ledgers and has no live
+input option. See [semantics, limits and host check](../docs/BOUNDED-EXIT-BUDGET.md).

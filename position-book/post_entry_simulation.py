@@ -32,7 +32,7 @@ def collect(packet, capture, price, *, transport, clock, deadline, _evidence_sin
         transactionsSent=0,signaturesCreated=0,executionApproved=False,
         postEntryPoolReviewed=False)
     try:
-        check(type(transport) in (Transport, FeeTransport), 'post-entry-transport')
+        check(type(transport) in (Transport, FeeTransport, AtomicTransport), 'post-entry-transport')
         check(start < deadline, 'simulation-evidence-expired')
         transport.arm(packet,capture,start)
         rpc = SimulationRpc(transport)
@@ -76,4 +76,33 @@ class FeeTransport(Transport):
             check(body['method']=='getFeeForMessage' and body['params']==self.fee_expected,'exit-fee-request')
         else:
             check(len(self.calls)==21 and body['method']=='getGenesisHash' and body['params']==[],'exit-fee-final-cluster')
+        return ReadTransport.open(self,request,timeout)
+
+
+class AtomicTransport(Transport):
+    """Distinct opt-in: exact combined fee, one combined simulation, final genesis."""
+    REQUEST_CAP=23
+
+    def arm_atomic_fee(self,params):
+        check(len(self.calls)==20 and not hasattr(self,'atomic_fee_expected'),'atomic-fee-order')
+        self.atomic_fee_expected=deepcopy(params)
+
+    def arm_atomic_simulation(self,params):
+        check(len(self.calls)==21 and hasattr(self,'atomic_fee_expected') and
+              not hasattr(self,'atomic_sim_expected'),'atomic-simulation-order')
+        self.atomic_sim_expected=deepcopy(params)
+
+    def open(self,request,timeout):
+        if len(self.calls)<20:return super().open(request,timeout)
+        from fresh_quote import ReadTransport
+        body=json.loads(request.data);n=len(self.calls)
+        if n==20:
+            check(hasattr(self,'atomic_fee_expected') and body['method']=='getFeeForMessage' and
+                  digest(body['params'])==digest(self.atomic_fee_expected),'atomic-fee-request')
+        elif n==21:
+            check(hasattr(self,'atomic_sim_expected') and body['method']=='simulateTransaction' and
+                  digest(body['params'])==digest(self.atomic_sim_expected),'atomic-simulation-request')
+        else:
+            check(n==22 and hasattr(self,'atomic_sim_expected') and body['method']=='getGenesisHash' and
+                  body['params']==[],'atomic-final-cluster')
         return ReadTransport.open(self,request,timeout)

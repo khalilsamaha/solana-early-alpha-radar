@@ -92,6 +92,23 @@ with raw review, repeated wire validation and late-completion withholding. The
 portable offline check still passes all 11 cases. Source hygiene and whitespace
 checks passed; no new host success is claimed by these local checks.
 
+## Corrected host acceptance — October 30, 06:15 UTC
+
+The corrected host report is `controlled-projected-fee-observation-consistent`.
+All 11 portable checks passed. Exactly 22 requests included one unsigned entry
+simulation, the exact reverse-message fee and final devnet genesis observation.
+Quote age at completion was **9,419 ms**, with **582 ms** before the exclusive
+deadline; final raw validation took 441 ms and the final reservation read took
+1,221 ms. This is one successful latency sample, not an uptime/latency guarantee.
+
+Both observed fees were 5,000 lamports. Entry and exit caps were 10,000 each, with
+20,000 conditional required lamports, no double counting and adequate observed
+native balance. Message/simulation linkage, integer cap arithmetic, slot ordering,
+request count and unchanged ledger/cycle identity were independently checked from
+the public report. Full raw RPC bytes remain host-side. No signatures, sends,
+private-key access or source-state change occurred. Complete round-trip funding
+and exit simulation remain unproven.
+
 ## Kali check
 
 After selecting the published feature commit:

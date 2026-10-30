@@ -33,7 +33,9 @@ DIAGNOSTICS = {'closed-controlled-cycles-required','initial-preflight-rejected',
     'zero-input-fee-denominator','observation-expired-before-completion','observation-time-budget',
     'simulation-evidence-unavailable','simulation-clock-regression','single-leg-cost-evidence-rejected',
     'reverse-reference-quantity-over-cap','reverse-reference-changed','reverse-cost-required','reverse-cost-scope',
-    'post-entry-projection-rejected','post-entry-response-binding','projected-exit-message-rejected','projected-exit-fee-rejected'}
+    'post-entry-projection-rejected','post-entry-response-binding','projected-exit-message-rejected','projected-exit-fee-rejected',
+    'atomic-expired','atomic-fee-unavailable','atomic-simulation-response-unavailable',
+    'atomic-effects-rejected','atomic-cluster'}
 
 
 class ReadTransport:
@@ -80,7 +82,7 @@ def combine(first, built, second, scope, *, stamp, review=preflight.audit):
 @view.cycles.binding.operation
 def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.monotonic,
             simulate=False, refreshed_deployment=False, assess_costs=False, reverse_reference=False, _evidence_sink=None,
-            post_entry_projection=False, projected_exit_message=False, projected_exit_fee=False):
+            post_entry_projection=False, projected_exit_message=False, projected_exit_fee=False, atomic_rehearsal=False):
     check(_evidence_sink is None or (callable(_evidence_sink) and assess_costs), 'cost-evidence-sink-mode')
     check(type(simulate) is bool, 'simulation-mode')
     check(type(assess_costs) is bool and (not assess_costs or simulate), 'costs-require-simulation')
@@ -95,6 +97,9 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
           'projected-exit-requires-post-entry')
     check(type(projected_exit_fee) is bool and (not projected_exit_fee or projected_exit_message),
           'projected-fee-requires-exit-message')
+    check(type(atomic_rehearsal) is bool and (not atomic_rehearsal or
+          (post_entry_projection and not projected_exit_message and not projected_exit_fee)),
+          'atomic-requires-exclusive-post-entry')
     # Selection is explicit and fixed in source, never supplied by an RPC report.
     baseline = deepcopy(preflight.BASELINE)
     collector = preflight_capture.collect
@@ -137,6 +142,8 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
         if projected_exit_fee:
             result.update(format='controlled-projected-fee-observation-1',projectedExitFee=None,
                 validationMode='per-snapshot-parent-review-1',timing={})
+        if atomic_rehearsal:
+            result.update(format='controlled-atomic-rehearsal-observation-1',atomicRehearsal=None,timing={})
         if reverse_reference:
             import reverse_quote
             result.update(format='controlled-reverse-cost-observation-1', reverseReference=None, feePlan=None)
@@ -148,6 +155,10 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
         if projected_exit_fee:
             result['limitations'].append('Fee mode allows 22 requests: the exact reverse-message fee and final cluster read are added; the ten-second deadline is unchanged.')
             result['limitations']=[x.replace('At most 20 public devnet requests','At most 22 public devnet requests') for x in result['limitations']]
+        if atomic_rehearsal:
+            result['limitations']=[x.replace('20 public devnet requests including one unsigned simulation',
+                '23 public devnet requests including two unsigned simulations') for x in result['limitations']]
+            result['limitations'].append('Combined entry/exit is one atomic simulation, not two independently submitted trades or delayed holding; no retry or deadline extension.')
         if reverse_reference:
             result['limitations'].append('Reverse uses existing actual token funds; no entry is executed or post-entry pool assumed.')
     try:
@@ -157,7 +168,7 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             scope, _ = view.cycles.c.submit.bridge.source_scope(SimpleNamespace(home=root, wallet=wallet), pool)
             scope_check(scope)
             entry_scope = deepcopy(scope)
-            transport = (sim.FeeTransport(opener, monotonic) if projected_exit_fee else sim.Transport(opener, monotonic)) if simulate else ReadTransport(opener, monotonic)
+            transport = (sim.AtomicTransport(opener, monotonic) if atomic_rehearsal else sim.FeeTransport(opener, monotonic) if projected_exit_fee else sim.Transport(opener, monotonic)) if simulate else ReadTransport(opener, monotonic)
             result['stage'] = 'pool-quote'
             first = collector(pool=pool, opener=transport, now=clock, monotonic=monotonic)
             result['captureDiagnostics'] = dict(poolQuote=capture_diagnostics(first,baseline=baseline))
@@ -234,7 +245,15 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                       'single-leg-cost-evidence-rejected')
                 if post_entry_projection:
                     result['stage']='post-entry-projection'
-                    if projected_exit_fee:
+                    if atomic_rehearsal:
+                        import atomic_rehearsal as atomic_contract
+                        import atomic_simulation
+                        import atomic_effects
+                        result['timing']['initialParentStartedAtMs']=clock()
+                        initial_atomic=atomic_contract._Review(cost_inputs,transport.expected)
+                        post_assessment=initial_atomic.parent()
+                        result['timing']['initialParentFinishedAtMs']=clock()
+                    elif projected_exit_fee:
                         import projected_exit
                         result['timing']['initialParentStartedAtMs']=clock()
                         initial_review=projected_exit._Review(cost_inputs,transport.expected)
@@ -248,6 +267,32 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                     check(pe['fullSimulationSha256']==simulation['fullSimulationEvidenceSha256'] and
                           pe['requestParametersSha256']==simulation['requestParametersSha256'],
                           'post-entry-response-binding')
+                    if atomic_rehearsal:
+                        result['stage']='atomic-combined-simulation'
+                        draft=initial_atomic.build()
+                        result['timing']['atomicCollectionStartedAtMs']=clock()
+                        atomic_evidence=atomic_simulation.collect(cost_inputs,initial_atomic,draft,
+                            transport=transport,clock=clock,deadline=deadline)
+                        result['timing']['atomicCollectionFinishedAtMs']=clock()
+                        del initial_atomic
+                        check(not view.cycles.c.submit.swap.stop(root),'stop-marker-present')
+                        result['stage']='atomic-final-reservations'
+                        atomic_final=view.read_locked(root,wallet,pool,clock)
+                        check(atomic_final['phase']=='closed' and
+                              (final['ledgerHeadSha256'],final['cycleBindingSha256'])==
+                              (atomic_final['ledgerHeadSha256'],atomic_final['cycleBindingSha256']),
+                              'ledger-changed-during-quote')
+                        cost_inputs.update(reservations=atomic_final,now_ms=clock())
+                        final=atomic_final
+                        result['reservationsAfterSimulation']=final
+                        result['stage']='atomic-effects'
+                        result['timing']['finalValidationStartedAtMs']=clock()
+                        atomic_assessment=atomic_effects.assess(cost_inputs,transport.expected,draft,atomic_evidence)
+                        result['timing']['finalValidationFinishedAtMs']=clock()
+                        if atomic_assessment['state']!='atomic-simulation-effects-consistent':
+                            result['atomicDiagnosticCode']=atomic_assessment['diagnosticCode']
+                        check(atomic_assessment['state']=='atomic-simulation-effects-consistent','atomic-effects-rejected')
+                        del draft,atomic_evidence
                     if projected_exit_message:
                         import projected_exit
                         result['stage']='projected-exit-message'
@@ -308,7 +353,7 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                     result['feePlan'] = reverse_quote.fee_plan(entry_scope, scope, reference, assessment)
                 check(not view.cycles.c.submit.swap.stop(root), 'stop-marker-present')
             finished = clock()
-            if projected_exit_fee:
+            if projected_exit_fee or atomic_rehearsal:
                 result['timing'].update(completionCheckedAtMs=finished,quoteRequestedAtMs=q['requestedAtMs'],
                     validUntilExclusiveMs=deadline,quoteAgeMs=finished-q['requestedAtMs'],
                     remainingMs=deadline-finished)
@@ -332,7 +377,11 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
             if projected_exit_fee:
                 fee_assessment['liveCollectorVerified']=True
                 result['projectedExitFee']=fee_assessment
-            result.update(state='controlled-projected-fee-observation-consistent' if projected_exit_fee else
+            if atomic_rehearsal:
+                atomic_assessment.update(liveCollectorVerified=True,simulationVerified=True)
+                result['atomicRehearsal']=atomic_assessment
+            result.update(state='controlled-atomic-rehearsal-observation-consistent' if atomic_rehearsal else
+                          'controlled-projected-fee-observation-consistent' if projected_exit_fee else
                           'controlled-projected-exit-observation-consistent' if projected_exit_message else
                           'controlled-post-entry-observation-consistent' if post_entry_projection else
                           'controlled-reverse-cost-observation-consistent' if reverse_reference else
