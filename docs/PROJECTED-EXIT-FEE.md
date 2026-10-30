@@ -61,6 +61,37 @@ default request limits, explicit transport arming, late responses, changed local
 journals, stop requests, private exclusive outputs and absence of signer calls.
 Source hygiene and whitespace checks passed. Live host acceptance is pending.
 
+## October 30 timing correction
+
+The first host fee report at 04:37 UTC was **unavailable**, not accepted. It
+completed 22 requests but withheld `projectedExitFee` when final review exceeded
+the original quote deadline. The last local reservation read ended at 04:37:09.385
+UTC, only 401 ms before the exclusive 04:37:09.786 deadline. The report was captured
+at 04:37:10.367; it must not be interpreted as a fee/funding pass.
+
+The correction validates a private deep-copied raw snapshot once per phase and
+reuses it for the projection, draft and fee consumers. A new raw review is created
+at final reservations/time; nothing is cached across observations. Returned
+summaries/drafts are copies, wire semantics are checked each time, and public raw
+entry points still validate their supplied evidence. No public report can create
+a trusted private review. Instrumented tests require two parent reviews and four
+cost reviews for the integrated fee path, rather than repeating parent review for
+every consumer.
+
+The report now identifies `validationMode: per-snapshot-parent-review-1` and
+includes bounded `timing` fields for parent validation, fee collection, final
+reservation read, final validation and completion. A failed final deadline check
+retains negative/zero remaining time while withholding all final fee/message
+approvals. The 22-request cap, 10-second quote deadline, 30-second transport budget,
+stop checks and final locked journal reread are unchanged. Host acceptance is
+still required; lower duplicate work is not a promise about RPC latency.
+
+Correction validation: **221 full position/accounting tests passed**, including
+five added cases for review-count bounds, snapshot/output isolation, equality
+with raw review, repeated wire validation and late-completion withholding. The
+portable offline check still passes all 11 cases. Source hygiene and whitespace
+checks passed; no new host success is claimed by these local checks.
+
 ## Kali check
 
 After selecting the published feature commit:

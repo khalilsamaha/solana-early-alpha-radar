@@ -1,0 +1,115 @@
+# Solana Early-Alpha Radar — progress and roadmap
+
+Updated 30 October 2026. This is a current engineering assessment, not a trading
+approval or profitability forecast. Earlier dated roadmap sections remain history.
+
+## Where we are
+
+The project has a working collection and research platform, plus a controlled
+devnet execution and accounting foundation. The immediate engineering blocker is
+finishing the projected exit-fee observation inside its original freshness window.
+The larger product blocker is economic: the completed forward study did not
+establish a profitable selection rule. These are separate problems and both matter.
+
+PR #60 consolidated the three host-accepted post-entry/reverse-message increments
+after CI passed at the exact reviewed head. The fee increment and timing correction
+remain development work until a complete host observation passes.
+
+Status definitions: **accepted** means the stated scope has test/host evidence;
+**built** means code exists but the stated acceptance gate is outstanding;
+**collecting** means a fixed study is in progress; **pending** means work remains.
+An earlier successful operational check does not prove present host health.
+
+## Tasks and subtasks
+
+| ID | Task / subtask | Status and evidence | Remaining acceptance gate |
+|---|---|---|---|
+| 1 | Hosting and operations | Established on the Kali host | Maintain current operational evidence |
+| 1.1 | Docker service, localhost dashboard, authentication and restart policy | Previously host-verified | Check after deployments/reboots; no new deployment in this release |
+| 1.2 | External heartbeat and DOWN/recovery notification | Previously tested | Continue end-to-end outage checks without suppressing failures |
+| 1.3 | Daily local scanner and quote-ledger snapshots | Implemented; integrity checks demonstrated | Verify recent job timestamps and success, not only historic status |
+| 1.4 | Backblaze copies and download verification | Implemented; pay-as-you-go selected following cap failures | Confirm current cloud job success and periodic restore evidence |
+| 1.5 | Retention, disk growth and write load | Bounded tooling exists; earlier growth/I/O issues investigated | Trend resource usage and retention behavior as history grows |
+| 1.6 | Private execution evidence recovery and key custody | Local key-excluded snapshots and isolated restore accepted | Encrypted off-machine recovery and key recovery procedure remain separate |
+| 2 | Discovery, monitoring and alerts | Operating research platform | Preserve data quality and coverage as sources change |
+| 2.1 | PumpPortal, DEX, Jupiter and Helius collection | Integrated | Provider failures, stale responses and missing fields stay visible |
+| 2.2 | Candidate scheduling and bounded active queue | Improved from substantial unattempted coverage | Track first attempts, eviction, refresh age and rate limits |
+| 2.3 | Security/liquidity labels and token identity links | Implemented | Unknown data must not become a security pass |
+| 2.4 | Telegram, paper entries and historical outcomes | Implemented and previously host-verified | Keep observed, pending, missing and gapped outcomes distinct |
+| 2.5 | Statistics memory and refresh isolation | Corrections deployed; latest supplied October 27 health check had zero restarts and zero worker failures | Current health is not inferred from that older snapshot |
+| 3 | Research evidence and execution realism | Built and collecting | Avoid selection bias and optimistic outcomes |
+| 3.1 | Baseline, early-activity and Fast30 cohorts | Versioned and compared | Analyze policy/version periods separately |
+| 3.2 | Observation quality and same-pool histories | Implemented | Repeated responses do not prove fresh market movement; pool changes remain explicit |
+| 3.3 | Walletless quote observer | Separate bounded service; three-cohort budgets | Retain rejected/skipped signals and failed quotes in denominators |
+| 3.4 | Historical capture and dataset preparation | Bounded chunk capture, deduplication, source identities and local backup support | Preserve all required windows before retention expires |
+| 3.5 | Delay/cost/outcome analysis | Implemented research models | Sampled prices and returned quotes are not actual fills or net profit |
+| 4 | Strategy and ML qualification | No model approved for live trading | Demonstrate future economic value, not only classification performance |
+| 4.1 | Frozen October study | Reviewed 781 forward watches; original result replayed | Completed development evidence, not a reusable untouched holdout |
+| 4.2 | Profit prediction and richer entry context | No convincing improvement; cohort quote means were negative | Revise or retire weak hypotheses using explicit new research versions |
+| 4.3 | Early-activity exit-availability hypothesis | Retrospective lead identified; not activated | Separate prospective confirmation with unchanged weights/threshold |
+| 4.4 | Confirmation collection | October 30–November 5 UTC; manual preservation November 1, 3, 5 and 6 | Do not refit, change sampling, or inspect outcomes early |
+| 4.5 | Confirmation review | Scheduled protocol gate: November 6 00:05 UTC / 01:05 Amsterdam | Review coverage, 200 known labels, seven labelled UTC dates, 20 failures and 20 excluded known labels; unmet guards mean insufficient evidence |
+| 4.6 | Economic acceptance | Pending | Evaluate costs, missing exits, loss severity, concentration in best token/day and untouched forward performance; availability improvement alone is insufficient |
+| 5 | Controlled devnet transaction lifecycle | Two fixed test cycles completed and reconciled | Preserve closed journals; this is not general trading support |
+| 5.1 | Dedicated wallet, test assets and fixed pool | Prepared and exercised | Never infer mainnet asset or program support from these fixtures |
+| 5.2 | Scope/message checks and restricted signing | Controlled paths implemented | Maintain exact program, roles, quantities and fee limits |
+| 5.3 | Durable one-send boundary and recovery | Implemented with terminal evidence | Uncertain submissions remain unresolved; no blind retry |
+| 5.4 | Entry/exit receipts and position accounting | Two-cycle receipts, cumulative fees and idempotent reconciliation accepted | New cycles need their own validated scope and reservation state |
+| 5.5 | Stop controls, reservations and external-credit reconciliation | Implemented for controlled scope | General wallet/portfolio-wide concurrency and exposure controls remain pending |
+| 6 | Integrated quote, simulation and costs | In progress — current engineering focus | Complete freshness-bounded evidence before another integration step |
+| 6.1 | Quote ↔ exact instruction/account binding | Accepted | Remains a controlled direct devnet route |
+| 6.2 | Current raw pool/program state and local reservation checks | Accepted | Deployment observation is not proof of source/binary equivalence |
+| 6.3 | Exact unsigned entry simulation and single-leg fee caps | Accepted | No signing or submission in these observers |
+| 6.4 | Independent reverse/paired cost observations | Accepted for their stated independent-state scope | Must not be presented as a sequential round trip |
+| 6.5 | Same-simulation post-entry pool transition and reverse quantity | Accepted | Returned simulated accounts are not committed chain state |
+| 6.6 | Reverse-message draft with exact acquired quantity/minimum | Accepted October 30: 998 input, projected 997 output, minimum 988 | No exit execution or future blockhash guarantee |
+| 6.7 | Exact reverse-message fee and conditional two-leg caps | Built; first host attempt rejected for late completion | Timing correction built; require a complete new host pass under the unchanged ten-second deadline |
+| 6.8 | Supported sequential rehearsal | Pending | Bind entry and exit to the same supported state progression; independent public RPC simulations do not establish this |
+| 6.9 | Complete funding and economic reconciliation | Pending | Include failed-attempt budget, fee/rent/tip treatment, residual positions and explicit valuation; no double-counted costs |
+| 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
+| 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
+| 7.2 | Validate route message, ownership, spending, slippage, rent and fees | Pending | Adversarial offline tests plus current read-only/simulation evidence |
+| 7.3 | Safe signer/sender integration and wallet-wide limits | Pending | Durable reservations, loss/exposure limits, stop/recovery and duplicate-send protection |
+| 7.4 | Operational rehearsal and deployment/rollback | Pending | Monitor failures and reconcile uncertain outcomes before reuse |
+| 8 | Real-money pilot | Not authorized or enabled | Explicitly separate mechanics testing from strategy validation |
+| 8.1 | Minimal mechanics pilot design | Pending | Dedicated wallet, explicit small total risk budget, one position, stop rules, supervision and separately agreed scope |
+| 8.2 | First funded mechanics test | Pending | Mainnet/operational gates and user authorization; validates execution only |
+| 8.3 | Strategy pilot | Pending | Credible prospective economics plus measured execution costs and failure handling |
+| 8.4 | Scaling or broader automation | Not scheduled | Requires repeated robust results and operational reliability; never implied by passing devnet tests |
+
+## Immediate sequence
+
+1. Run the corrected projected-fee offline/live commands and inspect the new timing
+   fields. Keep the ten-second quote limit. If the observer still expires, profile
+   the recorded phase that consumed the budget instead of declaring success.
+2. Accept the fee/funding observation only if all message, raw parent, reservation,
+   cluster and freshness checks pass. Then design the supported sequential
+   rehearsal against those same invariants.
+3. Preserve the fixed availability-study captures on the agreed dates. Production
+   research collection continues while execution engineering progresses.
+4. Review the confirmation on November 6 at 01:05 Amsterdam. A failure-filter result
+   may support further research; it does not by itself authorize buying tokens.
+5. Continue the narrow mainnet validation and pilot controls when the engineering
+   evidence is ready. Do not set a funded-test date just from the number of commits.
+
+## Timeline and confidence
+
+The infrastructure and controlled devnet mechanics have concrete demonstrated
+value: they improve observability, reproducibility and failure handling. Their
+remaining limitations are explicit. They do not establish a profitable strategy.
+
+The next dated milestone is the November 6 research review. The next engineering
+milestone is a successful bounded fee observation, followed by sequential evidence.
+There is no evidence-based date or success probability for a profitable real-money
+pilot yet. Advancing those two tracks in parallel avoids waiting unnecessarily
+without confusing engineering progress with economic validation.
+
+## Development rhythm
+
+Local relevant tests first, small development commits, pinned Kali commands where
+host behavior matters, and consolidated PR/CI batches around three completed
+increments. A source merge does not deploy the scanner. Preserve original studies
+and private journals; no test resets them to make an outcome look successful.
+
+References: [roadmap and history](ROADMAP.md), [frozen review decision](FROZEN-REVIEW-DECISION-20261028.md),
+[confirmation protocol](../availability-study/README.md), [fee observation](PROJECTED-EXIT-FEE.md).

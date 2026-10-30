@@ -135,7 +135,8 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
         if projected_exit_message:
             result.update(format='controlled-projected-exit-observation-1',projectedExitMessage=None)
         if projected_exit_fee:
-            result.update(format='controlled-projected-fee-observation-1',projectedExitFee=None)
+            result.update(format='controlled-projected-fee-observation-1',projectedExitFee=None,
+                validationMode='per-snapshot-parent-review-1',timing={})
         if reverse_reference:
             import reverse_quote
             result.update(format='controlled-reverse-cost-observation-1', reverseReference=None, feePlan=None)
@@ -233,7 +234,14 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                       'single-leg-cost-evidence-rejected')
                 if post_entry_projection:
                     result['stage']='post-entry-projection'
-                    post_assessment=post_entry.assess(cost_inputs,transport.expected)
+                    if projected_exit_fee:
+                        import projected_exit
+                        result['timing']['initialParentStartedAtMs']=clock()
+                        initial_review=projected_exit._Review(cost_inputs,transport.expected)
+                        post_assessment=initial_review.post()
+                        result['timing']['initialParentFinishedAtMs']=clock()
+                    else:
+                        post_assessment=post_entry.assess(cost_inputs,transport.expected)
                     check(post_assessment['state']=='simulated-post-entry-projection-consistent',
                           'post-entry-projection-rejected')
                     pe=post_assessment['evidence']
@@ -243,17 +251,26 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                     if projected_exit_message:
                         import projected_exit
                         result['stage']='projected-exit-message'
-                        draft=projected_exit.build(cost_inputs,transport.expected)
-                        exit_assessment=projected_exit.assess(cost_inputs,transport.expected,draft)
+                        if projected_exit_fee:
+                            draft=initial_review.build()
+                            exit_assessment=initial_review.assess(draft)
+                        else:
+                            draft=projected_exit.build(cost_inputs,transport.expected)
+                            exit_assessment=projected_exit.assess(cost_inputs,transport.expected,draft)
                         check(exit_assessment['state']=='projected-reverse-message-consistent',
                               'projected-exit-message-rejected')
                         if projected_exit_fee:
                             import projected_fee
                             result['stage']='projected-exit-fee'
-                            fee_evidence=projected_fee.collect(cost_inputs,transport.expected,draft,
+                            result['timing']['feeCollectionStartedAtMs']=clock()
+                            fee_evidence=projected_fee._collect_review(initial_review,draft,
                                 transport=transport,clock=clock,deadline=deadline)
+                            result['timing']['feeCollectionFinishedAtMs']=clock()
+                            del initial_review
                             check(not view.cycles.c.submit.swap.stop(root),'stop-marker-present')
+                            result['timing']['finalReservationStartedAtMs']=clock()
                             fee_final=view.read_locked(root,wallet,pool,clock)
+                            result['timing']['finalReservationFinishedAtMs']=clock()
                             check(fee_final['phase']=='closed' and
                                   (final['ledgerHeadSha256'],final['cycleBindingSha256'])==
                                   (fee_final['ledgerHeadSha256'],fee_final['cycleBindingSha256']),
@@ -266,12 +283,16 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                             result['reservationsAfterSimulation']=final
                             updated=deepcopy(cost_inputs)
                             updated['simulation_item']['result']['value']['accounts'].pop()
+                            result['timing']['finalValidationStartedAtMs']=clock()
                             assessment=cost_readiness.assess(**updated)
                             check(assessment['state']=='single-leg-cost-evidence-consistent','single-leg-cost-evidence-rejected')
                             result['costReadiness']=assessment
-                            post_assessment=post_entry.assess(cost_inputs,transport.expected)
-                            exit_assessment=projected_exit.assess(cost_inputs,transport.expected,draft)
-                            fee_assessment=projected_fee.assess(cost_inputs,transport.expected,draft,fee_evidence)
+                            final_review=projected_exit._Review(cost_inputs,transport.expected)
+                            post_assessment=final_review.post()
+                            exit_assessment=final_review.assess(draft)
+                            fee_assessment=projected_fee._assess_review(final_review,draft,fee_evidence)
+                            del final_review
+                            result['timing']['finalValidationFinishedAtMs']=clock()
                             check(fee_assessment['state']=='projected-exit-fee-consistent','projected-exit-fee-rejected')
                         del draft
                 if reverse_reference:
@@ -287,6 +308,10 @@ def observe(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.m
                     result['feePlan'] = reverse_quote.fee_plan(entry_scope, scope, reference, assessment)
                 check(not view.cycles.c.submit.swap.stop(root), 'stop-marker-present')
             finished = clock()
+            if projected_exit_fee:
+                result['timing'].update(completionCheckedAtMs=finished,quoteRequestedAtMs=q['requestedAtMs'],
+                    validUntilExclusiveMs=deadline,quoteAgeMs=finished-q['requestedAtMs'],
+                    remainingMs=deadline-finished)
             if simulate:
                 check(simulation['finishedAtMs'] <= final['readStartedAtMs'] <= final['observedAtMs'] <= finished,
                       'simulation-clock-regression')

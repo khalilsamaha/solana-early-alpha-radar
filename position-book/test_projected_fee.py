@@ -124,6 +124,57 @@ class ProjectedFeeTests(unittest.TestCase):
         old=Transport(o,monotonic=lambda:1);old.calls=['getGenesisHash']*20
         with self.assertRaises(ValueError):old.open(req('getFeeForMessage',e['params']),10)
 
+    def test_private_reviews_validate_twice_not_per_consumer(self):
+        original=m.projected_exit.post_entry.assess
+        import cost_readiness
+        original_cost=cost_readiness.assess
+        with patch('post_entry.assess',wraps=original) as parent, patch('cost_readiness.assess',wraps=original_cost) as costs:
+            r,_=self.observe()
+        self.assertEqual(r['state'],'controlled-projected-fee-observation-consistent',r)
+        self.assertEqual(parent.call_count,2)
+        self.assertEqual(costs.call_count,4)
+        self.assertEqual(r['validationMode'],'per-snapshot-parent-review-1')
+        t=r['timing'];self.assertGreater(t['remainingMs'],0)
+        self.assertLessEqual(t['finalValidationFinishedAtMs'],t['completionCheckedAtMs'])
+        self.assertEqual(t['remainingMs'],t['validUntilExclusiveMs']-t['completionCheckedAtMs'])
+
+    def test_private_snapshot_does_not_share_mutable_inputs_or_outputs(self):
+        a,p,d,e=fixture();review=m.projected_exit._Review(a,p)
+        expected=review.assess(d);a['packet']['policy']['amountIn']='1';p.clear()
+        self.assertEqual(review.assess(d),expected)
+        exposed=review.post();exposed['projection']['acquiredInputAtomic']='1'
+        out=review.assess(d);out['binding']['accounts']['wallet']='changed'
+        built=review.build();built['scope']['amountIn']='1'
+        self.assertEqual(review.assess(d),expected)
+        self.assertEqual(m.assess(a,p,d,e)['state'],'unavailable')
+        with self.assertRaises((ValueError,KeyError,TypeError)):
+            m.projected_exit._Review(exposed,[])
+        self.assertEqual(m._assess_review(exposed,d,e)['state'],'unavailable')
+
+    def test_raw_and_private_review_outputs_match(self):
+        a,p,d,e=fixture();review=m.projected_exit._Review(a,p)
+        self.assertEqual(review.build(),m.projected_exit.build(a,p))
+        self.assertEqual(review.assess(d),m.projected_exit.assess(a,p,d))
+        self.assertEqual(m._assess_review(review,d,e),m.assess(a,p,d,e))
+        self.assertEqual(m._parameters(review,d),m.parameters(a,p,d))
+
+    def test_changed_draft_is_checked_each_time_without_parent_reuse_bypass(self):
+        a,p,d,e=fixture();review=m.projected_exit._Review(a,p)
+        d['scope']['minimumAmountOut']='1'
+        self.assertEqual(review.assess(d)['state'],'unavailable')
+        self.assertEqual(m._assess_review(review,d,e)['state'],'unavailable')
+        with self.assertRaises(ValueError):m._parameters(review,d)
+
+    def test_slow_final_validation_withholds_result_and_exposes_deadline(self):
+        clock=f.Clock();original=m._assess_review
+        def slow(*args):
+            r=original(*args);clock.at+=10001;return r
+        with patch('projected_fee._assess_review',slow):r,_=self.observe(clock=clock)
+        self.reject(r)
+        self.assertEqual(r['diagnosticCode'],'observation-expired-before-completion')
+        self.assertLessEqual(r['timing']['remainingMs'],0)
+        self.assertEqual(r['networkRequests'],22)
+
     def test_cli_output_private_exclusive_no_send_flags(self):
         cli=Path(__file__).with_name('projected_fee_cli.py')
         with tempfile.TemporaryDirectory() as tmp:
