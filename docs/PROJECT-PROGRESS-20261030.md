@@ -15,7 +15,9 @@ establish a profitable selection rule. These are separate problems and both matt
 PR #60 consolidated the three host-accepted post-entry/reverse-message increments
 after CI passed at the exact reviewed head. PR #61 merged and consolidated the fee increment
 and timing correction after the corrected host pass: 9.419 seconds, 582 ms remaining.
-The atomic rehearsal contract is a separate new development increment.
+The atomic rehearsal contract passed its 18-case host check at 06:46 UTC. The
+next development increment integrates the bounded unsigned combined simulation;
+its live host acceptance remains outstanding.
 
 Status definitions: **accepted** means the stated scope has test/host evidence;
 **built** means code exists but the stated acceptance gate is outstanding;
@@ -66,10 +68,10 @@ An earlier successful operational check does not prove present host health.
 | 6.5 | Same-simulation post-entry pool transition and reverse quantity | Accepted | Returned simulated accounts are not committed chain state |
 | 6.6 | Reverse-message draft with exact acquired quantity/minimum | Accepted October 30: 998 input, projected 997 output, minimum 988 | No exit execution or future blockhash guarantee |
 | 6.7 | Exact reverse-message fee and conditional two-leg caps | Accepted October 30: 11 offline cases, 22 requests, 9.419-second complete observation; 5,000 lamports per leg and 20,000 combined caps | 582 ms headroom is one passing sample, not sustained latency reliability |
-| 6.8 | Supported sequential rehearsal | Ordered atomic message and transfer-trace contract built and locally tested | Live combined simulation, exact combined fee, final accounts and oracle effects remain pending; atomic success does not prove two delayed transactions |
-| 6.8.1 | Ordered message and acquired-quantity binding | Built: one zero-signature transaction, shared compute budget, two exact swaps | Portable host self-check; no signer/sender connection |
-| 6.8.2 | Intermediate token-flow and residual review | Built: exact four-transfer trace, both mint directions, existing inventory kept separate | Authenticate collected trace against exact request and final raw effects |
-| 6.8.3 | Bounded live atomic collector | Pending | Freshness, final cluster/local reservation checks, complete account/fee reconciliation, no partial pass |
+| 6.8 | Supported sequential rehearsal | Contract host-accepted; live collector built and locally tested | Actual host combined simulation, original deadline and raw-effect reconciliation must pass; atomic success does not prove two delayed transactions |
+| 6.8.1 | Ordered message and acquired-quantity binding | Accepted: 18-case host self-check; one zero-signature transaction, shared compute budget, two exact swaps | No signer/sender connection |
+| 6.8.2 | Intermediate token-flow and residual review | Host contract accepted; collected parsed/compiled trace normalization and raw reconciliation built | Actual live trace/effect evidence still required |
+| 6.8.3 | Bounded live atomic collector | Built: 23-request cap, exact combined fee, two unsigned simulations, Clock/oracle/token/pool effects and final reservations | Host complete observation within original ten-second deadline; no partial pass |
 | 6.8.4 | Separate delayed-entry/exit workflow | Pending | Independent fee/blockhash lifecycle, failed exit exposure, stop/recovery; not satisfied by atomic rehearsal |
 | 6.9 | Complete funding and economic reconciliation | Pending | Include failed-attempt budget, fee/rent/tip treatment, residual positions and explicit valuation; no double-counted costs |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
@@ -87,10 +89,10 @@ An earlier successful operational check does not prove present host health.
 
 1. The corrected fee observation passed. Preserve the failed and successful reports
    as evidence; the original freshness limit remains unchanged.
-2. Validate the new atomic draft and ordered transfer-trace contract, then integrate
-   a bounded unsigned live simulation collector with exact combined-message fee,
-   final account effects, oracle checks and original deadline enforcement. Do not
-   copy two separate message fees onto this one-transaction rehearsal.
+2. Run the standalone [live atomic collector](ATOMIC-LIVE-REHEARSAL.md) once on Kali.
+   Review its exact combined-message fee, both transfer traces, final account and
+   oracle effects and original deadline. A timing or unsupported-response failure
+   remains unavailable. Do not copy separate fees onto this combined message.
 3. Preserve the fixed availability-study captures on the agreed dates. Production
    research collection continues while execution engineering progresses.
 4. Review the confirmation on November 6 at 01:05 Amsterdam. A failure-filter result

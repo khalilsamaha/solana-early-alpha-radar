@@ -70,6 +70,9 @@ class _Review:
                     parentProjectionSha256=self.__post['evidence']['projectionSha256'],
                     unsignedTransactionBase64=base64.b64encode(wire).decode())
 
+    def parent(self):
+        return deepcopy(self.__post)
+
     def binding(self, draft):
         fields(draft, DRAFT_FIELDS, 'atomic-draft-fields')
         check(draft['format'] == VERSION+'-draft' and draft['network'] == 'devnet', 'atomic-network')

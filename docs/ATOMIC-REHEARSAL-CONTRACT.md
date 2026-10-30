@@ -1,5 +1,10 @@
 # Ordered atomic rehearsal contract — 30 October 2026
 
+The 18-case host check passed at 06:46 UTC on October 30. This document records
+the contract increment; the subsequent [live collector](ATOMIC-LIVE-REHEARSAL.md)
+adds explicit parsed-CPI normalization, raw final effects and bounded transport.
+Its live host gate remains separate.
+
 ## Purpose and scope
 
 The corrected projected-fee host check passed: 11 offline cases, 22 requests,

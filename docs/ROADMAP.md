@@ -223,3 +223,17 @@ cap, unchanged closed journals and 7.337-second completion. The batch is now
 under consolidated regression and PR review; see
 [consolidation record](OBSERVATION-CONSOLIDATION-20261027.md). No round-trip
 economics, sender activation, scanner deployment or frozen study change is implied. See [controlled cost readiness](CONTROLLED-COST-READINESS.md).
+
+
+### October 30 — bounded live atomic simulation built
+
+The 06:46 UTC host report reproduced all 18 ordered-message/trace contract cases.
+A separate opt-in collector now prices and simulates the exact combined unsigned
+message, normalizes only supported compiled/parsed transfers, reconciles raw
+final token/native/pool/config/deployment effects and the Clock-bound oracle
+reference update, then rechecks local reservations and the original deadline.
+At most 23 devnet requests, no retries, signatures, sends or runtime changes.
+Actual host success remains an acceptance gate. Atomic rehearsal does not satisfy
+independent two-transaction exposure/funding or profitable strategy requirements.
+See [scope and host sequence](ATOMIC-LIVE-REHEARSAL.md) and the
+[current task roadmap](PROJECT-PROGRESS-20261030.md).
