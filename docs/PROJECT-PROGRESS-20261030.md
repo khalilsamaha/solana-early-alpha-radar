@@ -1,6 +1,6 @@
 # Solana Early-Alpha Radar — progress and roadmap
 
-Updated 30 October 2026. This is a current engineering assessment, not a trading
+Updated 31 October 2026. This is a current engineering assessment, not a trading
 approval or profitability forecast. Earlier dated roadmap sections remain history.
 
 ## Where we are
@@ -25,8 +25,9 @@ both CI groups passed;
 main commit `6ca918927786be8c93ab28765dc47bd5e44a3cde` matches the reviewed tree.
 The pre-sign admission, locked reader and durable signer-adapter handoff have
 passed their 15-, 17- and 15-case host checks. PR #63 merged the three-increment batch after both CI
-groups passed; main `c632bd7388faea410a5bc401e66e27fdff445807` matches the reviewed tree. A production private-key backend and authoritative receipt
-accounting remain unconnected.
+groups passed; main `c632bd7388faea410a5bc401e66e27fdff445807` matches the reviewed tree. PR #64 subsequently consolidated the restricted signer and receipt collection.
+Same-ledger entry accounting and combined recovery have passed their host checks.
+These remain internal integration components, not a deployed production sender.
 
 Status definitions: **accepted** means the stated scope has test/host evidence;
 **built** means code exists but the stated acceptance gate is outstanding;
@@ -89,7 +90,10 @@ An earlier successful operational check does not prove present host health.
 | 6.9.2b | Signer-adapter and durable accounting handoff | Accepted synthetic gate: all 15 host cases matched at 13:30 UTC on October 30 | Production key backend and authoritative receipt application remain unconnected |
 | 6.9.2c | Same-ledger receipt integration | Accepted synthetic gate: all 14 host cases matched October 30 at 15:51 UTC | Submission/RPC provenance and allocation release remain unconnected |
 | 6.9.2d | Restricted key backend | Accepted: 19-case disposable-key host report matched October 30 at 18:38 UTC | No production command or deployment |
-| 6.9.2e | Durable submission and genesis-bound receipt collection | Accepted: exact 18-case host report at 19:10 UTC; same-ledger boundary and bounded raw receipt capture | No runtime wiring or new cycle approval; consolidate with CI |
+| 6.9.2e | Durable submission and genesis-bound receipt collection | Accepted: exact 18-case host report at 19:10 UTC; consolidated in PR #64 with passing CI | No runtime wiring or new cycle approval |
+| 6.9.2f | Collected entry accounting | Accepted: all 15 host cases/flags matched October 31 at 04:57 UTC | Same-ledger acquired delta and paid/held fees; no allocation release or exit integration |
+| 6.9.2g | Combined admission evidence recovery | Accepted: 19 actual Kali cases at 05:26:57 UTC October 31; case-list formatter corrected | No active restore or off-machine transfer |
+| 6.9.2h | Fresh delayed exit preparation in the admission ledger | Accepted: all 27 host cases at 05:40:57 UTC October 31 | Live evidence collection, restricted exit signing/submission and final reconciliation remain pending |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
@@ -112,9 +116,12 @@ An earlier successful operational check does not prove present host health.
    [durable handoff check](DURABLE-SIGNER-HANDOFF.md) passed at 13:30 UTC; PR #63 consolidated this batch.
    The [receipt integration check](ADMISSION-RECEIPT-GATE.md) and
    [restricted signer self-check](RESTRICTED-ADMISSION-SIGNER.md) passed. The
-   [submission/receipt self-check](ADMISSION-SUBMISSION-GATE.md) also passed; consolidate
-   the three-increment batch. The new path is not deployed. Authoritative
-   allocation transitions, recovery coverage and delayed exits remain open.
+   [submission/receipt self-check](ADMISSION-SUBMISSION-GATE.md) also passed; PR #64
+   consolidated the three-increment batch after CI and code review. The new path is
+   not deployed. The [entry accounting gate](ADMISSION-ENTRY-ACCOUNTING.md) passed
+   its October 31 host check. The [combined private recovery](ADMISSION-RECOVERY.md)
+   gate passed 19 actual host cases. The [fresh delayed exit preparation](ADMISSION-EXIT-PREPARATION.md) passed its 27-case host check.
+   Live exit collection/signing, receipt accounting and allocation release remain open.
 3. Preserve the fixed availability-study captures on the agreed dates. Production
    research collection continues while execution engineering progresses.
 4. Review the confirmation on November 6 at 01:05 Amsterdam. A failure-filter result
@@ -129,7 +136,8 @@ value: they improve observability, reproducibility and failure handling. Their
 remaining limitations are explicit. They do not establish a profitable strategy.
 
 The next dated milestone is the November 6 research review. The next engineering
-milestone is collected sequential evidence, following the accepted fee observation.
+milestone is accounting/recovery integration followed by delayed exit lifecycle
+validation, building on the accepted atomic rehearsal and collected entry evidence.
 There is no evidence-based date or success probability for a profitable real-money
 pilot yet. Advancing those two tracks in parallel avoids waiting unnecessarily
 without confusing engineering progress with economic validation.

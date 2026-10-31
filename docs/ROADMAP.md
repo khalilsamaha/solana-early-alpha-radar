@@ -1,15 +1,27 @@
-# Project roadmap — updated 30 October 2026
+# Project roadmap — updated 31 October 2026
 
-Latest checkpoint: the pre-sign admission and 17-case locked-source host reports
-were accepted October 30. The [durable signer-adapter handoff](DURABLE-SIGNER-HANDOFF.md)
-adds one-call dispatch and a same-ledger accounting outbox; its 15-case host check
-is pending. PR #62 is the consolidated base. The private-key backend and
-authoritative receipt/allocation integration remain separate gates.
+Latest checkpoint: PR #64 consolidated the host-accepted receipt gate, restricted
+signer and durable submission/collection batch after both CI groups passed.
+The merged source is `10b728f018bdd20acaa681a7198cb0afd250aa4d`.
+The [entry accounting integration](ADMISSION-ENTRY-ACCOUNTING.md) passed its 15-case
+host check on October 31. The next [combined private recovery](ADMISSION-RECOVERY.md)
+increment includes the historical source, admission database and acknowledgments;
+its 19-test host check passed October 31. The [fresh delayed exit preparation](ADMISSION-EXIT-PREPARATION.md) passed its 27-case host check on October 31.
+Live exit collection, signing/submission, final accounting and allocation release
+remain separate gates.
 The dated sections below preserve prior milestones.
 
-Current task/subtask status is in the [October 30 progress overview](PROJECT-PROGRESS-20261030.md). PR #60 merged the host-accepted post-entry and reverse-message batch after CI passed. The corrected fee observer passed the October 30 host check in 9.419 seconds. PR #61 merged and consolidated that accepted work. The new [atomic rehearsal contract](ATOMIC-REHEARSAL-CONTRACT.md) begins ordered entry/exit validation; live combined simulation is still pending.
+Current task/subtask status is in the [progress overview](PROJECT-PROGRESS-20261030.md).
+PRs #60–#64 consolidated the accepted post-entry, fee, atomic rehearsal, admission
+and transport increments. The live atomic simulation passed its October 30 host
+gate. Separate delayed transactions remain an open integration task.
 
-The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). The [October 27 observation batch](OBSERVATION-CONSOLIDATION-20261027.md) was merged in PR #58. The [October 29 consolidation](ENGINEERING-CONSOLIDATION-20261029.md) records the accepted research and independent paired-cost batch. Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
+The [October 25 consolidation](ENGINEERING-RELEASE-20261025.md),
+[October 27 observation batch](OBSERVATION-CONSOLIDATION-20261027.md) and
+[October 29 consolidation](ENGINEERING-CONSOLIDATION-20261029.md) preserve earlier
+engineering milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains
+the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the
+earlier project record.
 
 Goal: establish whether entry-time evidence identifies realistically enterable and exitable opportunities. More alerts and faster detection alone have not established a profitable strategy.
 
@@ -308,5 +320,17 @@ recovery and delayed-exit integration remain open. See
 [submission/receipt gate](ADMISSION-SUBMISSION-GATE.md).
 
 The submission host report captured October 30 at 19:10:35 UTC matched all 18
-cases and flags exactly. The three-increment admission lifecycle batch is ready
-for consolidated CI/review; passing synthetic checks does not deploy it.
+cases and flags exactly. PR #64 merged the three-increment batch after local core
+(1,354 Python and 345 Node tests), devnet-pool (266 tests), both CI groups and
+code review passed. The merge does not deploy it.
+
+## October 30: collected entry accounting increment
+
+The [entry accounting gate](ADMISSION-ENTRY-ACCOUNTING.md) consumes the existing
+genesis-bound receipt collection in the same admission database. It records only
+the acquired token delta, excludes preexisting destination inventory, distinguishes
+actual entry fees from retained commitments and is idempotent after interruption.
+Failed entry fees do not release the principal; unknown receipts remain unknown.
+Host acceptance is pending the 15-case synthetic check. Runtime, study protocols,
+market polling and notification rules are unchanged. Next: complete private recovery
+coverage, delayed exit lifecycle and final allocation reconciliation.
