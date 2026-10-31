@@ -30,8 +30,11 @@ PR #65 consolidated same-ledger entry accounting, combined recovery and fresh
 delayed exit preparation after their host checks and all five CI groups passed.
 The bounded exit collector passed its 19-case host check. Atomic collected
 preparation passed all 21 host cases at 17:39:33 UTC. The durable exit signing
-handoff passed all 21 host cases at 17:55:29 UTC. The three-increment batch is
-ready for consolidation, subject to all five existing CI groups.
+handoff passed all 21 host cases at 17:55:29 UTC. PR #66 merged the three-increment batch after all five CI groups passed.
+The independent exit key backend passed its 27-case disposable-key Kali check at
+18:14:04 UTC. One-send exit transport and bounded recovery are now built; the
+24-case synthetic host gate passed at 18:37:40 UTC. Collected exit receipt
+accounting is now built; its 15-case synthetic host gate is pending.
 These remain internal integration components, not a deployed production sender.
 
 Status definitions: **accepted** means the stated scope has test/host evidence;
@@ -101,7 +104,10 @@ An earlier successful operational check does not prove present host health.
 | 6.9.2h | Fresh delayed exit preparation in the admission ledger | Accepted: all 27 host cases at 05:40:57 UTC October 31 | Live evidence collection, restricted exit signing/submission and final reconciliation remain pending |
 | 6.9.2i | Bounded admission-owned exit collector | Accepted: all 19 host cases/flags matched October 31 at 06:05:55 UTC | Preserve exact acquired quantity and held commitments |
 | 6.9.2j | Atomic collected exit preparation and replay | Accepted: all 21 host cases/flags at 17:39:33 UTC October 31 | Preserve immutable evidence and collection deadline |
-| 6.9.2k | Durable exit signer-adapter handoff | Accepted: 21-case host report at 17:55:29 UTC October 31 | Independent real-key backend and sender remain open |
+| 6.9.2k | Durable exit signer-adapter handoff | Accepted: 21-case host report at 17:55:29 UTC October 31 | Consolidated in PR #66; independent backend host gate and sender remain open |
+| 6.9.2l | Independent restricted exit key backend | Accepted: 27-case disposable-key host report matched October 31 at 18:14:04 UTC | No live execution CLI or new controlled cycle approval |
+| 6.9.2m | One-send exit transport and bounded recovery | Accepted: 24-case synthetic host report at 18:37:40 UTC October 31 | Full receipt effects and release remain separate gates |
+| 6.9.2n | Collected exit receipt accounting | Built: exact vault/quantity effects, fee conservation, residual accounting and atomic same-ledger record | 15-case offline Kali check; fresh balance verification and release remain pending |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
@@ -167,5 +173,7 @@ internal handoff commits its exact request before calling an injected adapter,
 checks returned signatures, and preserves unknown or quarantined states without
 automatic re-signing. Both unknown and signed states are covered by private
 snapshot replay. The [21-case host exercise](EXIT-SIGNING-HANDOFF.md) passed at 17:55:29 UTC.
-The real exit key backend, sender and final receipt/allocation reconciliation
-remain open; no runtime deployment or real-money approval is implied.
+The [independent exit key backend](RESTRICTED-EXIT-SIGNER.md) is now built and
+host-accepted. The new internal exit sender/collector has a synthetic host gate
+pending. Final receipt/allocation reconciliation remains open; no runtime deployment or real-money
+approval is implied.
