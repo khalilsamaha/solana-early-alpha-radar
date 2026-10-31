@@ -59,7 +59,10 @@ remain reserved and no new cycle is approved.
 
 The next [collected entry accounting](docs/ADMISSION-ENTRY-ACCOUNTING.md) increment
 records acquired token deltas and paid versus retained fees in the same admission
-ledger. It has an offline host check only; delayed exits and release remain gated.
+ledger. Its 15-case host check passed. The next [combined private recovery
+check](docs/ADMISSION-RECOVERY.md) includes the admission sibling and original
+historical journals, replays them in a stopped temporary copy and preserves unknown
+commitments. Delayed exits and release remain gated.
 
 ## Checks
 

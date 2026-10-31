@@ -56,10 +56,13 @@ Focused regression additionally exercises a disposable independent signer throug
 the actual source reader, synthetic collector and settlement, including a destination
 account with preexisting inventory. No test submits to a real network.
 
+The host report captured October 31 at 04:57:52 UTC matched all 15 cases and flags
+exactly. This accepts the synthetic accounting gate; no runtime deployment occurred.
+
 ## Remaining integration gates
 
-1. Preserve the admission ledger and acknowledgment files in key-excluded private
-   recovery snapshots; rehearse restoring the complete allocation/evidence binding.
+1. Accept the new [combined recovery snapshot](ADMISSION-RECOVERY.md) host check,
+   which preserves the admission ledger and acknowledgment files alongside history.
 2. Bind fresh delayed exit preparation to this exact owned quantity, still-held fee
    budget and a new blockhash/deadline. Integrate failed/unknown exits and residuals.
 3. Reconcile final ownership and costs before any allocation release or next entry.

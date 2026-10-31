@@ -1,16 +1,26 @@
-# Project roadmap — updated 30 October 2026
+# Project roadmap — updated 31 October 2026
 
 Latest checkpoint: PR #64 consolidated the host-accepted receipt gate, restricted
 signer and durable submission/collection batch after both CI groups passed.
 The merged source is `10b728f018bdd20acaa681a7198cb0afd250aa4d`.
-The next [entry accounting integration](ADMISSION-ENTRY-ACCOUNTING.md) has passed
-local focused tests and awaits its 15-case offline host check. Private recovery,
-delayed exits and final allocation release remain separate gates.
+The [entry accounting integration](ADMISSION-ENTRY-ACCOUNTING.md) passed its 15-case
+host check on October 31. The next [combined private recovery](ADMISSION-RECOVERY.md)
+increment includes the historical source, admission database and acknowledgments;
+its offline host acceptance is pending. Delayed exits and final allocation release
+remain separate gates.
 The dated sections below preserve prior milestones.
 
-Current task/subtask status is in the [October 30 progress overview](PROJECT-PROGRESS-20261030.md). PR #60 merged the host-accepted post-entry and reverse-message batch after CI passed. The corrected fee observer passed the October 30 host check in 9.419 seconds. PR #61 merged and consolidated that accepted work. The new [atomic rehearsal contract](ATOMIC-REHEARSAL-CONTRACT.md) begins ordered entry/exit validation; live combined simulation is still pending.
+Current task/subtask status is in the [progress overview](PROJECT-PROGRESS-20261030.md).
+PRs #60–#64 consolidated the accepted post-entry, fee, atomic rehearsal, admission
+and transport increments. The live atomic simulation passed its October 30 host
+gate. Separate delayed transactions remain an open integration task.
 
-The active engineering baseline is the [October 25 consolidation](ENGINEERING-RELEASE-20261025.md). The [October 27 observation batch](OBSERVATION-CONSOLIDATION-20261027.md) was merged in PR #58. The [October 29 consolidation](ENGINEERING-CONSOLIDATION-20261029.md) records the accepted research and independent paired-cost batch. Earlier dated sections below are historical milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the earlier project record.
+The [October 25 consolidation](ENGINEERING-RELEASE-20261025.md),
+[October 27 observation batch](OBSERVATION-CONSOLIDATION-20261027.md) and
+[October 29 consolidation](ENGINEERING-CONSOLIDATION-20261029.md) preserve earlier
+engineering milestones. The [October 22 review](PROJECT-REVIEW-20261022.md) explains
+the strategy assessment, and [PROJECT-HISTORY.md](PROJECT-HISTORY.md) preserves the
+earlier project record.
 
 Goal: establish whether entry-time evidence identifies realistically enterable and exitable opportunities. More alerts and faster detection alone have not established a profitable strategy.
 

@@ -1,6 +1,6 @@
 # Solana Early-Alpha Radar — progress and roadmap
 
-Updated 30 October 2026. This is a current engineering assessment, not a trading
+Updated 31 October 2026. This is a current engineering assessment, not a trading
 approval or profitability forecast. Earlier dated roadmap sections remain history.
 
 ## Where we are
@@ -90,7 +90,8 @@ An earlier successful operational check does not prove present host health.
 | 6.9.2c | Same-ledger receipt integration | Accepted synthetic gate: all 14 host cases matched October 30 at 15:51 UTC | Submission/RPC provenance and allocation release remain unconnected |
 | 6.9.2d | Restricted key backend | Accepted: 19-case disposable-key host report matched October 30 at 18:38 UTC | No production command or deployment |
 | 6.9.2e | Durable submission and genesis-bound receipt collection | Accepted: exact 18-case host report at 19:10 UTC; consolidated in PR #64 with passing CI | No runtime wiring or new cycle approval |
-| 6.9.2f | Collected entry accounting | 17 local focused tests passed; 15-case host self-check pending | Same-ledger acquired delta and paid/held fees; no allocation release or exit integration |
+| 6.9.2f | Collected entry accounting | Accepted: all 15 host cases/flags matched October 31 at 04:57 UTC | Same-ledger acquired delta and paid/held fees; no allocation release or exit integration |
+| 6.9.2g | Combined private evidence recovery | Implemented; host acceptance pending | Includes admission/acknowledgments and historical source; isolated stopped replay only |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
@@ -115,9 +116,9 @@ An earlier successful operational check does not prove present host health.
    [restricted signer self-check](RESTRICTED-ADMISSION-SIGNER.md) passed. The
    [submission/receipt self-check](ADMISSION-SUBMISSION-GATE.md) also passed; PR #64
    consolidated the three-increment batch after CI and code review. The new path is
-   not deployed. The [entry accounting gate](ADMISSION-ENTRY-ACCOUNTING.md) now awaits
-   host acceptance. Private recovery coverage, delayed exits and allocation release
-   remain open.
+   not deployed. The [entry accounting gate](ADMISSION-ENTRY-ACCOUNTING.md) passed
+   its October 31 host check. The [combined private recovery](ADMISSION-RECOVERY.md)
+   increment awaits host acceptance; delayed exits and allocation release remain open.
 3. Preserve the fixed availability-study captures on the agreed dates. Production
    research collection continues while execution engineering progresses.
 4. Review the confirmation on November 6 at 01:05 Amsterdam. A failure-filter result
