@@ -91,4 +91,6 @@ python3 -E -s \
 Expected: `offline-checks-passed`, 24 synthetic cases. No real network requests,
 wallet access, new signatures or transactions. No rebuild or restart is needed.
 Upload only the public `.json.gz` report. This check is not live execution approval.
-The fixed November 6 confirmation-study review is unchanged.
+The Kali report at 2026-10-31 18:37:40 UTC passed all 24 cases.
+The next [receipt accounting increment](EXIT-ACCOUNTING.md) remains offline-only
+and does not release funds. The fixed November 6 confirmation-study review is unchanged.

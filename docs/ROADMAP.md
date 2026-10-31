@@ -10,8 +10,10 @@ The [independent restricted exit key backend](RESTRICTED-EXIT-SIGNER.md) is buil
 and locally tested, including full-source signing, keyless acknowledgment recovery
 and isolated restore. Its 27-case disposable-key Kali exercise passed at
 18:14:04 UTC on October 31. [One-send exit transport and recovery](EXIT-SUBMISSION.md)
-is the next built increment, with a 24-case synthetic host check pending.
-Final receipt effects, residuals and allocation release remain open.
+passed its 24-case synthetic host check at 18:37:40 UTC on October 31.
+[Collected exit receipt accounting](EXIT-ACCOUNTING.md) is now built, with its
+15-case host exercise pending. Fresh residual/account evidence, final allocation
+release and live timing acceptance remain open.
 The dated sections below preserve prior milestones.
 
 Current task/subtask status is in the [progress overview](PROJECT-PROGRESS-20261030.md).

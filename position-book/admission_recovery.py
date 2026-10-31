@@ -31,7 +31,7 @@ MAX_TOTAL=320*1024*1024+10240
 NOW=accounting.submission.handoff.bridge.view.now
 TABLES=('admission_submission','admission_submission_ack','admission_rpc_captures',
         'admission_receipt_events','admission_receipt_raw','admission_entry_accounting',
-        'admission_exit_submission','admission_exit_submission_ack','admission_exit_rpc_captures')
+        'admission_exit_submission','admission_exit_submission_ack','admission_exit_rpc_captures','admission_exit_accounting')
 
 
 def admission_inventory(root):
@@ -150,6 +150,10 @@ def inspect_locked(home,wallet,pool,clock):
             t=exit_submission.ExitSubmission(book).status()
             result['exitTransport']={k:t[k] for k in ('state','applicationSendBoundaryRecorded',
                 'receiptCaptureCount','finalizedEvidenceObserved','terminalEvidenceSha256')}
+        if book.db.execute("SELECT 1 FROM sqlite_master WHERE name='admission_exit_accounting'").fetchone():
+            import exit_accounting
+            r=exit_accounting.public(exit_accounting.review(book),exit_accounting.saved(book.db,clock()))
+            result['exitAccounting']={k:r[k] for k in ('state','accountingRecorded','accountingUsable','recordSha256')}
         return result
     finally:book.close()
 
