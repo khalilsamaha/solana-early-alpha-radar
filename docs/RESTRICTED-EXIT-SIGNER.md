@@ -56,7 +56,7 @@ CLI was rerun after adding the concurrency case; all 27 disposable-key cases
 passed. The full-source integration test exercised the actual child process,
 saved-ack recovery with the key removed, and isolated semantic restore including
 a tampered-marker rejection. Source hygiene and immutable package manifests passed.
-The host exercise below remains outstanding; these are offline integration tests,
+The Kali report at 2026-10-31 18:14:04 UTC matched all 27 cases and flags; these are offline integration tests,
 not evidence of a transaction submitted to devnet.
 
 ## Kali check
@@ -77,8 +77,9 @@ requests, transactions or production-wallet accesses occur. Upload only the publ
 
 ## Remaining integration
 
-The next gate binds one devnet send to this signed exit and supports observation of
-the original signature without resending. Final receipts then need to reconcile
+The next [transport increment](EXIT-SUBMISSION.md) binds one devnet send to this
+signed exit and supports observation of the original signature without resending.
+It is built with an offline host gate pending. Final receipts then need to reconcile
 actual fees, residual inventory and allocation release. No new controlled cycle,
 mainnet capability or funded pilot is authorized by this self-check. Monitoring,
 quote sampling and the fixed November 6 confirmation review are unchanged.

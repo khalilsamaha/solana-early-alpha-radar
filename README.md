@@ -7,8 +7,9 @@ atomic evidence persistence and durable signing handoff are consolidated after
 host acceptance and all five CI groups passed. See the
 [consolidation record](docs/EXIT-EVIDENCE-CONSOLIDATION-20261031.md).
 The [independent exit key backend](docs/RESTRICTED-EXIT-SIGNER.md) is locally tested;
-its 27-case disposable-key host check is pending. No scanner deployment or exit
-sender is included.
+its 27-case disposable-key host check passed. The next
+[one-send exit transport](docs/EXIT-SUBMISSION.md) has a 24-case synthetic host gate
+pending. No scanner deployment or live execution CLI is included.
 
 **Current engineering release: 25 October 2026.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. The **October 28 frozen review is complete: no strategy or model is promoted**. See the [review decision and offline diagnostic](docs/FROZEN-REVIEW-DECISION-20261028.md). Engineering reliability can improve independently; profitable execution remains unproven. The [October 29 availability confirmation](availability-study/README.md) adds a separate fixed-window research protocol after the accepted diagnostic replay.
 
@@ -108,4 +109,6 @@ request before one injected adapter call, validates recovered signatures, and
 preserves uncertainty across interruptions. Its 21-case host check passed. The
 [independent exit key backend](docs/RESTRICTED-EXIT-SIGNER.md) now connects through
 an internal explicit opt-in, with no live execution CLI. Its host exercise uses
-disposable keys; the exit sender remains disconnected.
+disposable keys. The [exit transport increment](docs/EXIT-SUBMISSION.md) adds an
+internal one-attempt path and keyless recovery, with an offline-only host CLI.
+Final receipts and allocation reconciliation remain separate gates.
