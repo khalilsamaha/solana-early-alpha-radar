@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 """Run one deterministic CI partition; the union contains every position-book module."""
 import argparse
-import os
 from pathlib import Path
 import sys
-import unittest
+import subprocess
 
 
 def selected(root, shard):
-    return sorted(root.glob('test_*.py'))[shard::3]
+    return sorted(root.glob('test_*.py'))[shard::6]
 
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('shard',type=int,choices=range(3))
+    parser.add_argument('shard',type=int,choices=range(6))
     parser.add_argument('--list',action='store_true')
     args=parser.parse_args()
     root=Path(__file__).resolve().parents[1]/'position-book'
@@ -21,10 +20,14 @@ def main():
     if not modules:raise SystemExit('Empty position-book partition')
     if args.list:
         print('\n'.join(p.name for p in modules));return
-    os.chdir(root);sys.path.insert(0,str(root))
-    suite=unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromName(p.stem) for p in modules)
-    result=unittest.TextTestRunner(verbosity=1).run(suite)
-    raise SystemExit(0 if result.wasSuccessful() else 1)
+    failed=[]
+    for module in modules:
+        print(f'Position-book partition {args.shard}: {module.name}',flush=True)
+        # Match local module checks; isolate sys.path and test patches per module.
+        result=subprocess.run([sys.executable,'-m','unittest','discover','-s',str(root),'-p',module.name],cwd=root)
+        if result.returncode:failed.append(module.name)
+    if failed:print('Failed modules: '+', '.join(failed),file=sys.stderr,flush=True)
+    raise SystemExit(1 if failed else 0)
 
 
 if __name__=='__main__':main()
