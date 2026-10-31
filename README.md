@@ -67,7 +67,7 @@ remain gated.
 
 The [fresh delayed exit preparation](docs/ADMISSION-EXIT-PREPARATION.md) binds
 new raw evidence to the acquired entry quantity and remaining fee commitments in
-the same ledger. Its 27-case host check is next; live exit collection/signing and
+the same ledger. Its 27-case host check passed; live exit collection/signing and
 submission remain unconnected. No production restart is needed.
 
 ## Checks

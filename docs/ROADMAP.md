@@ -6,7 +6,7 @@ The merged source is `10b728f018bdd20acaa681a7198cb0afd250aa4d`.
 The [entry accounting integration](ADMISSION-ENTRY-ACCOUNTING.md) passed its 15-case
 host check on October 31. The next [combined private recovery](ADMISSION-RECOVERY.md)
 increment includes the historical source, admission database and acknowledgments;
-its 19-test host check passed October 31. The [fresh delayed exit preparation](ADMISSION-EXIT-PREPARATION.md) is built with a 27-case offline host gate pending.
+its 19-test host check passed October 31. The [fresh delayed exit preparation](ADMISSION-EXIT-PREPARATION.md) passed its 27-case host check on October 31.
 Live exit collection, signing/submission, final accounting and allocation release
 remain separate gates.
 The dated sections below preserve prior milestones.

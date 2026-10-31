@@ -53,7 +53,8 @@ remains stopped and is never restored over active state.
 Local validation passed 17 exit/report tests plus 20 recovery/integration tests
 (including the 19 existing recovery regressions). The callable-only report test
 also passed against the real CLI with a disposable test module. Source hygiene
-and diff checks passed. Kali acceptance of the 27-case portable report is pending.
+and diff checks passed. The Kali report captured October 31 at 05:40:57 UTC passed all 27 cases
+and its safety flags; the three-increment batch is ready for consolidation checks.
 
 After checking out the exact commit supplied in chat:
 

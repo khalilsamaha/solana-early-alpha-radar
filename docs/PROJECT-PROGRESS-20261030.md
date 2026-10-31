@@ -93,7 +93,7 @@ An earlier successful operational check does not prove present host health.
 | 6.9.2e | Durable submission and genesis-bound receipt collection | Accepted: exact 18-case host report at 19:10 UTC; consolidated in PR #64 with passing CI | No runtime wiring or new cycle approval |
 | 6.9.2f | Collected entry accounting | Accepted: all 15 host cases/flags matched October 31 at 04:57 UTC | Same-ledger acquired delta and paid/held fees; no allocation release or exit integration |
 | 6.9.2g | Combined admission evidence recovery | Accepted: 19 actual Kali cases at 05:26:57 UTC October 31; case-list formatter corrected | No active restore or off-machine transfer |
-| 6.9.2h | Fresh delayed exit preparation in the admission ledger | Built; 27-case offline host gate pending | Live evidence collection, restricted exit signing/submission and final reconciliation remain pending |
+| 6.9.2h | Fresh delayed exit preparation in the admission ledger | Accepted: all 27 host cases at 05:40:57 UTC October 31 | Live evidence collection, restricted exit signing/submission and final reconciliation remain pending |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
@@ -120,7 +120,7 @@ An earlier successful operational check does not prove present host health.
    consolidated the three-increment batch after CI and code review. The new path is
    not deployed. The [entry accounting gate](ADMISSION-ENTRY-ACCOUNTING.md) passed
    its October 31 host check. The [combined private recovery](ADMISSION-RECOVERY.md)
-   gate passed 19 actual host cases. The [fresh delayed exit preparation](ADMISSION-EXIT-PREPARATION.md) is built and awaits its 27-case host check.
+   gate passed 19 actual host cases. The [fresh delayed exit preparation](ADMISSION-EXIT-PREPARATION.md) passed its 27-case host check.
    Live exit collection/signing, receipt accounting and allocation release remain open.
 3. Preserve the fixed availability-study captures on the agreed dates. Production
    research collection continues while execution engineering progresses.
