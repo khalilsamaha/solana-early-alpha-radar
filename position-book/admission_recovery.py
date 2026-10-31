@@ -119,11 +119,18 @@ def inspect_locked(home,wallet,pool,clock):
             for name in TABLES:
                 check(book.db.execute('SELECT 1 FROM sqlite_master WHERE name=?',(name,)).fetchone() is None,
                       'later-evidence-without-handoff')
-        return dict(admissionState=state['state'],admissionEvents=count,admissionHeadSha256=head,
+        result=dict(admissionState=state['state'],admissionEvents=count,admissionHeadSha256=head,
             policySha256=digest(book.policy),sourceHeadSha256=source_head,
             reservedPrincipalAtomic=state['reservedPrincipalAtomic'],reservedFeeLamports=state['reservedFeeLamports'],
             signerAttemptPresent=attempt,signerAcknowledgmentPresent=ack,
             transport=transport,settlement=settled,accountingRecordSha256=accounting_hash)
+        # Optional new evidence is semantically replayed, not merely copied.
+        # Omitting this field when absent preserves existing snapshot manifests.
+        if book.db.execute("SELECT 1 FROM sqlite_master WHERE name='admission_exit_preparation'").fetchone():
+            import admission_exit
+            prepared=admission_exit.saved(book,clock())
+            result['exitPreparationSha256']=digest(prepared)
+        return result
     finally:book.close()
 
 

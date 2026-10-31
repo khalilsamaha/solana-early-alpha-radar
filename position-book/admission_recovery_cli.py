@@ -29,7 +29,7 @@ def main():
         if not result.wasSuccessful() or result.skipped or result.testsRun!=19:raise ValueError('offline-checks-failed')
         report=dict(format=m.VERSION+'-self-check',state='offline-checks-passed',capturedAt=m.backup.stamp(),
             mode='synthetic-offline',casesPassed=result.testsRun,
-            cases={test:'passed' for test in sorted(name for name in dir(test_admission_recovery.RecoveryTests) if name.startswith('test_'))},
+            cases={test:'passed' for test in unittest.defaultTestLoader.getTestCaseNames(test_admission_recovery.RecoveryTests)},
             disposableSignedFixtures=True,existingWalletAccessed=False,networkRequests=0,transactionsSent=0,
             sourceStateChanged=False,activeRestoreAvailable=False,executionApproved=False,nextCycleAuthorized=False,
             runtimeIntegrated=False,reservationReleased=False,cloudRequests=0,temporaryFixturesRemoved=True)

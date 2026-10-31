@@ -51,7 +51,10 @@ consistency does not prove current balances or that a snapshot is the latest.
 
 ## Host acceptance
 
-All 19 local recovery tests passed on October 31, 2026. Kali acceptance is pending.
+All 19 local recovery tests passed on October 31, 2026. The Kali report captured
+at 05:26:57 UTC passed all 19 actual cases. Its formatter also listed the non-test
+`test_key` attribute as passed (no key value); the next release corrects that case
+list using callable test discovery.
 
 First use the exact commit supplied in chat and run the default self-check:
 
@@ -80,8 +83,8 @@ No command restores into active state, removes STOP or re-signs/re-sends anythin
 
 ## Next gates
 
-1. Bind fresh delayed exit preparation to the exact acquired quantity and remaining
-   fee commitments, with a separate deadline and blockhash.
+1. Validate the new [fresh delayed exit preparation](ADMISSION-EXIT-PREPARATION.md)
+   on Kali, then connect bounded live collection and restricted exit signing.
 2. Integrate exit execution/recovery, failed fees and residual ownership without
    prematurely releasing funds.
 3. Reconcile final exposure before any next entry; separately review deployment

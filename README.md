@@ -62,7 +62,13 @@ records acquired token deltas and paid versus retained fees in the same admissio
 ledger. Its 15-case host check passed. The next [combined private recovery
 check](docs/ADMISSION-RECOVERY.md) includes the admission sibling and original
 historical journals, replays them in a stopped temporary copy and preserves unknown
-commitments. Delayed exits and release remain gated.
+commitments. Its 19-test host check passed. Delayed exit integration and release
+remain gated.
+
+The [fresh delayed exit preparation](docs/ADMISSION-EXIT-PREPARATION.md) binds
+new raw evidence to the acquired entry quantity and remaining fee commitments in
+the same ledger. Its 27-case host check is next; live exit collection/signing and
+submission remain unconnected. No production restart is needed.
 
 ## Checks
 
