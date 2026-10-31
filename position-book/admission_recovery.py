@@ -130,6 +130,11 @@ def inspect_locked(home,wallet,pool,clock):
             import admission_exit
             prepared=admission_exit.saved(book,clock())
             result['exitPreparationSha256']=digest(prepared)
+        if book.db.execute("SELECT 1 FROM sqlite_master WHERE name='admission_exit_signing'").fetchone():
+            import exit_signing_handoff
+            signing=exit_signing_handoff.read(book,clock())
+            result['exitSigningHeadSha256']=signing['headSha256']
+            result['exitSigningState']=signing['state']
         return result
     finally:book.close()
 

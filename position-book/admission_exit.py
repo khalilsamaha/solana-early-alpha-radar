@@ -1,6 +1,6 @@
 """One immutable fresh exit preparation in the entry's own admission ledger.
 
-Internal raw-evidence seam only. No new collector, signer, sender, retry or release.
+Internal raw or collected evidence. No signer, sender, retry or release.
 Public reports are not input capabilities. Historical preparation is not a permit.
 """
 from copy import deepcopy
@@ -22,7 +22,8 @@ from journal import read_only_journals
 
 VERSION='admission-exit-preparation-1'
 TABLE='admission_exit_preparation'
-MAX_RECORD=MAX_EVIDENCE_BYTES+16384
+MAX_RECORD=2*MAX_EVIDENCE_BYTES+16384
+COLLECTED_FORMAT='admission-exit-collection-1-record'
 view=entry.submission.handoff.bridge.view
 
 
@@ -109,15 +110,21 @@ def saved(book,now):
     check(exists[0]=='table','exit-preparation-table')
     rows=book.db.execute('SELECT id,CASE WHEN length(value)<=? THEN value ELSE NULL END AS value,hash FROM admission_exit_preparation LIMIT 2',(MAX_RECORD,)).fetchall()
     check(len(rows)==1 and rows[0]['id']==1 and type(rows[0]['value']) is str,'exit-preparation-record')
-    v=json.loads(rows[0]['value']);fields(v,{'format','recordedAtMs','evidence','binding'},'exit-record-schema')
-    check(v['format']==VERSION+'-record' and encoded(v)==rows[0]['value'] and digest(v)==rows[0]['hash'],
+    v=json.loads(rows[0]['value']);collected=v.get('format')==COLLECTED_FORMAT
+    fields(v,{'format','recordedAtMs','evidence','binding'}|({'collection'} if collected else set()),'exit-record-schema')
+    check(v['format'] in (VERSION+'-record',COLLECTED_FORMAT) and encoded(v)==rows[0]['value'] and digest(v)==rows[0]['hash'],
           'exit-record-integrity')
     uint(v['recordedAtMs'],now,'exit-record-clock',minimum=1)
-    check(review(book,v['evidence'],v['recordedAtMs'])==v['binding'],'exit-record-source-conflict')
+    binding=review(book,v['evidence'],v['recordedAtMs'])
+    if collected:
+        from admission_exit_collection import review as review_collection
+        binding=review_collection(book,v['evidence'],v['collection'],v['recordedAtMs'],binding)
+    check(binding==v['binding'],'exit-record-source-conflict')
     return v
 
 
 def public(record,now,*,stopped=False,created=False):
+    collected=record is not None and record['format']==COLLECTED_FORMAT
     state='exit-not-prepared'
     if record is not None:
         state='exit-preparation-expired' if now>=record['binding']['validUntilExclusiveMs'] else 'exit-prepared-research-only'
@@ -125,21 +132,31 @@ def public(record,now,*,stopped=False,created=False):
     return dict(format=VERSION,state=state,recorded=record is not None,createdThisRun=created,
         recordSha256=None if record is None else digest(record),
         binding=None if record is None else deepcopy(record['binding']),stopRequested=stopped,
-        rawEvidenceReplayed=record is not None,allocationOwner='same-admission-ledger',
+        rawEvidenceReplayed=record is not None,collectionRecorded=collected,collectionProvenanceReplayed=collected,allocationOwner='same-admission-ledger',
         attemptsConsumed=0,reservationReleased=False,allocationTransferred=False,
         signingApproved=False,executionApproved=False,validForSubmission=False,
         networkRequests=0,signaturesCreated=0,transactionsSent=0,privateKeyAccessed=False,
         runtimeIntegrated=False,productionLedgerUpdated=False,nextCycleAuthorized=False,
         walletWideReservationsKnown=False,
         limitations=['One immutable first-exit preparation; no refresh, retry, signer or sender.',
-          'Raw captures are supplied by an internal caller; live collection and provenance integration remain pending.',
+          ('Collected raw responses and request provenance are durably replayed; no signing integration.' if collected else
+           'Internal raw preparation only; no collected provenance and no implicit upgrade.'),
           'Historical evidence expires; a passed preparation is not a current execution permit.',
           'Controlled devnet direct pool only; no profitability or deployed-source equivalence claim.'])
 
 
+def write_record(book,record):
+    book.db.execute('CREATE TABLE admission_exit_preparation (id INTEGER PRIMARY KEY CHECK(id=1),value TEXT NOT NULL,hash TEXT NOT NULL)')
+    book.db.execute('INSERT INTO admission_exit_preparation VALUES(1,?,?)',(encoded(record),digest(record)))
+
+
 @view.cycles.binding.operation
-def prepare(home,wallet,pool,evidence,*,clock=view.now):
+def prepare(home,wallet,pool,evidence,*,clock=view.now,_collection=None):
     check(len(encoded(evidence).encode())<=MAX_EVIDENCE_BYTES,'exit-evidence-cap');evidence=deepcopy(evidence)
+    if _collection is not None:
+        from admission_exit_collection import review as review_collection,MAX_COLLECTION
+        check(len(encoded(_collection).encode())<=MAX_COLLECTION,'exit-collection-cap')
+        _collection=deepcopy(_collection)
     with view.cycles.c.source_lock(home,wallet) as root:
         check(not view.cycles.c.submit.swap.stop(root),'stop-marker-present')
         book=entry.submission._open(root,wallet,pool,clock)
@@ -152,6 +169,8 @@ def prepare(home,wallet,pool,evidence,*,clock=view.now):
                         record=saved(reader,clock())
                         if record is not None:
                             check(record['evidence']==evidence,'exit-already-prepared')
+                            if _collection is not None:
+                                check(record.get('collection')==_collection,'exit-collection-already-prepared')
                             return public(record,clock())
                         source=view.read_locked(root,wallet,pool,clock)
                         _,reservation=owner(reader,clock())
@@ -161,13 +180,20 @@ def prepare(home,wallet,pool,evidence,*,clock=view.now):
                               source['ledgerHeadSha256']==reservation['ledgerHeadSha256'] and
                               source['cycleBindingSha256']==reservation['cycleBindingSha256'],'exit-historical-source-changed')
                         now=clock();binding=review(reader,evidence,now)
+                        if _collection is not None:
+                            binding=review_collection(reader,evidence,_collection,now,binding)
+                            check(digest(reader.read()[0])==_collection['provenance']['identity']['admissionStateSha256'],
+                                  'exit-collection-current-admission-changed')
                     finally:reader.close()
                 check(now<=clock()<binding['validUntilExclusiveMs'],'exit-deadline-elapsed')
                 check(not view.cycles.c.submit.swap.stop(root),'stop-marker-present')
                 record=dict(format=VERSION+'-record',recordedAtMs=now,evidence=evidence,binding=binding)
+                if _collection is not None:
+                    record.update(format=COLLECTED_FORMAT,collection=_collection)
                 check(len(encoded(record).encode())<=MAX_RECORD,'exit-record-cap')
-                book.db.execute('CREATE TABLE admission_exit_preparation (id INTEGER PRIMARY KEY CHECK(id=1),value TEXT NOT NULL,hash TEXT NOT NULL)')
-                book.db.execute('INSERT INTO admission_exit_preparation VALUES(1,?,?)',(encoded(record),digest(record)))
+                write_record(book,record)
+                check(book.db.execute('PRAGMA page_count').fetchone()[0]*
+                      book.db.execute('PRAGMA page_size').fetchone()[0]<=64*1024*1024,'exit-ledger-size-cap')
                 # Deadline includes serialization and writing, before commit.
                 end=clock();check(now<=end<binding['validUntilExclusiveMs'],'exit-deadline-elapsed')
                 check(not view.cycles.c.submit.swap.stop(root),'stop-marker-present')

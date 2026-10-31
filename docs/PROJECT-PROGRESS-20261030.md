@@ -26,7 +26,12 @@ main commit `6ca918927786be8c93ab28765dc47bd5e44a3cde` matches the reviewed tree
 The pre-sign admission, locked reader and durable signer-adapter handoff have
 passed their 15-, 17- and 15-case host checks. PR #63 merged the three-increment batch after both CI
 groups passed; main `c632bd7388faea410a5bc401e66e27fdff445807` matches the reviewed tree. PR #64 subsequently consolidated the restricted signer and receipt collection.
-Same-ledger entry accounting and combined recovery have passed their host checks.
+PR #65 consolidated same-ledger entry accounting, combined recovery and fresh
+delayed exit preparation after their host checks and all five CI groups passed.
+The bounded exit collector passed its 19-case host check. Atomic collected
+preparation passed all 21 host cases at 17:39:33 UTC. The durable exit signing
+handoff passed all 21 host cases at 17:55:29 UTC. The three-increment batch is
+ready for consolidation, subject to all five existing CI groups.
 These remain internal integration components, not a deployed production sender.
 
 Status definitions: **accepted** means the stated scope has test/host evidence;
@@ -94,6 +99,9 @@ An earlier successful operational check does not prove present host health.
 | 6.9.2f | Collected entry accounting | Accepted: all 15 host cases/flags matched October 31 at 04:57 UTC | Same-ledger acquired delta and paid/held fees; no allocation release or exit integration |
 | 6.9.2g | Combined admission evidence recovery | Accepted: 19 actual Kali cases at 05:26:57 UTC October 31; case-list formatter corrected | No active restore or off-machine transfer |
 | 6.9.2h | Fresh delayed exit preparation in the admission ledger | Accepted: all 27 host cases at 05:40:57 UTC October 31 | Live evidence collection, restricted exit signing/submission and final reconciliation remain pending |
+| 6.9.2i | Bounded admission-owned exit collector | Accepted: all 19 host cases/flags matched October 31 at 06:05:55 UTC | Preserve exact acquired quantity and held commitments |
+| 6.9.2j | Atomic collected exit preparation and replay | Accepted: all 21 host cases/flags at 17:39:33 UTC October 31 | Preserve immutable evidence and collection deadline |
+| 6.9.2k | Durable exit signer-adapter handoff | Accepted: 21-case host report at 17:55:29 UTC October 31 | Independent real-key backend and sender remain open |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
@@ -151,3 +159,13 @@ and private journals; no test resets them to make an outcome look successful.
 
 References: [roadmap and history](ROADMAP.md), [frozen review decision](FROZEN-REVIEW-DECISION-20261028.md),
 [confirmation protocol](../availability-study/README.md), [fee observation](PROJECTED-EXIT-FEE.md).
+
+## October 31 update: first-exit signing handoff
+
+Collected exit preparation passed all 21 host cases at 17:39:33 UTC. The next
+internal handoff commits its exact request before calling an injected adapter,
+checks returned signatures, and preserves unknown or quarantined states without
+automatic re-signing. Both unknown and signed states are covered by private
+snapshot replay. The [21-case host exercise](EXIT-SIGNING-HANDOFF.md) passed at 17:55:29 UTC.
+The real exit key backend, sender and final receipt/allocation reconciliation
+remain open; no runtime deployment or real-money approval is implied.
