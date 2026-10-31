@@ -45,3 +45,13 @@ The fixed availability study is independent: preserve captures November 1, 3, 5
 and 6, and review November 6 at 00:05 UTC / 01:05 Amsterdam. No outcomes are
 evaluated, refitted or promoted by this engineering batch. Profitability and a
 real-money pilot remain separate, unmet gates.
+
+## CI partitioning
+
+The first consolidation core job exceeded the ten-minute CI limit while running
+position-book tests; it reported no assertion failure before cancellation. CI now
+runs core-base, three deterministic position-book partitions and devnet-pool in
+parallel. Every `test_*.py` position-book module belongs to exactly one partition;
+local `scripts/check.sh core` and `all` keep their complete coverage. No test is
+skipped and the per-job ten-minute bound remains. This change reduces CI wall time
+without changing application or research behavior.
