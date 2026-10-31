@@ -34,7 +34,10 @@ handoff passed all 21 host cases at 17:55:29 UTC. PR #66 merged the three-increm
 The independent exit key backend passed its 27-case disposable-key Kali check at
 18:14:04 UTC. One-send exit transport and bounded recovery are now built; the
 24-case synthetic host gate passed at 18:37:40 UTC. Collected exit receipt
-accounting is now built; its 15-case synthetic host gate is pending.
+accounting passed its 15-case synthetic host gate at 18:59:57 UTC.
+PR #67 consolidated those three increments after all nine CI groups passed;
+main matches the tested source tree.
+The fresh exit balance collector is built; its 18-case offline host check is pending.
 These remain internal integration components, not a deployed production sender.
 
 Status definitions: **accepted** means the stated scope has test/host evidence;
@@ -107,7 +110,8 @@ An earlier successful operational check does not prove present host health.
 | 6.9.2k | Durable exit signer-adapter handoff | Accepted: 21-case host report at 17:55:29 UTC October 31 | Consolidated in PR #66; independent backend host gate and sender remain open |
 | 6.9.2l | Independent restricted exit key backend | Accepted: 27-case disposable-key host report matched October 31 at 18:14:04 UTC | No live execution CLI or new controlled cycle approval |
 | 6.9.2m | One-send exit transport and bounded recovery | Accepted: 24-case synthetic host report at 18:37:40 UTC October 31 | Full receipt effects and release remain separate gates |
-| 6.9.2n | Collected exit receipt accounting | Built: exact vault/quantity effects, fee conservation, residual accounting and atomic same-ledger record | 15-case offline Kali check; fresh balance verification and release remain pending |
+| 6.9.2n | Collected exit receipt accounting | Accepted: all 15 host cases and flags at 18:59:57 UTC October 31 | Original allocation commitments remain held |
+| 6.9.2o | Fresh post-exit balance collector | Built: four finalized devnet reads, exact five-account state, clocks and source identity | 18-case offline Kali check; durable scoped closure/release remain pending |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |

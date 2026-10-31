@@ -69,7 +69,8 @@ All 27 targeted tests passed: seven accounting tests (including the 15-case
 portable CLI), one full-source signing/receipt/isolated-restore integration test,
 and 19 existing recovery regression tests. The attached preceding transport
 report was also replayed: all 24 cases and flags matched exactly. Source hygiene
-and whitespace checks passed. The new accounting host report remains pending.
+and whitespace checks passed. The accounting host report passed all 15 cases at 2026-10-31 18:59:57 UTC;
+its source replay matched every case and flag.
 
 ## Kali exercise
 

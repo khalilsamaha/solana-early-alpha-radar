@@ -79,6 +79,14 @@ class AccountingRestoreTests(unittest.TestCase):
             self.assertTrue(settled['accountingUsable']);self.assertEqual(settled['state'],'exit-position-flat-held')
             self.assertEqual(settled['accounting']['ownedAcquiredResidualAtomic'],'0')
             self.assertFalse(settled['reservationReleased'])
+            # The next read-only gate binds fresh balances to these full-source receipts.
+            from exit_balance_checks import FakeRpc as BalanceRpc
+            import exit_balance
+            before_balances=self.source_bytes();admission_before=c.path.read_bytes()
+            balances=exit_balance.collect(self.home,self.wallet,self.pool,opener=BalanceRpc(c),clock=self.clock,monotonic=lambda:0)
+            self.assertEqual(balances['state'],'exit-balances-match-held',balances)
+            self.assertEqual(balances['networkRequests'],4);self.assertFalse(balances['reservationReleased'])
+            self.assertEqual(before_balances,self.source_bytes());self.assertEqual(admission_before,c.path.read_bytes())
             (self.home/'STOP').touch(mode=0o600)
             with patch.object(backend,'_invoke',side_effect=AssertionError('backend')):
                 r=backend.recover(self.home,self.wallet,self.pool,clock=self.clock)
