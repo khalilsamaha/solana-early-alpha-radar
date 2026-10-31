@@ -25,9 +25,10 @@ class Opener:
     def __init__(self,first,e,hook=None,sim=None):
         self.calls=[];self.hook=hook
         second=e['capture'];fee=second['evidence']['fee']['result']['value']
-        self.rows=replies(first)+[GENESIS['devnet'],{'context':{'slot':111},'value':{
+        slot=first['evidence']['accounts']['result']['context']['slot']
+        self.rows=replies(first)+[GENESIS['devnet'],{'context':{'slot':slot},'value':{
             'blockhash':fake_key('fresh-collected-exit'),'lastValidBlockHeight':200}},
-            {'context':{'slot':111},'value':fee},GENESIS['devnet']]+replies(second)+[
+            {'context':{'slot':slot},'value':fee},GENESIS['devnet']]+replies(second)+[
             sim if sim is not None else simulation_response(second,e['price']['quote']['outAmount']),GENESIS['devnet']]
     def open(self,request,timeout):
         body=json.loads(request.data);self.calls.append(body)

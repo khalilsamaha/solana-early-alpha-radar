@@ -95,4 +95,47 @@ class EndToEndExitTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'exit-record-source-conflict'):self.verify()
 
 
+    def test_collected_preparation_survives_isolated_restore_and_rehash_attack(self):
+        import admission_exit_collection as collected
+        import admission_exit_capture_checks as fixtures
+        import admission_exit_collection_checks as collection_checks
+        self.collect();accounting=self.settle()['accounting'];self.stamp+=30000
+        e=delayed(self.e['costInputs']['capture'],accounting,self.stamp)
+        raw=e['initialPool'];first=deepcopy(e['capture'])
+        first.update(packet=None,selection='explicit-pool',accountKeys=raw['accountKeys']+[first['accountKeys'][-1]])
+        programdata=deepcopy(first['evidence']['accounts']['result']['value'][-1])
+        first['evidence']['accounts']=deepcopy(raw['evidence']['accounts'])
+        first['evidence']['accounts']['result']['value'].append(programdata)
+        first['evidence']['poolBootstrap']=deepcopy(raw['evidence']['bootstrap'])
+        first['evidence']['programBootstrap']['result']['context']['slot']=first['evidence']['poolBootstrap']['result']['context']['slot']
+        for name in ('genesisBefore','genesisAfter','blockTime'):
+            first['evidence'][name]=deepcopy(raw['evidence'][name])
+        first['evidence']['blockhash']={'state':'not-requested'}
+        first['evidence']['fee']={'state':'not-requested'}
+        baseline=deepcopy(self.e['costInputs']['baseline'])
+        baseline.update(kind='observed-devnet-deployment',observedAtMs=0)
+        clock=fixtures.Clock();clock.at=self.stamp
+        rpc=fixtures.Opener(first,e)
+        with patch.object(m,'BASELINE',baseline):
+            prepared=collected.collect_and_prepare(self.home,self.wallet,self.pool,opener=rpc,clock=clock,monotonic=lambda:0)
+            self.assertEqual(prepared['state'],'exit-prepared-research-only',prepared)
+            self.assertTrue(prepared['collectionRecorded']);self.assertEqual(len(rpc.calls),20)
+            self.stamp=clock.at+30000
+            before=self.source_bytes();self.capture();self.verify()
+            self.assertEqual(self.source_bytes(),before)
+            manifest=json.loads((self.snapshot/recovery.MANIFEST).read_text())
+            self.assertEqual(manifest['projection']['exitPreparationSha256'],prepared['recordSha256'])
+            path=self.snapshot/recovery.SIBLING/'entry.admission.sqlite'
+            def corrupt(db):
+                row=json.loads(db.execute('SELECT value FROM admission_exit_preparation').fetchone()[0])
+                row['collection']['finalGenesis']['result']='wrong'
+                collection_checks.rehash(row['collection'],row['evidence'])
+                row['binding']['collectionSha256']=digest(row['collection'])
+                db.execute('UPDATE admission_exit_preparation SET value=?,hash=?',(m.encoded(row),digest(row)))
+            self.edit_db(corrupt,path)
+            manifest['inventories']=recovery.inventories(self.snapshot/recovery.SOURCE,self.snapshot/recovery.SIBLING)
+            (self.snapshot/recovery.MANIFEST).write_text(json.dumps(manifest))
+            with self.assertRaisesRegex(ValueError,'exit-collection-cluster'):self.verify()
+
+
 if __name__=='__main__':unittest.main()

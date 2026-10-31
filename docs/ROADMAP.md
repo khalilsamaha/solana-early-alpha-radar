@@ -5,11 +5,11 @@ combined private recovery and fresh delayed exit preparation increments. All fiv
 CI jobs passed after deterministic partitioning of the complete position-book
 suite. The merged source is `99b2396f6dd59c1bf8e096c04a660a281f2170c1`.
 
-The next [bounded exit collector](ADMISSION-EXIT-COLLECTOR.md) is built and locally
-tested. Its 19-case offline host check is pending. It binds fresh raw evidence to
-the acquired quantity and held fees, with private in-process provenance only.
-Atomic provenance persistence, restricted exit signing/submission, final receipt
-accounting and allocation release remain separate gates.
+The [bounded exit collector](ADMISSION-EXIT-COLLECTOR.md) passed all 19 host cases
+on October 31. The next [atomic collected preparation](COLLECTED-EXIT-PREPARATION.md)
+is built: raw evidence and replayable collection provenance share one immutable
+admission record. Its 21-case offline host exercise is pending. Restricted exit
+signing/submission, final receipts/residuals and allocation release remain open.
 The dated sections below preserve prior milestones.
 
 Current task/subtask status is in the [progress overview](PROJECT-PROGRESS-20261030.md).

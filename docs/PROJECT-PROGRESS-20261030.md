@@ -28,7 +28,8 @@ passed their 15-, 17- and 15-case host checks. PR #63 merged the three-increment
 groups passed; main `c632bd7388faea410a5bc401e66e27fdff445807` matches the reviewed tree. PR #64 subsequently consolidated the restricted signer and receipt collection.
 PR #65 consolidated same-ledger entry accounting, combined recovery and fresh
 delayed exit preparation after their host checks and all five CI groups passed.
-The bounded exit collector is locally tested; its offline Kali acceptance is next.
+The bounded exit collector passed its 19-case host check. Atomic collected
+preparation is built and its offline Kali acceptance is next.
 These remain internal integration components, not a deployed production sender.
 
 Status definitions: **accepted** means the stated scope has test/host evidence;
@@ -96,7 +97,8 @@ An earlier successful operational check does not prove present host health.
 | 6.9.2f | Collected entry accounting | Accepted: all 15 host cases/flags matched October 31 at 04:57 UTC | Same-ledger acquired delta and paid/held fees; no allocation release or exit integration |
 | 6.9.2g | Combined admission evidence recovery | Accepted: 19 actual Kali cases at 05:26:57 UTC October 31; case-list formatter corrected | No active restore or off-machine transfer |
 | 6.9.2h | Fresh delayed exit preparation in the admission ledger | Accepted: all 27 host cases at 05:40:57 UTC October 31 | Live evidence collection, restricted exit signing/submission and final reconciliation remain pending |
-| 6.9.2i | Bounded admission-owned exit collector | Built: twenty-request read-only collector and 19-case offline exercise | Host synthetic acceptance; atomic provenance persistence and signing remain pending |
+| 6.9.2i | Bounded admission-owned exit collector | Accepted: all 19 host cases/flags matched October 31 at 06:05:55 UTC | Preserve exact acquired quantity and held commitments |
+| 6.9.2j | Atomic collected exit preparation and replay | Built: one immutable record, protocol/identity replay and rollback guards | 21-case host check; restricted signing/submission remains pending |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |

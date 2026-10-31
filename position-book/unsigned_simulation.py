@@ -183,7 +183,7 @@ def review(packet, capture, price, item, *, now_ms):
         actualExecutionObserved=False, executionApproved=False, sourceEquivalenceVerified=False)
 
 
-def collect(packet, capture, price, *, transport, clock, deadline, _evidence_sink=None):
+def collect(packet, capture, price, *, transport, clock, deadline, _evidence_sink=None, _genesis_sink=None):
     start = clock()
     result = dict(state='unavailable', requestedAtMs=start, signatureVerification=False,
                   transactionsSent=0, signaturesCreated=0, executionApproved=False)
@@ -206,6 +206,9 @@ def collect(packet, capture, price, *, transport, clock, deadline, _evidence_sin
             # Internal in-memory handoff only, never added to the public result.
             from copy import deepcopy
             _evidence_sink(deepcopy(item))
+        if _genesis_sink is not None:
+            from copy import deepcopy
+            _genesis_sink(deepcopy(genesis))
     except (ValueError, KeyError, TypeError, IndexError) as exc:
         allowed = {'simulation-evidence-expired','simulation-rpc-unavailable','simulation-cluster',
             'simulation-failed','simulation-fee','simulation-compute','simulation-prestate-changed',

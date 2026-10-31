@@ -111,11 +111,11 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                     monotonic=monotonic,baseline=baseline)
                 price,checked,_=fresh_quote.combine(first,built,second,scope,stamp=clock(),review=reviewer)
                 result['stage']='simulation'
-                items=[]
+                items=[];genesis_items=[]
                 sim=exit.unsigned_simulation.collect(built['packet'],second,price,transport=transport,
                     clock=clock,deadline=min(transport.deadline,checked['validUntilExclusiveMs']),
-                    _evidence_sink=items.append)
-                check(sim['state']=='unsigned-effects-match-quote' and len(items)==1,'exit-capture-simulation')
+                    _evidence_sink=items.append,_genesis_sink=genesis_items.append)
+                check(sim['state']=='unsigned-effects-match-quote' and len(items)==len(genesis_items)==1,'exit-capture-simulation')
                 result['stage']='final-binding'
                 after,_,_=identity(book,root,wallet,pool,clock)
                 check(before==after,'exit-capture-admission-changed')
@@ -132,11 +132,11 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                 check(transport.calls==METHODS and len(transport.request_hashes)==20,'exit-capture-incomplete')
                 provenance=dict(format=VERSION+'-provenance',identity=before,startedAtMs=start,completedAtMs=finish,
                     evidenceSha256=digest(evidence),initialCaptureSha256=digest(first),packetBuildSha256=digest(built),
-                    requestTraceSha256=digest(transport.request_hashes),networkRequests=20,
+                    requestTraceSha256=digest(transport.request_hashes),finalGenesisSha256=digest(genesis_items[0]),networkRequests=20,
                     simulationParametersSha256=digest(transport.expected),
                     validUntilExclusiveMs=min(transport.deadline,binding['validUntilExclusiveMs']),durable=False)
                 envelope=deepcopy(dict(evidence=evidence,initialCapture=first,packetBuild=built,
-                    requestTrace=transport.request_hashes,provenance=provenance)) if _evidence_sink is not None else None
+                    requestTrace=transport.request_hashes,finalGenesis=genesis_items[0],provenance=provenance)) if _evidence_sink is not None else None
                 # Hashing and private-envelope construction also consume freshness.
                 delivered=clock()
                 check(finish<=delivered<provenance['validUntilExclusiveMs'],'exit-capture-expired')

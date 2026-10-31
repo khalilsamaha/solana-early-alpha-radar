@@ -1,5 +1,7 @@
 # Bounded admission-owned exit collection — 31 October 2026
 
+Host acceptance: all 19 cases and flags matched at 06:05:55 UTC on October 31.
+
 This increment connects the existing raw exit validator to fresh public devnet
 observations for an already-accounted entry. It is an internal read-only collector,
 not a production command. The portable CLI exposes only synthetic offline checks.
@@ -29,8 +31,8 @@ collection; it is not a cryptographic attestation by the RPC provider.
 ## Boundaries and next integration
 
 This collector does **not** write the exit preparation. Its provenance is explicitly
-`durable: false`, and all signing/submission flags remain false. The next increment
-must atomically persist and replay the collected envelope in the same admission,
+`durable: false`, and all signing/submission flags remain false. The [collected preparation increment](COLLECTED-EXIT-PREPARATION.md) now implements
+atomic persistence and replay of the collected envelope in the same admission,
 rechecking identity and expiry under the lock. Public reports must never become
 signing capabilities, and legacy raw preparations must not acquire provenance by
 assertion. Restricted signing, durable send/recovery, final receipts/residuals and

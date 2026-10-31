@@ -94,3 +94,8 @@ Paper price changes and route quotes are research observations, not fills or dem
 The [admission-owned exit collector](docs/ADMISSION-EXIT-COLLECTOR.md) binds fresh
 raw devnet evidence to acquired inventory and held fees. Its portable check is
 offline; atomic persistence and exit signing remain separate gates.
+
+The [atomic collected exit preparation](docs/COLLECTED-EXIT-PREPARATION.md) stores
+fresh raw evidence and collection provenance together in the admission ledger,
+with independent replay and rollback checks. The host exercise is offline only;
+restricted exit signing and submission remain unconnected.
