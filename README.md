@@ -2,6 +2,11 @@
 
 Private research system for discovering Solana tokens, recording paper signals and observing walletless route quotes. The scanner and quote observer do not trade. Separate, explicitly invoked tools can sign and submit tightly scoped **devnet** test transactions; they are not connected to trading signals or mainnet.
 
+**Latest integration consolidation: PR #65, 31 October 2026.** Entry accounting,
+combined recovery and delayed exit preparation are consolidated with passing local
+and CI checks. The [next exit collector](docs/ADMISSION-EXIT-COLLECTOR.md) is a
+standalone development increment awaiting its offline host check.
+
 **Current engineering release: 25 October 2026.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. The **October 28 frozen review is complete: no strategy or model is promoted**. See the [review decision and offline diagnostic](docs/FROZEN-REVIEW-DECISION-20261028.md). Engineering reliability can improve independently; profitable execution remains unproven. The [October 29 availability confirmation](availability-study/README.md) adds a separate fixed-window research protocol after the accepted diagnostic replay.
 
 **October 27 observation batch, under PR review:** the [consolidation record](docs/OBSERVATION-CONSOLIDATION-20261027.md) joins fresh quotes, locked reservations, unsigned simulation and single-leg cost evidence. Host checkpoints passed; round-trip economics and execution approval remain separate gates. No scanner deployment is required.
@@ -85,3 +90,7 @@ GitHub Actions runs the same offline tests on pushes and pull requests, plus sou
 Kali remains the running host. **Do not run Docker Compose from this new layout against production yet.** Moving Compose into `scanner/` can change its project name and select a different database volume. A separate deployment migration must preserve the existing Compose project, environment and named volume, with verified rollback.
 
 Paper price changes and route quotes are research observations, not fills or demonstrated profitability. Fast30 is a shadow cohort: no additional notifications or trade execution; bounded follow-up priority is recorded separately.
+
+The [admission-owned exit collector](docs/ADMISSION-EXIT-COLLECTOR.md) binds fresh
+raw devnet evidence to acquired inventory and held fees. Its portable check is
+offline; atomic persistence and exit signing remain separate gates.

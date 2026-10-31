@@ -1,14 +1,15 @@
 # Project roadmap — updated 31 October 2026
 
-Latest checkpoint: PR #64 consolidated the host-accepted receipt gate, restricted
-signer and durable submission/collection batch after both CI groups passed.
-The merged source is `10b728f018bdd20acaa681a7198cb0afd250aa4d`.
-The [entry accounting integration](ADMISSION-ENTRY-ACCOUNTING.md) passed its 15-case
-host check on October 31. The next [combined private recovery](ADMISSION-RECOVERY.md)
-increment includes the historical source, admission database and acknowledgments;
-its 19-test host check passed October 31. The [fresh delayed exit preparation](ADMISSION-EXIT-PREPARATION.md) passed its 27-case host check on October 31.
-Live exit collection, signing/submission, final accounting and allocation release
-remain separate gates.
+Latest checkpoint: PR #65 consolidated the host-accepted entry accounting,
+combined private recovery and fresh delayed exit preparation increments. All five
+CI jobs passed after deterministic partitioning of the complete position-book
+suite. The merged source is `99b2396f6dd59c1bf8e096c04a660a281f2170c1`.
+
+The next [bounded exit collector](ADMISSION-EXIT-COLLECTOR.md) is built and locally
+tested. Its 19-case offline host check is pending. It binds fresh raw evidence to
+the acquired quantity and held fees, with private in-process provenance only.
+Atomic provenance persistence, restricted exit signing/submission, final receipt
+accounting and allocation release remain separate gates.
 The dated sections below preserve prior milestones.
 
 Current task/subtask status is in the [progress overview](PROJECT-PROGRESS-20261030.md).
