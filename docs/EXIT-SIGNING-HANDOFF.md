@@ -53,6 +53,8 @@ unknown/signed restore tests, 47 related admission/preparation tests and 19 exis
 snapshot regression tests. Source hygiene and whitespace checks passed. These
 checks do not substitute for the pinned Kali offline exercise or future live timing.
 
+The October 31 report captured at 17:55:29 UTC matched all 21 cases and flags.
+
 ## Kali acceptance
 
 Fetch the pinned source supplied in chat and run:

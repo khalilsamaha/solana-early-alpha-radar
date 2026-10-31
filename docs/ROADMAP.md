@@ -8,8 +8,8 @@ suite. The merged source is `99b2396f6dd59c1bf8e096c04a660a281f2170c1`.
 The [bounded exit collector](ADMISSION-EXIT-COLLECTOR.md) passed all 19 host cases.
 The [atomic collected preparation](COLLECTED-EXIT-PREPARATION.md) passed its 21-case
 Kali check on October 31 at 17:39:33 UTC. The next [durable exit signing handoff](EXIT-SIGNING-HANDOFF.md)
-is built with exact-request persistence, one-call adapter semantics and signature
-recovery; its 21-case host exercise is pending. The independent real-key backend,
+passed its 21-case host exercise at 17:55:29 UTC. The three-increment
+[consolidation](EXIT-EVIDENCE-CONSOLIDATION-20261031.md) awaits its complete CI checks. The independent real-key backend,
 exit submission/recovery, final receipts/residuals and allocation release remain open.
 The dated sections below preserve prior milestones.
 
@@ -342,7 +342,6 @@ coverage, delayed exit lifecycle and final allocation reconciliation.
 The 17:39:33 UTC Kali report matched all 21 collected-preparation cases. The next
 [exit signing handoff](EXIT-SIGNING-HANDOFF.md) adds a durable exact request before
 one injected adapter call, signature/message verification, late acknowledgment
-recovery, quarantine and semantic snapshot replay. Its 21-case host check is
-pending. No real key backend or sender is connected. Next: independent restricted
+recovery, quarantine and semantic snapshot replay. Its 21-case host check passed at 17:55:29 UTC. No real key backend or sender is connected. Next: independent restricted
 exit backend, one-send recovery, final exit accounting and residual allocation
 release. Runtime and the November 6 confirmation study remain unchanged.
