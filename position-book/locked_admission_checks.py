@@ -15,9 +15,9 @@ from wire import decode_wire
 from cpmm_quote import derive
 
 
-def fixture():
+def fixture(signed_fixture=None):
     e,p=raw_fixture()
-    signed=json.loads(Path(__file__).with_name('admission-signed-fixture.json').read_text())
+    signed=deepcopy(signed_fixture) if signed_fixture is not None else json.loads(Path(__file__).with_name('admission-signed-fixture.json').read_text())
     wallet=signed['wallet'];a=e['costInputs'];c=a['capture']
     for scope in (e['scope'], e['entryScope'], p['scope'], a['packet']['policy']):
         scope['accounts']['wallet']=wallet

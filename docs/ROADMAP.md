@@ -5,11 +5,12 @@ combined private recovery and fresh delayed exit preparation increments. All fiv
 CI jobs passed after deterministic partitioning of the complete position-book
 suite. The merged source is `99b2396f6dd59c1bf8e096c04a660a281f2170c1`.
 
-The [bounded exit collector](ADMISSION-EXIT-COLLECTOR.md) passed all 19 host cases
-on October 31. The next [atomic collected preparation](COLLECTED-EXIT-PREPARATION.md)
-is built: raw evidence and replayable collection provenance share one immutable
-admission record. Its 21-case offline host exercise is pending. Restricted exit
-signing/submission, final receipts/residuals and allocation release remain open.
+The [bounded exit collector](ADMISSION-EXIT-COLLECTOR.md) passed all 19 host cases.
+The [atomic collected preparation](COLLECTED-EXIT-PREPARATION.md) passed its 21-case
+Kali check on October 31 at 17:39:33 UTC. The next [durable exit signing handoff](EXIT-SIGNING-HANDOFF.md)
+is built with exact-request persistence, one-call adapter semantics and signature
+recovery; its 21-case host exercise is pending. The independent real-key backend,
+exit submission/recovery, final receipts/residuals and allocation release remain open.
 The dated sections below preserve prior milestones.
 
 Current task/subtask status is in the [progress overview](PROJECT-PROGRESS-20261030.md).
@@ -33,7 +34,7 @@ Goal: establish whether entry-time evidence identifies realistically enterable a
 | Frozen comparison | October 28 review complete; four fitted groups reached evidence minimums, no model promoted | Confirmation registered October 29; observe October 30–November 5 UTC, review November 6 00:05 UTC |
 | Controlled devnet execution | Fixed two-cycle identity, cumulative spending reservations, explicit one-send paths and bounded unsigned recovery | Keep the completed rehearsal closed; any further execution needs a separately scoped design |
 | Accounting and readiness | Two-cycle receipt reconciliation, idempotent historical accounting and strictly read-only readiness; local key-excluded evidence snapshots with isolated restore checks | Host isolated restore accepted; encrypted off-machine recovery and key custody remain separate work |
-| Execution economics | Host-accepted controlled quote, exact unsigned simulation, scoped local reservations and single-leg fee-cap funding | Same-simulation post-entry collector and exact reverse-message host checks accepted; exact reverse fee/conditional caps host accepted; ordered atomic draft/trace contract built, live combined simulation pending |
+| Execution economics | Host-accepted controlled quote, exact unsigned simulation, scoped local reservations and single-leg fee-cap funding | Same-simulation post-entry collector and exact reverse-message host checks accepted; exact reverse fee/conditional caps host accepted; ordered atomic draft and live combined simulation accepted; admission-owned exit signing/submission and final allocation reconciliation remain pending |
 | Funded pilot | Not enabled | Separate strategy review, mainnet-specific validation, execution-cost evidence and explicit pilot scope/limits |
 
 The completed frozen review used 781 forward watches. Four fitted groups met the original 200-label and seven-UTC-date minimums; two availability models remain unfitted. Meeting those minimums did not establish an economic edge. Richer context models did not improve the profit prediction, while the simpler early-activity exit-availability model offers a specific failure-filter hypothesis. See the [decision and limitations](FROZEN-REVIEW-DECISION-20261028.md).
@@ -335,3 +336,13 @@ Failed entry fees do not release the principal; unknown receipts remain unknown.
 Host acceptance is pending the 15-case synthetic check. Runtime, study protocols,
 market polling and notification rules are unchanged. Next: complete private recovery
 coverage, delayed exit lifecycle and final allocation reconciliation.
+
+## October 31: collected preparation accepted; exit signing handoff built
+
+The 17:39:33 UTC Kali report matched all 21 collected-preparation cases. The next
+[exit signing handoff](EXIT-SIGNING-HANDOFF.md) adds a durable exact request before
+one injected adapter call, signature/message verification, late acknowledgment
+recovery, quarantine and semantic snapshot replay. Its 21-case host check is
+pending. No real key backend or sender is connected. Next: independent restricted
+exit backend, one-send recovery, final exit accounting and residual allocation
+release. Runtime and the November 6 confirmation study remain unchanged.

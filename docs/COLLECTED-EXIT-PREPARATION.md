@@ -50,6 +50,10 @@ or send. Mainnet support, runtime integration and funded-pilot approval remain
 outside this scope. Monitoring, sampling, notifications and the fixed study do not
 change; future live timing has not been established by the synthetic exercise.
 
+The Kali report captured October 31 at 17:39:33 UTC matched all 21 cases and
+flags. The next [durable signing handoff](EXIT-SIGNING-HANDOFF.md) is implemented;
+its host acceptance is pending.
+
 ## Kali acceptance
 
 Fetch the pinned source supplied in chat, then run:

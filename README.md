@@ -99,3 +99,8 @@ The [atomic collected exit preparation](docs/COLLECTED-EXIT-PREPARATION.md) stor
 fresh raw evidence and collection provenance together in the admission ledger,
 with independent replay and rollback checks. The host exercise is offline only;
 restricted exit signing and submission remain unconnected.
+
+The [durable exit signing handoff](docs/EXIT-SIGNING-HANDOFF.md) records the exact
+request before one injected adapter call, validates recovered signatures, and
+preserves uncertainty across interruptions. Its public host check is offline only;
+the real key backend and exit sender remain disconnected.

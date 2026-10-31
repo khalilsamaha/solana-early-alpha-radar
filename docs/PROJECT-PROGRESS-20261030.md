@@ -29,7 +29,8 @@ groups passed; main `c632bd7388faea410a5bc401e66e27fdff445807` matches the revie
 PR #65 consolidated same-ledger entry accounting, combined recovery and fresh
 delayed exit preparation after their host checks and all five CI groups passed.
 The bounded exit collector passed its 19-case host check. Atomic collected
-preparation is built and its offline Kali acceptance is next.
+preparation passed all 21 host cases at 17:39:33 UTC. The durable exit signing
+handoff is built; its 21-case host acceptance is next.
 These remain internal integration components, not a deployed production sender.
 
 Status definitions: **accepted** means the stated scope has test/host evidence;
@@ -98,7 +99,8 @@ An earlier successful operational check does not prove present host health.
 | 6.9.2g | Combined admission evidence recovery | Accepted: 19 actual Kali cases at 05:26:57 UTC October 31; case-list formatter corrected | No active restore or off-machine transfer |
 | 6.9.2h | Fresh delayed exit preparation in the admission ledger | Accepted: all 27 host cases at 05:40:57 UTC October 31 | Live evidence collection, restricted exit signing/submission and final reconciliation remain pending |
 | 6.9.2i | Bounded admission-owned exit collector | Accepted: all 19 host cases/flags matched October 31 at 06:05:55 UTC | Preserve exact acquired quantity and held commitments |
-| 6.9.2j | Atomic collected exit preparation and replay | Built: one immutable record, protocol/identity replay and rollback guards | 21-case host check; restricted signing/submission remains pending |
+| 6.9.2j | Atomic collected exit preparation and replay | Accepted: all 21 host cases/flags at 17:39:33 UTC October 31 | Preserve immutable evidence and collection deadline |
+| 6.9.2k | Durable exit signer-adapter handoff | Built: one-call boundary, exact signed-message recovery, quarantine and restore replay | 21-case host check pending; independent real-key backend and sender remain open |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
@@ -156,3 +158,13 @@ and private journals; no test resets them to make an outcome look successful.
 
 References: [roadmap and history](ROADMAP.md), [frozen review decision](FROZEN-REVIEW-DECISION-20261028.md),
 [confirmation protocol](../availability-study/README.md), [fee observation](PROJECTED-EXIT-FEE.md).
+
+## October 31 update: first-exit signing handoff
+
+Collected exit preparation passed all 21 host cases at 17:39:33 UTC. The next
+internal handoff commits its exact request before calling an injected adapter,
+checks returned signatures, and preserves unknown or quarantined states without
+automatic re-signing. Both unknown and signed states are covered by private
+snapshot replay. The [21-case host exercise](EXIT-SIGNING-HANDOFF.md) is pending.
+The real exit key backend, sender and final receipt/allocation reconciliation
+remain open; no runtime deployment or real-money approval is implied.
