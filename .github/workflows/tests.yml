@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [core-base, position-book-0, position-book-1, position-book-2, position-book-3, position-book-4, position-book-5, devnet-pool]
+        group: [core-base, position-book-0, position-book-1, position-book-2, position-book-3, position-book-4, position-book-5, position-book-6, devnet-pool]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, verified at import
         with:
