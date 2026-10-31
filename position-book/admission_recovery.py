@@ -25,8 +25,9 @@ SOURCE='source'
 SIBLING='source-entry-handoff-v1'
 MANIFEST='manifest.json'
 ADMISSION_CAPS={'entry.admission.sqlite':64*1024*1024,
-                'signer-attempt.json':1024,'signer-ack.json':4096}
-MAX_TOTAL=320*1024*1024+5120
+                'signer-attempt.json':1024,'signer-ack.json':4096,
+                'exit-signer-attempt.json':1024,'exit-signer-ack.json':4096}
+MAX_TOTAL=320*1024*1024+10240
 NOW=accounting.submission.handoff.bridge.view.now
 TABLES=('admission_submission','admission_submission_ack','admission_rpc_captures',
         'admission_receipt_events','admission_receipt_raw','admission_entry_accounting')
@@ -44,6 +45,7 @@ def admission_inventory(root):
             files[item.name]=dict(bytes=len(raw),sha256=backup.sha(raw));total+=len(raw)
     check('entry.admission.sqlite' in files,'admission-ledger-required')
     check('signer-ack.json' not in files or 'signer-attempt.json' in files,'orphan-signer-ack')
+    check('exit-signer-ack.json' not in files or 'exit-signer-attempt.json' in files,'orphan-exit-signer-ack')
     return dict(directories=[],files=dict(sorted(files.items())),bytes=total)
 
 
@@ -135,6 +137,12 @@ def inspect_locked(home,wallet,pool,clock):
             signing=exit_signing_handoff.read(book,clock())
             result['exitSigningHeadSha256']=signing['headSha256']
             result['exitSigningState']=signing['state']
+        exit_attempt=(sibling/'exit-signer-attempt.json').exists();exit_ack=(sibling/'exit-signer-ack.json').exists()
+        if exit_attempt or exit_ack:
+            import restricted_exit_signer
+            restricted_exit_signer.attempt(home,book)
+            if exit_ack:restricted_exit_signer.acknowledgment(home,book)
+            result.update(exitBackendAttemptPresent=exit_attempt,exitBackendAcknowledgmentPresent=exit_ack)
         return result
     finally:book.close()
 

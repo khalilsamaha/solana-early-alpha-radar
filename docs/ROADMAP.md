@@ -1,16 +1,15 @@
 # Project roadmap — updated 31 October 2026
 
-Latest checkpoint: PR #65 consolidated the host-accepted entry accounting,
-combined private recovery and fresh delayed exit preparation increments. All five
-CI jobs passed after deterministic partitioning of the complete position-book
-suite. The merged source is `99b2396f6dd59c1bf8e096c04a660a281f2170c1`.
+Latest checkpoint: [PR #66](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/66)
+consolidated the host-accepted exit collector, atomic collected preparation and
+durable signing handoff. All five CI groups passed at the final reviewed head.
+Merged source: `6712f6355db8bceafb8664305884f2c1ec8e6c1c`.
+See the [consolidation record](EXIT-EVIDENCE-CONSOLIDATION-20261031.md).
 
-The [bounded exit collector](ADMISSION-EXIT-COLLECTOR.md) passed all 19 host cases.
-The [atomic collected preparation](COLLECTED-EXIT-PREPARATION.md) passed its 21-case
-Kali check on October 31 at 17:39:33 UTC. The next [durable exit signing handoff](EXIT-SIGNING-HANDOFF.md)
-passed its 21-case host exercise at 17:55:29 UTC. The three-increment
-[consolidation](EXIT-EVIDENCE-CONSOLIDATION-20261031.md) awaits its complete CI checks. The independent real-key backend,
-exit submission/recovery, final receipts/residuals and allocation release remain open.
+The [independent restricted exit key backend](RESTRICTED-EXIT-SIGNER.md) is built
+and locally tested, including full-source signing, keyless acknowledgment recovery
+and isolated restore. Its 27-case disposable-key Kali exercise is pending.
+Exit submission/recovery, final receipts/residuals and allocation release remain open.
 The dated sections below preserve prior milestones.
 
 Current task/subtask status is in the [progress overview](PROJECT-PROGRESS-20261030.md).

@@ -2,10 +2,13 @@
 
 Private research system for discovering Solana tokens, recording paper signals and observing walletless route quotes. The scanner and quote observer do not trade. Separate, explicitly invoked tools can sign and submit tightly scoped **devnet** test transactions; they are not connected to trading signals or mainnet.
 
-**Latest integration consolidation: PR #65, 31 October 2026.** Entry accounting,
-combined recovery and delayed exit preparation are consolidated with passing local
-and CI checks. The [next exit collector](docs/ADMISSION-EXIT-COLLECTOR.md) is a
-standalone development increment awaiting its offline host check.
+**Latest integration consolidation: PR #66, 31 October 2026.** Exit collection,
+atomic evidence persistence and durable signing handoff are consolidated after
+host acceptance and all five CI groups passed. See the
+[consolidation record](docs/EXIT-EVIDENCE-CONSOLIDATION-20261031.md).
+The [independent exit key backend](docs/RESTRICTED-EXIT-SIGNER.md) is locally tested;
+its 27-case disposable-key host check is pending. No scanner deployment or exit
+sender is included.
 
 **Current engineering release: 25 October 2026.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. The **October 28 frozen review is complete: no strategy or model is promoted**. See the [review decision and offline diagnostic](docs/FROZEN-REVIEW-DECISION-20261028.md). Engineering reliability can improve independently; profitable execution remains unproven. The [October 29 availability confirmation](availability-study/README.md) adds a separate fixed-window research protocol after the accepted diagnostic replay.
 
@@ -102,5 +105,7 @@ restricted exit signing and submission remain unconnected.
 
 The [durable exit signing handoff](docs/EXIT-SIGNING-HANDOFF.md) records the exact
 request before one injected adapter call, validates recovered signatures, and
-preserves uncertainty across interruptions. Its public host check is offline only;
-the real key backend and exit sender remain disconnected.
+preserves uncertainty across interruptions. Its 21-case host check passed. The
+[independent exit key backend](docs/RESTRICTED-EXIT-SIGNER.md) now connects through
+an internal explicit opt-in, with no live execution CLI. Its host exercise uses
+disposable keys; the exit sender remains disconnected.

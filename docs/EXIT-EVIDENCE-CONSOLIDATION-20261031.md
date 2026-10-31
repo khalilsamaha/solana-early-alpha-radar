@@ -16,8 +16,10 @@ observational and cannot be imported as signing authority.
 
 Local targeted validation passed before publication: 78 tests for the final
 handoff increment, including its 21-case portable CLI, plus the collector and
-persistence tests recorded in their scope documents. The consolidation PR runs
-all five existing CI groups; merge requires their success at the final head.
+persistence tests recorded in their scope documents. All five existing CI groups passed at final head
+`3c470963d6ee84f9326bb74aeb46846173bd3913`.
+[PR #66](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/66) merged as
+`6712f6355db8bceafb8664305884f2c1ec8e6c1c`; its tree matches the reviewed source.
 No test partition or assertion has been removed from the existing full suite.
 
 The next increment connects a separately restricted devnet exit key backend to
