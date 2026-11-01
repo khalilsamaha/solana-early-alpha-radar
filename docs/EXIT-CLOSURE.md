@@ -90,7 +90,8 @@ python3 -E -s \
 Expected: `offline-checks-passed`, 21 cases. Public pre-signed fixtures and
 synthetic RPC responses are used in temporary ledgers only. No existing wallet
 key, actual network request, signature, transaction or production release occurs.
-Upload only the resulting public report. Host acceptance is pending.
+The public host report passed all 21 cases at 2026-11-01 08:04:24 UTC.
+Exact source replay matched all expected cases and action flags.
 
 The scanner, quote observer, signals, notifications and availability-study
 registration are unchanged. No rebuild or service restart is required. Continue

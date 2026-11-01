@@ -91,7 +91,18 @@ class AccountingRestoreTests(unittest.TestCase):
             closure=exit_closure.collect_and_close(self.home,self.wallet,self.pool,opener=BalanceRpc(c),clock=self.clock,monotonic=lambda:0)
             self.assertTrue(closure['scopedCommitmentsReleased']);self.assertTrue(closure['appliedThisRun'])
             self.assertFalse(closure['fundsAvailableForNewEntry'])
+            import admission_lifecycle
+            admission_closed=c.path.read_bytes();sources_closed=self.source_bytes()
+            lifecycle=admission_lifecycle.inspect(self.home,self.wallet,self.pool,clock=self.clock,monotonic=lambda:0)
+            self.assertEqual(lifecycle['phase'],'closed',lifecycle)
+            self.assertTrue(lifecycle['coherent']);self.assertFalse(lifecycle['fundsAvailableForNewEntry'])
+            self.assertEqual(lifecycle['scopedAccounting']['sourceProceedsHeldAtomic'],'0')
+            self.assertEqual(lifecycle['recordIdentity']['closureSha256'],closure['recordSha256'])
+            self.assertEqual(admission_closed,c.path.read_bytes());self.assertEqual(sources_closed,self.source_bytes())
             (self.home/'STOP').touch(mode=0o600)
+            lifecycle=admission_lifecycle.inspect(self.home,self.wallet,self.pool,clock=self.clock,monotonic=lambda:0)
+            self.assertEqual(lifecycle['phase'],'closed',lifecycle);self.assertTrue(lifecycle['stopRequested'])
+            self.assertEqual(admission_closed,c.path.read_bytes())
             with patch.object(backend,'_invoke',side_effect=AssertionError('backend')):
                 r=backend.recover(self.home,self.wallet,self.pool,clock=self.clock)
                 self.assertTrue(r['acknowledgmentRecorded']);self.assertFalse(r['privateKeyAccessedThisRun'])
