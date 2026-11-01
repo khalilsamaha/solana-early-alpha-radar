@@ -77,7 +77,8 @@ python3 -E -s \
   --output "$PWD/radar-exit-balance-check-$(date -u +%Y%m%dT%H%M%SZ)-$$.json.gz"
 ```
 
-Expected: `offline-checks-passed`, 18 cases. All RPC responses and ledgers in this
+Host accepted November 1 at 07:43:01 UTC: all 18 cases and flags matched source replay.
+Expected for a repeat self-check: `offline-checks-passed`, 18 cases. All RPC responses and ledgers in this
 exercise are synthetic/disposable; no real network, wallet key or runtime is used.
 No Docker rebuild or service restart is needed. Upload only the public report.
 
@@ -86,3 +87,5 @@ ledger writer reservation, with receipt/accounting identity replay, fresh eviden
 at commit, expiry/STOP handling and isolated restore verification. Global fund
 reuse and another execution remain separate from closure of this scoped record.
 The original live timing gate also remains open.
+
+The next [durable scoped closure](EXIT-CLOSURE.md) is built. Its 21-case offline host check is pending.

@@ -1,4 +1,4 @@
-# Project roadmap — updated 31 October 2026
+# Project roadmap — updated 1 November 2026
 
 Latest checkpoint: [PR #67](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/67)
 consolidated host-accepted restricted exit signing, one-send transport and receipt
@@ -13,8 +13,9 @@ and isolated restore. Its 27-case disposable-key Kali exercise passed at
 passed its 24-case synthetic host check at 18:37:40 UTC on October 31.
 [Collected exit receipt accounting](EXIT-ACCOUNTING.md) passed all 15 host cases at
 18:59:57 UTC on October 31. The next [fresh exit balance collector](EXIT-BALANCE.md)
-is built with an 18-case offline host exercise pending. Durable scoped closure,
-allocation release and live timing acceptance remain open.
+passed its 18-case offline host exercise on November 1 at 07:43:01 UTC.
+[Durable scoped closure](EXIT-CLOSURE.md) is built with a 21-case offline host
+check pending. Allocation reuse and live timing acceptance remain open.
 The dated sections below preserve prior milestones.
 
 Current task/subtask status is in the [progress overview](PROJECT-PROGRESS-20261030.md).

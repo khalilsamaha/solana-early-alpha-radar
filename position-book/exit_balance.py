@@ -32,9 +32,9 @@ ERRORS={'balance-accounting-required','balance-flat-exit-required','balance-scop
         'balance-rpc-unavailable','balance-response-cap','balance-capture-cap','balance-unsupported-native'}
 
 
-def context(book,root,wallet,pool,clock):
+def context(book,root,wallet,pool,clock,*,_allow_stopped=False):
     """Replay owned effects and retain prepared accounts privately for comparison."""
-    check(not accounting.submission.handoff.stopped(root,book),'balance-stopped')
+    check(_allow_stopped or not accounting.submission.handoff.stopped(root,book),'balance-stopped')
     src=accounting.review(book);record=accounting.saved(book.db,clock())
     result=accounting.public(src,record)
     check(result['accountingUsable'],'balance-accounting-required')
@@ -52,7 +52,8 @@ def context(book,root,wallet,pool,clock):
         raw=bytearray(base64.b64decode(row['data'][0],validate=True));raw[64:72]=int(value).to_bytes(8,'little')
         row['data']=[base64.b64encode(raw).decode(),'base64']
     admission=book.read()
-    local=view.read_locked(root,wallet,pool,clock)
+    local=(view.read_locked(root,wallet,pool,clock,_closed_history=True) if _allow_stopped
+           else view.read_locked(root,wallet,pool,clock))
     check(local['wallet']==wallet and local['pool']==pool and local['phase']=='closed' and
         local['nativeHeldLamports']=='0' and all(x['heldAtomic']=='0' for x in local['tokenAccounts']) and
         local['ledgerHeadSha256']==admission[0]['ledgerHeadSha256'] and

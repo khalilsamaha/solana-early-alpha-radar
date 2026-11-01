@@ -58,6 +58,17 @@ class ReservationViewCase(unittest.TestCase):
         self.assertEqual(self.inspect()['state'], 'unavailable')
         self.assertEqual(before, self.files())
 
+    def test_closed_history_replay_tolerates_stop_without_enabling_live_reads(self):
+        (self.home/'STOP').touch(mode=0o600);before=self.files()
+        # Semantic STOP replay, not a machine-speed/live timing acceptance test.
+        stamp=m.now();clock=lambda:stamp
+        with m.cycles.c.source_lock(self.home,self.wallet),m.read_only_journals():
+            with self.assertRaisesRegex(ValueError,'stop-marker-present'):
+                m.read_locked(self.home,self.wallet,self.pool,clock)
+            v=m.read_locked(self.home,self.wallet,self.pool,clock,_closed_history=True)
+            self.assertEqual(v['phase'],'closed');self.assertEqual(v['nativeHeldLamports'],'0')
+        self.assertEqual(self.inspect()['state'],'unavailable');self.assertEqual(before,self.files())
+
     def test_wrong_wallet_pool_and_source_symlink(self):
         from pool_fixtures import fake_key
         self.assertEqual(m.inspect(self.home,fake_key('wallet'),self.pool)['state'], 'unavailable')
@@ -87,6 +98,9 @@ class ReservationViewCase(unittest.TestCase):
         self.assertEqual(r['reservations']['phase'],'exit-unresolved')
         self.assertEqual(r['reservations']['nativeHeldLamports'],'10000')
         self.assertGreater(int(r['reservations']['tokenAccounts'][1]['heldAtomic']),0)
+        with m.cycles.c.source_lock(self.home,self.wallet),m.read_only_journals():
+            with self.assertRaisesRegex(ValueError,'closed-history-required'):
+                m.read_locked(self.home,self.wallet,self.pool,m.now,_closed_history=True)
         self.assertEqual(before,self.files())
 
     def test_tampered_hash_chain_is_unavailable(self):
