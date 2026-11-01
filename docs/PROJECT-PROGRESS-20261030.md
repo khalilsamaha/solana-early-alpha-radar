@@ -39,7 +39,7 @@ PR #67 consolidated those three increments after all nine CI groups passed;
 main matches the tested source tree.
 The fresh exit balance collector passed all 18 host cases on November 1 at
 07:43:01 UTC. Durable scoped closure passed all 21 host cases at 08:04:24 UTC.
-The unified read-only lifecycle view is built; its 24-case host check is pending.
+The unified read-only lifecycle view passed all 24 host cases at 10:10:12 UTC.
 Today's November 1 study capture is already taken, as reported by the user.
 These remain internal integration components, not a deployed production sender.
 
@@ -116,7 +116,7 @@ An earlier successful operational check does not prove present host health.
 | 6.9.2n | Collected exit receipt accounting | Accepted: all 15 host cases and flags at 18:59:57 UTC October 31 | Original allocation commitments remain held |
 | 6.9.2o | Fresh post-exit balance collector | Accepted: 18 host cases and flags exactly replayed November 1 at 07:43:01 UTC | Historical/as-of evidence only |
 | 6.9.2p | Durable scoped exit closure | Accepted: 21 host cases and flags exactly replayed November 1 at 08:04:24 UTC | Allocation reuse and live timing remain open |
-| 6.9.2q | Unified read-only admission lifecycle | Built: original caps, held/spent/released amounts and explicit unknown/conflicting evidence | 24-case offline host gate pending; no allocation credit or runtime integration |
+| 6.9.2q | Unified read-only admission lifecycle | Accepted: all 24 host cases and flags matched November 1 at 10:10:12 UTC | No allocation credit or runtime integration |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |

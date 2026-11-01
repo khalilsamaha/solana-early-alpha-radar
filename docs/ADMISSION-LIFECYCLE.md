@@ -69,7 +69,8 @@ python3 -E -s \
 Expected: `offline-checks-passed`, 24 cases. The command can take several minutes.
 It offers no live action, wallet or submission argument. No RPC, existing private
 key, new signature, transaction, production write or allocation release occurs.
-Upload the public report. Host acceptance of this new gate remains pending.
+Host acceptance: all 24 cases and action flags passed at
+2026-11-01 10:10:12 UTC. The public report matched the source self-check.
 
 ## Next sequence
 
