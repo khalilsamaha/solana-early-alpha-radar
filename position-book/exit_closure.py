@@ -55,12 +55,40 @@ def derive(accounting, checked):
         balanceSnapshotSlot=checked['snapshotSlot'], balanceObservedAtMs=checked['observedAtMs'])
 
 
+
+def historical_admission(book, record, ctx):
+    """Bind old capture to a verified prefix; only later STOP-only events may differ."""
+    # Validate the entire current chain, including later states. Accounting and
+    # receipt replay in balance.context remains current, not rewound to this head.
+    book.read()
+    wanted=record['capture']['identity']['admissionSha256']
+    rows=book.db.execute('SELECT seq,value,hash,at_ms FROM admission_events ORDER BY seq LIMIT 9').fetchall()
+    matches=[]
+    for row in rows:
+        state=balance.loads(row['value'])
+        if digest((state,row['seq'],row['hash'],row['at_ms']))==wanted:
+            matches.append((row,state))
+    check(len(matches)==1,'closure-admission-history')
+    original,state=matches[0]
+    check(state['state']=='signed-recorded' and original['at_ms']<=record['capture']['startedAtMs']<=record['recordedAtMs'],
+          'closure-admission-history')
+    for row in rows:
+        if row['seq']<=original['seq']:continue
+        later=balance.loads(row['value'])
+        check(later['state']=='stopped' and row['at_ms']>=record['recordedAtMs'] and
+              {k:v for k,v in later.items() if k!='state'}=={k:v for k,v in state.items() if k!='state'},
+              'closure-admission-history')
+    out=deepcopy(ctx);out['identity']['admissionSha256']=wanted
+    return out
+
+
 def replay(book, root, wallet, pool, clock):
     """Replay a historical close as of commit time; STOP and age do not erase it."""
     record = saved(book, clock())
     if record is None:
         return None
     ctx = balance.context(book, root, wallet, pool, clock, _allow_stopped=True)
+    ctx = historical_admission(book, record, ctx)
     checked = balance.review(ctx, record['capture'], record['recordedAtMs'])
     accounting = balance.accounting.saved(book.db, clock())
     check(record['settlement'] == derive(accounting, checked), 'closure-source-conflict')

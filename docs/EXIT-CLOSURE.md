@@ -61,6 +61,11 @@ The combined private snapshot now includes the closure projection and replays it
 raw capture and arithmetic in an isolated stopped restore. Rehashing a false
 release amount or false account balance cannot bypass semantic comparison.
 Checksums do not protect against malicious replacement of all trusted evidence.
+The November 1 durable-STOP correction replays the captured admission identity
+against its verified historical prefix. Every later admission event must be a
+STOP-only change after closure; changed funding, request, signature or other
+fields cannot be ignored. Current receipt/accounting evidence is still replayed,
+so a later conflict remains blocking. The original closure row is never rewritten.
 Local locks cannot prevent outside wallet activity or prove no net-zero activity
 occurred between the receipt and the as-of snapshot.
 

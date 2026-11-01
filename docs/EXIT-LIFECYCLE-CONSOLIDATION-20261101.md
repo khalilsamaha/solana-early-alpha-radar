@@ -15,7 +15,15 @@ These were synthetic/disposable host exercises, not live network acceptance.
 Closure retained the independent source replay and private stopped restore;
 the lifecycle view kept unknown amounts unavailable and original caps separate
 from current holds/releases. Source hygiene and targeted local tests passed.
-The consolidation PR is the place to verify all nine CI groups before merging.
+PR #68 merged as `55852a1227c1e4f2284720e829374e9688da56ea` after all nine
+CI groups passed at reviewed head `568bb23bb3003d4763f019c606c0511096da917c`.
+The merged tree exactly matched that reviewed source.
+
+Automated review identified a durable-STOP historical replay edge case after
+the initial consolidation. The correction binds a saved closure to a verified
+admission-history prefix and allows only later STOP-only state changes. Current
+receipt/accounting conflicts are still rejected. The lifecycle host exercise
+now covers both the STOP file and a durable ledger STOP.
 
 ## Accounting boundary
 
