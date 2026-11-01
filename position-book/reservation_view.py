@@ -64,10 +64,10 @@ def project(state, summary, *, wallet, pool):
         exposureOpen=phase not in ('closed', 'entry-failed'))
 
 
-def read_locked(home, wallet, pool, clock):
+def read_locked(home, wallet, pool, clock, *, _closed_history=False):
     start = clock()
     check(type(start) is int and 0 <= start <= 2**53-1, 'reservation-clock')
-    check(not cycles.c.submit.swap.stop(home), 'stop-marker-present')
+    check(_closed_history or not cycles.c.submit.swap.stop(home), 'stop-marker-present')
     child = home / cycles.binding.CYCLE
     # Guard.load validates cycle-two preparation and replays the closed first
     # cycle. Thus its historical fees are not counted as a second live reserve.
@@ -93,7 +93,12 @@ def read_locked(home, wallet, pool, clock):
     finish = clock()
     check(type(finish) is int and start <= finish <= 2**53-1 and finish-start <= MAX_READ_MS,
           'reservation-read-deadline')
-    check(not cycles.c.submit.swap.stop(home), 'stop-marker-present')
+    check(_closed_history or not cycles.c.submit.swap.stop(home), 'stop-marker-present')
+    if _closed_history:
+        # Only historical closed, zero-commitment replay may tolerate STOP.
+        # Normal inspection/binding callers never pass this private mode.
+        check(values['phase'] == 'closed' and values['nativeHeldLamports'] == '0' and
+              all(t['heldAtomic'] == '0' for t in values['tokenAccounts']), 'closed-history-required')
     return dict(values, observedAtMs=finish, readStartedAtMs=start, eventCount=count,
                 ledgerHeadSha256=head, lastLedgerEventAtMs=event_at,
                 cycleBindingSha256=cycles.c.digest(guard.cycle))

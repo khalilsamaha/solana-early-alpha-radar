@@ -79,7 +79,30 @@ class AccountingRestoreTests(unittest.TestCase):
             self.assertTrue(settled['accountingUsable']);self.assertEqual(settled['state'],'exit-position-flat-held')
             self.assertEqual(settled['accounting']['ownedAcquiredResidualAtomic'],'0')
             self.assertFalse(settled['reservationReleased'])
+            # The next read-only gate binds fresh balances to these full-source receipts.
+            from exit_balance_checks import FakeRpc as BalanceRpc
+            import exit_balance
+            before_balances=self.source_bytes();admission_before=c.path.read_bytes()
+            balances=exit_balance.collect(self.home,self.wallet,self.pool,opener=BalanceRpc(c),clock=self.clock,monotonic=lambda:0)
+            self.assertEqual(balances['state'],'exit-balances-match-held',balances)
+            self.assertEqual(balances['networkRequests'],4);self.assertFalse(balances['reservationReleased'])
+            self.assertEqual(before_balances,self.source_bytes());self.assertEqual(admission_before,c.path.read_bytes())
+            import exit_closure
+            closure=exit_closure.collect_and_close(self.home,self.wallet,self.pool,opener=BalanceRpc(c),clock=self.clock,monotonic=lambda:0)
+            self.assertTrue(closure['scopedCommitmentsReleased']);self.assertTrue(closure['appliedThisRun'])
+            self.assertFalse(closure['fundsAvailableForNewEntry'])
+            import admission_lifecycle
+            admission_closed=c.path.read_bytes();sources_closed=self.source_bytes()
+            lifecycle=admission_lifecycle.inspect(self.home,self.wallet,self.pool,clock=self.clock,monotonic=lambda:0)
+            self.assertEqual(lifecycle['phase'],'closed',lifecycle)
+            self.assertTrue(lifecycle['coherent']);self.assertFalse(lifecycle['fundsAvailableForNewEntry'])
+            self.assertEqual(lifecycle['scopedAccounting']['sourceProceedsHeldAtomic'],'0')
+            self.assertEqual(lifecycle['recordIdentity']['closureSha256'],closure['recordSha256'])
+            self.assertEqual(admission_closed,c.path.read_bytes());self.assertEqual(sources_closed,self.source_bytes())
             (self.home/'STOP').touch(mode=0o600)
+            lifecycle=admission_lifecycle.inspect(self.home,self.wallet,self.pool,clock=self.clock,monotonic=lambda:0)
+            self.assertEqual(lifecycle['phase'],'closed',lifecycle);self.assertTrue(lifecycle['stopRequested'])
+            self.assertEqual(admission_closed,c.path.read_bytes())
             with patch.object(backend,'_invoke',side_effect=AssertionError('backend')):
                 r=backend.recover(self.home,self.wallet,self.pool,clock=self.clock)
                 self.assertTrue(r['acknowledgmentRecorded']);self.assertFalse(r['privateKeyAccessedThisRun'])
@@ -88,6 +111,21 @@ class AccountingRestoreTests(unittest.TestCase):
             self.assertEqual(manifest['projection']['exitTransport']['state'],'exit-finalized-evidence')
             self.assertEqual(manifest['projection']['exitAccounting']['recordSha256'],settled['recordSha256'])
             self.assertTrue(manifest['projection']['exitBackendAttemptPresent']);self.assertTrue(manifest['projection']['exitBackendAcknowledgmentPresent'])
+            self.assertEqual(manifest['projection']['exitClosure']['recordSha256'],closure['recordSha256'])
+            # Rehashed false closure arithmetic cannot pass isolated semantic replay.
+            original_db=(self.snapshot/recovery.SIBLING/'entry.admission.sqlite').read_bytes()
+            original_manifest=(self.snapshot/recovery.MANIFEST).read_bytes()
+            def corrupt_closure(db):
+                v=json.loads(db.execute('SELECT value FROM admission_exit_closure').fetchone()[0])
+                v['settlement']['unusedFeeReleasedLamports']='999999'
+                db.execute('UPDATE admission_exit_closure SET value=?,hash=?',(accounting.encoded(v),accounting.digest(v)))
+            self.edit_db(corrupt_closure,self.snapshot/recovery.SIBLING/'entry.admission.sqlite')
+            manifest['inventories']=recovery.inventories(self.snapshot/recovery.SOURCE,self.snapshot/recovery.SIBLING)
+            (self.snapshot/recovery.MANIFEST).write_text(json.dumps(manifest))
+            with self.assertRaisesRegex(ValueError,'closure-source-conflict'):self.verify()
+            (self.snapshot/recovery.SIBLING/'entry.admission.sqlite').write_bytes(original_db)
+            (self.snapshot/recovery.MANIFEST).write_bytes(original_manifest)
+            manifest=json.loads(original_manifest)
             # A modified accounting row fails even after rehashing every wrapper.
             def corrupt(db):
                 v=json.loads(db.execute('SELECT value FROM admission_exit_accounting').fetchone()[0])
