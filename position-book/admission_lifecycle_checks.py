@@ -78,10 +78,14 @@ def run():
         cases['public-lifecycle-is-not-execution-or-new-allocation-authority']='passed'
         again=inspect(c);assert again==r and c.path.read_bytes()==before
         cases['repeated-inspection-preserves-bytes-and-stable-identities']='passed'
-        c.now+=30000;(c.home/'STOP').touch(mode=0o600);r=inspect(c)
-        assert r['phase']=='closed' and r['stopRequested'] and r['scopedAccounting']==a and c.path.read_bytes()==before
+        c.now+=30000;(c.home/'STOP').touch(mode=0o600)
+        b=c.book()
+        try:b.stop()
+        finally:b.close()
+        stopped_bytes=c.path.read_bytes();r=inspect(c)
+        assert r['phase']=='closed' and r['stopRequested'] and r['scopedAccounting']==a and c.path.read_bytes()==stopped_bytes
         cases['stopped-historical-closure-remains-visible-without-current-balance-claim']='passed'
-        c.now-=30000;(c.home/'STOP').unlink();b=c.book()
+        c.now-=30000;(c.home/'STOP').unlink();c.path.write_bytes(before);b=c.book()
         try:
             v=m.closure.saved(b,c.now);v['settlement']['unusedFeeReleasedLamports']='0'
             b.db.execute('UPDATE admission_exit_closure SET value=?,hash=?',(m.closure.encoded(v),m.closure.digest(v)))
