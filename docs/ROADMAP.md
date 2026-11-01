@@ -1,10 +1,13 @@
 # Project roadmap — updated 1 November 2026
 
-Latest checkpoint: [PR #67](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/67)
-consolidated host-accepted restricted exit signing, one-send transport and receipt
-accounting. All nine CI groups passed at the final reviewed head.
-Merged source: `46cb51cd457a39def47248fe01883edf67d184eb`.
-See the [consolidation record](EXIT-EXECUTION-CONSOLIDATION-20261031.md).
+Latest checkpoint: [PR #68](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/68)
+consolidated host-accepted fresh exit balances, durable closure and lifecycle.
+[PR #69](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/69) corrected
+historical closure inspection after a durable STOP. Both passed all nine CI groups.
+Merged source: `c9e38aba5927cd346b4694cf7e904c278646cd5c`.
+See the [consolidation record](EXIT-LIFECYCLE-CONSOLIDATION-20261101.md).
+The strengthened durable-STOP host case remains pending; the new timing release
+includes that check before one bounded unsigned devnet observation.
 
 The [independent restricted exit key backend](RESTRICTED-EXIT-SIGNER.md) is built
 and locally tested, including full-source signing, keyless acknowledgment recovery
@@ -17,7 +20,10 @@ passed its 18-case offline host exercise on November 1 at 07:43:01 UTC.
 [Durable scoped closure](EXIT-CLOSURE.md) passed all 21 host cases at 08:04:24 UTC.
 The [unified read-only lifecycle](ADMISSION-LIFECYCLE.md) passed all 24 host cases
 at 10:10:12 UTC. The [three-increment consolidation](EXIT-LIFECYCLE-CONSOLIDATION-20261101.md)
-records the accepted balance, closure and lifecycle gates. Allocation reuse and live timing acceptance remain open.
+records the accepted balance, closure and lifecycle gates. The next
+[entry admission timing observation](ADMISSION-TIMING.md) is built with 19 offline
+cases and an opt-in read-only devnet check. Host timing acceptance, durable
+live admission and allocation reuse remain open.
 The dated sections below preserve prior milestones.
 
 Current task/subtask status is in the [progress overview](PROJECT-PROGRESS-20261030.md).

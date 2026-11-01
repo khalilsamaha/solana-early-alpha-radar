@@ -23,7 +23,11 @@ Automated review identified a durable-STOP historical replay edge case after
 the initial consolidation. The correction binds a saved closure to a verified
 admission-history prefix and allows only later STOP-only state changes. Current
 receipt/accounting conflicts are still rejected. The lifecycle host exercise
-now covers both the STOP file and a durable ledger STOP.
+now covers both the STOP file and a durable ledger STOP. All 19 local regression
+tests and all nine CI groups passed. PR #69 merged as
+`c9e38aba5927cd346b4694cf7e904c278646cd5c`; its tree exactly matched reviewed head
+`e0f7cc1b49a49ea8ecc4f08e0983ba81841d4abd`.
+The strengthened host case is pending and is included in the timing release.
 
 ## Accounting boundary
 
