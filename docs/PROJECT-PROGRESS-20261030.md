@@ -42,8 +42,14 @@ The fresh exit balance collector passed all 18 host cases on November 1 at
 The unified read-only lifecycle view passed all 24 host cases at 10:10:12 UTC.
 PR #68 consolidated this batch. The PR #69 durable-STOP correction passed 19
 local regressions and all nine CI groups, and merged to main; its strengthened 24-case lifecycle host exercise passed on November 2.
-Today's November 1 study capture is already taken, as reported by the user.
-These remain internal integration components, not a deployed production sender.
+The November 1 study capture is already taken, as reported by the user.
+PR #70 consolidated the host-accepted timing, signature replay and isolated
+durable admission batch. All ten CI groups passed after isolating the heavy closure
+suite, preserving every test and the 10-minute job limit. Main is
+`777a355897270addccf3bd6218e2352594d0c860`.
+The next fresh collection-to-signing increment passed 36 local tests, with its
+17-case synthetic host check pending. These remain internal integration components,
+not a deployed production sender.
 
 Status definitions: **accepted** means the stated scope has test/host evidence;
 **built** means code exists but the stated acceptance gate is outstanding;
@@ -121,7 +127,8 @@ An earlier successful operational check does not prove present host health.
 | 6.9.2q | Unified read-only admission lifecycle | Accepted: all 24 host cases and flags matched November 1 at 10:10:12 UTC | No allocation credit or runtime integration |
 | 6.9.2r | Entry admission collection/validation timing | Accepted observation: 19 host cases and one 20-request unsigned run on November 2 | Only 74 ms remaining; no durable admission or signing |
 | 6.9.2s | Exact signature replay within timing observation | Accepted: 30 host cases; 1,131 ms remaining on November 2 | Single observation does not establish execution latency |
-| 6.9.2t | Isolated durable unsigned admission | Built: atomic reservation/capture, expiry rollback, late/ambiguous commit classification and read-only recovery | 22-case host exercise and one local commit rehearsal pending; operational slot remains vacant |
+| 6.9.2t | Isolated durable unsigned admission | Accepted November 2: 22 host cases, 1,754 ms commit headroom and identical read-only recovery | One timing sample; isolated journal is not an operational permit |
+| 6.9.2u | Fresh collection to independent signer | Built: 36 targeted local tests, including real disposable-key signing and lost-ack recovery | 17-case synthetic host check; live sender/deadline integration still pending |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |
@@ -164,8 +171,8 @@ value: they improve observability, reproducibility and failure handling. Their
 remaining limitations are explicit. They do not establish a profitable strategy.
 
 The next dated milestone is the November 6 research review. The next engineering
-milestone is accounting/recovery integration followed by delayed exit lifecycle
-validation, building on the accepted atomic rehearsal and collected entry evidence.
+milestone is the fresh collection-to-signing integration, followed by the bounded
+entry sender and separate delayed exit lifecycle under the original deadlines.
 There is no evidence-based date or success probability for a profitable real-money
 pilot yet. Advancing those two tracks in parallel avoids waiting unnecessarily
 without confusing engineering progress with economic validation.
