@@ -207,8 +207,10 @@ class ExitSubmission:
             provenanceBasis='Fixed devnet endpoint RPC claims and application journal; not cryptographic finality proof')
 
 
-def submit(home,wallet,pool,*,allow_devnet_submit=False,opener=None,clock=view.now):
+def submit(home,wallet,pool,*,allow_devnet_submit=False,opener=None,clock=view.now,_guard=None,_rpc_sink=None):
     check(allow_devnet_submit is True,'explicit-devnet-submit-required')
+    check(_guard is None or callable(_guard),'exit-transport-guard')
+    check(_rpc_sink is None or callable(_rpc_sink),'exit-transport-sink')
     with view.cycles.c.source_lock(home,wallet) as root:
         b=transport._open(root,wallet,pool,clock)
         try:
@@ -217,7 +219,9 @@ def submit(home,wallet,pool,*,allow_devnet_submit=False,opener=None,clock=view.n
             state=s.signing();check(state['state']=='exit-signed-recorded','exit-signing-not-usable')
             handoff.current(root,b,wallet,pool,clock)
             check(backend.acknowledgment(root,b)==state['signed']['signedWireBase64'],'exit-backend-ack')
-            rpc=transport.SendRpc(opener)
+            if _guard is not None:_guard('before-preflight',state)
+            rpc=transport.SendRpc(opener,guard=None if _guard is None else lambda method:_guard(method,state))
+            if _rpc_sink is not None:_rpc_sink(rpc)
             proof={'genesisBefore':rpc.request('getGenesisHash',[])}
             check(transport.received(proof['genesisBefore'])==transport.GENESIS['devnet'],'exit-wrong-cluster')
             proof['blockhash']=rpc.request('isBlockhashValid',[state['request']['packet']['policy']['blockhash'],{'commitment':'confirmed','minContextSlot':state['minimumContextSlot']}])
@@ -226,6 +230,7 @@ def submit(home,wallet,pool,*,allow_devnet_submit=False,opener=None,clock=view.n
             proof['fee']=rpc.request('getFeeForMessage',[message,{'commitment':'confirmed','minContextSlot':slot}])
             proof['genesisAfter']=rpc.request('getGenesisHash',[])
             minimum=proof_check(proof,state)
+            if _guard is not None:_guard('before-boundary',state)
             boundary=s.mark(proof,root,wallet,pool,clock)
             # Once committed, a crash here must never permit a retry.
             check(boundary['atMs']<=clock()<state['request']['validUntilExclusiveMs'] and not handoff.stopped(root,b),'exit-boundary-now-unknown')
