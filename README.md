@@ -129,3 +129,8 @@ an internal explicit opt-in, with no live execution CLI. Its host exercise uses
 disposable keys. The [exit transport increment](docs/EXIT-SUBMISSION.md) adds an
 internal one-attempt path and keyless recovery, with an offline-only host CLI.
 Final receipts and allocation reconciliation remain separate gates.
+
+The [fresh collection-to-signing integration](docs/FRESH-SIGNING-INTEGRATION.md)
+connects bounded raw collection to the durable signer handoff internally. Its
+17-case CLI is synthetic-only; live sender integration and latency acceptance
+remain open. The isolated unsigned commit/recovery host gate passed November 2.

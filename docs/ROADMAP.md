@@ -1,14 +1,25 @@
-# Project roadmap — updated 1 November 2026
+# Project roadmap — updated 2 November 2026
 
-Latest checkpoint: [PR #68](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/68)
-consolidated host-accepted fresh exit balances, durable closure and lifecycle.
-[PR #69](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/69) corrected
-historical closure inspection after a durable STOP. Both passed all nine CI groups.
-Merged source: `c9e38aba5927cd346b4694cf7e904c278646cd5c`.
-See the [consolidation record](EXIT-LIFECYCLE-CONSOLIDATION-20261101.md).
-The strengthened durable-STOP host case passed on November 2. The same host run
-accepted the original unsigned timing path with only 74 ms remaining; optimization
-and a follow-up unsigned observation come before adding durable execution.
+Latest checkpoint: [PR #70](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/70)
+consolidated timing instrumentation, exact signature replay and isolated durable
+unsigned admission after host acceptance. All ten corrected CI groups passed;
+main is `777a355897270addccf3bd6218e2352594d0c860`.
+The first CI attempt hit the 10-minute job limit. The heavy closure suite now runs
+in a dedicated job; tests and timeout were not removed or weakened. Partition
+checks prove complete, unique coverage. PRs #68 and #69 remain earlier accepted
+exit-lifecycle and durable-STOP milestones.
+
+The new [fresh signing integration](FRESH-SIGNING-INTEGRATION.md) connects its own
+fresh evidence to the independent devnet signer internally. It passed 36 targeted
+local tests; the 17-case synthetic host check passed on November 2 at 06:40 UTC.
+The [fresh entry sender integration](FRESH-ENTRY-SENDER.md) now connects this path
+to the bounded one-send transport and keyless receipt recovery. Its 21-case
+synthetic host gate passed on November 2 at 06:58 UTC.
+The [settled-entry/delayed-exit integration](SETTLED-EXIT-INTEGRATION.md) now connects
+receipt accounting to new unsigned exit evidence; its 18-case host gate passed
+on November 2 at 07:13 UTC. The three accepted increments are ready for
+[batched consolidation](ENTRY-EXIT-CONSOLIDATION-20261102.md) and grouped CI.
+No scanner or observer rebuild, runtime integration, broadcast or study change occurred.
 
 The [independent restricted exit key backend](RESTRICTED-EXIT-SIGNER.md) is built
 and locally tested, including full-source signing, keyless acknowledgment recovery
@@ -28,8 +39,11 @@ cases and an opt-in read-only devnet check. The November 2 check passed with
 [Exact signature replay](ADMISSION-SIGNATURE-REPLAY.md) is the next local
 optimization; its 30-case host check passed and live headroom rose to 1,131 ms.
 The [isolated durable admission rehearsal](DURABLE-ADMISSION-REHEARSAL.md) now adds
-a 22-case host exercise plus an opt-in local commit and read-only recovery.
-Durable live admission and allocation reuse remain open.
+a host-accepted 22-case exercise, local commit and identical read-only recovery.
+The [fresh signing integration](FRESH-SIGNING-INTEGRATION.md) now connects the
+collector to the durable signer internally; its 17-case synthetic host gate passed.
+The internal fresh sender is now built; full host latency, connected delayed-exit
+acceptance and allocation reuse remain open.
 The dated sections below preserve prior milestones.
 
 Current task/subtask status is in the [progress overview](PROJECT-PROGRESS-20261030.md).

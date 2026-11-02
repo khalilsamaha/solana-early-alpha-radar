@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Run one deterministic CI partition; the union contains every position-book module."""
 import argparse
+import hashlib
+import json
 from pathlib import Path
 import sys
 import subprocess
@@ -8,16 +10,19 @@ import subprocess
 
 def selected(root, shard):
     files=sorted(root.glob('test_*.py'))
-    # Keep the measured 8.5-minute sender and 5-minute closure suites separate.
-    # Keep the six existing modulo assignments stable for every other module.
-    dedicated={6:'test_exit_submission.py',7:'test_exit_closure.py'}
+    # Existing module assignments are frozen; new filenames cannot reshuffle them.
+    # The measured heavy transport, closure and accounting suites run separately.
+    dedicated={6:'test_exit_submission.py',7:'test_exit_closure.py',8:'test_exit_accounting.py'}
+    assignments=json.loads(Path(__file__).with_name('position-book-groups.json').read_text())
     if shard in dedicated:return [p for p in files if p.name==dedicated[shard]]
-    return [p for p in files[shard::6] if p.name not in dedicated.values()]
+    def group(path):
+        return assignments.get(path.name,int.from_bytes(hashlib.sha256(path.name.encode()).digest()[:4],'big')%6)
+    return [p for p in files if p.name not in dedicated.values() and group(p)==shard]
 
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('shard',type=int,choices=range(8))
+    parser.add_argument('shard',type=int,choices=range(9))
     parser.add_argument('--list',action='store_true')
     args=parser.parse_args()
     root=Path(__file__).resolve().parents[1]/'position-book'

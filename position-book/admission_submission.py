@@ -25,10 +25,12 @@ MAX_CAPTURE_BYTES = 4 * 1024 * 1024
 class SendRpc(Client):
     METHODS = ('getGenesisHash', 'isBlockhashValid', 'getFeeForMessage', 'sendTransaction')
     REQUEST_CAP = 5
-    def __init__(self, opener=None): super().__init__('devnet', opener)
+    def __init__(self, opener=None, guard=None):
+        super().__init__('devnet', opener); self.guard=guard
     def request(self, method, params):
         if method == 'sendTransaction':
             check(not any(x['method'] == method for x in self.calls), 'duplicate-send-refused')
+        if self.guard is not None: self.guard(method)
         return super().request(method, params)
 
 
@@ -274,7 +276,8 @@ def _open(root, wallet, pool, clock):
         book.close(); raise
 
 
-def submit(home, wallet, pool, *, allow_devnet_submit=False, opener=None, clock=handoff.bridge.view.now):
+def submit(home, wallet, pool, *, allow_devnet_submit=False, opener=None, clock=handoff.bridge.view.now,
+           _guard=None, _rpc_sink=None):
     """Explicit internal opt-in. No retry, resign, plan replacement or CLI."""
     check(allow_devnet_submit is True, 'explicit-devnet-submit-required')
     with handoff.bridge.view.cycles.c.source_lock(home, wallet) as root:
@@ -287,7 +290,9 @@ def submit(home, wallet, pool, *, allow_devnet_submit=False, opener=None, clock=
             check(state['state']=='signed-recorded' and clock() < state['validUntilExclusiveMs'], 'submission-not-fresh')
             check(restricted_signer.acknowledgment(root, b) == s.private['signedTransactionBase64'], 'submission-signer-ack')
             check(receipts.ReceiptGate(b).status()['state'] == 'awaiting-receipt', 'submission-existing-receipt')
-            rpc = SendRpc(opener)
+            if _guard is not None: _guard('before-preflight', state)
+            rpc = SendRpc(opener, guard=None if _guard is None else lambda stage: _guard(stage, state))
+            if _rpc_sink is not None: _rpc_sink(rpc)
             proof = {'genesisBefore':rpc.request('getGenesisHash', [])}
             check(received(proof['genesisBefore']) == GENESIS['devnet'], 'submission-wrong-cluster')
             packet = state['signingRequest']['packet']
@@ -298,6 +303,7 @@ def submit(home, wallet, pool, *, allow_devnet_submit=False, opener=None, clock=
             proof['genesisAfter'] = rpc.request('getGenesisHash', [])
             minimum = preflight_check(proof, s.private, state)
             check(not handoff.bridge.view.cycles.c.submit.swap.stop(root), 'submission-stopped')
+            if _guard is not None: _guard('before-boundary', state)
             # Committed and fsynced before the first possible transport invocation.
             boundary = s.mark(proof)
             check(not handoff.bridge.view.cycles.c.submit.swap.stop(root) and
@@ -309,7 +315,7 @@ def submit(home, wallet, pool, *, allow_devnet_submit=False, opener=None, clock=
         finally: b.close()
 
 
-def recover(home, wallet, pool, *, opener=None, clock=handoff.bridge.view.now):
+def recover(home, wallet, pool, *, opener=None, clock=handoff.bridge.view.now, _rpc_sink=None):
     """RPC observation only; may write capture/receipt evidence, never broadcasts."""
     with handoff.bridge.view.cycles.c.source_lock(home, wallet) as root:
         b = _open(root, wallet, pool, clock)
@@ -320,6 +326,7 @@ def recover(home, wallet, pool, *, opener=None, clock=handoff.bridge.view.now):
             if replay == 'quarantined' or status['state'] in (*receipts.TERMINAL.values(), 'quarantined'): return status
             check(len(s.captures()) < MAX_CAPTURES, 'collection-cap')
             started = clock(); rpc = ReceiptRpc(opener)
+            if _rpc_sink is not None: _rpc_sink(rpc)
             evidence = {k:{'state':'not-requested'} for k in ('genesisBefore','signatureStatus','transaction','genesisAfter')}
             evidence['genesisBefore'] = rpc.request('getGenesisHash', [])
             if evidence['genesisBefore'].get('result') == GENESIS['devnet'] and evidence['genesisBefore'].get('state') == 'received':

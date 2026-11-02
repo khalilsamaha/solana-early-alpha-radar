@@ -63,29 +63,33 @@ def dispatch(home, wallet, pool, evidence, policy, *, signer_adapter, clock=brid
     roles=policy['scope']['accounts']
     check(roles['wallet']==wallet and roles['pool']==pool,'handoff-source-scope')
     with bridge.view.cycles.c.source_lock(home,wallet) as root:
-        path=storage(root,create=True)
-        book=Admission(path,policy,clock)
-        try:
-            if bridge.view.cycles.c.submit.swap.stop(root):
-                book.stop();return public(book)
-            existing=book.status()
-            if existing['state'] not in ('empty','reserved'):return public(book)
-            bridge._boundary_locked(root,wallet,pool,book,evidence,clock=clock,handoff=True)
-            request=request_for(book,clock())
-            if bridge.view.cycles.c.submit.swap.stop(root):
-                book.stop();return public(book)
-            # No automatic retry even if the callback raises, the process dies,
-            # the response is lost, or validation/writing fails after this call.
-            check(clock()<request['validUntilExclusiveMs'], 'handoff-deadline')
-            with read_only_journals():
-                signed=signer_adapter(deepcopy(request))
-            book.record_signed(signed)
-            if bridge.view.cycles.c.submit.swap.stop(root):book.stop()
-            if book.status()['state'] in ('signed-recorded','stopped'):
-                book.stage_accounting_handoff()
-            return public(book,1)
-        finally:book.close()
+        return _dispatch_locked(root,wallet,pool,evidence,policy,signer_adapter=signer_adapter,clock=clock)
 
+
+def _dispatch_locked(root,wallet,pool,evidence,policy,*,signer_adapter,clock):
+    """Internal composition seam; caller owns source lock and validates policy/scope."""
+    path=storage(root,create=True)
+    book=Admission(path,policy,clock)
+    try:
+        if bridge.view.cycles.c.submit.swap.stop(root):
+            book.stop();return public(book)
+        existing=book.status()
+        if existing['state'] not in ('empty','reserved'):return public(book)
+        bridge._boundary_locked(root,wallet,pool,book,evidence,clock=clock,handoff=True)
+        request=request_for(book,clock())
+        if bridge.view.cycles.c.submit.swap.stop(root):
+            book.stop();return public(book)
+        # No automatic retry even if the callback raises, the process dies,
+        # the response is lost, or validation/writing fails after this call.
+        check(clock()<request['validUntilExclusiveMs'], 'handoff-deadline')
+        with read_only_journals():
+            signed=signer_adapter(deepcopy(request))
+        book.record_signed(signed)
+        if bridge.view.cycles.c.submit.swap.stop(root):book.stop()
+        if book.status()['state'] in ('signed-recorded','stopped'):
+            book.stage_accounting_handoff()
+        return public(book,1)
+    finally:book.close()
 
 def recover(home, wallet, pool, *, signed_response=None, clock=bridge.view.now):
     """Observe/record an existing acknowledgment; there is no signer argument."""

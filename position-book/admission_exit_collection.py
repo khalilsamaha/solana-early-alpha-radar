@@ -136,12 +136,15 @@ def review(book,evidence,collection,now,binding):
 
 
 @exit.view.cycles.binding.operation
-def collect_and_prepare(home,wallet,pool,*,opener=None,clock=exit.view.now,monotonic=time.monotonic):
+def collect_and_prepare(home,wallet,pool,*,opener=None,clock=exit.view.now,monotonic=time.monotonic,
+                        _observation_sink=None):
     """Internal coordinator: no report importer, no CLI runtime or signing path."""
+    check(_observation_sink is None or callable(_observation_sink),'exit-collection-observation-sink')
     existing=exit.status(home,wallet,pool,clock=clock)
     if existing['recorded']:return dict(existing,collectionRequestsThisRun=0)
     items=[]
     observed=capture.collect(home,wallet,pool,opener=opener,clock=clock,monotonic=monotonic,_evidence_sink=items.append)
+    if _observation_sink is not None:_observation_sink(deepcopy(observed))
     if observed['state']!='exit-evidence-collected-research-only':return observed
     check(len(items)==1,'exit-collection-handoff')
     envelope=items[0];evidence=envelope.pop('evidence')

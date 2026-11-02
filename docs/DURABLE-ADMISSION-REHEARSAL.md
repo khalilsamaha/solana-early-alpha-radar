@@ -64,7 +64,9 @@ kept all five source reads and seven verifier processes, wrote the isolated
 reservation, then replayed it after expiry without changing source or journal bytes.
 Fault injection is not proof against every power-loss/filesystem failure. Hot
 recovery files are preserved and refused by status, not repaired automatically.
-Live commit timing on Kali remains the next acceptance gate.
+The November 2 Kali run accepted this gate: 1,754 ms remained after the
+664.565 ms reservation stage; read-only recovery matched the complete reservation
+and original deadline with no RPC requests. This is one sample, not a latency guarantee.
 
 ## Kali acceptance
 
@@ -94,9 +96,9 @@ No scanner rebuild or service restart is required.
 
 ## Next gate
 
-Review actual host commit time, deadline margin and read-only recovered identity.
-Only then consolidate this three-increment batch and design the narrowly scoped
-operational admission-to-signing handoff. That future path requires fresh evidence,
+The actual host commit and read-only recovered identity passed. PR #70 consolidated
+this batch after all ten CI groups passed. Next validate the
+[fresh signing integration](FRESH-SIGNING-INTEGRATION.md). That future path requires fresh evidence,
 new checks at signing/submission, exact acknowledgment recovery, delayed exit and
 closed accounting. The isolated rehearsal ledger stays historical.
 The November 3, 5 and 6 availability-study capture schedule is unchanged.
