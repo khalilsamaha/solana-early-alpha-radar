@@ -85,6 +85,15 @@ variability means one before/after sample does not establish a latency distribut
 No new numerical headroom threshold is invented as a substitute for measuring the
 still-missing durable commit/sign/send stages.
 
+## November 2 host acceptance
+
+The 30-case host check matched a fresh source replay. The live check used seven
+verifier processes for 44 calls and retained 1,131 ms before the original expiry.
+The two extra source reads totalled 0.707 s, versus 2.500 s previously. Total wall
+time was 10.002 s. No source changes, signatures, sends or reservations occurred.
+The next [isolated durable rehearsal](DURABLE-ADMISSION-REHEARSAL.md) measures
+storage and raw revalidation without consuming the operational slot.
+
 ## Next gate
 
 If host evidence shows useful headroom, design the bounded durable-admission

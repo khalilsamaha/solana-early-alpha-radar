@@ -23,6 +23,10 @@ unsigned collection and raw validation without creating a reservation. Its Novem
 host observation passed with only 74 ms remaining. The next
 [exact signature replay optimization](docs/ADMISSION-SIGNATURE-REPLAY.md) reduces
 repeated verification work while retaining every source read and original expiry.
+Its host exercise passed all 30 cases; live headroom rose to 1,131 ms. The next
+[isolated durable admission rehearsal](docs/DURABLE-ADMISSION-REHEARSAL.md) tests
+an atomic local reservation commit and read-only recovery, without occupying the
+operational slot or enabling signing.
 
 **Current engineering release: 25 October 2026.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. The **October 28 frozen review is complete: no strategy or model is promoted**. See the [review decision and offline diagnostic](docs/FROZEN-REVIEW-DECISION-20261028.md). Engineering reliability can improve independently; profitable execution remains unproven. The [October 29 availability confirmation](availability-study/README.md) adds a separate fixed-window research protocol after the accepted diagnostic replay.
 

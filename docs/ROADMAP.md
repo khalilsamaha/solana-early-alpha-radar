@@ -26,7 +26,9 @@ records the accepted balance, closure and lifecycle gates. The next
 cases and an opt-in read-only devnet check. The November 2 check passed with
 74 ms remaining; the strengthened lifecycle check also passed.
 [Exact signature replay](ADMISSION-SIGNATURE-REPLAY.md) is the next local
-optimization, with a 30-case exercise and one bounded host timing check pending.
+optimization; its 30-case host check passed and live headroom rose to 1,131 ms.
+The [isolated durable admission rehearsal](DURABLE-ADMISSION-REHEARSAL.md) now adds
+a 22-case host exercise plus an opt-in local commit and read-only recovery.
 Durable live admission and allocation reuse remain open.
 The dated sections below preserve prior milestones.
 
