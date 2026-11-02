@@ -56,7 +56,8 @@ collected-exit tests, four restricted-signer tests and twelve transport tests.
 The new full-source test exercises the actual independent signer with a disposable
 test key, exact one-send transport with a lost response, and keyless receipt
 recovery. Source hygiene and two CI partition coverage/stability checks also pass.
-These are local tests; the new host gate remains outstanding.
+The November 2 host report at 07:42:19 UTC passed all 21 portable cases and
+exactly matched the expected contract. No live execution was performed.
 
 Use the pinned `position-book/fresh_exit_cli.py --output ...` command supplied in
 chat. The CLI accepts no wallet, directory, execution or signing switches.

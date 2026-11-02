@@ -11,8 +11,11 @@ Every test and the ten-minute group limit remain in place.
 The next [fresh exit transport integration](FRESH-EXIT-TRANSPORT.md) passed 35
 targeted local tests. It connects newly collected exit evidence to restricted
 signing and one-send transport with the original expiry intact. Its 21-case
-synthetic host check is next. Connected final receipt accounting/closure and
-real host/provider latency remain acceptance gates. No scanner or observer
+synthetic host check passed at 07:42 UTC on November 2.
+The next [connected exit settlement](EXIT-SETTLEMENT-INTEGRATION.md) joins receipt
+accounting, fresh residual balances and scoped closure. All 36 targeted local
+tests passed; synthetic host acceptance remains pending before real host/provider
+latency acceptance. No scanner or observer
 rebuild, runtime integration, broadcast or study change occurred.
 
 [Batch acceptance details](ENTRY-EXIT-CONSOLIDATION-20261102.md) preserve the

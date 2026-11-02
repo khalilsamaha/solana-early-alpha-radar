@@ -239,8 +239,9 @@ def submit(home,wallet,pool,*,allow_devnet_submit=False,opener=None,clock=view.n
         finally:b.close()
 
 
-def recover(home,wallet,pool,*,opener=None,clock=view.now):
+def recover(home,wallet,pool,*,opener=None,clock=view.now,_rpc_sink=None):
     """Observe only the original signature; no key access or sender invocation."""
+    check(_rpc_sink is None or callable(_rpc_sink),'exit-recovery-sink')
     with view.cycles.c.source_lock(home,wallet) as root:
         b=transport._open(root,wallet,pool,clock)
         try:
@@ -248,6 +249,7 @@ def recover(home,wallet,pool,*,opener=None,clock=view.now):
             if not r['applicationSendBoundaryRecorded'] or r['state'] in (*TERMINAL,'quarantined'):return r
             check(r['receiptCaptureCount']<MAX_CAPTURES,'exit-capture-cap')
             started=clock();rpc=transport.ReceiptRpc(opener)
+            if _rpc_sink is not None:_rpc_sink(rpc)
             ev={k:{'state':'not-requested'} for k in ('genesisBefore','signatureStatus','transaction','genesisAfter')}
             ev['genesisBefore']=rpc.request('getGenesisHash',[])
             if ev['genesisBefore'].get('state')=='received' and ev['genesisBefore'].get('result')==transport.GENESIS['devnet']:

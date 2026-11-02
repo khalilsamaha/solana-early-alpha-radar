@@ -51,13 +51,15 @@ The fresh collection-to-signing, one-send entry and settled-entry/unsigned-exit
 increments passed their 17-, 21- and 18-case synthetic host checks on November 2.
 PR #71 consolidated them after all eleven CI groups passed; main is
 `1c3b2dbde43c9a6453bacd6f45632b85067f893e`. The next fresh exit transport integration is built
-and locally tested; its 21-case synthetic host acceptance remains pending. It
+and locally tested; its 21-case synthetic host acceptance passed on November 2
+at 07:42 UTC. It
 preserves the original exit expiry through the actual independent signer and
 one-send transport. These are internal integration components, not a deployed
 production sender.
 
-The remaining immediate gates are: accept that host check; integrate recovered
-exit receipt accounting, fresh residual balances and scoped closure; measure the
+The next [exit settlement integration](EXIT-SETTLEMENT-INTEGRATION.md) connects
+recovered receipts, fresh residual balances and scoped closure. The remaining
+immediate gates are: accept its synthetic host check; measure the
 whole separate-transaction path on Kali; then scope an explicit controlled devnet
 acceptance. The availability study remains independent, with captures on November
 3, 5 and 6 and review on November 6 at 00:05 UTC. Neither synthetic execution
