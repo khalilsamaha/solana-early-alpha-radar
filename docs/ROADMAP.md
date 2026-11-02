@@ -11,8 +11,11 @@ exit-lifecycle and durable-STOP milestones.
 
 The new [fresh signing integration](FRESH-SIGNING-INTEGRATION.md) connects its own
 fresh evidence to the independent devnet signer internally. It passed 36 targeted
-local tests; the 17-case synthetic host check is next. No scanner or observer
-rebuild, runtime integration, broadcast or study change occurred.
+local tests; the 17-case synthetic host check passed on November 2 at 06:40 UTC.
+The [fresh entry sender integration](FRESH-ENTRY-SENDER.md) now connects this path
+to the bounded one-send transport and keyless receipt recovery. Its 21-case
+synthetic host gate is next. No scanner or observer rebuild, runtime integration,
+broadcast or study change occurred.
 
 The [independent restricted exit key backend](RESTRICTED-EXIT-SIGNER.md) is built
 and locally tested, including full-source signing, keyless acknowledgment recovery
@@ -34,8 +37,9 @@ optimization; its 30-case host check passed and live headroom rose to 1,131 ms.
 The [isolated durable admission rehearsal](DURABLE-ADMISSION-REHEARSAL.md) now adds
 a host-accepted 22-case exercise, local commit and identical read-only recovery.
 The [fresh signing integration](FRESH-SIGNING-INTEGRATION.md) now connects the
-collector to the durable signer internally; its 17-case synthetic host gate is
-pending. Live sender integration, end-to-end latency and allocation reuse remain open.
+collector to the durable signer internally; its 17-case synthetic host gate passed.
+The internal fresh sender is now built; full host latency, connected delayed-exit
+acceptance and allocation reuse remain open.
 The dated sections below preserve prior milestones.
 
 Current task/subtask status is in the [progress overview](PROJECT-PROGRESS-20261030.md).

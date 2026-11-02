@@ -82,6 +82,9 @@ independent signer with fake RPC responses through the actual collector/parser:
 No network request or transaction was broadcast in these tests. Fake-RPC elapsed
 time is not a host or provider latency benchmark.
 
+The November 2 host report at 06:40:05 UTC passed all 17 cases and exactly matched
+the portable contract. The next increment is [fresh entry sender integration](FRESH-ENTRY-SENDER.md).
+
 Run the pinned `fresh_signing_cli.py --output ...` command supplied in chat. Expect
 17 cases and `offline-checks-passed`. Upload only its public compressed report.
 No wallet path, rebuild, service restart or existing rehearsal modification is
