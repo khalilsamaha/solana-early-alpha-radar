@@ -14,8 +14,10 @@ fresh evidence to the independent devnet signer internally. It passed 36 targete
 local tests; the 17-case synthetic host check passed on November 2 at 06:40 UTC.
 The [fresh entry sender integration](FRESH-ENTRY-SENDER.md) now connects this path
 to the bounded one-send transport and keyless receipt recovery. Its 21-case
-synthetic host gate is next. No scanner or observer rebuild, runtime integration,
-broadcast or study change occurred.
+synthetic host gate passed on November 2 at 06:58 UTC.
+The [settled-entry/delayed-exit integration](SETTLED-EXIT-INTEGRATION.md) now connects
+receipt accounting to new unsigned exit evidence, with an 18-case host gate next.
+No scanner or observer rebuild, runtime integration, broadcast or study change occurred.
 
 The [independent restricted exit key backend](RESTRICTED-EXIT-SIGNER.md) is built
 and locally tested, including full-source signing, keyless acknowledgment recovery

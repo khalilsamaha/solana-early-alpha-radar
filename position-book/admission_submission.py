@@ -315,7 +315,7 @@ def submit(home, wallet, pool, *, allow_devnet_submit=False, opener=None, clock=
         finally: b.close()
 
 
-def recover(home, wallet, pool, *, opener=None, clock=handoff.bridge.view.now):
+def recover(home, wallet, pool, *, opener=None, clock=handoff.bridge.view.now, _rpc_sink=None):
     """RPC observation only; may write capture/receipt evidence, never broadcasts."""
     with handoff.bridge.view.cycles.c.source_lock(home, wallet) as root:
         b = _open(root, wallet, pool, clock)
@@ -326,6 +326,7 @@ def recover(home, wallet, pool, *, opener=None, clock=handoff.bridge.view.now):
             if replay == 'quarantined' or status['state'] in (*receipts.TERMINAL.values(), 'quarantined'): return status
             check(len(s.captures()) < MAX_CAPTURES, 'collection-cap')
             started = clock(); rpc = ReceiptRpc(opener)
+            if _rpc_sink is not None: _rpc_sink(rpc)
             evidence = {k:{'state':'not-requested'} for k in ('genesisBefore','signatureStatus','transaction','genesisAfter')}
             evidence['genesisBefore'] = rpc.request('getGenesisHash', [])
             if evidence['genesisBefore'].get('result') == GENESIS['devnet'] and evidence['genesisBefore'].get('state') == 'received':

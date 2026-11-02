@@ -85,6 +85,10 @@ No install, rebuild, restart or real-wallet action is needed.
 
 ## Next gate
 
+The November 2 host report at 06:58:18 UTC passed all 21 cases and exactly matched
+the portable contract. The next [settled exit integration](SETTLED-EXIT-INTEGRATION.md)
+connects receipt accounting and separately collected unsigned exit preparation.
+
 After host acceptance, complete the connected receipt/accounting and separately
 collected delayed-exit lifecycle before exposing a narrowly scoped devnet execution
 command. Full-path host latency and uncertainty recovery remain acceptance gates.
