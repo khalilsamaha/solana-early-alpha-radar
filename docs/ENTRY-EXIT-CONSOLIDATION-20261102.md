@@ -32,3 +32,11 @@ Scanner, observer, backups, frozen study, wallet and dedicated rehearsal state
 remain unchanged. Next: connect fresh exit preparation to restricted signing and
 bounded transport, followed by full lifecycle accounting/closure acceptance and
 host latency measurement. Mainnet/economic readiness is not established.
+
+The first consolidation CI run passed nine groups but timed out in the tenth.
+The exit-accounting suite itself passed in 330 seconds; combined with other
+modules it exhausted the ten-minute group limit. It now has a dedicated ninth
+position-book partition (eleven CI groups total). Existing other assignments are
+frozen in a reviewed manifest; new files use deterministic assignment and cannot
+reshuffle previous suites. Coverage tests require every module exactly once and
+verify assignment stability. No test or timeout is removed or relaxed.
