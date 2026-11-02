@@ -3,11 +3,11 @@ set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 export PYTHONDONTWRITEBYTECODE=1
 case "${1:-all}" in
-  all|core|core-base|devnet-pool|position-book-0|position-book-1|position-book-2|position-book-3|position-book-4|position-book-5|position-book-6) radar_check_group="${1:-all}" ;;
-  *) echo 'Usage: scripts/check.sh [all|core|core-base|devnet-pool|position-book-0|position-book-1|position-book-2|position-book-3|position-book-4|position-book-5|position-book-6]' >&2; exit 2 ;;
+  all|core|core-base|devnet-pool|position-book-0|position-book-1|position-book-2|position-book-3|position-book-4|position-book-5|position-book-6|position-book-7) radar_check_group="${1:-all}" ;;
+  *) echo 'Usage: scripts/check.sh [all|core|core-base|devnet-pool|position-book-0|position-book-1|position-book-2|position-book-3|position-book-4|position-book-5|position-book-6|position-book-7]' >&2; exit 2 ;;
 esac
 if (( $# > 1 )); then
-  echo 'Usage: scripts/check.sh [all|core|core-base|devnet-pool|position-book-0|position-book-1|position-book-2|position-book-3|position-book-4|position-book-5|position-book-6]' >&2
+  echo 'Usage: scripts/check.sh [all|core|core-base|devnet-pool|position-book-0|position-book-1|position-book-2|position-book-3|position-book-4|position-book-5|position-book-6|position-book-7]' >&2
   exit 2
 fi
 if [[ "$radar_check_group" == position-book-* ]]; then
@@ -20,6 +20,7 @@ if [[ "$radar_check_group" == devnet-pool ]]; then
   exit
 fi
 python3 scripts/check-source.py
+python3 -m unittest discover -s scripts -p test_check_partitions.py
 node --test source-comparison/*.test.mjs
 node --test operational-review/*.test.mjs
 node --test statistics-lab/*.test.mjs

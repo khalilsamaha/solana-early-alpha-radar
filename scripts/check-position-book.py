@@ -8,15 +8,16 @@ import subprocess
 
 def selected(root, shard):
     files=sorted(root.glob('test_*.py'))
-    # This module alone takes about 8.5 minutes; do not add other work to its job.
-    dedicated='test_exit_submission.py'
-    if shard==6:return [p for p in files if p.name==dedicated]
-    return [p for p in files[shard::6] if p.name!=dedicated]
+    # Keep the measured 8.5-minute sender and 5-minute closure suites separate.
+    # Keep the six existing modulo assignments stable for every other module.
+    dedicated={6:'test_exit_submission.py',7:'test_exit_closure.py'}
+    if shard in dedicated:return [p for p in files if p.name==dedicated[shard]]
+    return [p for p in files[shard::6] if p.name not in dedicated.values()]
 
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('shard',type=int,choices=range(7))
+    parser.add_argument('shard',type=int,choices=range(8))
     parser.add_argument('--list',action='store_true')
     args=parser.parse_args()
     root=Path(__file__).resolve().parents[1]/'position-book'

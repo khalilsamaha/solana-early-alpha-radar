@@ -132,22 +132,30 @@ A signing boundary marks uncertainty; it is not a callable signing capability.
 
     def change(self, action, *, enforce_deadline=True):
         with self.j.transaction():
-            state, count, previous, last = self.read()
-            now = self.j.now(); check(now>=last, 'admission-clock-regressed')
-            value = action(deepcopy(state), now)
-            # Expensive raw validation cannot consume the deadline unnoticed.
-            end = self.j.now(); check(end>=now, 'admission-clock-regressed')
-            if enforce_deadline and value != state:
-                check(end < value['validUntilExclusiveMs'], 'admission-deadline-elapsed')
-            if value != state:
-                check(len(encoded(value))<=8192, 'admission-state-size')
-                check(count < MAX_EVENTS, 'admission-event-cap')
-                h = digest(dict(seq=count+1, atMs=end, value=value, previousHash=previous))
-                self.db.execute('INSERT INTO admission_events VALUES (?,?,?,?,?)',
-                                (count+1,end,encoded(value),previous,h))
-            return self.public(value, count+(value!=state))
+            return self._change_in_transaction(action, enforce_deadline=enforce_deadline)
+
+    def _change_in_transaction(self, action, *, enforce_deadline=True):
+        """Internal composition seam; caller owns the enclosing transaction."""
+        check(self.db.in_transaction and not self.j.read_only, 'admission-writer-transaction-required')
+        state, count, previous, last = self.read()
+        now = self.j.now(); check(now>=last, 'admission-clock-regressed')
+        value = action(deepcopy(state), now)
+        # Expensive raw validation cannot consume the deadline unnoticed.
+        end = self.j.now(); check(end>=now, 'admission-clock-regressed')
+        if enforce_deadline and value != state:
+            check(end < value['validUntilExclusiveMs'], 'admission-deadline-elapsed')
+        if value != state:
+            check(len(encoded(value))<=8192, 'admission-state-size')
+            check(count < MAX_EVENTS, 'admission-event-cap')
+            h = digest(dict(seq=count+1, atMs=end, value=value, previousHash=previous))
+            self.db.execute('INSERT INTO admission_events VALUES (?,?,?,?,?)',
+                            (count+1,end,encoded(value),previous,h))
+        return self.public(value, count+(value!=state))
 
     def reserve(self, evidence):
+        return self.change(self._reservation_action(evidence))
+
+    def _reservation_action(self, evidence):
         # Own the raw object for the duration of both validation and hashing.
         check(len(encoded(evidence).encode()) <= MAX_EVIDENCE_BYTES, 'admission-evidence-cap')
         evidence = deepcopy(evidence)
@@ -158,7 +166,7 @@ A signing boundary marks uncertainty; it is not a callable signing capability.
                 return state  # idempotency does not refresh or authorize signing
             bound = review(evidence, self.policy, now)
             return dict(bound, state='reserved', reservedAtMs=now, signingBoundaryAtMs=None)
-        return self.change(apply)
+        return apply
 
     def mark_signing_boundary(self, evidence):
         check(len(encoded(evidence).encode()) <= MAX_EVIDENCE_BYTES, 'admission-evidence-cap')

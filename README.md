@@ -2,10 +2,12 @@
 
 Private research system for discovering Solana tokens, recording paper signals and observing walletless route quotes. The scanner and quote observer do not trade. Separate, explicitly invoked tools can sign and submit tightly scoped **devnet** test transactions; they are not connected to trading signals or mainnet.
 
-**Latest integration consolidation: PR #67, 31 October 2026.** Restricted exit
-signing, one-send transport and receipt accounting are consolidated after host
-acceptance and all nine CI groups passed. See the
-[consolidation record](docs/EXIT-EXECUTION-CONSOLIDATION-20261031.md).
+**Latest integration consolidation: PR #68, 1 November 2026.** Fresh exit
+balances, durable scoped closure and the unified lifecycle view passed their
+host checks and all nine CI groups. A follow-up correction in PR #69 preserves
+historical closure after a durable STOP and merged after all nine CI groups passed;
+its strengthened 24-case host exercise passed on November 2. See the
+[November 1 consolidation record](docs/EXIT-LIFECYCLE-CONSOLIDATION-20261101.md).
 The [independent exit key backend](docs/RESTRICTED-EXIT-SIGNER.md) is locally tested;
 its 27-case disposable-key host check passed. The next
 [one-send exit transport](docs/EXIT-SUBMISSION.md) passed its 24-case synthetic
@@ -14,7 +16,17 @@ The [fresh exit balance collector](docs/EXIT-BALANCE.md) passed all 18 host case
 [Durable scoped closure](docs/EXIT-CLOSURE.md) passed all 21 host cases.
 The [unified lifecycle view](docs/ADMISSION-LIFECYCLE.md) passed all 24 host cases.
 This three-increment batch merged in PR #68 after all nine CI groups passed; see the
-[November 1 record](docs/EXIT-LIFECYCLE-CONSOLIDATION-20261101.md). No scanner deployment or live execution CLI is included.
+[November 1 record](docs/EXIT-LIFECYCLE-CONSOLIDATION-20261101.md).
+No scanner deployment or live execution CLI is included. The next
+[entry admission timing observation](docs/ADMISSION-TIMING.md) measures one
+unsigned collection and raw validation without creating a reservation. Its November 2
+host observation passed with only 74 ms remaining. The next
+[exact signature replay optimization](docs/ADMISSION-SIGNATURE-REPLAY.md) reduces
+repeated verification work while retaining every source read and original expiry.
+Its host exercise passed all 30 cases; live headroom rose to 1,131 ms. The next
+[isolated durable admission rehearsal](docs/DURABLE-ADMISSION-REHEARSAL.md) tests
+an atomic local reservation commit and read-only recovery, without occupying the
+operational slot or enabling signing.
 
 **Current engineering release: 25 October 2026.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. The **October 28 frozen review is complete: no strategy or model is promoted**. See the [review decision and offline diagnostic](docs/FROZEN-REVIEW-DECISION-20261028.md). Engineering reliability can improve independently; profitable execution remains unproven. The [October 29 availability confirmation](availability-study/README.md) adds a separate fixed-window research protocol after the accepted diagnostic replay.
 
