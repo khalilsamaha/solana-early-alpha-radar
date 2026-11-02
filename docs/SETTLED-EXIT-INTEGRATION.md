@@ -90,6 +90,9 @@ report. No wallet arguments, rebuild, restart or runtime installation is needed.
 
 ## Remaining acceptance sequence
 
+The November 2 host report at 07:13:54 UTC passed all 18 cases and exactly matched
+the portable contract. The three-increment consolidation is now prepared.
+
 1. Accept this synthetic host report, then consolidate the three development
    increments since PR #70 with the agreed grouped CI checks.
 2. Connect this fresh exit preparation to the restricted exit signer and one-send

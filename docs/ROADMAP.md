@@ -16,7 +16,9 @@ The [fresh entry sender integration](FRESH-ENTRY-SENDER.md) now connects this pa
 to the bounded one-send transport and keyless receipt recovery. Its 21-case
 synthetic host gate passed on November 2 at 06:58 UTC.
 The [settled-entry/delayed-exit integration](SETTLED-EXIT-INTEGRATION.md) now connects
-receipt accounting to new unsigned exit evidence, with an 18-case host gate next.
+receipt accounting to new unsigned exit evidence; its 18-case host gate passed
+on November 2 at 07:13 UTC. The three accepted increments are ready for
+[batched consolidation](ENTRY-EXIT-CONSOLIDATION-20261102.md) and grouped CI.
 No scanner or observer rebuild, runtime integration, broadcast or study change occurred.
 
 The [independent restricted exit key backend](RESTRICTED-EXIT-SIGNER.md) is built
