@@ -34,6 +34,8 @@ def main():
     else:
         print('Stage:',r['stage'],'; diagnostic:',r['diagnosticCode'])
         print('Original-deadline headroom:',r['remainingMs'],'ms; requests:',r['networkRequests'])
+        replay=r.get('signatureVerification',{})
+        print('Signature verifier processes:',replay.get('verifierProcesses'),'; exact-byte reuses:',replay.get('memoHits'))
     print('No private keys, signing, sends, durable admission, new reservations or runtime changes.')
     print('Upload:',a.output.absolute())
     return 2 if r['state']=='unavailable' else 0

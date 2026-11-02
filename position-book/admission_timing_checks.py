@@ -109,7 +109,9 @@ def run():
     with case(change=lambda c:c.e['costInputs'].update(simulation_item={'state':'provider-private-detail'})) as c:
         r=c.run();rejected(r);assert 'provider-private-detail' not in json.dumps(r)
     cases['public-summary-and-private-error-text-not-accepted']='passed'
-    return dict(format=m.VERSION+'-self-check',state='offline-checks-passed',mode='synthetic-offline',
+    from signature_replay_checks import run as replay_checks
+    cases.update(replay_checks())
+    return dict(timingOptimization=m.OPTIMIZATION,format=m.VERSION+'-self-check',state='offline-checks-passed',mode='synthetic-offline',
         casesPassed=len(cases),cases=cases,realNetworkRequests=0,privateKeyAccessed=False,
         signaturesCreated=0,transactionsSent=0,sourceStateChanged=False,admissionLedgerCreated=False,
         productionReservationsCreated=False,executionApproved=False,nextCycleAuthorized=False,runtimeIntegrated=False)

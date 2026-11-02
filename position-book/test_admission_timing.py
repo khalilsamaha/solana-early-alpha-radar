@@ -87,7 +87,8 @@ class TimingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             out=Path(d)/'report.json.gz';cmd=[sys.executable,'-E','-s',str(Path(__file__).with_name('admission_timing_cli.py')),'--output',str(out)]
             r=subprocess.run(cmd,capture_output=True,text=True);self.assertEqual(r.returncode,0,r.stderr)
-            raw=out.read_bytes();v=json.loads(gzip.decompress(raw));self.assertEqual(v['casesPassed'],19)
+            raw=out.read_bytes();v=json.loads(gzip.decompress(raw));self.assertEqual(v['casesPassed'],30)
+            self.assertEqual(v['timingOptimization'],'exact-signature-replay-1')
             self.assertEqual(out.stat().st_mode&0o777,0o600);self.assertEqual(v['realNetworkRequests'],0)
             self.assertNotEqual(subprocess.run(cmd,capture_output=True).returncode,0);self.assertEqual(raw,out.read_bytes())
             for opts in (['--allow-devnet-submit'],['--observe-devnet'],['--wallet','missing']):

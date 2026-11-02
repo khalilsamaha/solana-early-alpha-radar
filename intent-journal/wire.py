@@ -3,6 +3,9 @@
 No private keys, message builder, sender, RPC or third-party packages.
 """
 import base64
+from contextlib import contextmanager
+from contextvars import ContextVar
+import time
 import hashlib
 import json
 import os
@@ -13,6 +16,29 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'intent-lab'))
 from reconcile import ALPHABET, binding
+
+
+# Opt-in only: the ordinary verifier and all senders keep their original behavior.
+# This memo stores only successful authentication of exact canonical wire bytes;
+# it never stores file state, parsed receipts, deadlines or authorization results.
+_SIGNATURE_SCOPE = ContextVar('exact_signature_verification_scope', default=None)
+MAX_SIGNATURE_MEMO = 64
+
+
+@contextmanager
+def signature_verification_scope():
+    accepted = set()
+    counts = dict(version='exact-signature-replay-1', verificationCalls=0,
+                  verifierProcesses=0, memoHits=0, capacityBypasses=0,
+                  verifierElapsedMs=0.0)
+    token = _SIGNATURE_SCOPE.set((accepted, counts))
+    def snapshot():
+        return dict(counts, memoEntries=len(accepted), maximumMemoEntries=MAX_SIGNATURE_MEMO)
+    try:
+        yield snapshot
+    finally:
+        accepted.clear()
+        _SIGNATURE_SCOPE.reset(token)
 
 
 def check(ok, reason):
@@ -109,16 +135,31 @@ def parse(encoded):
 def verify_signed_message(encoded):
     """Authenticate wire bytes and lookup descriptors; does NOT resolve ALT addresses."""
     raw, message, keys, signatures, tx = decode_wire(encoded)
-    node = shutil.which('node')
-    check(node is not None, 'node-runtime-unavailable')
-    payload = {'message': base64.b64encode(message).decode(), 'signers': [
-        {'key': base64.b64encode(k).decode(), 'signature': base64.b64encode(s).decode()}
-        for k, s in zip(keys, signatures)]}
-    # Strip NODE_OPTIONS and inherited preload hooks; never invoke a shell.
-    p = subprocess.run([str(Path(node).resolve()), str(Path(__file__).with_name('verify-ed25519.mjs'))],
-        input=json.dumps(payload), text=True, capture_output=True, timeout=5,
-        env={'PATH': os.defpath})
-    check(p.returncode == 0 and p.stdout == '{"valid":true}', 'invalid-ed25519-signature')
+    scope = _SIGNATURE_SCOPE.get()
+    accepted, counts = scope if scope is not None else (None, None)
+    if counts is not None: counts['verificationCalls'] += 1
+    if accepted is not None and raw in accepted:
+        counts['memoHits'] += 1
+    else:
+        node = shutil.which('node')
+        check(node is not None, 'node-runtime-unavailable')
+        payload = {'message': base64.b64encode(message).decode(), 'signers': [
+            {'key': base64.b64encode(k).decode(), 'signature': base64.b64encode(s).decode()}
+            for k, s in zip(keys, signatures)]}
+        # Strip NODE_OPTIONS and inherited preload hooks; never invoke a shell.
+        started = time.perf_counter()
+        if counts is not None: counts['verifierProcesses'] += 1
+        try:
+            p = subprocess.run([str(Path(node).resolve()), str(Path(__file__).with_name('verify-ed25519.mjs'))],
+                input=json.dumps(payload), text=True, capture_output=True, timeout=5,
+                env={'PATH': os.defpath})
+        finally:
+            if counts is not None:
+                counts['verifierElapsedMs'] += (time.perf_counter() - started) * 1000
+        check(p.returncode == 0 and p.stdout == '{"valid":true}', 'invalid-ed25519-signature')
+        if accepted is not None:
+            if len(accepted) < MAX_SIGNATURE_MEMO: accepted.add(raw)
+            else: counts['capacityBypasses'] += 1
     return {'format': 'verified-wire-1', 'wireSha256': hashlib.sha256(raw).hexdigest(),
             'wireMessageSha256': hashlib.sha256(message).hexdigest(),
             'signatures': tx['transaction']['signatures'], 'wallet': tx['transaction']['message']['accountKeys'][0],

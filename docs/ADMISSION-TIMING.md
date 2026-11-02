@@ -59,11 +59,19 @@ new partial admission state, missing raw evidence and private/exclusive CLI
 publication. The portable exercise rejects calls to sockets, signing and the
 admission writer, and compares unchanged source fixture bytes.
 
+## November 2 acceptance and optimization
+
+The original 19-case exercise and strengthened 24-case lifecycle exercise passed
+on Kali. The live observation passed with 74 ms remaining; that is not sufficient
+evidence for durable signing or submission. The follow-up
+[exact signature replay release](ADMISSION-SIGNATURE-REPLAY.md) adds 11 portable
+cases, bringing the current exercise to 30. Its host timing check is pending.
+
 ## Kali checks
 
 Fetch the pinned development commit supplied with the release. Run the offline
 checks first. The lifecycle exercise now includes a durable ledger STOP as well
-as the STOP file (24 cases); the timing exercise has 19 cases:
+as the STOP file (24 cases); the current timing exercise has 30 cases:
 
 ```bash
 python3 -E -s \
@@ -96,7 +104,7 @@ Upload all three public reports. `unavailable` exits with code 2 but still publi
 its diagnostic report. Preserve it; do not repeat observation merely to obtain a
 pass. Do not delete an existing admission directory if the slot is occupied.
 There is no service restart, scanner rebuild, airdrop or private-key operation.
-Live host timing remains pending until the resulting report is reviewed.
+The original host timing was reviewed on November 2; optimized host timing remains pending.
 
 ## Next gate
 

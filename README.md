@@ -6,8 +6,7 @@ Private research system for discovering Solana tokens, recording paper signals a
 balances, durable scoped closure and the unified lifecycle view passed their
 host checks and all nine CI groups. A follow-up correction in PR #69 preserves
 historical closure after a durable STOP and merged after all nine CI groups passed;
-its strengthened host exercise is
-included in the next check. See the
+its strengthened 24-case host exercise passed on November 2. See the
 [November 1 consolidation record](docs/EXIT-LIFECYCLE-CONSOLIDATION-20261101.md).
 The [independent exit key backend](docs/RESTRICTED-EXIT-SIGNER.md) is locally tested;
 its 27-case disposable-key host check passed. The next
@@ -20,7 +19,10 @@ This three-increment batch merged in PR #68 after all nine CI groups passed; see
 [November 1 record](docs/EXIT-LIFECYCLE-CONSOLIDATION-20261101.md).
 No scanner deployment or live execution CLI is included. The next
 [entry admission timing observation](docs/ADMISSION-TIMING.md) measures one
-unsigned collection and raw validation without creating a reservation.
+unsigned collection and raw validation without creating a reservation. Its November 2
+host observation passed with only 74 ms remaining. The next
+[exact signature replay optimization](docs/ADMISSION-SIGNATURE-REPLAY.md) reduces
+repeated verification work while retaining every source read and original expiry.
 
 **Current engineering release: 25 October 2026.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. The **October 28 frozen review is complete: no strategy or model is promoted**. See the [review decision and offline diagnostic](docs/FROZEN-REVIEW-DECISION-20261028.md). Engineering reliability can improve independently; profitable execution remains unproven. The [October 29 availability confirmation](availability-study/README.md) adds a separate fixed-window research protocol after the accepted diagnostic replay.
 

@@ -6,8 +6,9 @@ consolidated host-accepted fresh exit balances, durable closure and lifecycle.
 historical closure inspection after a durable STOP. Both passed all nine CI groups.
 Merged source: `c9e38aba5927cd346b4694cf7e904c278646cd5c`.
 See the [consolidation record](EXIT-LIFECYCLE-CONSOLIDATION-20261101.md).
-The strengthened durable-STOP host case remains pending; the new timing release
-includes that check before one bounded unsigned devnet observation.
+The strengthened durable-STOP host case passed on November 2. The same host run
+accepted the original unsigned timing path with only 74 ms remaining; optimization
+and a follow-up unsigned observation come before adding durable execution.
 
 The [independent restricted exit key backend](RESTRICTED-EXIT-SIGNER.md) is built
 and locally tested, including full-source signing, keyless acknowledgment recovery
@@ -22,8 +23,11 @@ The [unified read-only lifecycle](ADMISSION-LIFECYCLE.md) passed all 24 host cas
 at 10:10:12 UTC. The [three-increment consolidation](EXIT-LIFECYCLE-CONSOLIDATION-20261101.md)
 records the accepted balance, closure and lifecycle gates. The next
 [entry admission timing observation](ADMISSION-TIMING.md) is built with 19 offline
-cases and an opt-in read-only devnet check. Host timing acceptance, durable
-live admission and allocation reuse remain open.
+cases and an opt-in read-only devnet check. The November 2 check passed with
+74 ms remaining; the strengthened lifecycle check also passed.
+[Exact signature replay](ADMISSION-SIGNATURE-REPLAY.md) is the next local
+optimization, with a 30-case exercise and one bounded host timing check pending.
+Durable live admission and allocation reuse remain open.
 The dated sections below preserve prior milestones.
 
 Current task/subtask status is in the [progress overview](PROJECT-PROGRESS-20261030.md).

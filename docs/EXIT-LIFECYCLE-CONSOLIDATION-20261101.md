@@ -27,7 +27,10 @@ now covers both the STOP file and a durable ledger STOP. All 19 local regression
 tests and all nine CI groups passed. PR #69 merged as
 `c9e38aba5927cd346b4694cf7e904c278646cd5c`; its tree exactly matched reviewed head
 `e0f7cc1b49a49ea8ecc4f08e0983ba81841d4abd`.
-The strengthened host case is pending and is included in the timing release.
+Follow-up: the strengthened 24-case host exercise passed on November 2 at
+04:12:21 UTC, including durable STOP. The original timing exercise passed all
+19 cases; the unsigned observation passed with 74 ms remaining. That timing
+margin requires optimization before further durable integration.
 
 ## Accounting boundary
 

@@ -1,6 +1,6 @@
 # Solana Early-Alpha Radar — progress and roadmap
 
-Updated 1 November 2026. This is a current engineering assessment, not a trading
+Updated 2 November 2026. This is a current engineering assessment, not a trading
 approval or profitability forecast. Earlier dated roadmap sections remain history.
 
 ## Where we are
@@ -41,7 +41,7 @@ The fresh exit balance collector passed all 18 host cases on November 1 at
 07:43:01 UTC. Durable scoped closure passed all 21 host cases at 08:04:24 UTC.
 The unified read-only lifecycle view passed all 24 host cases at 10:10:12 UTC.
 PR #68 consolidated this batch. The PR #69 durable-STOP correction passed 19
-local regressions and all nine CI groups, and merged to main; its strengthened 24-case lifecycle host exercise is pending.
+local regressions and all nine CI groups, and merged to main; its strengthened 24-case lifecycle host exercise passed on November 2.
 Today's November 1 study capture is already taken, as reported by the user.
 These remain internal integration components, not a deployed production sender.
 
@@ -119,7 +119,8 @@ An earlier successful operational check does not prove present host health.
 | 6.9.2o | Fresh post-exit balance collector | Accepted: 18 host cases and flags exactly replayed November 1 at 07:43:01 UTC | Historical/as-of evidence only |
 | 6.9.2p | Durable scoped exit closure | Accepted: 21 host cases and flags exactly replayed November 1 at 08:04:24 UTC | Allocation reuse and live timing remain open |
 | 6.9.2q | Unified read-only admission lifecycle | Accepted: all 24 host cases and flags matched November 1 at 10:10:12 UTC | No allocation credit or runtime integration |
-| 6.9.2r | Entry admission collection/validation timing | Built: 19-case offline exercise and one opt-in unsigned observation | Host timing report pending; no durable admission or signing |
+| 6.9.2r | Entry admission collection/validation timing | Accepted observation: 19 host cases and one 20-request unsigned run on November 2 | Only 74 ms remaining; no durable admission or signing |
+| 6.9.2s | Exact signature replay within timing observation | Built: bounded positive verification reuse, original source/expiry checks retained | 30-case host exercise and improved live timing pending |
 | 6.9.3 | Separate-transaction failure recovery integration | Pending | Actual receipt reconciliation, open exposure, independent expiry/fees and stop behavior |
 | 7 | Narrow mainnet support | Pending | Engineering work required before any funded mechanics pilot |
 | 7.1 | Choose one route and supported token/account types | Pending | Explicit scope; reject unsupported extensions/routes |

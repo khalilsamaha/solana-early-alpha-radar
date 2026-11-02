@@ -1,11 +1,13 @@
 """One read-only live entry/admission timing rehearsal. No durable admission or sender."""
 from contextlib import contextmanager
 from copy import deepcopy
+from functools import wraps
 import math
 import os
 import time
 
 import fresh_quote
+import wire
 import pre_sign_admission as admission
 import locked_admission as bridge
 from contract import atomic,digest,uint
@@ -13,6 +15,7 @@ from core import check
 from journal import read_only_journals
 
 VERSION='admission-timing-1'
+OPTIMIZATION='exact-signature-replay-1'
 view=bridge.view
 ALLOWED_METHODS=fresh_quote.METHODS|{'simulateTransaction'}
 DIAGNOSTICS={'timing-existing-admission','timing-policy-limits','timing-collector-unavailable',
@@ -60,7 +63,19 @@ def phase(result,name,clock,monotonic):
         check(math.isfinite(elapsed) and elapsed>=0,'timing-monotonic-budget')
 
 
+def signature_replay(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        with wire.signature_verification_scope() as statistics:
+            result = fn(*args, **kwargs)
+            result['signatureVerification'] = statistics()
+            result['timingOptimization'] = OPTIMIZATION
+            return result
+    return wrapped
+
+
 @view.cycles.binding.operation
+@signature_replay
 def observe(home,wallet,pool,*,maximum_exit_attempts,maximum_exit_fee_lamports,
             maximum_total_fee_lamports,opener=None,clock=view.now,monotonic=time.monotonic):
     r=base();started=monotonic();wall=clock();private=[]
