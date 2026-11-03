@@ -67,3 +67,10 @@ contract. Signed or ambiguous evidence continues through existing recovery only.
 Production discovery, scoring, notifications, the quote observer and the frozen
 study are unchanged. Controlled devnet recovery and economic qualification remain
 separate unfinished gates; no real-money pilot is approved by these results.
+
+## Subsequent host result
+
+The 06:44:29 UTC inspection and all eleven portable cases passed. The saved
+preparation is expired and unsigned, with both signer markers absent and scoped
+holds intact. The next [internal replacement contract](UNSIGNED-EXIT-REPLACEMENT.md)
+preserves this history; operational replacement/signing is not yet enabled.

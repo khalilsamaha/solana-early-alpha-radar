@@ -120,11 +120,26 @@ class EndToEndExitTests(unittest.TestCase):
             prepared=collected.collect_and_prepare(self.home,self.wallet,self.pool,opener=rpc,clock=clock,monotonic=lambda:0)
             self.assertEqual(prepared['state'],'exit-prepared-research-only',prepared)
             self.assertTrue(prepared['collectionRecorded']);self.assertEqual(len(rpc.calls),20)
+            # Preserve this collected preparation, then append exactly one fresh
+            # unsigned replacement and verify both generations in an isolated copy.
+            import unsigned_exit_replacement as replacement
+            original=prepared
+            clock.at+=30000;shift(first,30000,10);shift(e,30000,10)
+            first['evidence']['blockTime']['result']+=30
+            e['capture']['evidence']['blockTime']['result']+=30
+            rpc=fixtures.Opener(first,e)
+            rpc.rows[7]['value']['blockhash']=fake_key('restored-replacement-exit')
+            prepared=replacement.collect_and_replace(self.home,self.wallet,self.pool,
+                expected_preparation_sha256=original['recordSha256'],allow_unsigned_replacement=True,
+                opener=rpc,clock=clock,monotonic=lambda:0)
+            self.assertTrue(prepared['originalPreserved']);self.assertEqual(len(rpc.calls),20)
             self.stamp=clock.at+30000
             before=self.source_bytes();self.capture();self.verify()
             self.assertEqual(self.source_bytes(),before)
             manifest=json.loads((self.snapshot/recovery.MANIFEST).read_text())
             self.assertEqual(manifest['projection']['exitPreparationSha256'],prepared['recordSha256'])
+            self.assertEqual(manifest['projection']['originalExitPreparationSha256'],original['recordSha256'])
+            self.assertEqual(manifest['projection']['unsignedExitReplacementCount'],1)
             path=self.snapshot/recovery.SIBLING/'entry.admission.sqlite'
             def corrupt(db):
                 row=json.loads(db.execute('SELECT value FROM admission_exit_preparation').fetchone()[0])

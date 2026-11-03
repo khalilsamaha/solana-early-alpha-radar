@@ -31,6 +31,7 @@ MAX_TOTAL=320*1024*1024+10240
 NOW=accounting.submission.handoff.bridge.view.now
 TABLES=('admission_submission','admission_submission_ack','admission_rpc_captures',
         'admission_receipt_events','admission_receipt_raw','admission_entry_accounting',
+        'admission_exit_replacement',
         'admission_exit_submission','admission_exit_submission_ack','admission_exit_rpc_captures','admission_exit_accounting','admission_exit_closure')
 
 
@@ -129,10 +130,14 @@ def inspect_locked(home,wallet,pool,clock):
             transport=transport,settlement=settled,accountingRecordSha256=accounting_hash)
         # Optional new evidence is semantically replayed, not merely copied.
         # Omitting this field when absent preserves existing snapshot manifests.
-        if book.db.execute("SELECT 1 FROM sqlite_master WHERE name='admission_exit_preparation'").fetchone():
+        if any(book.db.execute('SELECT 1 FROM sqlite_master WHERE name=?',(name,)).fetchone()
+               for name in ('admission_exit_preparation','admission_exit_replacement')):
             import admission_exit
             prepared=admission_exit.saved(book,clock())
             result['exitPreparationSha256']=digest(prepared)
+            if book.db.execute("SELECT 1 FROM sqlite_master WHERE name='admission_exit_replacement'").fetchone():
+                result['originalExitPreparationSha256']=digest(admission_exit.original_saved(book,clock()))
+                result['unsignedExitReplacementCount']=1
         if book.db.execute("SELECT 1 FROM sqlite_master WHERE name='admission_exit_signing'").fetchone():
             import exit_signing_handoff
             signing=exit_signing_handoff.read(book,clock())

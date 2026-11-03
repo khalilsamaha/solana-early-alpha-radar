@@ -7,8 +7,12 @@ stopped before signer invocation; the latest status is coherent `exit-prepared`,
 with acquired inventory and unused fees still held. The round trip is not complete.
 [Preserved exit inspection](EXIT-PREPARATION-INSPECTION.md) adds a read-only audit
 of the original deadline, signing record and backend markers, plus bounded failure
-diagnostics. It does not replace evidence or permit retry. Host inspection is the
-next gate before implementing explicit preservation of history during replacement.
+diagnostics. It does not replace evidence or permit retry. The eleven-case host check and 06:44:29 UTC inspection passed: expired unsigned
+preparation, no signing record or backend markers, holds intact. The next
+[unsigned replacement contract](UNSIGNED-EXIT-REPLACEMENT.md) appends one linked
+record, replays both generations and preserves original deadlines and accounting.
+Its CLI is offline only. Connecting fresh replacement, signing and one-send
+transport within the existing freshness budget remains the next integration.
 
 The November 3 live admission observation passed in 8.649 seconds, leaving 2.454
 seconds before the original deadline; durable signing/submission were not measured

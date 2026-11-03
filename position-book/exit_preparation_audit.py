@@ -55,7 +55,7 @@ def inspect(home,wallet,pool,*,clock=view.now,monotonic=time.monotonic):
                             quantityAtomic=b['quantityAtomic'],protectedInventoryAtomic=b['protectedInventoryAtomic'],
                             entryAccountingSha256=b['entryAccountingSha256'],messageSha256=b['messageSha256'])
                     label='exit-preparation-absent'
-                    reasons=['replacement-not-implemented']
+                    reasons=['replacement-not-authorized-by-inspection']
                     if signed is not None:
                         label='exit-signing-or-transport-recorded';reasons.append('signing-recorded')
                     elif any(markers.values()):
