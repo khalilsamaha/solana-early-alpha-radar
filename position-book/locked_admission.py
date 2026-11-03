@@ -5,6 +5,7 @@ The separate admission ledger is an engineering reservation prototype only.
 """
 from copy import deepcopy
 from pathlib import Path
+import entry_profile as profile
 import reservation_view as view
 from core import check
 from journal import read_only_journals
@@ -31,18 +32,24 @@ def _boundary_locked(root, wallet, pool, admission, evidence, *, clock, handoff=
     check(scope['wallet']==wallet and scope['pool']==pool, 'admission-policy-source')
     expected=evidence['costInputs']['reservations']
     with read_only_journals():
-        before=view.read_locked(root,wallet,pool,clock)
+        with profile.measure('source-before-admission'):
+            before=view.read_locked(root,wallet,pool,clock)
         same(before,expected,wallet,pool)
         check(not view.cycles.c.submit.swap.stop(root), 'stop-marker-present')
-        reserved=admission.reserve(evidence)
+        with profile.measure('reserve-admission'):
+            reserved=admission.reserve(evidence)
         check(reserved['state']=='reserved', 'admission-not-unsigned-reserved')
-        if handoff: admission.arm_handoff(evidence)
-        after=view.read_locked(root,wallet,pool,clock)
+        if handoff:
+            with profile.measure('arm-signing-handoff'):
+                admission.arm_handoff(evidence)
+        with profile.measure('source-after-admission'):
+            after=view.read_locked(root,wallet,pool,clock)
         same(after,before,wallet,pool)
         check(before['readStartedAtMs']<=before['observedAtMs']<=after['readStartedAtMs']
               <=after['observedAtMs']<=clock(), 'admission-source-clock')
         check(not view.cycles.c.submit.swap.stop(root), 'stop-marker-present')
-        result=admission.mark_signing_boundary(evidence)
+        with profile.measure('commit-signing-boundary'):
+            result=admission.mark_signing_boundary(evidence)
         if view.cycles.c.submit.swap.stop(root):
             admission.stop()
             check(False, 'stop-marker-present')

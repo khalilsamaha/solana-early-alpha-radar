@@ -66,7 +66,12 @@ def phase(result,name,clock,monotonic):
 def signature_replay(fn):
     @wraps(fn)
     def wrapped(*args, **kwargs):
-        with wire.signature_verification_scope() as statistics:
+        reuse = kwargs.pop('_reuse_signature_scope', False)
+        # Default callers retain an independent cache, including recovery.
+        scope = (wire.signature_verification_scope(reuse_current=True) if reuse is True
+                 else wire.signature_verification_scope())
+        check(type(reuse) is bool, 'signature-scope-mode')
+        with scope as statistics:
             result = fn(*args, **kwargs)
             result['signatureVerification'] = statistics()
             result['timingOptimization'] = OPTIMIZATION

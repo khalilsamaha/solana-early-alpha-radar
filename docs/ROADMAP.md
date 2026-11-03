@@ -1,12 +1,29 @@
-# Project roadmap — updated 2 November 2026
+# Project roadmap — updated 3 November 2026
 
-Latest checkpoint: [PR #71](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/71)
-consolidated the three host-accepted fresh-signing, one-send entry and
-settled-entry/unsigned-exit increments. All eleven revised CI groups passed;
-main is `1c3b2dbde43c9a6453bacd6f45632b85067f893e` and matches the tested tree.
-The initial run timed out in an overloaded group. Exit accounting now runs
-separately, and existing module assignments remain stable when new files arrive.
-Every test and the ten-minute group limit remain in place.
+Latest checkpoint: [PR #72](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/72)
+consolidated host-accepted fresh exit, recovered settlement and the connected
+lifecycle rehearsal. All twelve CI groups passed; main is
+`61017ff1017f8c0d62a82708555fa91af15fcbd2`. The overloaded CI group was rebalanced
+without removing tests or changing its ten-minute limit.
+
+The November 3 live admission observation passed in 8.649 seconds, leaving 2.454
+seconds before the original deadline; durable signing/submission were not measured
+there. The [entry phase profile](ENTRY-PHASE-PROFILE.md) passed all six host
+checks and nineteen stages on November 3 at 05:04:56 UTC. Source rereads consumed
+about 79% of the measured post-collection time. The next
+[attempt-scoped verification reuse](ENTRY-ATTEMPT-VERIFICATION.md) halves verifier
+processes in the connected local comparison (16 to 8), with all six source reads
+and 25 synthetic requests retained. Its seven-check Kali profile passed at
+05:56:41 UTC, with post-collection time reduced from 1,519 to 867 ms in the two
+host samples. The next [controlled devnet command interface](CONTROLLED-DEVNET-ACCEPTANCE.md)
+connects explicit entry, recovery, exit and closure actions to the tested functions.
+Its November 3 host reports passed eight boundary and nine connected checks;
+read-only status confirmed a coherent closed historical source and vacant slot.
+[Consolidation review](CONTROLLED-ACCEPTANCE-CONSOLIDATION-20261103.md) records
+the batch and the next controlled devnet acceptance sequence. Full CI and merge
+are the source-release gate; current funding and live execution remain unproven.
+No live action, scanner deployment or study change is included.
+The user confirmed the November 3 study capture is already preserved.
 
 The next [fresh exit transport integration](FRESH-EXIT-TRANSPORT.md) passed 35
 targeted local tests. It connects newly collected exit evidence to restricted
@@ -16,8 +33,8 @@ The next [connected exit settlement](EXIT-SETTLEMENT-INTEGRATION.md) joins recei
 accounting, fresh residual balances and scoped closure. All 36 targeted local
 tests passed; its 21-case host contract passed on November 3 at 04:07 UTC.
 The [connected offline lifecycle profile](LIFECYCLE-REHEARSAL.md) passed all nine host
-checks on November 3. [Consolidation](LIFECYCLE-CONSOLIDATION-20261103.md) now
-precedes real provider latency and controlled devnet acceptance. No scanner or observer
+checks on November 3. [Consolidation](LIFECYCLE-CONSOLIDATION-20261103.md) is complete; the live
+unsigned timing observation passed, while full controlled devnet acceptance remains open. No scanner or observer
 rebuild, runtime integration, broadcast or study change occurred.
 
 [Batch acceptance details](ENTRY-EXIT-CONSOLIDATION-20261102.md) preserve the

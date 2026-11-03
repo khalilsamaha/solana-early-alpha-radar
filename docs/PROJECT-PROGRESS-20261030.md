@@ -1,9 +1,28 @@
 # Solana Early-Alpha Radar — progress and roadmap
 
-Updated 2 November 2026. This is a current engineering assessment, not a trading
+Updated 3 November 2026. This is a current engineering assessment, not a trading
 approval or profitability forecast. Earlier dated roadmap sections remain history.
 
 ## Where we are
+
+Latest: PR #72 consolidated the accepted connected lifecycle after all twelve CI
+groups passed. The November 3 unsigned live timing observation passed with 2.454
+seconds of original-deadline headroom. That does not cover durable admission,
+signing and send. The [entry phase profile](ENTRY-PHASE-PROFILE.md) now measures
+nineteen local stages in a disposable offline exercise; its six-check host report
+passed on November 3 at 05:04:56 UTC. The next
+[attempt-scoped signature reuse](ENTRY-ATTEMPT-VERIFICATION.md) reduces repeated
+verifier processes from 16 to 8 locally while preserving all source reads and
+request counts. Its seven-check host profile passed at 05:56:41 UTC: submission
+reused all nineteen checks, and post-collection time measured 867 ms versus
+1,519 ms previously. The [controlled devnet acceptance interface](CONTROLLED-DEVNET-ACCEPTANCE.md)
+is now built for one explicit action at a time, including recovery and closure.
+Its November 3 Kali reports passed eight boundary and nine connected checks;
+status confirmed a coherent closed historical source, vacant slot and no STOP.
+The [three-increment consolidation](CONTROLLED-ACCEPTANCE-CONSOLIDATION-20261103.md)
+now enters full CI before a separately invoked controlled devnet entry. Full live execution
+timing and economic qualification remain separate open gates. The November 3
+study capture was completed, as reported by the user.
 
 The project has a working collection and research platform, plus a controlled
 devnet execution and accounting foundation. The projected exit-fee observation
