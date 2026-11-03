@@ -75,15 +75,16 @@ internal progress counters were exposed: exit receipt recovery and closure.
 
 All 36 targeted local tests passed: 12 connected settlement tests, 12 exit
 submission regressions and 12 closure regressions. The two CI partition checks
-and tracked-source hygiene check also passed. Host acceptance remains pending.
+and tracked-source hygiene check also passed. The Kali report captured on
+November 3 at 04:07:01 UTC passed all 21 cases and matched the exact contract.
 
 Run the pinned `position-book/exit_settlement_cli.py --output ...` command from
 chat. Expect `offline-checks-passed` and 21 cases, then upload only its compressed
 public report. No radar rebuild, restart or live wallet arguments are needed.
 
-Next: instrument and exercise the connected separate-transaction lifecycle's
-latency and operator recovery before exposing a narrowly scoped devnet acceptance
-command. Mainnet route/economics validation, wallet-wide budgeting, pilot limits
+Next: run the [connected lifecycle rehearsal](LIFECYCLE-REHEARSAL.md) to measure
+local processing and interrupted-response recovery before exposing a narrowly
+scoped devnet acceptance command. Mainnet route/economics validation, wallet-wide budgeting, pilot limits
 and strategy qualification remain separate work.
 
 The availability-study captures on November 3, 5 and 6, and review on November 6
