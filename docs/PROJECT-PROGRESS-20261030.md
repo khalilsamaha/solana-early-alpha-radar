@@ -17,7 +17,10 @@ request counts. Its seven-check host profile passed at 05:56:41 UTC: submission
 reused all nineteen checks, and post-collection time measured 867 ms versus
 1,519 ms previously. The [controlled devnet acceptance interface](CONTROLLED-DEVNET-ACCEPTANCE.md)
 is now built for one explicit action at a time, including recovery and closure.
-Its offline check and read-only status are pending on Kali. Full live execution
+Its November 3 Kali reports passed eight boundary and nine connected checks;
+status confirmed a coherent closed historical source, vacant slot and no STOP.
+The [three-increment consolidation](CONTROLLED-ACCEPTANCE-CONSOLIDATION-20261103.md)
+now enters full CI before a separately invoked controlled devnet entry. Full live execution
 timing and economic qualification remain separate open gates. The November 3
 study capture was completed, as reported by the user.
 

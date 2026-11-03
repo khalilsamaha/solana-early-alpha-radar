@@ -17,8 +17,12 @@ and 25 synthetic requests retained. Its seven-check Kali profile passed at
 05:56:41 UTC, with post-collection time reduced from 1,519 to 867 ms in the two
 host samples. The next [controlled devnet command interface](CONTROLLED-DEVNET-ACCEPTANCE.md)
 connects explicit entry, recovery, exit and closure actions to the tested functions.
-Its offline command check and read-only host status are pending. No live action
-was run, and no scanner deployment or study change is included.
+Its November 3 host reports passed eight boundary and nine connected checks;
+read-only status confirmed a coherent closed historical source and vacant slot.
+[Consolidation review](CONTROLLED-ACCEPTANCE-CONSOLIDATION-20261103.md) records
+the batch and the next controlled devnet acceptance sequence. Full CI and merge
+are the source-release gate; current funding and live execution remain unproven.
+No live action, scanner deployment or study change is included.
 The user confirmed the November 3 study capture is already preserved.
 
 The next [fresh exit transport integration](FRESH-EXIT-TRANSPORT.md) passed 35

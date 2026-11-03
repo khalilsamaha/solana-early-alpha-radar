@@ -100,11 +100,14 @@ Seventeen command/integration tests passed, including the complete offline CLI,
 real-source vacant and occupied status, partial journals, incorrect scope and
 symlinks, output protection, report-write failure after an action, conservative
 exit codes, policy limits and repeated-entry refusal. Both partition checks and
-tracked-source hygiene passed. Host acceptance remains pending.
+tracked-source hygiene passed. Host acceptance passed on November 3: the 06:10:18 UTC report passed all eight
+boundary and nine connected checks. The 06:10:19 UTC status found a coherent
+closed historical source, no occupied admission slot and no STOP flag; it made
+zero network requests and did not inspect the key or current funding.
 
 ## Remaining sequence
 
-Review host acceptance, then consolidate the three-increment batch with full CI
+Consolidate the three host-accepted increments with full CI
 under the agreed workflow. The next operational milestone is a separately chosen
 controlled devnet entry and subsequent receipt/accounting review, followed by a
 separately collected exit and scoped closure. No live execution commands are part
