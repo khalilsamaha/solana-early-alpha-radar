@@ -8,9 +8,13 @@ without removing tests or changing its ten-minute limit.
 
 The November 3 live admission observation passed in 8.649 seconds, leaving 2.454
 seconds before the original deadline; durable signing/submission were not measured
-there. The next [entry phase profile](ENTRY-PHASE-PROFILE.md) exposes those local
-costs through an offline disposable-key exercise. Its host acceptance is pending;
-no validation removal, live execution or scanner deployment is included.
+there. The [entry phase profile](ENTRY-PHASE-PROFILE.md) passed all six host
+checks and nineteen stages on November 3 at 05:04:56 UTC. Source rereads consumed
+about 79% of the measured post-collection time. The next
+[attempt-scoped verification reuse](ENTRY-ATTEMPT-VERIFICATION.md) halves verifier
+processes in the connected local comparison (16 to 8), with all six source reads
+and 25 synthetic requests retained. Its seven-check Kali profile is pending.
+No live execution, scanner deployment or study change is included.
 
 The next [fresh exit transport integration](FRESH-EXIT-TRANSPORT.md) passed 35
 targeted local tests. It connects newly collected exit evidence to restricted

@@ -20,6 +20,10 @@ def main():
     for row in report['profile']['spans']:
         print(row['stage']+':', row['elapsedMs'], 'ms; completed:', row['completed'])
     print('Original deadline remaining at send guard:', report['profile']['sendGuardRemainingMs'], 'ms')
+    if report.get('signatureVerification'):
+        for phase in ('attempt', 'signing', 'submission'):
+            counts = report['signatureVerification'][phase]
+            print(phase+': verifier processes:', counts['verifierProcesses'], '; memo hits:', counts['memoHits'])
     print('Offline only: synthetic provider replies and disposable test keys; no user wallet or network.')
     print('Upload:', args.output.absolute())
     return 0 if report['state']=='offline-entry-profile-passed' else 2

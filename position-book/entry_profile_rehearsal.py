@@ -16,7 +16,7 @@ def run():
     class Fixture(FullSourceEntryTests):
         pass
     r = dict(format=VERSION, state='review-required', cases={}, casesPassed=0,
-        mode='synthetic-offline', profile=None, entry=None, recovery=None,
+        mode='synthetic-offline', profile=None, entry=None, recovery=None, signatureVerification=None,
         diagnosticCode=None, temporaryLedgersRemoved=False, originalSourceUnchanged=False,
         realNetworkRequests=0, transactionsSent=0, productionWalletAccessed=False,
         disposableTestKeySigning=True, runtimeIntegrated=False, executionApproved=False,
@@ -55,6 +55,21 @@ def run():
                           result['completedWithinOriginalDeadline'] and measured['sendGuardRemainingMs']>0,
                           'profile-original-deadline')
                     r['cases']['original-deadline-and-send-guard-remain-enforced'] = 'passed'
+                    metrics = dict(attempt=result['attemptSignatureVerification'],
+                        signing=result['signingSignatureVerification'],
+                        submission=result['submissionSignatureVerification'])
+                    check(result['entryVerificationVersion']=='entry-attempt-verification-1' and
+                          metrics['signing']['sharedWithParent'] and metrics['submission']['sharedWithParent'] and
+                          metrics['attempt']['verifierProcesses']>0 and
+                          metrics['submission']['verifierProcesses']==0 and
+                          metrics['submission']['memoHits']>0 and
+                          fresh_entry.signing.timing.wire._SIGNATURE_SCOPE.get() is None,
+                          'profile-attempt-verification')
+                    for key in ('verificationCalls', 'verifierProcesses', 'memoHits', 'capacityBypasses'):
+                        check(metrics['attempt'][key]==metrics['signing'][key]+metrics['submission'][key],
+                              'profile-verification-counters')
+                    r['signatureVerification'] = dict(version=result['entryVerificationVersion'], **metrics)
+                    r['cases']['attempt-reuses-exact-verification-and-clears-after-return'] = 'passed'
                     (fixture.home/'signer.pk8').unlink(); (fixture.home/'STOP').touch(mode=0o600)
                     before = fixture.files()
                     with patch.object(fresh_entry.signing.backend, '_invoke', side_effect=AssertionError('signer forbidden')):

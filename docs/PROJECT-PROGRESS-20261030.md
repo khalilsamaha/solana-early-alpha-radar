@@ -9,8 +9,12 @@ Latest: PR #72 consolidated the accepted connected lifecycle after all twelve CI
 groups passed. The November 3 unsigned live timing observation passed with 2.454
 seconds of original-deadline headroom. That does not cover durable admission,
 signing and send. The [entry phase profile](ENTRY-PHASE-PROFILE.md) now measures
-nineteen local stages in a disposable offline exercise; host acceptance is pending.
-Full live execution timing and economic qualification remain separate open gates.
+nineteen local stages in a disposable offline exercise; its six-check host report
+passed on November 3 at 05:04:56 UTC. The next
+[attempt-scoped signature reuse](ENTRY-ATTEMPT-VERIFICATION.md) reduces repeated
+verifier processes from 16 to 8 locally while preserving all source reads and
+request counts. Its updated seven-check host profile is pending. Full live
+execution timing and economic qualification remain separate open gates.
 
 The project has a working collection and research platform, plus a controlled
 devnet execution and accounting foundation. The projected exit-fee observation

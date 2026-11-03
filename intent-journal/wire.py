@@ -26,7 +26,24 @@ MAX_SIGNATURE_MEMO = 64
 
 
 @contextmanager
-def signature_verification_scope():
+def signature_verification_scope(*, reuse_current=False):
+    """Isolate by default; a trusted nested phase may explicitly join its owner.
+
+    Shared-phase counters are deltas; memoEntries is the owner's current gauge.
+    Only the owner clears the bounded set, including on exceptional exit.
+    """
+    check(type(reuse_current) is bool, 'signature-scope-mode')
+    if reuse_current:
+        scope = _SIGNATURE_SCOPE.get()
+        check(scope is not None, 'signature-scope-owner-required')
+        accepted, counts = scope
+        before = dict(counts)
+        def phase_snapshot():
+            return dict(version=counts['version'], sharedWithParent=True,
+                **{k: counts[k] - before[k] for k in counts if k != 'version'},
+                memoEntries=len(accepted), maximumMemoEntries=MAX_SIGNATURE_MEMO)
+        yield phase_snapshot
+        return
     accepted = set()
     counts = dict(version='exact-signature-replay-1', verificationCalls=0,
                   verifierProcesses=0, memoHits=0, capacityBypasses=0,

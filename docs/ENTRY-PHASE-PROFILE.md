@@ -42,8 +42,10 @@ the timing scope. A synthetic lost send response is followed by keyless, stopped
 receipt recovery and repeated recovery without another send. Temporary keys and
 journals are removed even if setup fails partway through.
 
-The successful state is `offline-entry-profile-passed`, with six connected checks
-and nineteen completed spans. A failed exercise publishes partial sanitized
+The successful state is `offline-entry-profile-passed`, with seven connected checks
+and nineteen completed spans after the attempt-verification increment (the original
+profile had six checks). The additional check validates scoped verification counts
+and cleanup. A failed exercise publishes partial sanitized
 evidence with `review-required` and exits 2; preserve that report. Existing output
 is not overwritten, and output permissions are 0600. There are no operational
 directory, wallet, pool, signing, submission or live observation flags.
@@ -58,7 +60,9 @@ python3 -E -s \
 ```
 
 No Docker rebuild, service restart, airdrop or access to the existing private
-rehearsal directory is required. Upload the public report; host acceptance is pending.
+rehearsal directory is required. Upload the public report. The original six-check host exercise passed
+on November 3 at 05:04:56 UTC; acceptance of the updated verification-reuse
+exercise remains pending.
 
 ## Local validation
 
@@ -81,10 +85,13 @@ Lazy synthetic reply construction can add local test overhead. Real network and
 confirmation latency are absent. Do not add this sample mechanically to the
 separate live observation or treat its larger synthetic headroom as an improvement.
 
-The first local sample suggests source replay deserves investigation before
-optimizing signer or journal costs. Compare Kali phase costs next, then choose a
-bounded optimization only if source identity, raw validation, STOP, original
-expiry and lost-response recovery remain demonstrably intact. The live controlled
+The accepted Kali sample measured 1,196.250 ms across three source replay spans,
+about 79% of 1,519 ms post-collection time. Sender source replay alone was
+876.113 ms. The 8,242 ms synthetic send-guard headroom does not replace the
+2,454 ms live unsigned observation. The next
+[attempt-scoped verification increment](ENTRY-ATTEMPT-VERIFICATION.md) shares only
+successful exact-byte authentication across signing and submission. Journal reads,
+source identity, raw validation, STOP, original expiry and recovery are retained. The live controlled
 entry/exit acceptance gate still requires separate review. This profile is not
 execution approval or evidence of profitability.
 

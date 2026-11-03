@@ -3,6 +3,7 @@
 The original evidence expiry and operation monotonic budget reach every sender
 request. Recovery only observes the existing signature; it cannot resume entry.
 """
+from functools import wraps
 import entry_profile as profile
 import fresh_signing as signing
 import admission_submission as submission
@@ -15,7 +16,21 @@ IDENTITY=('validUntilExclusiveMs','messageSha256','signingRequestSha256',
           'signedWireSha256','accountingHandoffSha256','ledgerHeadSha256','cycleBindingSha256','policySha256')
 
 
+def _attempt_verification(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        # Never inherit another attempt's cache. Only exact authenticated bytes
+        # survive the signing -> submission boundary; all state reads still run.
+        with signing.timing.wire.signature_verification_scope() as metrics:
+            result = fn(*args, **kwargs)
+            result['attemptSignatureVerification'] = metrics()
+            result['entryVerificationVersion'] = 'entry-attempt-verification-1'
+            return result
+    return wrapped
+
+
 @signing.view.cycles.binding.operation
+@_attempt_verification
 def _run(home,wallet,pool,*,signer_adapter,submission_opener=None,
          clock=signing.view.now,monotonic=signing.timing.time.monotonic,**kwargs):
     """Trusted test seam; production entry point below binds the actual backend."""
@@ -28,7 +43,8 @@ def _run(home,wallet,pool,*,signer_adapter,submission_opener=None,
         signing.guard(root,clock,monotonic,started,request['validUntilExclusiveMs'],wall,started)
         return signer_adapter(root,request)
     try:
-        r=signing._run(home,wallet,pool,signer_adapter=sign,clock=clock,monotonic=monotonic,**kwargs)
+        r=signing._run(home,wallet,pool,signer_adapter=sign,clock=clock,monotonic=monotonic,
+                      _reuse_signature_scope=True,**kwargs)
         if not (r['state']=='signed-recorded' and r['signerAcknowledgmentValidated'] and
                 r['completedWithinOriginalDeadline']):return r
         root=directory(home);deadline=r['originalDeadlineMs']
@@ -53,7 +69,7 @@ def _run(home,wallet,pool,*,signer_adapter,submission_opener=None,
                 profile.record_send_guard(last_wall)
         progress.update(stage='submission',applicationSendBoundaryRecorded=None,
                         submissionRecoveryRequired=True)
-        with signing.timing.wire.signature_verification_scope() as metrics:
+        with signing.timing.wire.signature_verification_scope(reuse_current=True) as metrics:
             try:
                 outcome=submission.submit(root,wallet,pool,allow_devnet_submit=True,opener=submission_opener,
                     clock=clock,_guard=guard,_rpc_sink=clients.append)
