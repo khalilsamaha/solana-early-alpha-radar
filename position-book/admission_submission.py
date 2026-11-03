@@ -6,6 +6,7 @@ application boundary records uncertainty, not delivery or chain finality.
 import base64
 from copy import deepcopy
 import json
+import entry_profile as profile
 
 import admission_receipt as receipts
 import restricted_signer
@@ -281,37 +282,44 @@ def submit(home, wallet, pool, *, allow_devnet_submit=False, opener=None, clock=
     """Explicit internal opt-in. No retry, resign, plan replacement or CLI."""
     check(allow_devnet_submit is True, 'explicit-devnet-submit-required')
     with handoff.bridge.view.cycles.c.source_lock(home, wallet) as root:
-        b = _open(root, wallet, pool, clock)
+        with profile.measure('sender-open'):
+            b = _open(root, wallet, pool, clock)
         try:
-            s = Submission(b)
-            if s.boundary() is not None: return s.status()
-            check(not handoff.bridge.view.cycles.c.submit.swap.stop(root), 'submission-stopped')
-            state, _, _ = s.state()
-            check(state['state']=='signed-recorded' and clock() < state['validUntilExclusiveMs'], 'submission-not-fresh')
-            check(restricted_signer.acknowledgment(root, b) == s.private['signedTransactionBase64'], 'submission-signer-ack')
-            check(receipts.ReceiptGate(b).status()['state'] == 'awaiting-receipt', 'submission-existing-receipt')
-            if _guard is not None: _guard('before-preflight', state)
+            with profile.measure('sender-validation'):
+                s = Submission(b)
+                if s.boundary() is not None: return s.status()
+                check(not handoff.bridge.view.cycles.c.submit.swap.stop(root), 'submission-stopped')
+                state, _, _ = s.state()
+                check(state['state']=='signed-recorded' and clock() < state['validUntilExclusiveMs'], 'submission-not-fresh')
+                check(restricted_signer.acknowledgment(root, b) == s.private['signedTransactionBase64'], 'submission-signer-ack')
+                check(receipts.ReceiptGate(b).status()['state'] == 'awaiting-receipt', 'submission-existing-receipt')
+                if _guard is not None: _guard('before-preflight', state)
             rpc = SendRpc(opener, guard=None if _guard is None else lambda stage: _guard(stage, state))
             if _rpc_sink is not None: _rpc_sink(rpc)
-            proof = {'genesisBefore':rpc.request('getGenesisHash', [])}
-            check(received(proof['genesisBefore']) == GENESIS['devnet'], 'submission-wrong-cluster')
-            packet = state['signingRequest']['packet']
-            proof['blockhash'] = rpc.request('isBlockhashValid', [packet['policy']['blockhash'], {'commitment':'confirmed'}])
-            slot, valid = context(proof['blockhash']); check(valid is True, 'submission-blockhash-unavailable')
-            message = base64.b64encode(decode_wire(s.private['signedTransactionBase64'])[1]).decode()
-            proof['fee'] = rpc.request('getFeeForMessage', [message, {'commitment':'confirmed','minContextSlot':slot}])
-            proof['genesisAfter'] = rpc.request('getGenesisHash', [])
-            minimum = preflight_check(proof, s.private, state)
+            with profile.measure('sender-preflight'):
+                proof = {'genesisBefore':rpc.request('getGenesisHash', [])}
+                check(received(proof['genesisBefore']) == GENESIS['devnet'], 'submission-wrong-cluster')
+                packet = state['signingRequest']['packet']
+                proof['blockhash'] = rpc.request('isBlockhashValid', [packet['policy']['blockhash'], {'commitment':'confirmed'}])
+                slot, valid = context(proof['blockhash']); check(valid is True, 'submission-blockhash-unavailable')
+                message = base64.b64encode(decode_wire(s.private['signedTransactionBase64'])[1]).decode()
+                proof['fee'] = rpc.request('getFeeForMessage', [message, {'commitment':'confirmed','minContextSlot':slot}])
+                proof['genesisAfter'] = rpc.request('getGenesisHash', [])
+                minimum = preflight_check(proof, s.private, state)
             check(not handoff.bridge.view.cycles.c.submit.swap.stop(root), 'submission-stopped')
             if _guard is not None: _guard('before-boundary', state)
             # Committed and fsynced before the first possible transport invocation.
-            boundary = s.mark(proof)
+            with profile.measure('commit-send-boundary'):
+                boundary = s.mark(proof)
             check(not handoff.bridge.view.cycles.c.submit.swap.stop(root) and
                   boundary['atMs'] <= clock() < state['validUntilExclusiveMs'], 'submission-boundary-now-unknown')
-            item = rpc.request('sendTransaction', [s.private['signedTransactionBase64'],
-                dict(encoding='base64', skipPreflight=False, preflightCommitment='confirmed', maxRetries=0, minContextSlot=minimum)])
-            s.acknowledge(item)
-            return s.status(rpc)
+            with profile.measure('send-request'):
+                item = rpc.request('sendTransaction', [s.private['signedTransactionBase64'],
+                    dict(encoding='base64', skipPreflight=False, preflightCommitment='confirmed', maxRetries=0, minContextSlot=minimum)])
+            with profile.measure('record-send-ack'):
+                s.acknowledge(item)
+            with profile.measure('sender-projection'):
+                return s.status(rpc)
         finally: b.close()
 
 

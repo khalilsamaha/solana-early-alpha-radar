@@ -3,6 +3,7 @@
 The original evidence expiry and operation monotonic budget reach every sender
 request. Recovery only observes the existing signature; it cannot resume entry.
 """
+import entry_profile as profile
 import fresh_signing as signing
 import admission_submission as submission
 from core import check, directory
@@ -41,12 +42,15 @@ def _run(home,wallet,pool,*,signer_adapter,submission_opener=None,
             nonlocal last_wall,last_tick
             check(all(state[k]==expected[k] for k in IDENTITY),'fresh-entry-identity')
             if stage=='before-preflight':
-                with read_only_journals():source=signing.view.read_locked(root,wallet,pool,clock)
+                with read_only_journals(), profile.measure('sender-source-replay'):
+                    source=signing.view.read_locked(root,wallet,pool,clock)
                 check(source['phase']=='closed' and source['wallet']==wallet and source['pool']==pool and
                       all(source[k]==expected[k] for k in ('ledgerHeadSha256','cycleBindingSha256')),
                       'fresh-entry-source-changed')
             last_wall,last_tick=signing.guard(root,clock,monotonic,started,deadline,last_wall,last_tick)
-            if stage=='sendTransaction':progress['originalDeadlineCheckedBeforeSend']=True
+            if stage=='sendTransaction':
+                progress['originalDeadlineCheckedBeforeSend']=True
+                profile.record_send_guard(last_wall)
         progress.update(stage='submission',applicationSendBoundaryRecorded=None,
                         submissionRecoveryRequired=True)
         with signing.timing.wire.signature_verification_scope() as metrics:

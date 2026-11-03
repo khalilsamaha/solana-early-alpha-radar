@@ -6,6 +6,7 @@ outcomes stay held for acknowledgment recovery, never recollected or resigned.
 """
 from copy import deepcopy
 import subprocess
+import entry_profile as profile
 
 import admission_timing as timing
 import signer_handoff as handoff
@@ -62,7 +63,7 @@ def _run(home,wallet,pool,*,signer_adapter,maximum_exit_attempts,
         with view.cycles.c.source_lock(home,wallet) as root,read_only_journals():
             timing.vacant(root)
             check(not view.cycles.c.submit.swap.stop(root),'fresh-signing-stopped')
-        with timing.phase(r,'fresh-entry-collection',clock,monotonic):
+        with timing.phase(r,'fresh-entry-collection',clock,monotonic), profile.measure('entry-collection'):
             obs=timing.fresh_quote.observe(home,wallet,pool,opener=opener,clock=clock,monotonic=monotonic,
                 simulate=True,assess_costs=True,refreshed_deployment=True,_evidence_sink=private.append)
             count=obs['networkRequests'];methods=obs['requestMethods']
@@ -80,6 +81,7 @@ def _run(home,wallet,pool,*,signer_adapter,maximum_exit_attempts,
         # The durable request and independent child signer must enforce this same
         # original deadline, not only an outer Python callback check.
         check(deadline==deadlines[0],'fresh-signing-deadline-mismatch')
+        profile.pin_deadline(deadline)
         policy=dict(format=timing.admission.VERSION+'-policy',scope=deepcopy(evidence['scope']),
             maximumExitAttempts=maximum_exit_attempts,maximumExitFeeLamports=maximum_exit_fee_lamports,
             maximumTotalFeeLamports=maximum_total_fee_lamports)
