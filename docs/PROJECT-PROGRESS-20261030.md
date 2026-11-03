@@ -59,9 +59,9 @@ production sender.
 
 The next [exit settlement integration](EXIT-SETTLEMENT-INTEGRATION.md) connects
 recovered receipts, fresh residual balances and scoped closure. The remaining
-immediate gates are: run the [connected offline lifecycle profile](LIFECYCLE-REHEARSAL.md)
-on Kali, then scope explicit controlled devnet acceptance with real provider
-latency. The settlement host check passed all 21 cases on November 3 at 04:07 UTC. The availability study remains independent, with captures on November
+immediate gates are: consolidate the [accepted connected lifecycle batch](LIFECYCLE-CONSOLIDATION-20261103.md),
+then scope explicit controlled devnet acceptance with real provider latency. The
+Kali lifecycle profile passed nine connected checks on November 3 at 04:17 UTC. The settlement host check passed all 21 cases on November 3 at 04:07 UTC. The availability study remains independent, with captures on November
 3, 5 and 6 and review on November 6 at 00:05 UTC. Neither synthetic execution
 success nor model fit minimums establish a profitable real-money rule.
 

@@ -59,7 +59,9 @@ monotonic clock regression/nonfinite values, failed/late send projections,
 partial setup cleanup and cleanup failure reporting. Source hygiene and stable CI
 partition checks accompany the release. All nine local tests passed, including
 the complete connected CLI test, along with both partition checks and tracked
-source hygiene. Kali acceptance is pending.
+source hygiene. Kali acceptance passed at 04:17:47 UTC on November 3: all nine
+connected checks and seven timed stages completed. See the
+[consolidation record](LIFECYCLE-CONSOLIDATION-20261103.md) for timings and limits.
 
 ## Kali acceptance and remaining work
 

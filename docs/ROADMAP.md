@@ -15,8 +15,9 @@ synthetic host check passed at 07:42 UTC on November 2.
 The next [connected exit settlement](EXIT-SETTLEMENT-INTEGRATION.md) joins receipt
 accounting, fresh residual balances and scoped closure. All 36 targeted local
 tests passed; its 21-case host contract passed on November 3 at 04:07 UTC.
-The [connected offline lifecycle profile](LIFECYCLE-REHEARSAL.md) is the next host
-acceptance step, before real provider latency and controlled devnet acceptance. No scanner or observer
+The [connected offline lifecycle profile](LIFECYCLE-REHEARSAL.md) passed all nine host
+checks on November 3. [Consolidation](LIFECYCLE-CONSOLIDATION-20261103.md) now
+precedes real provider latency and controlled devnet acceptance. No scanner or observer
 rebuild, runtime integration, broadcast or study change occurred.
 
 [Batch acceptance details](ENTRY-EXIT-CONSOLIDATION-20261102.md) preserve the

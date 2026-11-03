@@ -12,7 +12,7 @@ def selected(root, shard):
     files=sorted(root.glob('test_*.py'))
     # Existing module assignments are frozen; new filenames cannot reshuffle them.
     # The measured heavy transport, closure and accounting suites run separately.
-    dedicated={6:'test_exit_submission.py',7:'test_exit_closure.py',8:'test_exit_accounting.py'}
+    dedicated={6:'test_exit_submission.py',7:'test_exit_closure.py',8:'test_exit_accounting.py',9:'test_exit_settlement.py'}
     assignments=json.loads(Path(__file__).with_name('position-book-groups.json').read_text())
     if shard in dedicated:return [p for p in files if p.name==dedicated[shard]]
     def group(path):
@@ -22,7 +22,7 @@ def selected(root, shard):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('shard',type=int,choices=range(9))
+    parser.add_argument('shard',type=int,choices=range(10))
     parser.add_argument('--list',action='store_true')
     args=parser.parse_args()
     root=Path(__file__).resolve().parents[1]/'position-book'
