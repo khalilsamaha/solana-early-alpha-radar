@@ -44,8 +44,12 @@ Ten new tests cover counter accounting, default isolation, exception cleanup,
 subsequent attempts, capacity, signature/message tampering, independent recovery,
 source identity changes, historical receipt tampering after signing, STOP and
 expiry after a durable send boundary. Existing profile, signature replay,
-signing, entry, exit and journal regressions are also checked. The host acceptance
-is pending; local timings are not substituted for Kali measurements.
+signing, entry, exit and journal regressions are also checked. The November 3
+05:56:41 UTC Kali report passed all seven checks and nineteen stages: 64 signature
+checks used 8 verifier processes and 56 memo hits, with no capacity bypasses.
+Submission reused all 19 checks. Sender replay fell from 876.113 to 267.165 ms;
+post-collection time fell from 1,519 to 867 ms across the two host samples. These
+are observed single-run differences, not a guaranteed latency distribution.
 
 ## Kali acceptance
 
@@ -71,10 +75,10 @@ are unchanged. This is a development commit, not a deployment or live approval.
 
 ## Next gates
 
-1. Review the new Kali phase/counter report against the accepted original profile.
-2. If headroom improves, prepare the separate controlled devnet acceptance path
-   with original deadlines and one-send recovery intact; do not infer authorization
-   from a synthetic pass.
+1. Kali phase/counter acceptance is complete; original deadlines and keyless
+   recovery passed, and historical source evidence was preserved.
+2. The [controlled acceptance command](CONTROLLED-DEVNET-ACCEPTANCE.md) is now built.
+   Run its offline check and read-only status before choosing a live action.
 3. Consolidate around the agreed three-increment checkpoint with full CI.
 4. Preserve the November 3, 5 and 6 availability-study captures; review November 6
    at 00:05 UTC / 01:05 Amsterdam. Economic qualification remains independent of

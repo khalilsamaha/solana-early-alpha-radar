@@ -61,8 +61,9 @@ python3 -E -s \
 
 No Docker rebuild, service restart, airdrop or access to the existing private
 rehearsal directory is required. Upload the public report. The original six-check host exercise passed
-on November 3 at 05:04:56 UTC; acceptance of the updated verification-reuse
-exercise remains pending.
+on November 3 at 05:04:56 UTC. The updated seven-check verification-reuse
+exercise passed at 05:56:41 UTC, with all nineteen spans complete. See the
+[accepted comparison](ENTRY-ATTEMPT-VERIFICATION.md).
 
 ## Local validation
 

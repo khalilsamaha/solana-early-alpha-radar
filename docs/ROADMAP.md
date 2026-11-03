@@ -13,8 +13,13 @@ checks and nineteen stages on November 3 at 05:04:56 UTC. Source rereads consume
 about 79% of the measured post-collection time. The next
 [attempt-scoped verification reuse](ENTRY-ATTEMPT-VERIFICATION.md) halves verifier
 processes in the connected local comparison (16 to 8), with all six source reads
-and 25 synthetic requests retained. Its seven-check Kali profile is pending.
-No live execution, scanner deployment or study change is included.
+and 25 synthetic requests retained. Its seven-check Kali profile passed at
+05:56:41 UTC, with post-collection time reduced from 1,519 to 867 ms in the two
+host samples. The next [controlled devnet command interface](CONTROLLED-DEVNET-ACCEPTANCE.md)
+connects explicit entry, recovery, exit and closure actions to the tested functions.
+Its offline command check and read-only host status are pending. No live action
+was run, and no scanner deployment or study change is included.
+The user confirmed the November 3 study capture is already preserved.
 
 The next [fresh exit transport integration](FRESH-EXIT-TRANSPORT.md) passed 35
 targeted local tests. It connects newly collected exit evidence to restricted
