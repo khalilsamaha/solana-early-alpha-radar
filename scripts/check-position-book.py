@@ -10,7 +10,7 @@ import subprocess
 
 def selected(root, shard):
     files=sorted(root.glob('test_*.py'))
-    # Existing module assignments are frozen; new filenames cannot reshuffle them.
+    # Explicit assignments change only after measured review; new files cannot reshuffle them.
     # The measured heavy transport, closure and accounting suites run separately.
     dedicated={6:'test_exit_submission.py',7:'test_exit_closure.py',8:'test_exit_accounting.py',9:'test_exit_settlement.py'}
     assignments=json.loads(Path(__file__).with_name('position-book-groups.json').read_text())

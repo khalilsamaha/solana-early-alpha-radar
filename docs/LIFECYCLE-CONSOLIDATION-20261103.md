@@ -50,10 +50,20 @@ The new settlement regression module took 413 seconds in its recorded local run.
 The existing position-book-3 CI group took 214 seconds in the accepted PR #71 run.
 Those are different environments, not an exact duration prediction, but together
 show insufficient margin for the existing ten-minute job limit. The new module
-therefore gets its own position-book-9 group. Existing module assignments remain
-unchanged; every test module is checked exactly once. The matrix now has twelve
+therefore gets its own position-book-9 group. Every test module is checked
+exactly once. The matrix now has twelve
 groups. No tests, assertions or time limits are removed. All groups must pass on
 the exact consolidation head before merge.
+
+The first consolidation run (41577640207) passed eleven groups; group 2 reached
+the ten-minute job limit while its final signer-handoff module was still running.
+No assertion failure was reported, but that incomplete group is not accepted.
+Its exit-balance module passed in 264.405 seconds. Group 3 completed in 171 seconds,
+so the explicit manifest now moves exit-balance from group 2 to group 3. This is
+a measured redistribution within the same twelve jobs, without skipped tests or
+a longer timeout. All other assignments remain unchanged; adding future files
+still cannot reshuffle existing assignments. The complete matrix must pass again
+on the revised head.
 
 ## Next acceptance scope
 
