@@ -1,10 +1,14 @@
 # Project roadmap — updated 3 November 2026
 
-Latest checkpoint: [PR #72](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/72)
-consolidated host-accepted fresh exit, recovered settlement and the connected
-lifecycle rehearsal. All twelve CI groups passed; main is
-`61017ff1017f8c0d62a82708555fa91af15fcbd2`. The overloaded CI group was rebalanced
-without removing tests or changing its ten-minute limit.
+Latest consolidated checkpoint: [PR #73](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/73),
+main `510a56d9c17217399ea208676ab97bfad87d648c`, with all twelve CI groups passing.
+The controlled devnet entry subsequently succeeded and was reconciled. Its exit
+stopped before signer invocation; the latest status is coherent `exit-prepared`,
+with acquired inventory and unused fees still held. The round trip is not complete.
+[Preserved exit inspection](EXIT-PREPARATION-INSPECTION.md) adds a read-only audit
+of the original deadline, signing record and backend markers, plus bounded failure
+diagnostics. It does not replace evidence or permit retry. Host inspection is the
+next gate before implementing explicit preservation of history during replacement.
 
 The November 3 live admission observation passed in 8.649 seconds, leaving 2.454
 seconds before the original deadline; durable signing/submission were not measured
@@ -20,9 +24,8 @@ connects explicit entry, recovery, exit and closure actions to the tested functi
 Its November 3 host reports passed eight boundary and nine connected checks;
 read-only status confirmed a coherent closed historical source and vacant slot.
 [Consolidation review](CONTROLLED-ACCEPTANCE-CONSOLIDATION-20261103.md) records
-the batch and the next controlled devnet acceptance sequence. Full CI and merge
-are the source-release gate; current funding and live execution remain unproven.
-No live action, scanner deployment or study change is included.
+the batch and the next controlled devnet acceptance sequence. Full CI and merge for that batch completed; the later entry and blocked exit
+results are recorded above. Scanner deployment and study rules remain unchanged.
 The user confirmed the November 3 study capture is already preserved.
 
 The next [fresh exit transport integration](FRESH-EXIT-TRANSPORT.md) passed 35

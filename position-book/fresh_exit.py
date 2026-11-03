@@ -61,6 +61,7 @@ def _run(home,wallet,pool,*,signer_adapter,collection_opener=None,submission_ope
             r.update(stage='signing',signerInvocationAttempts=1,privateKeyAccessed=None,
                      signaturesCreated=None,recoveryRequired=True)
             return signer_adapter(root,request)
+        r['stage']='signing-validation'
         result=handoff.dispatch(root,wallet,pool,signer_adapter=sign,clock=clock)
         r['signing']=result
         check(r['signerInvocationAttempts']==1 and result['state']=='exit-signed-recorded' and
@@ -84,7 +85,8 @@ def _run(home,wallet,pool,*,signer_adapter,collection_opener=None,submission_ope
         r['diagnosticCode']=str(exc) if str(exc) in {
             'fresh-exit-slot-occupied','fresh-exit-not-created','fresh-exit-identity','fresh-exit-signing-unavailable',
             'fresh-signing-stopped','fresh-signing-expired','fresh-signing-clock','fresh-signing-monotonic',
-            'exit-wrong-cluster','exit-blockhash-unavailable','exit-fee-cap','exit-boundary-now-unknown'
+            'exit-wrong-cluster','exit-blockhash-unavailable','exit-fee-cap','exit-boundary-now-unknown',
+            'exit-signing-expired','exit-signing-boundary-expired-or-stopped','exit-signing-stopped'
         } else 'fresh-exit-evidence-unavailable'
         r['recoveryRequired']=True
     finally:
