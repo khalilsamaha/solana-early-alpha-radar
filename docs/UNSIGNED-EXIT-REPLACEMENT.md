@@ -56,7 +56,8 @@ isolated restore, and a rehashed corruption of the original was rejected. The
 portable check contains seventeen cases. Two partition checks, source hygiene
 and immutable package-manifest checks passed. No real network was used.
 
-Host validation is pending. No live replacement, signing or fee consumption has
+The November 3 Kali report at 06:59:48 UTC passed all seventeen cases.
+No live replacement, signing or fee consumption has
 been performed by this increment. Local correctness does not establish adequate
 live timing headroom.
 

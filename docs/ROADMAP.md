@@ -11,8 +11,11 @@ diagnostics. It does not replace evidence or permit retry. The eleven-case host 
 preparation, no signing record or backend markers, holds intact. The next
 [unsigned replacement contract](UNSIGNED-EXIT-REPLACEMENT.md) appends one linked
 record, replays both generations and preserves original deadlines and accounting.
-Its CLI is offline only. Connecting fresh replacement, signing and one-send
-transport within the existing freshness budget remains the next integration.
+Its seventeen-case Kali check passed at 06:59:48 UTC. The next
+[connected replacement exit](REPLACEMENT-EXIT-INTEGRATION.md) reuses the restricted
+signer and one-send transport with exact replacement identity and original expiry.
+The new host command is offline only; actual exit replacement and closure remain
+open pending the connected host result and timing review.
 
 The November 3 live admission observation passed in 8.649 seconds, leaving 2.454
 seconds before the original deadline; durable signing/submission were not measured

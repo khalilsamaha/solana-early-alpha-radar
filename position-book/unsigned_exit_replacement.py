@@ -134,7 +134,9 @@ def replace(home,wallet,pool,evidence,collection,*,expected_preparation_sha256,
 @view.cycles.binding.operation
 def collect_and_replace(home,wallet,pool,*,expected_preparation_sha256,
                         allow_unsigned_replacement=False,opener=None,clock=view.now,
-                        monotonic=time.monotonic):
+                        monotonic=time.monotonic,_observation_sink=None):
+    check(_observation_sink is None or callable(_observation_sink),
+          'exit-collection-observation-sink')
     check(allow_unsigned_replacement is True,'explicit-unsigned-replacement-required')
     check(type(expected_preparation_sha256) is str and len(expected_preparation_sha256)==64 and
           all(c in '0123456789abcdef' for c in expected_preparation_sha256),'replacement-expected-identity')
@@ -142,6 +144,7 @@ def collect_and_replace(home,wallet,pool,*,expected_preparation_sha256,
     items=[]
     observed=collect(home,wallet,pool,opener=opener,clock=clock,monotonic=monotonic,
         _evidence_sink=items.append,_replacement_expected=expected_preparation_sha256)
+    if _observation_sink is not None:_observation_sink(deepcopy(observed))
     if observed['state']!='exit-evidence-collected-research-only':return observed
     check(len(items)==1,'replacement-collection-handoff')
     envelope=items[0];evidence=envelope.pop('evidence')
