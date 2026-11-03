@@ -40,3 +40,8 @@ position-book partition (eleven CI groups total). Existing other assignments are
 frozen in a reviewed manifest; new files use deterministic assignment and cannot
 reshuffle previous suites. Coverage tests require every module exactly once and
 verify assignment stability. No test or timeout is removed or relaxed.
+
+The revised run `41406658824` passed all eleven CI groups at head
+`09fd8b809e3c617826152bc765197851a2c9a899`. PR #71 merged as
+`1c3b2dbde43c9a6453bacd6f45632b85067f893e`; its source tree exactly matches the
+reviewed and tested tree `01eac459de5cf8ee8bbe3d987dedafc75ac34d89`.

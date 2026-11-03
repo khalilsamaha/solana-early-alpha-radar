@@ -47,9 +47,23 @@ PR #70 consolidated the host-accepted timing, signature replay and isolated
 durable admission batch. All ten CI groups passed after isolating the heavy closure
 suite, preserving every test and the 10-minute job limit. Main is
 `777a355897270addccf3bd6218e2352594d0c860`.
-The next fresh collection-to-signing increment passed 36 local tests, with its
-17-case synthetic host check pending. These remain internal integration components,
-not a deployed production sender.
+The fresh collection-to-signing, one-send entry and settled-entry/unsigned-exit
+increments passed their 17-, 21- and 18-case synthetic host checks on November 2.
+PR #71 consolidated them after all eleven CI groups passed; main is
+`1c3b2dbde43c9a6453bacd6f45632b85067f893e`. The next fresh exit transport integration is built
+and locally tested; its 21-case synthetic host acceptance passed on November 2
+at 07:42 UTC. It
+preserves the original exit expiry through the actual independent signer and
+one-send transport. These are internal integration components, not a deployed
+production sender.
+
+The next [exit settlement integration](EXIT-SETTLEMENT-INTEGRATION.md) connects
+recovered receipts, fresh residual balances and scoped closure. The remaining
+immediate gates are: consolidate the [accepted connected lifecycle batch](LIFECYCLE-CONSOLIDATION-20261103.md),
+then scope explicit controlled devnet acceptance with real provider latency. The
+Kali lifecycle profile passed nine connected checks on November 3 at 04:17 UTC. The settlement host check passed all 21 cases on November 3 at 04:07 UTC. The availability study remains independent, with captures on November
+3, 5 and 6 and review on November 6 at 00:05 UTC. Neither synthetic execution
+success nor model fit minimums establish a profitable real-money rule.
 
 Status definitions: **accepted** means the stated scope has test/host evidence;
 **built** means code exists but the stated acceptance gate is outstanding;

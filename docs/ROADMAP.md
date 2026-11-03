@@ -1,25 +1,28 @@
 # Project roadmap — updated 2 November 2026
 
-Latest checkpoint: [PR #70](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/70)
-consolidated timing instrumentation, exact signature replay and isolated durable
-unsigned admission after host acceptance. All ten corrected CI groups passed;
-main is `777a355897270addccf3bd6218e2352594d0c860`.
-The first CI attempt hit the 10-minute job limit. The heavy closure suite now runs
-in a dedicated job; tests and timeout were not removed or weakened. Partition
-checks prove complete, unique coverage. PRs #68 and #69 remain earlier accepted
-exit-lifecycle and durable-STOP milestones.
+Latest checkpoint: [PR #71](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/71)
+consolidated the three host-accepted fresh-signing, one-send entry and
+settled-entry/unsigned-exit increments. All eleven revised CI groups passed;
+main is `1c3b2dbde43c9a6453bacd6f45632b85067f893e` and matches the tested tree.
+The initial run timed out in an overloaded group. Exit accounting now runs
+separately, and existing module assignments remain stable when new files arrive.
+Every test and the ten-minute group limit remain in place.
 
-The new [fresh signing integration](FRESH-SIGNING-INTEGRATION.md) connects its own
-fresh evidence to the independent devnet signer internally. It passed 36 targeted
-local tests; the 17-case synthetic host check passed on November 2 at 06:40 UTC.
-The [fresh entry sender integration](FRESH-ENTRY-SENDER.md) now connects this path
-to the bounded one-send transport and keyless receipt recovery. Its 21-case
-synthetic host gate passed on November 2 at 06:58 UTC.
-The [settled-entry/delayed-exit integration](SETTLED-EXIT-INTEGRATION.md) now connects
-receipt accounting to new unsigned exit evidence; its 18-case host gate passed
-on November 2 at 07:13 UTC. The three accepted increments are ready for
-[batched consolidation](ENTRY-EXIT-CONSOLIDATION-20261102.md) and grouped CI.
-No scanner or observer rebuild, runtime integration, broadcast or study change occurred.
+The next [fresh exit transport integration](FRESH-EXIT-TRANSPORT.md) passed 35
+targeted local tests. It connects newly collected exit evidence to restricted
+signing and one-send transport with the original expiry intact. Its 21-case
+synthetic host check passed at 07:42 UTC on November 2.
+The next [connected exit settlement](EXIT-SETTLEMENT-INTEGRATION.md) joins receipt
+accounting, fresh residual balances and scoped closure. All 36 targeted local
+tests passed; its 21-case host contract passed on November 3 at 04:07 UTC.
+The [connected offline lifecycle profile](LIFECYCLE-REHEARSAL.md) passed all nine host
+checks on November 3. [Consolidation](LIFECYCLE-CONSOLIDATION-20261103.md) now
+precedes real provider latency and controlled devnet acceptance. No scanner or observer
+rebuild, runtime integration, broadcast or study change occurred.
+
+[Batch acceptance details](ENTRY-EXIT-CONSOLIDATION-20261102.md) preserve the
+17-, 21- and 18-case host results. PR #70 remains the earlier accepted timing,
+signature replay and isolated durable admission base.
 
 The [independent restricted exit key backend](RESTRICTED-EXIT-SIGNER.md) is built
 and locally tested, including full-source signing, keyless acknowledgment recovery

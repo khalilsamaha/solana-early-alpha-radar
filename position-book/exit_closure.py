@@ -162,8 +162,10 @@ def _commit(home, wallet, pool, capture, deadline, *, clock, monotonic):
 
 
 @view.cycles.binding.operation
-def collect_and_close(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.monotonic):
+def collect_and_close(home, wallet, pool, *, opener=None, clock=view.now, monotonic=time.monotonic,
+                      _observation_sink=None):
     """Four bounded reads, then fresh atomic scoped closure. No execution mode."""
+    check(_observation_sink is None or callable(_observation_sink), 'closure-observation-sink')
     previous = status(home, wallet, pool, clock=clock)
     if previous['closureRecorded']:
         return previous  # Durable recovery after an ambiguous caller result; no RPC.
@@ -171,6 +173,8 @@ def collect_and_close(home, wallet, pool, *, opener=None, clock=view.now, monoto
     start = monotonic()
     result = balance.collect(home, wallet, pool, opener=opener, clock=clock,
                              monotonic=monotonic, _evidence_sink=captures.append)
+    if _observation_sink is not None:
+        _observation_sink(deepcopy(result))
     if not result['balanceReconciliationPassed']:
         out = public(None, requests=result['networkRequests'])
         out.update(state='exit-closure-blocked', diagnosticCode=result['diagnosticCode'])
