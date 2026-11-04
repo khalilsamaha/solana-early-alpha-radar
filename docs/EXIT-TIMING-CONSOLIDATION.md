@@ -29,3 +29,8 @@ allowances, sign, submit, release inventory or import an exported report as
 authority. Actual continuation still needs a separately reviewed durable and
 independently enforced contract. Scanner, observer, notification rules and the
 availability study remain unchanged.
+
+CI follow-up: eleven groups passed on the first run; position-book group 3 hit
+its ten-minute wall-time limit after passing its tests to that point. Move the
+new 85-second profile suite to the lighter group 0. All modules remain covered
+once; no test, deadline or runtime guard is removed.
