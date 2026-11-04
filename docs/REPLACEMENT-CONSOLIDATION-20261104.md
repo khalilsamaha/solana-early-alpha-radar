@@ -49,3 +49,9 @@ No previously accepted stale proof is silently grandfathered or resubmitted.
 The active preparation is handed directly from the successful signing replay to
 the transport in the same read. This avoids a second full replay per call without
 introducing a cache or skipping validation; failed replay publishes no preparation.
+
+CI measured partition 1 reaching its ten-minute job limit without a test failure.
+The 183-second accounting-recovery module moves to partition 2 (previously 268
+seconds), and unsigned replacement is assigned to partition 4 (previously 305
+seconds). Every module remains included exactly once; test and execution deadlines
+are unchanged. The complete matrix must pass again on this assignment.
