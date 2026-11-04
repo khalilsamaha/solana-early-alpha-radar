@@ -1,11 +1,18 @@
 # Project roadmap — updated 4 November 2026
 
+The next [controlled continuation boundary](CONTROLLED-CONTINUATION.md) adds an
+offline command check, zero-RPC local inspection bound to both predecessors, and
+a separately explicit one-shot devnet action with the fixed reviewed backend.
+Local command and connected-wrapper verification precede host inspection. No
+operational command has been issued for this increment; the held exit remains
+unresolved and no fourth preparation or automatic retry is added.
+
 The diagnostic continuation rerun passed on Kali at 19:13:19 UTC on November 4:
 16 fault/connected cases and 14 independent signer cases; every phase completed.
 The synthetic attempt took 5,550.364 ms within its original deadline. The prior
 11-case failed run did not recur and its cause remains unknown. The
-[continuation batch](CONTINUATION-CONSOLIDATION-20261104.md) is ready for grouped
-regression/CI review. Actual devnet exit and scoped settlement remain pending.
+[continuation batch](CONTINUATION-CONSOLIDATION-20261104.md) was merged through PR #76 after all twelve CI groups passed
+at `c18a6eb6d99a21d3b68515774cfd3deee8275a4e`. Actual devnet exit and scoped settlement remain pending.
 Next: an explicitly scoped operational continuation boundary with read-only
 preflight inspection and recovery after uncertain attempts. No automatic retry,
 policy change, extra continuation or mainnet activation is authorized by a pass.
