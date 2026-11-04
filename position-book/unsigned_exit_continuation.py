@@ -118,13 +118,16 @@ def prepare(home,wallet,pool,evidence,collection,*,expected_original_sha256,expe
 @encoding_replay.operation
 @admission_history_replay.operation
 def collect_and_prepare(home,wallet,pool,*,expected_original_sha256,expected_current_sha256,
-                        allow_unsigned_continuation=False,opener=None,clock=view.now,monotonic=time.monotonic):
+                        allow_unsigned_continuation=False,opener=None,clock=view.now,monotonic=time.monotonic,
+                        _observation_sink=None):
     check(allow_unsigned_continuation is True,'explicit-unsigned-continuation-required')
     pair=(expected_original_sha256,expected_current_sha256);preserved.identities(pair)
+    check(_observation_sink is None or callable(_observation_sink),'exit-collection-observation-sink')
     from admission_exit_capture import collect
     items=[]
     result=collect(home,wallet,pool,opener=opener,clock=clock,monotonic=monotonic,
                    _continuation_expected=pair,_evidence_sink=items.append)
+    if _observation_sink is not None:_observation_sink(deepcopy(result))
     if result['state']!='exit-evidence-collected-research-only':return result
     check(len(items)==1,'continuation-collection-handoff')
     envelope=items[0];evidence=envelope.pop('evidence')

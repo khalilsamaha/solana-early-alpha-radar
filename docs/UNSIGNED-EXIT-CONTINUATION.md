@@ -93,7 +93,14 @@ Expected: `offline-checks-passed`, 25 portable cases and 14 independent contract
 cases. Upload only the public report. No Docker rebuild or service restart.
 Do not rerun the old live replacement command; its allowance is still consumed.
 
-## Next integration gate
+## Host acceptance and next integration gate
+
+The 18:45:58 UTC Kali continuation report passed all 25 portable and 14 independent
+contract cases. Archive SHA-256:
+`d13f852a9084f9ecda1cdcaf83c56733a330b02500cd51bafa620e2047dbebbb`.
+[Connected signer/transport rehearsal](CONTINUATION-EXIT-INTEGRATION.md) is the
+next offline gate; the actual held position remains unresolved.
+
 
 Connect this exact third generation to the existing isolated signer, one-send
 transport, original-deadline checks and read-only recovery in a disposable

@@ -7,6 +7,7 @@ import admission_exit_collection as collection
 import exit_submission as submission
 import fresh_signing
 import unsigned_exit_replacement as replacement
+import unsigned_exit_continuation as continuation
 from contract import digest
 from core import check
 from journal import read_only_journals
@@ -24,8 +25,9 @@ view=handoff.view
 @encoding_replay.operation
 @admission_history_replay.operation
 def _run(home,wallet,pool,*,signer_adapter,collection_opener=None,submission_opener=None,
-         clock=view.now,monotonic=time.monotonic,_replacement_expected=None):
+         clock=view.now,monotonic=time.monotonic,_replacement_expected=None,_continuation_expected=None):
     """Injected adapter is a trusted test seam; public wrapper fixes the backend."""
+    check(_replacement_expected is None or _continuation_expected is None,'exclusive-exit-generation-required')
     observations=[];clients=[];started=monotonic();wall=clock()
     last_wall=wall;last_tick=started;deadline=None;expected=None
     r=dict(format=VERSION,state='fresh-exit-inspection-required',stage='collection',
@@ -44,7 +46,9 @@ def _run(home,wallet,pool,*,signer_adapter,collection_opener=None,submission_ope
         with view.cycles.c.source_lock(home,wallet) as root,read_only_journals():
             book=submission.transport._open(root,wallet,pool,clock)
             try:
-                if _replacement_expected is None:
+                if _continuation_expected is not None:
+                    continuation.eligible(book,root,_continuation_expected,clock())
+                elif _replacement_expected is None:
                     check(collection.exit.saved(book,clock()) is None and handoff.read(book,clock()) is None,
                           'fresh-exit-slot-occupied')
                 else:
@@ -56,7 +60,16 @@ def _run(home,wallet,pool,*,signer_adapter,collection_opener=None,submission_ope
             finally:book.close()
         options=dict(opener=collection_opener,clock=clock,monotonic=monotonic,
                      _observation_sink=observations.append)
-        if _replacement_expected is None:
+        if _continuation_expected is not None:
+            prepared=continuation.collect_and_prepare(root,wallet,pool,
+                expected_original_sha256=_continuation_expected[0],
+                expected_current_sha256=_continuation_expected[1],allow_unsigned_continuation=True,**options)
+            check(prepared.get('originalPreparationSha256')==_continuation_expected[0] and
+                  prepared.get('previousPreparationSha256')==_continuation_expected[1] and
+                  prepared.get('continuationCount')==1 and prepared.get('originalPreserved') is True and
+                  prepared.get('replacementPreserved') is True and prepared.get('existingReplacementLimitUnchanged') is True,
+                  'fresh-exit-continuation-identity')
+        elif _replacement_expected is None:
             prepared=collection.collect_and_prepare(root,wallet,pool,**options)
         else:
             prepared=replacement.collect_and_replace(root,wallet,pool,
@@ -104,6 +117,8 @@ def _run(home,wallet,pool,*,signer_adapter,collection_opener=None,submission_ope
             'exit-wrong-cluster','exit-blockhash-unavailable','exit-fee-cap','exit-boundary-now-unknown',
             'exit-signing-expired','exit-signing-boundary-expired-or-stopped','exit-signing-stopped',
             'fresh-exit-replacement-identity','replacement-limit-reached',
+            'fresh-exit-continuation-identity','continuation-limit-reached',
+            'continuation-expired-before-write','continuation-expired-before-commit',
             'replacement-expected-identity','replacement-original-not-expired',
             'replacement-stopped','replacement-backend-marker',
             'replacement-expired-before-write','replacement-expired-before-commit'
@@ -130,6 +145,7 @@ def prepare_sign_submit(home,wallet,pool,*,allow_private_key_signing=False,allow
     check(allow_private_key_signing is True,'explicit-exit-private-key-opt-in-required')
     check(allow_devnet_submit is True,'explicit-devnet-submit-required')
     check('_replacement_expected' not in kwargs,'explicit-unsigned-replacement-required')
+    check('_continuation_expected' not in kwargs,'explicit-unsigned-continuation-required')
     r=_run(home,wallet,pool,signer_adapter=backend._invoke,**kwargs)
     if r['signerAcknowledgmentValidated']:r['privateKeyAccessed']=True
     return r
@@ -144,9 +160,30 @@ def replace_sign_submit(home,wallet,pool,*,expected_preparation_sha256,
     check(allow_devnet_submit is True,'explicit-devnet-submit-required')
     check(type(expected_preparation_sha256) is str and len(expected_preparation_sha256)==64 and
           all(c in '0123456789abcdef' for c in expected_preparation_sha256),'replacement-expected-identity')
+    check('_continuation_expected' not in kwargs,'explicit-unsigned-continuation-required')
     r=_run(home,wallet,pool,signer_adapter=backend._invoke,
         _replacement_expected=expected_preparation_sha256,**kwargs)
     r.update(format='replacement-exit-transport-1',automaticReplacementAllowed=False)
+    if r['signerAcknowledgmentValidated']:r['privateKeyAccessed']=True
+    return r
+
+
+def continue_sign_submit(home,wallet,pool,*,expected_original_sha256,expected_current_sha256,
+                         allow_unsigned_continuation=False,allow_private_key_signing=False,
+                         allow_devnet_submit=False,**kwargs):
+    """Explicit third generation with unchanged deadline and one-send boundary.
+
+    Internal integration only; no operational CLI or automatic continuation.
+    """
+    check(allow_unsigned_continuation is True,'explicit-unsigned-continuation-required')
+    check(allow_private_key_signing is True,'explicit-exit-private-key-opt-in-required')
+    check(allow_devnet_submit is True,'explicit-devnet-submit-required')
+    pair=(expected_original_sha256,expected_current_sha256);continuation.preserved.identities(pair)
+    check('_replacement_expected' not in kwargs and '_continuation_expected' not in kwargs,
+          'exclusive-exit-generation-required')
+    r=_run(home,wallet,pool,signer_adapter=backend._invoke,_continuation_expected=pair,**kwargs)
+    r.update(format='continuation-exit-transport-1',automaticContinuationAllowed=False,
+             originalPreparationSha256=pair[0],previousPreparationSha256=pair[1])
     if r['signerAcknowledgmentValidated']:r['privateKeyAccessed']=True
     return r
 
