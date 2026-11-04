@@ -49,7 +49,10 @@ fee ceiling, protected inventory or sampling rule changes.
   establish full-path host timing or safe execution headroom.
 
 The regression set also covers the original admission tests, the preserved
-observation fault matrix and the connected profile. Host acceptance is pending.
+observation fault matrix and the connected profile. Kali acceptance passed at 18:24:18 UTC on November 4: 4,260.472 ms, twelve
+integration and ten independent signer cases, with expiry still refusing signing.
+See [the next continuation gate](UNSIGNED-EXIT-CONTINUATION.md) for the evidence
+identity and remaining live-timing limitations.
 
 ## Kali acceptance
 

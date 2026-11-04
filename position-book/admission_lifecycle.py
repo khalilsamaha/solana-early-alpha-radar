@@ -18,7 +18,7 @@ MAX_READ_MS=120000
 ENTRY_TABLES={'admission_submission','admission_submission_ack','admission_rpc_captures',
               'admission_receipt_events','admission_receipt_raw','admission_entry_accounting'}
 EXIT_TRANSPORT={'admission_exit_submission','admission_exit_submission_ack','admission_exit_rpc_captures'}
-EXIT_TABLES=EXIT_TRANSPORT|{'admission_exit_replacement','admission_exit_preparation','admission_exit_signing','admission_exit_accounting','admission_exit_closure'}
+EXIT_TABLES=EXIT_TRANSPORT|{'admission_exit_continuation','admission_exit_replacement','admission_exit_preparation','admission_exit_signing','admission_exit_accounting','admission_exit_closure'}
 KNOWN={'admission_policy','admission_events'}|ENTRY_TABLES|EXIT_TABLES
 
 

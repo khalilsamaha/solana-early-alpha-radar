@@ -15,7 +15,7 @@ VERSION='unsigned-exit-replacement-1'
 TABLE='admission_exit_replacement'
 MAX_RECORD=preparation.MAX_RECORD+2048
 view=preparation.view
-BLOCKED_TABLES={'admission_exit_signing','admission_exit_submission','admission_exit_submission_ack',
+BLOCKED_TABLES={'admission_exit_continuation','admission_exit_signing','admission_exit_submission','admission_exit_submission_ack',
     'admission_exit_rpc_captures','admission_exit_accounting','admission_exit_closure'}
 MARKERS=('exit-signer-attempt.json','exit-signer-ack.json')
 

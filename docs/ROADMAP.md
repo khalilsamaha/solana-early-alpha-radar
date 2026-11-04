@@ -1,5 +1,16 @@
 # Project roadmap — updated 4 November 2026
 
+The November 4 Kali history-reuse profile passed at 18:24:18 UTC: twelve connected
+cases, ten independent signer cases, 4,260.472 ms synthetic attempt, one complete
+history validation across 1,130 SQL reads, and expiry still refused before signing.
+The next [bounded unsigned continuation](UNSIGNED-EXIT-CONTINUATION.md) adds an
+explicit one-time third preparation linked to both preserved predecessors, atomic
+persistence and Python/independent Node contract replay. Its CLI is offline only.
+Host acceptance and connection to the signer/one-send recovery path remain open;
+there is no live continuation command yet. Existing replacement capacity and all
+inventory/fee holds remain intact. Actual devnet receipt reconciliation and scoped
+closure are still outstanding. Monitoring and frozen study rules are unchanged.
+
 The November 4 preserved-exit host observation passed: 7,386 ms collection plus
 1,403 ms validation, leaving 1,211 ms within its original collection deadline.
 That is observation evidence, not full execution headroom. The next
@@ -7,7 +18,7 @@ That is observation evidence, not full execution headroom. The next
 and current-state check while avoiding repeated validation of byte-identical
 history and policy within one operation. Local mutation, STOP, accounting,
 expiry, signer and recovery checks are retained; host connected timing acceptance
-is pending. No new continuation or extra replacement is exposed. Actual exit
+passed as recorded above. That release exposes no continuation command. Actual exit
 receipt reconciliation and scoped closure remain open.
 
 The November 4 saved timing and connected phase reports passed their diagnostic

@@ -72,8 +72,13 @@ def reverse_scope(book,record,reservation):
 
 @view.cycles.binding.operation
 def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monotonic,_evidence_sink=None,
-            _replacement_expected=None,_preserved_expected=None):
+            _replacement_expected=None,_preserved_expected=None,_continuation_expected=None):
     check(_evidence_sink is None or callable(_evidence_sink),'exit-capture-sink')
+    if _continuation_expected is not None:
+        from unsigned_exit_continuation import eligible as continuation_guard
+        from preserved_exit_observation import identities
+        identities(_continuation_expected)
+        check(_replacement_expected is None and _preserved_expected is None and callable(_evidence_sink),'exit-capture-mode-conflict')
     if _preserved_expected is not None:
         from preserved_exit_observation import identities,guard,validate
         identities(_preserved_expected)
@@ -95,7 +100,7 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
             check(not view.cycles.c.submit.swap.stop(root),'exit-capture-stopped')
             book=exit.entry.submission._open(root,wallet,pool,clock)
             try:
-                if _preserved_expected is not None:
+                if _preserved_expected is not None or _continuation_expected is not None:
                     # Pin the existing DELETE-mode admission snapshot throughout
                     # the diagnostic. Closing rolls back this read-only transaction.
                     from admission_recovery import admission_read_lock
@@ -104,7 +109,9 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                 # Replacement is a distinct internal path: one exact expired
                 # unsigned preparation, with no signing/transport evidence.
                 def preparation_guard():
-                    if _preserved_expected is not None:
+                    if _continuation_expected is not None:
+                        continuation_guard(book,root,_continuation_expected,clock())
+                    elif _preserved_expected is not None:
                         guard(book,root,_preserved_expected,clock())
                     elif _replacement_expected is None:
                         check(exit.saved(book,clock()) is None,'exit-capture-already-prepared')
@@ -187,7 +194,7 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
         allowed={'exit-capture-admission-stopped','exit-capture-source-changed','exit-capture-already-prepared',
                  'exit-capture-admission-changed','exit-capture-expired','exit-capture-time-budget',
                  'exit-capture-stopped','exit-capture-simulation','exit-capture-initial-pool',
-                 'replacement-stopped','replacement-limit-reached','replacement-unknown-schema',
+                 'continuation-limit-reached','replacement-stopped','replacement-limit-reached','replacement-unknown-schema',
                  'replacement-signing-or-later-evidence','replacement-backend-marker',
                  'preserved-exit-read-only-required','preserved-exit-stopped','preserved-exit-schema',
                  'preserved-exit-later-evidence','preserved-exit-backend-marker',
@@ -195,7 +202,7 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                  'preserved-exit-current-mismatch','preserved-exit-not-expired',
                  'preserved-exit-validation-expired','preserved-exit-time-budget','exit-collection-expired',
                  'replacement-original-mismatch','replacement-original-not-expired','replacement-expected-identity'}
-        if _preserved_expected is not None:
+        if _preserved_expected is not None or _continuation_expected is not None:
             result.update(state='unavailable',binding=None,provenance=None)
         result['diagnosticCode']=str(exc) if str(exc) in allowed else 'exit-evidence-unavailable'
     finally:
