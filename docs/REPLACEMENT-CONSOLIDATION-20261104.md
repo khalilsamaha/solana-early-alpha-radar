@@ -31,3 +31,17 @@ The availability study remains unchanged. November 3 capture was confirmed by th
 user. Preserve November 5 and 6 captures and review on November 6 at 00:05 UTC
 (01:05 Europe/Amsterdam). Engineering acceptance is separate from economic
 qualification and does not authorize a real-money pilot.
+
+## Review correction: active transport context
+
+PR review identified that the transport's context-slot floor still came directly
+from the original preparation table. With a later replacement, that could permit
+a blockhash or fee response older than the evidence being signed. Transport now
+replays the active preparation and verifies that its hash matches the signing
+request before deriving the context floor. Both blockhash and fee checks, saved
+send-boundary replay and send options inherit that active floor.
+
+Regression coverage includes a real replacement whose maximum context advances
+from 112 to 122, rejection of older blockhash and fee contexts, unchanged original-
+only behavior, a mismatched signing identity and corrupt replacement rejection.
+No previously accepted stale proof is silently grandfathered or resubmitted.

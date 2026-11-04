@@ -76,10 +76,12 @@ class ExitSubmission:
     def signing(self):
         state=handoff.read(self.b,self.b.j.now())
         check(state is not None and state['signed'] is not None,'exit-signed-ack-required')
-        # handoff.read has replayed this bounded record and every provenance link.
-        raw=self.db.execute('SELECT CASE WHEN length(value)<=? THEN value ELSE NULL END FROM admission_exit_preparation WHERE id=1',(handoff.preparation.MAX_RECORD,)).fetchone()
-        check(raw is not None and type(raw[0]) is str,'exit-preparation-required')
-        e=json.loads(raw[0])['evidence']
+        # Use the same active generation as the signing request. An expired
+        # original can have older slots than the linked replacement.
+        prepared=handoff.preparation.saved(self.b,self.b.j.now())
+        check(prepared is not None and digest(prepared)==state['request']['preparationSha256'],
+              'exit-preparation-required')
+        e=prepared['evidence']
         slots=[e['simulationItem']['result']['context']['slot'],e['capture']['evidence']['accounts']['result']['context']['slot'],e['price']['quote']['contextSlot']]
         for slot in slots:uint(slot,2**53-1,'exit-minimum-context')
         state['minimumContextSlot']=max(slots)
