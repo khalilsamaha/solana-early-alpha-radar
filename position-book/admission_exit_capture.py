@@ -4,6 +4,7 @@ The private in-process handoff is evidence, never a signing capability. Atomic
 persistence and restricted exit signing remain separate integration gates.
 """
 from copy import deepcopy
+from contextlib import ExitStack
 import json
 import time
 
@@ -71,8 +72,12 @@ def reverse_scope(book,record,reservation):
 
 @view.cycles.binding.operation
 def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monotonic,_evidence_sink=None,
-            _replacement_expected=None):
+            _replacement_expected=None,_preserved_expected=None):
     check(_evidence_sink is None or callable(_evidence_sink),'exit-capture-sink')
+    if _preserved_expected is not None:
+        from preserved_exit_observation import identities,guard,validate
+        identities(_preserved_expected)
+        check(_replacement_expected is None and _evidence_sink is None,'exit-capture-mode-conflict')
     result=dict(format=VERSION,state='unavailable',stage='admission',network='devnet',
         networkRequests=0,requestMethods=[],binding=None,provenance=None,diagnosticCode=None,
         databaseConnectionsReadOnly=True,preparationPersisted=False,sourceStateChanged=False,
@@ -86,15 +91,22 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
           'Source lock covers cooperating local tools, not unrelated wallet activity.'])
     transport=None
     try:
-        with view.cycles.c.source_lock(home,wallet) as root,read_only_journals():
+        with view.cycles.c.source_lock(home,wallet) as root,read_only_journals(),ExitStack() as locks:
             check(not view.cycles.c.submit.swap.stop(root),'exit-capture-stopped')
             book=exit.entry.submission._open(root,wallet,pool,clock)
             try:
+                if _preserved_expected is not None:
+                    # Pin the existing DELETE-mode admission snapshot throughout
+                    # the diagnostic. Closing rolls back this read-only transaction.
+                    from admission_recovery import admission_read_lock
+                    locks.enter_context(admission_read_lock(book.j.path))
                 before,record,reservation=identity(book,root,wallet,pool,clock)
                 # Replacement is a distinct internal path: one exact expired
                 # unsigned preparation, with no signing/transport evidence.
                 def preparation_guard():
-                    if _replacement_expected is None:
+                    if _preserved_expected is not None:
+                        guard(book,root,_preserved_expected,clock())
+                    elif _replacement_expected is None:
                         check(exit.saved(book,clock()) is None,'exit-capture-already-prepared')
                     else:
                         from unsigned_exit_replacement import eligible
@@ -143,7 +155,7 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                     simulationParametersSha256=digest(transport.expected),
                     validUntilExclusiveMs=min(transport.deadline,binding['validUntilExclusiveMs']),durable=False)
                 envelope=deepcopy(dict(evidence=evidence,initialCapture=first,packetBuild=built,
-                    requestTrace=transport.request_hashes,finalGenesis=genesis_items[0],provenance=provenance)) if _evidence_sink is not None else None
+                    requestTrace=transport.request_hashes,finalGenesis=genesis_items[0],provenance=provenance)) if _evidence_sink is not None or _preserved_expected is not None else None
                 # Hashing and private-envelope construction also consume freshness.
                 delivered=clock()
                 check(finish<=delivered<provenance['validUntilExclusiveMs'],'exit-capture-expired')
@@ -152,7 +164,22 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                 provenance['completedAtMs']=delivered
                 if envelope is not None:
                     envelope['provenance']['completedAtMs']=delivered
-                    _evidence_sink(envelope)
+                    if _preserved_expected is not None:
+                        deadline=provenance['validUntilExclusiveMs']
+                        timing=dict(collectionStartedAtMs=start,collectedAtMs=delivered,
+                            originalDeadlineMs=deadline,collectionElapsedMs=delivered-start,
+                            headroomAtCollectionMs=deadline-delivered,validatedAtMs=None,
+                            validationElapsedMs=None,headroomAfterValidationMs=None)
+                        result['observationTiming']=timing
+                        result['stage']='preserved-validation'
+                        proof={k:v for k,v in envelope.items() if k!='evidence'}
+                        end=validate(book,root,_preserved_expected,evidence,proof,binding,
+                                     clock,monotonic,transport.started)
+                        binding=dict(binding,validUntilExclusiveMs=deadline)
+                        timing.update(validatedAtMs=end,validationElapsedMs=end-delivered,
+                                      headroomAfterValidationMs=deadline-end)
+                    else:
+                        _evidence_sink(envelope)
                 result.update(state='exit-evidence-collected-research-only',stage='complete',
                     binding=binding,provenance=provenance)
             finally:book.close()
@@ -162,6 +189,11 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                  'exit-capture-stopped','exit-capture-simulation','exit-capture-initial-pool',
                  'replacement-stopped','replacement-limit-reached','replacement-unknown-schema',
                  'replacement-signing-or-later-evidence','replacement-backend-marker',
+                 'preserved-exit-read-only-required','preserved-exit-stopped','preserved-exit-schema',
+                 'preserved-exit-later-evidence','preserved-exit-backend-marker',
+                 'preserved-exit-original-mismatch','preserved-exit-replacement-required',
+                 'preserved-exit-current-mismatch','preserved-exit-not-expired',
+                 'preserved-exit-validation-expired','preserved-exit-time-budget','exit-collection-expired',
                  'replacement-original-mismatch','replacement-original-not-expired','replacement-expected-identity'}
         result['diagnosticCode']=str(exc) if str(exc) in allowed else 'exit-evidence-unavailable'
     finally:
