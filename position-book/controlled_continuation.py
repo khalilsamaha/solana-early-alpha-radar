@@ -84,6 +84,7 @@ def execute(home, wallet, pool, *, expected_original_sha256, expected_current_sh
     try:
         raw = EXECUTE(root, wallet, pool, **flags)
         report.update(dispatchCompleted=True, result=acceptance.projection(raw))
+        report['collectionDiagnostic']=fresh_exit.collection_diagnostics.summary(raw.get('collectionDiagnostic'))
         report['state'] = report['result'].get('state', 'inspection-required')
         for key in ('collectionRequests', 'senderRequests'):
             if type(raw.get(key)) is int and 0 <= raw[key] <= 25:

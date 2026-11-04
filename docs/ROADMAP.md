@@ -1,5 +1,13 @@
 # Project roadmap — updated 4 November 2026
 
+The held devnet continuation remains unresolved. The November 4 operational attempt
+stopped before signing/sending; subsequent reinspection proved the exact expired
+pair still eligible. A read-only collection passed with only 737 ms remaining after
+validation. [Collection diagnostics](EXIT-COLLECTION-DIAGNOSTICS.md) now preserve
+safe failure context and phase costs to guide optimization. No execution retry,
+new preparation allowance, weaker deadline or live activation is part of this step.
+
+
 The next [controlled continuation boundary](CONTROLLED-CONTINUATION.md) adds an
 offline command check, zero-RPC local inspection bound to both predecessors, and
 a separately explicit one-shot devnet action with the fixed reviewed backend.

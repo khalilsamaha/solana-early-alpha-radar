@@ -52,5 +52,6 @@
   "test_unsigned_exit_continuation.py": 1,
   "test_continuation_exit.py": 2,
   "test_continuation_diagnostics.py": 2,
-  "test_controlled_continuation.py": 4
+  "test_controlled_continuation.py": 4,
+  "test_exit_collection_diagnostics.py": 2
 }

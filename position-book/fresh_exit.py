@@ -3,6 +3,7 @@
 Internal opt-in only. No live CLI, retry, refresh, receipt accounting or release.
 """
 import time
+import exit_collection_diagnostics as collection_diagnostics
 import admission_exit_collection as collection
 import exit_submission as submission
 import fresh_signing
@@ -125,6 +126,7 @@ def _run(home,wallet,pool,*,signer_adapter,collection_opener=None,submission_ope
         } else 'fresh-exit-evidence-unavailable'
         r['recoveryRequired']=True
     finally:
+        r['collectionDiagnostic']=collection_diagnostics.summary(observations[-1]) if observations else None
         calls=[x for client in clients for x in client.calls]
         count=sum(x.get('networkRequests',0) for x in observations)
         sends=sum(x['method']=='sendTransaction' for x in calls)

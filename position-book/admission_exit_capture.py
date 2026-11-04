@@ -8,6 +8,7 @@ from contextlib import ExitStack
 import json
 import time
 
+import exit_collection_diagnostics as diagnostics
 import admission_exit as exit
 import fresh_quote
 import preflight_capture
@@ -94,7 +95,9 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
           'Twenty fixed devnet requests maximum, no retries; original ten-second freshness is not extended.',
           'Private evidence handoff only; atomic persistence and signing integration remain pending.',
           'Source lock covers cooperating local tools, not unrelated wallet activity.'])
-    transport=None
+    transport=None; phase_timing=diagnostics.Timing()
+    def stage(name):
+        phase_timing.mark(name); result['stage']=name
     try:
         with view.cycles.c.source_lock(home,wallet) as root,read_only_journals(),ExitStack() as locks:
             check(not view.cycles.c.submit.swap.stop(root),'exit-capture-stopped')
@@ -123,26 +126,26 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                 baseline=deepcopy(exit.BASELINE)
                 start=clock();transport=Transport(root,clock,opener,monotonic,start)
                 reviewer=lambda capture,now_ms:exit.preflight._review(capture,baseline,now_ms)
-                result['stage']='pool'
+                stage('pool')
                 first=preflight_capture._collect(pool=pool,opener=transport,now=clock,
                     monotonic=monotonic,baseline=baseline)
                 check(reviewer(first,clock())['state']=='pinned-pool-snapshot','exit-capture-initial-pool')
                 raw,_=exit.preflight.split_capture(first)
                 price=exit.derive(raw,scope,slippage_bps=100,now_ms=clock())
                 fresh=deepcopy(scope);fresh['minimumAmountOut']=price['quote']['minimumOutAmount']
-                result['stage']='packet'
+                stage('packet')
                 built=build(fresh,opener=transport,now=clock)
-                result['stage']='accounts'
+                stage('accounts')
                 second=preflight_capture._collect(packet=built['packet'],opener=transport,now=clock,
                     monotonic=monotonic,baseline=baseline)
                 price,checked,_=fresh_quote.combine(first,built,second,scope,stamp=clock(),review=reviewer)
-                result['stage']='simulation'
+                stage('simulation')
                 items=[];genesis_items=[]
                 sim=exit.unsigned_simulation.collect(built['packet'],second,price,transport=transport,
                     clock=clock,deadline=min(transport.deadline,checked['validUntilExclusiveMs']),
                     _evidence_sink=items.append,_genesis_sink=genesis_items.append)
                 check(sim['state']=='unsigned-effects-match-quote' and len(items)==len(genesis_items)==1,'exit-capture-simulation')
-                result['stage']='final-binding'
+                stage('final-binding')
                 after,_,_=identity(book,root,wallet,pool,clock)
                 check(before==after,'exit-capture-admission-changed')
                 preparation_guard()
@@ -178,7 +181,7 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                             headroomAtCollectionMs=deadline-delivered,validatedAtMs=None,
                             validationElapsedMs=None,headroomAfterValidationMs=None)
                         result['observationTiming']=timing
-                        result['stage']='preserved-validation'
+                        stage('preserved-validation')
                         proof={k:v for k,v in envelope.items() if k!='evidence'}
                         end=validate(book,root,_preserved_expected,evidence,proof,binding,
                                      clock,monotonic,transport.started)
@@ -187,25 +190,16 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                                       headroomAfterValidationMs=deadline-end)
                     else:
                         _evidence_sink(envelope)
+                stage('complete')
                 result.update(state='exit-evidence-collected-research-only',stage='complete',
                     binding=binding,provenance=provenance)
             finally:book.close()
     except (ValueError,KeyError,TypeError,IndexError,OSError,view.sqlite3.Error) as exc:
-        allowed={'exit-capture-admission-stopped','exit-capture-source-changed','exit-capture-already-prepared',
-                 'exit-capture-admission-changed','exit-capture-expired','exit-capture-time-budget',
-                 'exit-capture-stopped','exit-capture-simulation','exit-capture-initial-pool',
-                 'continuation-limit-reached','replacement-stopped','replacement-limit-reached','replacement-unknown-schema',
-                 'replacement-signing-or-later-evidence','replacement-backend-marker',
-                 'preserved-exit-read-only-required','preserved-exit-stopped','preserved-exit-schema',
-                 'preserved-exit-later-evidence','preserved-exit-backend-marker',
-                 'preserved-exit-original-mismatch','preserved-exit-replacement-required',
-                 'preserved-exit-current-mismatch','preserved-exit-not-expired',
-                 'preserved-exit-validation-expired','preserved-exit-time-budget','exit-collection-expired',
-                 'replacement-original-mismatch','replacement-original-not-expired','replacement-expected-identity'}
         if _preserved_expected is not None or _continuation_expected is not None:
             result.update(state='unavailable',binding=None,provenance=None)
-        result['diagnosticCode']=str(exc) if str(exc) in allowed else 'exit-evidence-unavailable'
+        result['diagnosticCode']=str(exc) if str(exc) in diagnostics.CODES else 'exit-evidence-unavailable'
     finally:
+        result['collectionTiming']=phase_timing.finish()
         if transport is not None:
             result.update(networkRequests=len(transport.calls),requestMethods=list(transport.calls))
     return result
