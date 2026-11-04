@@ -38,8 +38,10 @@ def signed_check(wire,request):
     return dict(signedWireBase64=wire,wireSha256=signed['wireSha256'],signature=signed['signatures'][0])
 
 
-def read(book,now):
+def read(book,now,*,_preparation_sink=None):
     """Bounded semantic replay; a hash match alone never authenticates a wire."""
+    check(_preparation_sink is None or callable(_preparation_sink),
+          'exit-preparation-sink')
     exists=book.db.execute('SELECT type FROM sqlite_master WHERE name=?',(TABLE,)).fetchone()
     if not exists:return None
     check(exists[0]=='table','exit-signing-table')
@@ -75,9 +77,13 @@ def read(book,now):
             check(v==dict(state='exit-signing-quarantined',reason='signed-response-rejected') and
                   state['state'] in ('exit-signing-unknown','exit-signed-recorded'),'exit-signing-transition')
         state=v;previous=h;stamp=row['at_ms']
-    return dict(state=state['state'],request=request,requestSha256=digest(request),
+    result=dict(state=state['state'],request=request,requestSha256=digest(request),
                 admissionHeadSha256=head,eventCount=len(rows),headSha256=previous,lastAtMs=stamp,
                 signed=next((json.loads(r['value']) for r in rows if json.loads(r['value']).get('state')=='exit-signed-recorded'),None))
+    # The transport consumes this exact already-replayed generation in this call.
+    # No cache survives the read; failures above never publish partial evidence.
+    if _preparation_sink is not None:_preparation_sink(prepared)
+    return result
 
 
 def append(book,value,state,now):

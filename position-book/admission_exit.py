@@ -104,16 +104,11 @@ def review(book,evidence,now):
         attemptNumber=1,attemptsConsumed=0,validUntilExclusiveMs=deadline)
 
 
-def saved(book,now):
-    exists=book.db.execute('SELECT type FROM sqlite_master WHERE name=?',(TABLE,)).fetchone()
-    if not exists:return None
-    check(exists[0]=='table','exit-preparation-table')
-    rows=book.db.execute('SELECT id,CASE WHEN length(value)<=? THEN value ELSE NULL END AS value,hash FROM admission_exit_preparation LIMIT 2',(MAX_RECORD,)).fetchall()
-    check(len(rows)==1 and rows[0]['id']==1 and type(rows[0]['value']) is str,'exit-preparation-record')
-    v=json.loads(rows[0]['value']);collected=v.get('format')==COLLECTED_FORMAT
+def validate_record(book,v,now):
+    check(type(v) is dict,'exit-record-schema')
+    collected=v.get('format')==COLLECTED_FORMAT
     fields(v,{'format','recordedAtMs','evidence','binding'}|({'collection'} if collected else set()),'exit-record-schema')
-    check(v['format'] in (VERSION+'-record',COLLECTED_FORMAT) and encoded(v)==rows[0]['value'] and digest(v)==rows[0]['hash'],
-          'exit-record-integrity')
+    check(v['format'] in (VERSION+'-record',COLLECTED_FORMAT),'exit-record-format')
     uint(v['recordedAtMs'],now,'exit-record-clock',minimum=1)
     binding=review(book,v['evidence'],v['recordedAtMs'])
     if collected:
@@ -121,6 +116,23 @@ def saved(book,now):
         binding=review_collection(book,v['evidence'],v['collection'],v['recordedAtMs'],binding)
     check(binding==v['binding'],'exit-record-source-conflict')
     return v
+
+
+def original_saved(book,now):
+    """Replay the original immutable record, even after a replacement exists."""
+    exists=book.db.execute('SELECT type FROM sqlite_master WHERE name=?',(TABLE,)).fetchone()
+    if not exists:return None
+    check(exists[0]=='table','exit-preparation-table')
+    rows=book.db.execute('SELECT id,CASE WHEN length(value)<=? THEN value ELSE NULL END AS value,hash FROM admission_exit_preparation LIMIT 2',(MAX_RECORD,)).fetchall()
+    check(len(rows)==1 and rows[0]['id']==1 and type(rows[0]['value']) is str,'exit-preparation-record')
+    v=json.loads(rows[0]['value'])
+    check(encoded(v)==rows[0]['value'] and digest(v)==rows[0]['hash'],'exit-record-integrity')
+    return validate_record(book,v,now)
+
+
+def saved(book,now):
+    from unsigned_exit_replacement import replay
+    return replay(book,original_saved(book,now),now)
 
 
 def public(record,now,*,stopped=False,created=False):
@@ -138,7 +150,7 @@ def public(record,now,*,stopped=False,created=False):
         networkRequests=0,signaturesCreated=0,transactionsSent=0,privateKeyAccessed=False,
         runtimeIntegrated=False,productionLedgerUpdated=False,nextCycleAuthorized=False,
         walletWideReservationsKnown=False,
-        limitations=['One immutable first-exit preparation; no refresh, retry, signer or sender.',
+        limitations=['Original preparation preserved; at most one explicit unsigned replacement; no signer or sender here.',
           ('Collected raw responses and request provenance are durably replayed; no signing integration.' if collected else
            'Internal raw preparation only; no collected provenance and no implicit upgrade.'),
           'Historical evidence expires; a passed preparation is not a current execution permit.',

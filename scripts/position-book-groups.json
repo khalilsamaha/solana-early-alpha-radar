@@ -17,7 +17,7 @@
   "test_durable_admission.py": 3,
   "test_entry_accounting.py": 4,
   "test_evidence_backup.py": 5,
-  "test_exit_accounting_recovery.py": 1,
+  "test_exit_accounting_recovery.py": 2,
   "test_exit_balance.py": 3,
   "test_exit_budget.py": 3,
   "test_exit_signing_handoff.py": 5,
@@ -42,5 +42,6 @@
   "test_signature_replay.py": 1,
   "test_signer_handoff.py": 2,
   "test_simulation_baseline.py": 3,
+  "test_unsigned_exit_replacement.py": 4,
   "test_unsigned_simulation.py": 4
 }

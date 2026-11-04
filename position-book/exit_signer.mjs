@@ -48,7 +48,10 @@ try {
     check(p && typeof p.value === 'string');const policy=JSON.parse(p.value);check(text(policy) === p.value);
     const rows=table=>db.prepare(`SELECT seq,at_ms,CASE WHEN length(value)<=8192 THEN value ELSE NULL END value,previous_hash,hash FROM ${table} ORDER BY seq LIMIT 9`).all();
     const single=(table,cap)=>{const rs=db.prepare(`SELECT id,CASE WHEN length(value)<=? THEN value ELSE NULL END value,hash FROM ${table} LIMIT 2`).all(cap);check(rs.length===1);return rs[0];};
-    data={policy,admissionRows:rows('admission_events'),signingRows:rows('admission_exit_signing'),
+    const replacement=db.prepare('SELECT type FROM sqlite_master WHERE name=?').get('admission_exit_replacement');
+    check(!replacement || replacement.type==='table');
+    data={replacementRow:replacement ? single('admission_exit_replacement',24*1024*1024+16384+2048) : null,
+      policy,admissionRows:rows('admission_events'),signingRows:rows('admission_exit_signing'),
       preparationRow:single('admission_exit_preparation',24*1024*1024+16384),accountingRow:single('admission_entry_accounting',8192)};
   const metadata=JSON.parse(read(path.join(root,'wallet.json'),4096));
   const setup=directory(path.join(root,'controlled-pool-v1'));

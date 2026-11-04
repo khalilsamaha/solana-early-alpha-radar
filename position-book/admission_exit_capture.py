@@ -70,7 +70,8 @@ def reverse_scope(book,record,reservation):
 
 
 @view.cycles.binding.operation
-def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monotonic,_evidence_sink=None):
+def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monotonic,_evidence_sink=None,
+            _replacement_expected=None):
     check(_evidence_sink is None or callable(_evidence_sink),'exit-capture-sink')
     result=dict(format=VERSION,state='unavailable',stage='admission',network='devnet',
         networkRequests=0,requestMethods=[],binding=None,provenance=None,diagnosticCode=None,
@@ -90,9 +91,15 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
             book=exit.entry.submission._open(root,wallet,pool,clock)
             try:
                 before,record,reservation=identity(book,root,wallet,pool,clock)
-                # Even an expired preparation is immutable. No automatic replacement
-                # or retrospective addition of collection provenance is possible here.
-                check(exit.saved(book,clock()) is None,'exit-capture-already-prepared')
+                # Replacement is a distinct internal path: one exact expired
+                # unsigned preparation, with no signing/transport evidence.
+                def preparation_guard():
+                    if _replacement_expected is None:
+                        check(exit.saved(book,clock()) is None,'exit-capture-already-prepared')
+                    else:
+                        from unsigned_exit_replacement import eligible
+                        eligible(book,root,_replacement_expected,clock())
+                preparation_guard()
                 scope=reverse_scope(book,record,reservation)
                 baseline=deepcopy(exit.BASELINE)
                 start=clock();transport=Transport(root,clock,opener,monotonic,start)
@@ -119,7 +126,7 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                 result['stage']='final-binding'
                 after,_,_=identity(book,root,wallet,pool,clock)
                 check(before==after,'exit-capture-admission-changed')
-                check(exit.saved(book,clock()) is None,'exit-capture-already-prepared')
+                preparation_guard()
                 evidence=dict(initialPool=raw,packet=built['packet'],capture=second,price=price,
                     simulationItem=items[0],simulationStartedAtMs=sim['requestedAtMs'],
                     simulationReceivedAtMs=sim['receivedAtMs'],completedAtMs=sim['finishedAtMs'])
@@ -152,7 +159,10 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
     except (ValueError,KeyError,TypeError,IndexError,OSError,view.sqlite3.Error) as exc:
         allowed={'exit-capture-admission-stopped','exit-capture-source-changed','exit-capture-already-prepared',
                  'exit-capture-admission-changed','exit-capture-expired','exit-capture-time-budget',
-                 'exit-capture-stopped','exit-capture-simulation','exit-capture-initial-pool'}
+                 'exit-capture-stopped','exit-capture-simulation','exit-capture-initial-pool',
+                 'replacement-stopped','replacement-limit-reached','replacement-unknown-schema',
+                 'replacement-signing-or-later-evidence','replacement-backend-marker',
+                 'replacement-original-mismatch','replacement-original-not-expired','replacement-expected-identity'}
         result['diagnosticCode']=str(exc) if str(exc) in allowed else 'exit-evidence-unavailable'
     finally:
         if transport is not None:

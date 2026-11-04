@@ -29,12 +29,40 @@ export function validate(data,metadata,pair,requestedHash,now){
   check(boundary.state==='exit-signing-unknown'&&boundary.admissionHeadSha256===admissionRows.at(-1).hash);
   const req=boundary.request;fields(req,['format','preparationSha256','entryAccountingSha256','collectionSha256','messageSha256','validUntilExclusiveMs','quantityAtomic','feeCapLamports','packet']);
   check(req.format==='exit-signing-handoff-1-request'&&hash(req)===requestedHash&&boundary.requestSha256===requestedHash);
-  const prep=record(preparationRow,24*1024*1024+16384),entry=record(accountingRow,8192);
+  const original=record(preparationRow,24*1024*1024+16384),entry=record(accountingRow,8192);
+  let prep=original;
+  if(data.replacementRow != null){
+    const envelope=record(data.replacementRow,24*1024*1024+16384+2048);
+    fields(envelope,['format','originalPreparationSha256','replacement']);
+    check(envelope.format==='unsigned-exit-replacement-1-record' && envelope.originalPreparationSha256===hash(original));
+    // Replay the original at persistence time; expiry today cannot erase its contract.
+    const b=original.binding;
+    const historical={format:'exit-signing-handoff-1-request',preparationSha256:hash(original),
+      entryAccountingSha256:b.entryAccountingSha256,collectionSha256:b.collectionSha256,
+      messageSha256:b.messageSha256,validUntilExclusiveMs:b.validUntilExclusiveMs,
+      quantityAtomic:b.quantityAtomic,feeCapLamports:b.feeCapLamports,packet:original.evidence.packet};
+    preparation(original,entry,policy,s,metadata,pair,historical,original.recordedAtMs,original.recordedAtMs);
+    prep=envelope.replacement;
+    check(Buffer.byteLength(text(prep))<=24*1024*1024+16384);
+    const next=prep.binding,start=prep.collection.provenance.startedAtMs;
+    num(start,b.validUntilExclusiveMs,prep.recordedAtMs);
+    num(prep.recordedAtMs,start,next.validUntilExclusiveMs-1);
+    for(const k of ['entryAccountingSha256','entryReceiptIdentity','quantityAtomic','feeCommitmentRemainingLamports','attemptNumber','attemptsConsumed'])
+      check(next[k]===b[k]);
+    check(atomic(next.feeCapLamports)<=atomic(b.feeCapLamports) && atomic(next.protectedInventoryAtomic)>=atomic(b.protectedInventoryAtomic));
+    check(prep.evidence.packet.policy.blockhash!==original.evidence.packet.policy.blockhash);
+    num(prep.evidence.price.quote.contextSlot,original.evidence.price.quote.contextSlot,Number.MAX_SAFE_INTEGER);
+  }
+  const result=preparation(prep,entry,policy,s,metadata,pair,req,now,signingRows[0].at_ms);
+  return {...result,notBeforeMs:signingRows[0].at_ms,requestHash:requestedHash,signingHead:signingRows[0].hash};
+}
+
+function preparation(prep,entry,policy,s,metadata,pair,req,now,signingAtMs){
   fields(prep,['format','recordedAtMs','evidence','binding','collection']);
   fields(entry,['format','recordedAtMs','accounting']);
   check(prep.format==='admission-exit-collection-1-record'&&hash(prep)===req.preparationSha256);
   check(entry.format==='admission-entry-accounting-1-record'&&hash(entry)===req.entryAccountingSha256);
-  num(entry.recordedAtMs,1,prep.recordedAtMs);num(prep.recordedAtMs,1,signingRows[0].at_ms);
+  num(entry.recordedAtMs,1,prep.recordedAtMs);num(prep.recordedAtMs,1,signingAtMs);
   const b=prep.binding,a=entry.accounting,c=prep.collection,p=c.provenance;
   check(b.entryAccountingSha256===hash(entry)&&b.collectionSha256===hash(c)&&hash(c)===req.collectionSha256);
   check(p.identity.admissionStateSha256===hash(s)&&p.identity.entryAccountingSha256===hash(entry));
@@ -75,5 +103,5 @@ export function validate(data,metadata,pair,requestedHash,now){
   fields(fee,['format','network','messageSha256','observedAtMs','lamports']);
   check(fee.format==='message-fee-assertion-1'&&fee.network==='devnet'&&fee.messageSha256===req.messageSha256&&fee.lamports===b.observedFeeLamports);
   num(fee.observedAtMs,q.issuedAtMs,prep.recordedAtMs);check(now-fee.observedAtMs<=10000&&atomic(fee.lamports)>0n&&atomic(fee.lamports)<=feeCap);
-  return {message:built.message,wallet:q.accounts.wallet,deadline:req.validUntilExclusiveMs,notBeforeMs:signingRows[0].at_ms,requestHash:requestedHash,signingHead:signingRows[0].hash,preparationHash:hash(prep)};
+  return {message:built.message,wallet:q.accounts.wallet,deadline:req.validUntilExclusiveMs,preparationHash:hash(prep)};
 }
