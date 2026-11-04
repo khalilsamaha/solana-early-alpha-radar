@@ -15,8 +15,10 @@ class ContextTests(unittest.TestCase):
     def signing(self,c,b,sha):
         # Isolate this consumer; the actual independent signer and handoff replay
         # are exercised by the connected replacement regression.
-        with patch.object(m.handoff,'read',return_value={'signed':{},'request':{
-                'preparationSha256':sha,'feeCapLamports':'10000'}}):
+        def replay(book,now,*,_preparation_sink):
+            _preparation_sink(m.handoff.preparation.saved(book,now))
+            return {'signed':{},'request':{'preparationSha256':sha,'feeCapLamports':'10000'}}
+        with patch.object(m.handoff,'read',side_effect=replay):
             return m.ExitSubmission(b).signing()
 
     def test_later_replacement_fences_blockhash_fee_and_saved_boundary_proof(self):
@@ -57,6 +59,24 @@ class ContextTests(unittest.TestCase):
             try:
                 b.db.execute("UPDATE admission_exit_replacement SET hash=?",('0'*64,))
                 with self.assertRaises(ValueError):self.signing(c,b,r['recordSha256'])
+            finally:b.close()
+
+    def test_actual_handoff_publishes_only_successfully_replayed_active_evidence(self):
+        from exit_submission_checks import signed_case
+        with signed_case() as c:
+            b=c.book()
+            try:
+                records=[];saved=m.handoff.preparation.saved
+                with patch.object(m.handoff.preparation,'saved',wraps=saved) as replay:
+                    state=m.ExitSubmission(b).signing()
+                    self.assertEqual(replay.call_count,1)
+                m.handoff.read(b,c.now,_preparation_sink=records.append)
+                self.assertEqual(len(records),1)
+                self.assertEqual(m.digest(records[0]),state['request']['preparationSha256'])
+                b.db.execute("UPDATE admission_exit_signing SET hash=? WHERE seq=2",('0'*64,))
+                unpublished=[]
+                with self.assertRaises(ValueError):m.handoff.read(b,c.now,_preparation_sink=unpublished.append)
+                self.assertEqual(unpublished,[])
             finally:b.close()
 
 if __name__=='__main__':unittest.main()

@@ -74,14 +74,14 @@ class ExitSubmission:
             finally:book.close()
 
     def signing(self):
-        state=handoff.read(self.b,self.b.j.now())
+        active=[]
+        state=handoff.read(self.b,self.b.j.now(),_preparation_sink=active.append)
         check(state is not None and state['signed'] is not None,'exit-signed-ack-required')
         # Use the same active generation as the signing request. An expired
         # original can have older slots than the linked replacement.
-        prepared=handoff.preparation.saved(self.b,self.b.j.now())
-        check(prepared is not None and digest(prepared)==state['request']['preparationSha256'],
+        check(len(active)==1 and digest(active[0])==state['request']['preparationSha256'],
               'exit-preparation-required')
-        e=prepared['evidence']
+        e=active[0]['evidence']
         slots=[e['simulationItem']['result']['context']['slot'],e['capture']['evidence']['accounts']['result']['context']['slot'],e['price']['quote']['contextSlot']]
         for slot in slots:uint(slot,2**53-1,'exit-minimum-context')
         state['minimumContextSlot']=max(slots)

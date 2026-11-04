@@ -45,3 +45,7 @@ Regression coverage includes a real replacement whose maximum context advances
 from 112 to 122, rejection of older blockhash and fee contexts, unchanged original-
 only behavior, a mismatched signing identity and corrupt replacement rejection.
 No previously accepted stale proof is silently grandfathered or resubmitted.
+
+The active preparation is handed directly from the successful signing replay to
+the transport in the same read. This avoids a second full replay per call without
+introducing a cache or skipping validation; failed replay publishes no preparation.
