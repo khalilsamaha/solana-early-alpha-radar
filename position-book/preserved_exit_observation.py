@@ -4,6 +4,7 @@ import time
 import unsigned_exit_replacement as replacement
 import admission_exit_capture as capture
 import encoding_replay
+import canonical_replay
 import admission_history_replay
 import fresh_signing
 from contract import digest
@@ -63,6 +64,7 @@ def validate(book, root, pair, evidence, collection, binding, clock, monotonic, 
 @fresh_signing.timing.signature_replay
 @encoding_replay.operation
 @admission_history_replay.operation
+@canonical_replay.operation
 def observe(home, wallet, pool, *, expected_original_sha256, expected_current_sha256,
             allow_devnet_observation=False, opener=None, clock=view.now, monotonic=time.monotonic):
     check(allow_devnet_observation is True, 'explicit-devnet-observation-required')
