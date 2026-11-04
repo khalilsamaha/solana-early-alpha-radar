@@ -6,8 +6,11 @@ record timestamp; post-commit headroom remains unknown. The next
 [exact public encoding reuse](EXIT-ENCODING-REUSE.md) keeps every evidence/source
 review while reusing bounded immutable Base58 conversions inside one fresh-exit
 operation. A local sequential comparison reduced the synthetic connected attempt
-from 3,088.615 to 2,097.561 ms with the same review counts. Kali validation is
-pending; the held real position and consumed replacement remain unresolved.
+from 3,088.615 to 2,097.561 ms with the same review counts. Kali validation passed
+at 07:06:09 UTC: 6,786.773 to 5,236.220 ms (22.8%), with all twelve integration
+and ten signer checks retained. [Batch consolidation](EXIT-TIMING-CONSOLIDATION.md)
+records these results. The held real position and consumed replacement remain
+unresolved; the next gate measures fresh live evidence read-only without retry.
 
 Latest consolidated checkpoint: [PR #74](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/74),
 main `9ca61a5077830f226c9aa51230af4d254a718c53`, after all twelve CI groups passed.
