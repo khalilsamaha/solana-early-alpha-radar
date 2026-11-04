@@ -64,6 +64,9 @@ The portable matrix passes 24 cases, including exact-identity rejection, origina
 and replacement byte preservation, consumed-slot refusal, concurrent SQLite commit
 blocking, STOP, backend markers, later signing evidence, schema/lineage changes,
 provider failure, expiry, clock regression and full provenance revalidation. Four
-additional CLI boundary tests pass; existing collector (5) and unsigned replacement
+additional CLI boundary tests and two finalization checks pass; existing collector (5) and unsigned replacement
 (7) test modules remain green. Partition coverage (2), tracked source hygiene and
 public deadline consistency also pass. Host live evidence is still pending.
+
+Finalization checks count the final STOP/marker reads against expiry and withhold
+success if closing the read-only snapshot fails. Neither failure changes journals.

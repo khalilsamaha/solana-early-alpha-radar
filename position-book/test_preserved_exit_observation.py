@@ -50,4 +50,48 @@ class CommandBoundaryTests(unittest.TestCase):
                     capture.collect('/missing','w','p',_preserved_expected=('0'*64,'1'*64),**opts)
 
 
+class FinalBoundaryTests(unittest.TestCase):
+    def test_snapshot_close_error_cannot_publish_success(self):
+        from contextlib import contextmanager
+        from unittest.mock import patch
+        import sqlite3
+        import admission_recovery
+        from preserved_exit_checks import case
+        original=admission_recovery.admission_read_lock
+        @contextmanager
+        def fail_after_close(path):
+            with original(path):yield
+            raise sqlite3.OperationalError('PRIVATE_CLOSE_ERROR')
+        with case() as c:
+            before=c.path.read_bytes()
+            with patch.object(admission_recovery,'admission_read_lock',fail_after_close):r=c.observe()
+            self.assertEqual(r['state'],'preserved-exit-observation-unavailable')
+            self.assertIsNone(r['binding']);self.assertIsNone(r['provenance'])
+            self.assertEqual(before,c.path.read_bytes())
+            self.assertNotIn('PRIVATE_CLOSE_ERROR',str(r))
+
+    def test_final_marker_check_time_counts_toward_deadline(self):
+        from unittest.mock import patch
+        import preserved_exit_observation as m
+        from preserved_exit_checks import case
+        original=m.os.path.lexists
+        original_validate=m.validate
+        def validation(*args):
+            calls=[]
+            def slow_marker(path):
+                value=original(path)
+                if str(path).endswith('exit-signer-ack.json'):
+                    calls.append(True)
+                    # One inside guard, one at the final marker check.
+                    if len(calls)==2:c.timer.at+=10000
+                return value
+            with patch.object(m.os.path,'lexists',side_effect=slow_marker):return original_validate(*args)
+        with case() as c:
+            before=c.path.read_bytes()
+            with patch.object(m,'validate',side_effect=validation):r=c.observe()
+            self.assertEqual(r['state'],'preserved-exit-observation-unavailable')
+            self.assertEqual(r['diagnosticCode'],'preserved-exit-validation-expired')
+            self.assertIsNone(r['binding']);self.assertEqual(before,c.path.read_bytes())
+
+
 if __name__=='__main__':unittest.main()

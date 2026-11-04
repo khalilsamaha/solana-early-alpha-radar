@@ -49,12 +49,12 @@ def validate(book, root, pair, evidence, collection, binding, clock, monotonic, 
     hypothetical = dict(format=replacement.preparation.COLLECTED_FORMAT,
                         recordedAtMs=now, evidence=evidence, collection=collection, binding=binding)
     replacement.relationship(current, hypothetical)
-    end = clock()
-    check(now <= end < binding['validUntilExclusiveMs'], 'preserved-exit-validation-expired')
-    check(0 <= monotonic() - started < 30, 'preserved-exit-time-budget')
     check(not view.cycles.c.submit.swap.stop(root), 'preserved-exit-stopped')
     check(not any(os.path.lexists(book.j.path.parent / name) for name in replacement.MARKERS),
           'preserved-exit-backend-marker')
+    end = clock()
+    check(now <= end < binding['validUntilExclusiveMs'], 'preserved-exit-validation-expired')
+    check(0 <= monotonic() - started < 30, 'preserved-exit-time-budget')
     return end
 
 

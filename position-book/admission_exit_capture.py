@@ -195,6 +195,8 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                  'preserved-exit-current-mismatch','preserved-exit-not-expired',
                  'preserved-exit-validation-expired','preserved-exit-time-budget','exit-collection-expired',
                  'replacement-original-mismatch','replacement-original-not-expired','replacement-expected-identity'}
+        if _preserved_expected is not None:
+            result.update(state='unavailable',binding=None,provenance=None)
         result['diagnosticCode']=str(exc) if str(exc) in allowed else 'exit-evidence-unavailable'
     finally:
         if transport is not None:

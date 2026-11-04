@@ -15,8 +15,8 @@ measures fresh live evidence read-only with exact original/replacement identity,
 full provenance replay and labelled deadline headroom. It does not reopen the
 replacement slot, sign, send or release holds.
 
-Latest consolidated checkpoint: [PR #74](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/74),
-main `9ca61a5077830f226c9aa51230af4d254a718c53`, after all twelve CI groups passed.
+Latest consolidated checkpoint: [PR #75](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/75),
+main `3ab01291461ced8a452300d1af80c0df1975ef34`, after all twelve CI groups passed.
 The controlled devnet entry succeeded and was reconciled. Its exit
 stopped before signer invocation; the latest status is coherent `exit-prepared`,
 with acquired inventory and unused fees still held. The round trip is not complete.
