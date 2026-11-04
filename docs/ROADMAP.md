@@ -1,4 +1,4 @@
-# Project roadmap — updated 3 November 2026
+# Project roadmap — updated 4 November 2026
 
 Latest consolidated checkpoint: [PR #73](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/73),
 main `510a56d9c17217399ea208676ab97bfad87d648c`, with all twelve CI groups passing.
@@ -14,8 +14,10 @@ record, replays both generations and preserves original deadlines and accounting
 Its seventeen-case Kali check passed at 06:59:48 UTC. The next
 [connected replacement exit](REPLACEMENT-EXIT-INTEGRATION.md) reuses the restricted
 signer and one-send transport with exact replacement identity and original expiry.
-The new host command is offline only; actual exit replacement and closure remain
-open pending the connected host result and timing review.
+The November 4 host result passed all twelve integration and ten independent
+signer checks. [Batch consolidation](REPLACEMENT-CONSOLIDATION-20261104.md)
+records the accepted boundaries. Actual exit replacement, finalized receipt
+accounting and scoped closure remain open; the offline pass is not execution evidence.
 
 The November 3 live admission observation passed in 8.649 seconds, leaving 2.454
 seconds before the original deadline; durable signing/submission were not measured

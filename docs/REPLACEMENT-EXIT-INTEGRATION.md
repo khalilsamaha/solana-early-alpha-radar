@@ -50,7 +50,10 @@ existing fresh-exit pipeline and independent restricted signer, plus two partiti
 checks and source/package hygiene. The final portable run passed twelve checks
 (including ten independent contract cases) and took 3,121.656 ms for its measured
 replacement/sign/send stage. This is one synthetic sample, not a live latency
-guarantee. Kali acceptance is pending.
+guarantee. Kali acceptance passed on November 4 at 04:23:09 UTC: all twelve checks and ten
+independent signer cases passed. The measured replacement/sign/send stage was
+6,546.413 ms, with one synthetic send and keyless recovery without resubmission.
+This is still synthetic timing; live freshness must be enforced during the action.
 
 ## Kali check
 
