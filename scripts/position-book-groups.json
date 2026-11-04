@@ -19,6 +19,7 @@
   "test_entry_accounting.py": 4,
   "test_evidence_backup.py": 5,
   "test_exit_accounting_recovery.py": 2,
+  "test_exit_profile.py": 3,
   "test_exit_balance.py": 3,
   "test_exit_budget.py": 3,
   "test_exit_signing_handoff.py": 5,

@@ -22,6 +22,15 @@ The next [controlled replacement command](CONTROLLED-REPLACEMENT-EXIT.md) expose
 one explicitly identified attempt with three opt-ins and existing recovery paths.
 It does not deploy any production service or introduce a new entry.
 
+The November 4 controlled replacement host command passed seven boundary checks,
+but the actual attempt expired before signing after twenty RPC requests. Its one
+replacement remains preserved, with no signer markers, inventory and fees held.
+The saved record timestamp preceded expiry by 1,448 ms; commit completion was not
+recorded. [Exit phase profiling](EXIT-PHASE-PROFILE.md) adds read-only saved request
+timing plus a disposable connected phase rehearsal. No retry or additional
+replacement is authorized; actual exit completion remains blocked on timing and a
+separately reviewed continuation path.
+
 The November 3 live admission observation passed in 8.649 seconds, leaving 2.454
 seconds before the original deadline; durable signing/submission were not measured
 there. The [entry phase profile](ENTRY-PHASE-PROFILE.md) passed all six host
