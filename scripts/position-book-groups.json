@@ -47,5 +47,5 @@
   "test_simulation_baseline.py": 3,
   "test_unsigned_exit_replacement.py": 4,
   "test_unsigned_simulation.py": 4,
-  "test_preserved_exit_observation.py": 0
+  "test_preserved_exit_observation.py": 5
 }
