@@ -1,8 +1,20 @@
 # Project roadmap — updated 4 November 2026
 
-Latest consolidated checkpoint: [PR #73](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/73),
-main `510a56d9c17217399ea208676ab97bfad87d648c`, with all twelve CI groups passing.
-The controlled devnet entry subsequently succeeded and was reconciled. Its exit
+The November 4 saved timing and connected phase reports passed their diagnostic
+checks. The real collection took 6,940 ms, leaving 1,448 ms at the pre-commit
+record timestamp; post-commit headroom remains unknown. The next
+[exact public encoding reuse](EXIT-ENCODING-REUSE.md) keeps every evidence/source
+review while reusing bounded immutable Base58 conversions inside one fresh-exit
+operation. A local sequential comparison reduced the synthetic connected attempt
+from 3,088.615 to 2,097.561 ms with the same review counts. Kali validation passed
+at 07:06:09 UTC: 6,786.773 to 5,236.220 ms (22.8%), with all twelve integration
+and ten signer checks retained. [Batch consolidation](EXIT-TIMING-CONSOLIDATION.md)
+records these results. The held real position and consumed replacement remain
+unresolved; the next gate measures fresh live evidence read-only without retry.
+
+Latest consolidated checkpoint: [PR #74](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/74),
+main `9ca61a5077830f226c9aa51230af4d254a718c53`, after all twelve CI groups passed.
+The controlled devnet entry succeeded and was reconciled. Its exit
 stopped before signer invocation; the latest status is coherent `exit-prepared`,
 with acquired inventory and unused fees still held. The round trip is not complete.
 [Preserved exit inspection](EXIT-PREPARATION-INSPECTION.md) adds a read-only audit
@@ -18,6 +30,18 @@ The November 4 host result passed all twelve integration and ten independent
 signer checks. [Batch consolidation](REPLACEMENT-CONSOLIDATION-20261104.md)
 records the accepted boundaries. Actual exit replacement, finalized receipt
 accounting and scoped closure remain open; the offline pass is not execution evidence.
+The next [controlled replacement command](CONTROLLED-REPLACEMENT-EXIT.md) exposes
+one explicitly identified attempt with three opt-ins and existing recovery paths.
+It does not deploy any production service or introduce a new entry.
+
+The November 4 controlled replacement host command passed seven boundary checks,
+but the actual attempt expired before signing after twenty RPC requests. Its one
+replacement remains preserved, with no signer markers, inventory and fees held.
+The saved record timestamp preceded expiry by 1,448 ms; commit completion was not
+recorded. [Exit phase profiling](EXIT-PHASE-PROFILE.md) adds read-only saved request
+timing plus a disposable connected phase rehearsal. No retry or additional
+replacement is authorized; actual exit completion remains blocked on timing and a
+separately reviewed continuation path.
 
 The November 3 live admission observation passed in 8.649 seconds, leaving 2.454
 seconds before the original deadline; durable signing/submission were not measured
