@@ -18,8 +18,13 @@ def main():
     print('Independent signer contract checks:',len(result.get('independentContractCases',{})))
     print('Connected continuation/sign/send time (ms):',result['integrationElapsedMs'])
     print('Deadline headroom (ms):',result.get('deadlineHeadroomMs'))
+    print('Failed phase:',result.get('failedPhase'))
+    for row in result.get('diagnosticPhases',[]):
+        print(row['phase']+':', 'completed='+str(row['completed']), 'ms='+str(row['elapsedMs']),
+              'code='+str(row.get('diagnosticCode')), 'observation='+str(row.get('observation')))
     print('Synthetic replies and disposable test keys only. No user wallet, real RPC or runtime changes.')
     print('Upload:',a.output.absolute())
+    if result['state']!='offline-integration-passed':raise SystemExit(2)
 
 
 if __name__=='__main__':

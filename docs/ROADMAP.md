@@ -1,5 +1,13 @@
 # Project roadmap — updated 4 November 2026
 
+The November 4 connected continuation host check returned **review-required** at
+19:00:49 UTC: 11 fault cases passed, but the connected phase and timing were null.
+Consolidation and an operational continuation command are blocked on that result.
+The [integration diagnostic correction](CONTINUATION-EXIT-INTEGRATION.md) now labels
+fixture and execution phases, safely reports precursor outcomes, and returns exit
+code 2 after publishing a failed acceptance report. Root cause is not established;
+all execution deadlines, held records, runtime and study policies remain intact.
+
 The November 4 Kali continuation contract passed at 18:45:58 UTC: 25 portable
 cases and 14 independent signer cases. The next
 [continuation signer/transport integration](CONTINUATION-EXIT-INTEGRATION.md)

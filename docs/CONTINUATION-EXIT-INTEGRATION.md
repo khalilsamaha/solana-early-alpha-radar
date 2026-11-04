@@ -10,6 +10,40 @@ The report used disposable fixtures; no continuation signature, real RPC, user
 wallet, production ledger update or send occurred. This accepts the record and
 independent validation contract, not a completed devnet exit.
 
+## Host integration is not accepted
+
+Kali report `radar-continuation-integration-20261104T185655Z-2587155.json.gz`,
+captured 19:00:49 UTC (20:00:49 Amsterdam), returned **review-required**, with only
+11 fault cases passed. Archive SHA-256:
+`a355ce31b0da215f521c87ff9e9558af8a9b11f285865e075662623121abec47`.
+Connected elapsed time, stage and diagnostic were all null. No independent
+contract results were present. The report confirms no real RPC, production wallet
+access or production ledger update, and removal of disposable fixtures. It does
+not establish where the connected test failed or how far fixture signing reached.
+
+Do not consolidate or expose the operational continuation command on this result.
+The next release changes only offline diagnostics: bounded labelled phases cover
+fixture setup, entry collection/settlement, both predecessor preparations and
+expiry waits, the connected attempt, validation and recovery. Each failure records
+an allowlisted code/type; precursor collector results retain only safe flags and
+bounded counts. Failed phases also retain up to eight module/function/line code
+locations within the checked-out position-book code, without source lines or
+local variable values. No raw exceptions, provider responses, paths, transaction wires or
+keys are copied. Diagnostic timing never grants execution or changes its clocks.
+The command publishes the failure report and exits **2** for `review-required`.
+An existing output remains protected from overwrite.
+
+Run the same offline acceptance command at the new pinned commit and upload its
+report even if it exits 2. The result must identify the failing phase, or pass all
+16 connected/fault and 14 independent signer cases. No retry of a user position,
+new continuation allowance, timing relaxation or service change is introduced.
+
+Local verification of the diagnostic correction passed seven diagnostic safety
+checks, the full three-test CLI/integration suite (16 connected/fault cases plus
+14 independent signer cases), and two CI partition checks. The synthetic connected
+attempt took 2,698.745 ms. This local success does not supersede the failed Kali
+report; a new host report is still needed.
+
 ## Connected contract
 
 `fresh_exit.continue_sign_submit` connects the existing third-generation record to
