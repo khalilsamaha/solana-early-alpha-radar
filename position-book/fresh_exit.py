@@ -11,6 +11,7 @@ from contract import digest
 from core import check
 from journal import read_only_journals
 import encoding_replay
+import admission_history_replay
 
 VERSION='fresh-exit-transport-1'
 handoff=submission.handoff
@@ -21,6 +22,7 @@ view=handoff.view
 @view.cycles.binding.operation
 @fresh_signing.timing.signature_replay
 @encoding_replay.operation
+@admission_history_replay.operation
 def _run(home,wallet,pool,*,signer_adapter,collection_opener=None,submission_opener=None,
          clock=view.now,monotonic=time.monotonic,_replacement_expected=None):
     """Injected adapter is a trusted test seam; public wrapper fixes the backend."""

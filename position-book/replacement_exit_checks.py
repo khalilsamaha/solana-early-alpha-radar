@@ -110,6 +110,7 @@ def connected(fixture,report):
             collection_opener=rpc,submission_opener=Lazy(),clock=clock)
         report['integrationElapsedMs']=round((time.monotonic()-start)*1000,3)
         report['encodingReplay']=r.get('encodingReplay')
+        report['admissionHistoryReplay']=r.get('admissionHistoryReplay')
         report['integrationStage']=r['stage'];report['integrationDiagnostic']=r['diagnosticCode']
         report['collectionRequests']=r['collectionRequests'];report['senderRequests']=r['senderRequests']
         report['exit']=leg(r)

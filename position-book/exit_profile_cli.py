@@ -24,6 +24,8 @@ def main():
         if encoding:
             print('Encoding reuse:',encoding['version'],'; hits=',encoding['hits'],
                   '; computations=',encoding['computations'],'; entries=',encoding['entries'])
+        history=(r.get('connected') or {}).get('admissionHistoryReplay')
+        if history:print('Admission history reuse:',history)
         if r['profiles']:
             for stage,row in r['profiles'][0]['stageTotals'].items():
                 print(stage+': count=',row['count'],'; exclusiveMs=',row['exclusiveMs'],'; incomplete=',row['incomplete'])

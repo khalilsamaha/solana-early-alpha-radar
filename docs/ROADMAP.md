@@ -1,5 +1,15 @@
 # Project roadmap — updated 4 November 2026
 
+The November 4 preserved-exit host observation passed: 7,386 ms collection plus
+1,403 ms validation, leaving 1,211 ms within its original collection deadline.
+That is observation evidence, not full execution headroom. The next
+[exact admission-history reuse](ADMISSION-HISTORY-REUSE.md) keeps every SQL reread
+and current-state check while avoiding repeated validation of byte-identical
+history and policy within one operation. Local mutation, STOP, accounting,
+expiry, signer and recovery checks are retained; host connected timing acceptance
+is pending. No new continuation or extra replacement is exposed. Actual exit
+receipt reconciliation and scoped closure remain open.
+
 The November 4 saved timing and connected phase reports passed their diagnostic
 checks. The real collection took 6,940 ms, leaving 1,448 ms at the pre-commit
 record timestamp; post-commit headroom remains unknown. The next
