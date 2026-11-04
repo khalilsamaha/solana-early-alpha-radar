@@ -22,6 +22,7 @@
   "test_exit_profile.py": 3,
   "test_exit_balance.py": 3,
   "test_exit_budget.py": 3,
+  "test_exit_encoding.py": 3,
   "test_exit_signing_handoff.py": 5,
   "test_exit_signing_recovery.py": 0,
   "test_exit_submission_recovery.py": 2,

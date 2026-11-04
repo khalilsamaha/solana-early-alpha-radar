@@ -86,6 +86,11 @@ class ProfileTests(unittest.TestCase):
             r=json.loads(gzip.decompress(out.read_bytes()))
             self.assertEqual(r['state'],'offline-exit-profile-passed')
             self.assertEqual(r['connected']['casesPassed'],12)
+            reuse=r['connected']['encodingReplay']
+            self.assertEqual(reuse['version'],'exact-public-encoding-1')
+            self.assertGreater(reuse['hits'],0)
+            self.assertLessEqual(reuse['entries'],512)
+            self.assertFalse(reuse['storesStateOrAuthorization'])
             self.assertEqual(len(r['connected']['independentContractCases']),10)
             self.assertTrue(r['connected']['temporaryLedgersRemoved'])
             self.assertEqual(len(r['profiles']),2)

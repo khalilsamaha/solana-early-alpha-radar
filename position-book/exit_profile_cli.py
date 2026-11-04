@@ -20,6 +20,10 @@ def main():
         from exit_profile_rehearsal import run
         r=run();ok=r['state']=='offline-exit-profile-passed'
         print('State:',r['state'])
+        encoding=(r.get('connected') or {}).get('encodingReplay')
+        if encoding:
+            print('Encoding reuse:',encoding['version'],'; hits=',encoding['hits'],
+                  '; computations=',encoding['computations'],'; entries=',encoding['entries'])
         if r['profiles']:
             for stage,row in r['profiles'][0]['stageTotals'].items():
                 print(stage+': count=',row['count'],'; exclusiveMs=',row['exclusiveMs'],'; incomplete=',row['incomplete'])

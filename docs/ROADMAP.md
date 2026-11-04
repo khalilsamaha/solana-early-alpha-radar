@@ -1,5 +1,14 @@
 # Project roadmap — updated 4 November 2026
 
+The November 4 saved timing and connected phase reports passed their diagnostic
+checks. The real collection took 6,940 ms, leaving 1,448 ms at the pre-commit
+record timestamp; post-commit headroom remains unknown. The next
+[exact public encoding reuse](EXIT-ENCODING-REUSE.md) keeps every evidence/source
+review while reusing bounded immutable Base58 conversions inside one fresh-exit
+operation. A local sequential comparison reduced the synthetic connected attempt
+from 3,088.615 to 2,097.561 ms with the same review counts. Kali validation is
+pending; the held real position and consumed replacement remain unresolved.
+
 Latest consolidated checkpoint: [PR #74](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/74),
 main `9ca61a5077830f226c9aa51230af4d254a718c53`, after all twelve CI groups passed.
 The controlled devnet entry succeeded and was reconciled. Its exit

@@ -16,6 +16,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'intent-lab'))
 from reconcile import ALPHABET, binding
+from encoding_replay import replay as _encoding_replay
 
 
 # Opt-in only: the ordinary verifier and all senders keep their original behavior.
@@ -64,6 +65,10 @@ def check(ok, reason):
 
 
 def b58(raw):
+    return _encoding_replay('encode', raw, lambda: _b58(raw))
+
+
+def _b58(raw):
     number, text = int.from_bytes(raw, 'big'), ''
     while number:
         number, digit = divmod(number, 58)

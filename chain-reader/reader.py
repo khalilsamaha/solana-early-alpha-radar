@@ -2,6 +2,7 @@
 import json
 import urllib.error
 import urllib.request
+from encoding_replay import replay as _encoding_replay
 
 ENDPOINTS = {'devnet': 'https://api.devnet.solana.com', 'mainnet-beta': 'https://api.mainnet-beta.solana.com'}
 MAX_BYTES = 4 * 1024 * 1024
@@ -10,6 +11,12 @@ U64 = 2**64 - 1
 
 
 def base58(value, length):
+    if type(value) is str and type(length) is int and length in (32, 64):
+        return _encoding_replay('identifier'+str(length), value, lambda: _base58(value, length))
+    return _base58(value, length)
+
+
+def _base58(value, length):
     if not isinstance(value, str) or not 1 <= len(value) <= 90:
         raise ValueError('Invalid public identifier')
     n = 0

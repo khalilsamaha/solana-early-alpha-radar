@@ -10,6 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'chain-reader'))
 from reader import ALPHABET, U64, atomic, base58, integer, reconcile as chain_evidence
+from encoding_replay import replay as _encoding_replay
 
 TOKEN = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
 SYSTEM = '11111111111111111111111111111111'
@@ -32,6 +33,10 @@ def digest(value):
 
 
 def decode(value):
+    return _encoding_replay('decode', value, lambda: _decode(value))
+
+
+def _decode(value):
     require(isinstance(value, str) and len(value) <= 1800, 'invalid-instruction-data', 'unsupported')
     n = 0
     for c in value:
