@@ -1,8 +1,8 @@
 # Project roadmap — updated 4 November 2026
 
-Latest consolidated checkpoint: [PR #73](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/73),
-main `510a56d9c17217399ea208676ab97bfad87d648c`, with all twelve CI groups passing.
-The controlled devnet entry subsequently succeeded and was reconciled. Its exit
+Latest consolidated checkpoint: [PR #74](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/74),
+main `9ca61a5077830f226c9aa51230af4d254a718c53`, after all twelve CI groups passed.
+The controlled devnet entry succeeded and was reconciled. Its exit
 stopped before signer invocation; the latest status is coherent `exit-prepared`,
 with acquired inventory and unused fees still held. The round trip is not complete.
 [Preserved exit inspection](EXIT-PREPARATION-INSPECTION.md) adds a read-only audit
@@ -18,6 +18,9 @@ The November 4 host result passed all twelve integration and ten independent
 signer checks. [Batch consolidation](REPLACEMENT-CONSOLIDATION-20261104.md)
 records the accepted boundaries. Actual exit replacement, finalized receipt
 accounting and scoped closure remain open; the offline pass is not execution evidence.
+The next [controlled replacement command](CONTROLLED-REPLACEMENT-EXIT.md) exposes
+one explicitly identified attempt with three opt-ins and existing recovery paths.
+It does not deploy any production service or introduce a new entry.
 
 The November 3 live admission observation passed in 8.649 seconds, leaving 2.454
 seconds before the original deadline; durable signing/submission were not measured
