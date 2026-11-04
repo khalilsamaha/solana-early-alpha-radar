@@ -10,7 +10,7 @@ The report used disposable fixtures; no continuation signature, real RPC, user
 wallet, production ledger update or send occurred. This accepts the record and
 independent validation contract, not a completed devnet exit.
 
-## Host integration is not accepted
+## Host integration accepted on the diagnostic rerun
 
 Kali report `radar-continuation-integration-20261104T185655Z-2587155.json.gz`,
 captured 19:00:49 UTC (20:00:49 Amsterdam), returned **review-required**, with only
@@ -21,8 +21,20 @@ contract results were present. The report confirms no real RPC, production walle
 access or production ledger update, and removal of disposable fixtures. It does
 not establish where the connected test failed or how far fixture signing reached.
 
-Do not consolidate or expose the operational continuation command on this result.
-The next release changes only offline diagnostics: bounded labelled phases cover
+This earlier report was not accepted and consolidation was held. The diagnostic
+rerun `radar-continuation-diagnostic-20261104T190941Z-2630533.json.gz` passed at
+19:13:19 UTC (20:13:19 Amsterdam), archive SHA-256
+`9d411383143463911662dd29172873209d44bc3cd580073e4d1b49987f195117`.
+All 16 fault/connected cases and 14 independent signer cases passed; every
+phase completed. The connected attempt took 5,550.364 ms, with reported deadline
+headroom of 5,874 ms, 20 collection requests, five sender requests, one synthetic
+signature/send and recovery without another send or releasing reservations.
+The whole fixture/rehearsal includes deliberate predecessor-expiry waits and is
+not the measured execution attempt. The earlier failure did not recur; its cause
+is not established. This acceptance supports consolidation of the offline batch,
+not live continuation, actual receipt settlement, or a claim of stable latency.
+
+The diagnostic correction adds: bounded labelled phases cover
 fixture setup, entry collection/settlement, both predecessor preparations and
 expiry waits, the connected attempt, validation and recovery. Each failure records
 an allowlisted code/type; precursor collector results retain only safe flags and
@@ -33,16 +45,14 @@ keys are copied. Diagnostic timing never grants execution or changes its clocks.
 The command publishes the failure report and exits **2** for `review-required`.
 An existing output remains protected from overwrite.
 
-Run the same offline acceptance command at the new pinned commit and upload its
-report even if it exits 2. The result must identify the failing phase, or pass all
-16 connected/fault and 14 independent signer cases. No retry of a user position,
+Future diagnostic reruns should still be uploaded even if they exit 2. A pass
+requires all 16 connected/fault and 14 independent signer cases. No retry of a user position,
 new continuation allowance, timing relaxation or service change is introduced.
 
 Local verification of the diagnostic correction passed seven diagnostic safety
 checks, the full three-test CLI/integration suite (16 connected/fault cases plus
 14 independent signer cases), and two CI partition checks. The synthetic connected
-attempt took 2,698.745 ms. This local success does not supersede the failed Kali
-report; a new host report is still needed.
+attempt took 2,698.745 ms. The subsequent Kali acceptance is recorded above.
 
 ## Connected contract
 

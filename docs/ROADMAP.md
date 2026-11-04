@@ -1,20 +1,22 @@
 # Project roadmap — updated 4 November 2026
 
-The November 4 connected continuation host check returned **review-required** at
-19:00:49 UTC: 11 fault cases passed, but the connected phase and timing were null.
-Consolidation and an operational continuation command are blocked on that result.
-The [integration diagnostic correction](CONTINUATION-EXIT-INTEGRATION.md) now labels
-fixture and execution phases, safely reports precursor outcomes, and returns exit
-code 2 after publishing a failed acceptance report. Root cause is not established;
-all execution deadlines, held records, runtime and study policies remain intact.
+The diagnostic continuation rerun passed on Kali at 19:13:19 UTC on November 4:
+16 fault/connected cases and 14 independent signer cases; every phase completed.
+The synthetic attempt took 5,550.364 ms within its original deadline. The prior
+11-case failed run did not recur and its cause remains unknown. The
+[continuation batch](CONTINUATION-CONSOLIDATION-20261104.md) is ready for grouped
+regression/CI review. Actual devnet exit and scoped settlement remain pending.
+Next: an explicitly scoped operational continuation boundary with read-only
+preflight inspection and recovery after uncertain attempts. No automatic retry,
+policy change, extra continuation or mainnet activation is authorized by a pass.
 
 The November 4 Kali continuation contract passed at 18:45:58 UTC: 25 portable
 cases and 14 independent signer cases. The next
 [continuation signer/transport integration](CONTINUATION-EXIT-INTEGRATION.md)
 connects that exact third generation to the isolated signer, one-send transport
 and recovery using disposable offline fixtures. It preserves both predecessors,
-all inventory/fee holds and the original deadlines. Host connected acceptance is
-pending; there is no operational continuation CLI. Actual devnet exit receipt
+all inventory/fee holds and the original deadlines. Host connected acceptance passed as recorded above; there is no operational
+continuation CLI in this consolidated batch. Actual devnet exit receipt
 reconciliation and scoped closure remain outstanding. Monitoring and study rules
 are unchanged.
 
