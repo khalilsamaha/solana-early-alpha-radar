@@ -50,7 +50,10 @@ try {
     const single=(table,cap)=>{const rs=db.prepare(`SELECT id,CASE WHEN length(value)<=? THEN value ELSE NULL END value,hash FROM ${table} LIMIT 2`).all(cap);check(rs.length===1);return rs[0];};
     const replacement=db.prepare('SELECT type FROM sqlite_master WHERE name=?').get('admission_exit_replacement');
     check(!replacement || replacement.type==='table');
-    data={replacementRow:replacement ? single('admission_exit_replacement',24*1024*1024+16384+2048) : null,
+    const continuation=db.prepare('SELECT type FROM sqlite_master WHERE name=?').get('admission_exit_continuation');
+    check(!continuation || continuation.type==='table');
+    data={continuationRow:continuation ? single('admission_exit_continuation',24*1024*1024+16384+4096) : null,
+      replacementRow:replacement ? single('admission_exit_replacement',24*1024*1024+16384+2048) : null,
       policy,admissionRows:rows('admission_events'),signingRows:rows('admission_exit_signing'),
       preparationRow:single('admission_exit_preparation',24*1024*1024+16384),accountingRow:single('admission_entry_accounting',8192)};
   const metadata=JSON.parse(read(path.join(root,'wallet.json'),4096));

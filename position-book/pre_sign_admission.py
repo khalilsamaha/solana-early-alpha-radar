@@ -118,6 +118,10 @@ A signing boundary marks uncertainty; it is not a callable signing capability.
     def read(self):
         rows = self.db.execute('SELECT * FROM admission_events ORDER BY seq LIMIT ?', (MAX_EVENTS+1,)).fetchall()
         check(len(rows) <= MAX_EVENTS, 'admission-event-cap')
+        import admission_history_replay
+        return admission_history_replay.replay(self.policy, rows, lambda: self._read_rows(rows))
+
+    def _read_rows(self, rows):
         previous = ''; stamp = 0; state = None
         for seq, row in enumerate(rows, 1):
             value = json.loads(row['value'])

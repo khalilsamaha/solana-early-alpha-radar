@@ -1,5 +1,42 @@
 # Project roadmap — updated 4 November 2026
 
+The diagnostic continuation rerun passed on Kali at 19:13:19 UTC on November 4:
+16 fault/connected cases and 14 independent signer cases; every phase completed.
+The synthetic attempt took 5,550.364 ms within its original deadline. The prior
+11-case failed run did not recur and its cause remains unknown. The
+[continuation batch](CONTINUATION-CONSOLIDATION-20261104.md) is ready for grouped
+regression/CI review. Actual devnet exit and scoped settlement remain pending.
+Next: an explicitly scoped operational continuation boundary with read-only
+preflight inspection and recovery after uncertain attempts. No automatic retry,
+policy change, extra continuation or mainnet activation is authorized by a pass.
+
+The November 4 Kali continuation contract passed at 18:45:58 UTC: 25 portable
+cases and 14 independent signer cases. The next
+[continuation signer/transport integration](CONTINUATION-EXIT-INTEGRATION.md)
+connects that exact third generation to the isolated signer, one-send transport
+and recovery using disposable offline fixtures. It preserves both predecessors,
+all inventory/fee holds and the original deadlines. Host connected acceptance passed as recorded above; there is no operational
+continuation CLI in this consolidated batch. Actual devnet exit receipt
+reconciliation and scoped closure remain outstanding. Monitoring and study rules
+are unchanged.
+
+The preceding history-reuse profile passed at 18:24:18 UTC: twelve connected
+cases, ten independent signer cases, 4,260.472 ms synthetic attempt, one complete
+history validation across 1,130 SQL reads, and expiry still refused before signing.
+The [bounded unsigned continuation](UNSIGNED-EXIT-CONTINUATION.md) then added one
+explicit third preparation linked to both predecessors, atomic persistence and
+Python/independent Node replay. Its host contract acceptance is recorded above.
+
+The November 4 preserved-exit host observation passed: 7,386 ms collection plus
+1,403 ms validation, leaving 1,211 ms within its original collection deadline.
+That is observation evidence, not full execution headroom. The next
+[exact admission-history reuse](ADMISSION-HISTORY-REUSE.md) keeps every SQL reread
+and current-state check while avoiding repeated validation of byte-identical
+history and policy within one operation. Local mutation, STOP, accounting,
+expiry, signer and recovery checks are retained; host connected timing acceptance
+passed as recorded above. That release exposes no continuation command. Actual exit
+receipt reconciliation and scoped closure remain open.
+
 The November 4 saved timing and connected phase reports passed their diagnostic
 checks. The real collection took 6,940 ms, leaving 1,448 ms at the pre-commit
 record timestamp; post-commit headroom remains unknown. The next
@@ -10,10 +47,13 @@ from 3,088.615 to 2,097.561 ms with the same review counts. Kali validation pass
 at 07:06:09 UTC: 6,786.773 to 5,236.220 ms (22.8%), with all twelve integration
 and ten signer checks retained. [Batch consolidation](EXIT-TIMING-CONSOLIDATION.md)
 records these results. The held real position and consumed replacement remain
-unresolved; the next gate measures fresh live evidence read-only without retry.
+unresolved. The next [preserved exit observation](PRESERVED-EXIT-OBSERVATION.md)
+measures fresh live evidence read-only with exact original/replacement identity,
+full provenance replay and labelled deadline headroom. It does not reopen the
+replacement slot, sign, send or release holds.
 
-Latest consolidated checkpoint: [PR #74](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/74),
-main `9ca61a5077830f226c9aa51230af4d254a718c53`, after all twelve CI groups passed.
+Latest consolidated checkpoint: [PR #75](https://github.com/khalilsamaha/solana-early-alpha-radar/pull/75),
+main `3ab01291461ced8a452300d1af80c0df1975ef34`, after all twelve CI groups passed.
 The controlled devnet entry succeeded and was reconciled. Its exit
 stopped before signer invocation; the latest status is coherent `exit-prepared`,
 with acquired inventory and unused fees still held. The round trip is not complete.

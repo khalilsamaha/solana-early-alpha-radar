@@ -53,6 +53,31 @@ export function validate(data,metadata,pair,requestedHash,now){
     check(prep.evidence.packet.policy.blockhash!==original.evidence.packet.policy.blockhash);
     num(prep.evidence.price.quote.contextSlot,original.evidence.price.quote.contextSlot,Number.MAX_SAFE_INTEGER);
   }
+  if(data.continuationRow != null){
+    check(data.replacementRow != null);
+    const envelope=record(data.continuationRow,24*1024*1024+16384+4096);
+    fields(envelope,['format','originalPreparationSha256','previousPreparationSha256','continuation']);
+    check(envelope.format==='unsigned-exit-continuation-1-record' &&
+      envelope.originalPreparationSha256===hash(original) && envelope.previousPreparationSha256===hash(prep));
+    const previous=prep,b=previous.binding;
+    const historical={format:'exit-signing-handoff-1-request',preparationSha256:hash(previous),
+      entryAccountingSha256:b.entryAccountingSha256,collectionSha256:b.collectionSha256,
+      messageSha256:b.messageSha256,validUntilExclusiveMs:b.validUntilExclusiveMs,
+      quantityAtomic:b.quantityAtomic,feeCapLamports:b.feeCapLamports,packet:previous.evidence.packet};
+    preparation(previous,entry,policy,s,metadata,pair,historical,previous.recordedAtMs,previous.recordedAtMs);
+    prep=envelope.continuation;
+    check(Buffer.byteLength(text(prep))<=24*1024*1024+16384);
+    for(const prior of [original,previous]){
+      const old=prior.binding,next=prep.binding,start=prep.collection.provenance.startedAtMs;
+      num(start,old.validUntilExclusiveMs,prep.recordedAtMs);
+      num(prep.recordedAtMs,start,next.validUntilExclusiveMs-1);
+      for(const k of ['entryAccountingSha256','entryReceiptIdentity','quantityAtomic','feeCommitmentRemainingLamports','attemptNumber','attemptsConsumed'])
+        check(next[k]===old[k]);
+      check(atomic(next.feeCapLamports)<=atomic(old.feeCapLamports) && atomic(next.protectedInventoryAtomic)>=atomic(old.protectedInventoryAtomic));
+      check(prep.evidence.packet.policy.blockhash!==prior.evidence.packet.policy.blockhash);
+      num(prep.evidence.price.quote.contextSlot,prior.evidence.price.quote.contextSlot,Number.MAX_SAFE_INTEGER);
+    }
+  }
   const result=preparation(prep,entry,policy,s,metadata,pair,req,now,signingRows[0].at_ms);
   return {...result,notBeforeMs:signingRows[0].at_ms,requestHash:requestedHash,signingHead:signingRows[0].hash};
 }

@@ -91,6 +91,13 @@ class ProfileTests(unittest.TestCase):
             self.assertGreater(reuse['hits'],0)
             self.assertLessEqual(reuse['entries'],512)
             self.assertFalse(reuse['storesStateOrAuthorization'])
+            history_reuse=r['connected']['admissionHistoryReplay']
+            self.assertGreater(history_reuse['hits'],0)
+            self.assertGreater(history_reuse['validations'],0)
+            self.assertEqual(history_reuse['sqlReadsSkipped'],0)
+            self.assertFalse(history_reuse['authorizationDecisionsCached'])
+            self.assertLessEqual(history_reuse['entries'],32)
+            self.assertLessEqual(history_reuse['retainedBytes'],2*1024*1024)
             self.assertEqual(len(r['connected']['independentContractCases']),10)
             self.assertTrue(r['connected']['temporaryLedgersRemoved'])
             self.assertEqual(len(r['profiles']),2)

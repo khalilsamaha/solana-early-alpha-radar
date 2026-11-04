@@ -132,7 +132,9 @@ def original_saved(book,now):
 
 def saved(book,now):
     from unsigned_exit_replacement import replay
-    return replay(book,original_saved(book,now),now)
+    from unsigned_exit_continuation import replay as continuation
+    original=original_saved(book,now)
+    return continuation(book,original,replay(book,original,now),now)
 
 
 def public(record,now,*,stopped=False,created=False):

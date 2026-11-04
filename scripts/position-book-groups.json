@@ -46,5 +46,10 @@
   "test_signer_handoff.py": 2,
   "test_simulation_baseline.py": 3,
   "test_unsigned_exit_replacement.py": 4,
-  "test_unsigned_simulation.py": 4
+  "test_unsigned_simulation.py": 4,
+  "test_preserved_exit_observation.py": 5,
+  "test_admission_history_replay.py": 5,
+  "test_unsigned_exit_continuation.py": 1,
+  "test_continuation_exit.py": 2,
+  "test_continuation_diagnostics.py": 2
 }
