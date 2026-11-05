@@ -22,6 +22,7 @@ def main():
     print('Measured continuation started:',result.get('continuationStarted'))
     print('Fixture setup:',result.get('fixtureSetup'))
     print('Canonical digest reuse:',result.get('canonicalDigestReplay'))
+    print('Canonical text reuse:',result.get('canonicalTextReplay'))
     print('Deadline headroom (ms):',result.get('deadlineHeadroomMs'))
     print('Failed phase:',result.get('failedPhase'))
     for row in result.get('diagnosticPhases',[]):

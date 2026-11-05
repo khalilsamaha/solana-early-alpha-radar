@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 import fresh_exit as fresh
 import canonical_replay as memo
+import serialization_replay as text_memo
 import controlled_continuation as controlled
 import continuation_exit_checks as checks
 
@@ -31,7 +32,7 @@ class ContinuationDigestTests(unittest.TestCase):
             checks.require_cold_reuse_scopes()
 
     def test_fixture_preparation_failure_clears_all_reuse_and_keeps_expiry(self):
-        scopes=(memo._SCOPE,fresh.encoding_replay._SCOPE,
+        scopes=(memo._SCOPE,text_memo._SCOPE,fresh.encoding_replay._SCOPE,
                 fresh.admission_history_replay._SCOPE,fresh.fresh_signing.timing.wire._SIGNATURE_SCOPE)
         def expired():
             self.assertTrue(all(scope.get() is not None for scope in scopes))
@@ -50,10 +51,12 @@ class ContinuationDigestTests(unittest.TestCase):
     def test_scope_reuses_exact_hash_only_inside_continuation_wrapper(self):
         def inner(*args, **kwargs):
             memo.digest({'n': 1});memo.digest({'n': 1})
+            fresh.collection.exit.encoded({'capture': 1});fresh.collection.exit.encoded({'capture': 1})
             return dict(signerAcknowledgmentValidated=False)
         with patch.object(fresh, '_run', inner):
             result=fresh.continue_sign_submit('/unused','w','p',**FLAGS)
             self.assertEqual(result['canonicalDigestReplay']['hits'],1)
+            self.assertEqual(result['canonicalTextReplay']['hits'],1)
             ordinary=fresh.prepare_sign_submit('/unused','w','p',
                 allow_private_key_signing=True,allow_devnet_submit=True)
             replacement=fresh.replace_sign_submit('/unused','w','p',
@@ -61,6 +64,9 @@ class ContinuationDigestTests(unittest.TestCase):
                 allow_private_key_signing=True,allow_devnet_submit=True)
             self.assertNotIn('canonicalDigestReplay',ordinary)
             self.assertNotIn('canonicalDigestReplay',replacement)
+            self.assertNotIn('canonicalTextReplay',ordinary)
+            self.assertNotIn('canonicalTextReplay',replacement)
+        self.assertIsNone(text_memo._SCOPE.get())
         self.assertIsNone(memo._SCOPE.get())
 
     def test_failure_discards_scope_and_never_carries_cached_permission(self):
@@ -94,6 +100,17 @@ class ContinuationDigestTests(unittest.TestCase):
                     state='fresh-exit-inspection-required',canonicalDigestReplay=dict(value,private='PRIVATE_VALUE'))):
                 report=controlled.execute(d,'w','p',**FLAGS)
             self.assertEqual(report['canonicalDigestReplay'],value)
+            self.assertNotIn('PRIVATE',json.dumps(report))
+
+    def test_text_projection_excludes_arbitrary_fields(self):
+        with text_memo.scope() as stats:
+            text_memo.encoded({'PRIVATE_SENTINEL':'PRIVATE_VALUE'});value=stats()
+        with tempfile.TemporaryDirectory() as d:
+            Path(d).chmod(0o700)
+            with patch.object(controlled,'EXECUTE',return_value=dict(
+                    state='fresh-exit-inspection-required',canonicalTextReplay=dict(value,private='PRIVATE_VALUE'))):
+                report=controlled.execute(d,'w','p',**FLAGS)
+            self.assertEqual(report['canonicalTextReplay'],value)
             self.assertNotIn('PRIVATE',json.dumps(report))
 
     def test_large_fixture_is_fixed_and_restores_generator_even_after_failure(self):

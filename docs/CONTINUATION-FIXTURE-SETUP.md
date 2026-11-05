@@ -1,5 +1,8 @@
 # Continuation rehearsal prerequisite correction — November 5, 2026
 
+The later Kali run successfully prepared both predecessors, then expired in the
+measured continuation before sending. See [the next correction](CANONICAL-EXACT-MATCH.md).
+
 ## Kali evidence
 
 The 06:09:35 CET report is `review-required`. Eleven preliminary fault checks

@@ -1,28 +1,27 @@
 # Project roadmap — updated 5 November 2026
 
-Kali's content-sharing rehearsal stopped during disposable **replacement setup**
-(`replacement-expired-before-write`, 15,256.208 ms). It never entered the optimized
-continuation, so host timing acceptance is still unknown. Eleven preliminary
-fault checks passed; no real network or user-wallet action occurred. The
-[offline prerequisite correction](CONTINUATION-FIXTURE-SETUP.md) gives each setup
-operation independent existing bounded reuse scopes, keeps every real clock and
-deadline, and asserts that all caches are cleared before the measured continuation.
-Production wrappers and the held position are unchanged. The corrected local
-1 MiB rehearsal passed sixteen integration and fourteen signer checks: replacement
-setup 1,652.018 ms, continuation 8,918.826 ms with 2,176 ms headroom. Next: the
-corrected pinned offline Kali rehearsal, followed by review of its actual target
-timing. This local pass does not establish host or live-network acceptance.
+The corrected Kali fixture now reaches the continuation, but the host gate still
+fails: 12,480.238 ms overall, `fresh-signing-expired` during submission validation,
+and zero sender requests. Both disposable predecessors were prepared successfully;
+eleven preliminary fault cases passed. The connected timing and recovery gate
+remains unaccepted. No real network or user-wallet action occurred.
 
-The [bounded canonical content-sharing correction](CANONICAL-CONTENT-SHARING.md)
-now passes the same verified 1 MiB connected fixture locally: 8,529.428 ms,
-2,603 ms positive completion headroom, all sixteen fault/integration cases and
-fourteen independent signer cases. It replaces duplicated immutable string storage
-inside the existing attempt-local cache, retaining the 32 MiB/128-entry limits,
-full-content equality and every validator/source reread. This resolves the local
-large-workload completion failure described below; **Kali acceptance is pending**.
-Next: run the pinned offline large-fixture check on Kali. No production restart,
-held-position execution, automatic retry, release or mainnet action follows from
-a synthetic pass. The actual devnet exit and scoped closure are still pending.
+The next [exact canonical comparison correction](CANONICAL-EXACT-MATCH.md) removes
+repeated deep snapshot allocation on exact cache hits and reuses original canonical
+JSON text in the explicit continuation. Each hit compares the full current input
+and exact built-in types against an immutable snapshot. Source reads, current
+validation, the independent signer and all original deadlines remain enforced.
+The digest cap stays 32 MiB; the separate text cache is bounded at 48 MiB and
+cleared after the operation. Scanner services and study collection are unchanged.
+Local verification passed 77 regression tests and the complete 1 MiB rehearsal:
+16 integration/fault checks, 14 signer checks, 7,835.831 ms with 3,448 ms headroom.
+Next: pinned offline Kali acceptance. No merge, actual held-position attempt or
+mainnet activation follows from this local pass.
+
+Earlier [content sharing](CANONICAL-CONTENT-SHARING.md) and
+[offline prerequisite setup](CONTINUATION-FIXTURE-SETUP.md) fixes passed locally,
+but the later Kali continuation timing failure supersedes those pending host
+gates. Actual devnet exit receipt reconciliation and scoped closure remain open.
 
 The November 5 read-only digest observation passed: collection 7,114 ms, preserved
 validation 1,067 ms, remaining headroom 1,819 ms. Both expired predecessor identities

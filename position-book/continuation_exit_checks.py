@@ -24,6 +24,7 @@ VERSION='continuation-exit-integration-1'
 @m.fresh_signing.timing.signature_replay
 @m.encoding_replay.operation
 @m.admission_history_replay.operation
+@m.serialization_replay.operation
 @m.canonical_replay.operation
 def prepare_fixture(fn,*args,**kwargs):
     """Optimize only disposable predecessor construction; keep every real clock.
@@ -35,7 +36,7 @@ def prepare_fixture(fn,*args,**kwargs):
 
 
 def require_cold_reuse_scopes():
-    scopes=(m.canonical_replay._SCOPE,m.encoding_replay._SCOPE,
+    scopes=(m.canonical_replay._SCOPE,m.serialization_replay._SCOPE,m.encoding_replay._SCOPE,
             m.admission_history_replay._SCOPE,m.fresh_signing.timing.wire._SIGNATURE_SCOPE)
     check(all(scope.get() is None for scope in scopes),'fixture-reuse-scope-leaked')
 
@@ -195,6 +196,7 @@ def connected(fixture,report):
             report['encodingReplay']=r.get('encodingReplay')
             report['admissionHistoryReplay']=r.get('admissionHistoryReplay')
             report['canonicalDigestReplay']=m.canonical_replay.summary(r.get('canonicalDigestReplay'))
+            report['canonicalTextReplay']=m.serialization_replay.summary(r.get('canonicalTextReplay'))
             report['integrationStage']=r['stage'];report['integrationDiagnostic']=r['diagnosticCode']
             report['collectionRequests']=r['collectionRequests'];report['senderRequests']=r['senderRequests']
             diagnostic['observation']=observation(r)

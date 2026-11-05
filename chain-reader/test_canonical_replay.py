@@ -203,7 +203,7 @@ class CanonicalReplayTests(unittest.TestCase):
 
     def test_last_user_eviction_recalculates_shared_cost_before_admission(self):
         text='x'*5000
-        with patch.object(m,'MAX_BYTES',7000),m.scope() as stats:
+        with patch.object(m,'MAX_BYTES',8536),m.scope() as stats:
             m.digest({'a':text})
             self.assertEqual(stats()['entries'],1)
             # Fits if the existing shared allocation is ignored, but cannot fit
@@ -223,6 +223,79 @@ class CanonicalReplayTests(unittest.TestCase):
                 self.assertEqual(m.digest({s.encode().decode():s.encode().decode()}),m.original({s:s}))
             self.assertEqual(stats()['sharedStrings'],3)
             self.assertEqual(stats()['hits'],3)
+
+    def test_exact_hit_compares_current_content_without_rebuilding_snapshot(self):
+        value={'format':'test','body':{'x':[1,True,None,'x'*5000]}}
+        with m.scope() as stats,patch.object(m,'frozen',wraps=m.frozen) as freeze:
+            first=m.digest(value)
+            self.assertEqual(m.digest(json.loads(json.dumps(value))),first)
+            self.assertEqual(freeze.call_count,1)
+            value['body']['x'][0]=True
+            self.assertNotEqual(m.digest(value),first)
+            self.assertEqual(freeze.call_count,2)
+            value['body']['x'][-1]='y'*5000
+            self.assertEqual(m.digest(value),m.original(value))
+            self.assertEqual(freeze.call_count,3)
+            self.assertEqual(stats()['hits'],1)
+
+    def test_candidate_index_collision_never_substitutes_full_content_equality(self):
+        samples=[{'format':'test','body':x} for x in
+                 [True,1,False,0,None,'',[],{},[1],[True],{'a':1},{'a':True}]]
+        with m.scope() as stats:
+            for v in samples:self.assertEqual(m.digest(v),m.original(v))
+            for v in reversed(samples):self.assertEqual(m.digest(v),m.original(v))
+            self.assertEqual(stats()['computations'],len(samples))
+            self.assertEqual(stats()['hits'],len(samples))
+
+    def test_same_mutable_object_mutations_and_cycles_cannot_hit_prior_snapshot(self):
+        class Text(str):pass
+        class Mapping(dict):pass
+        v={'body':{'value':[1]}}
+        with m.scope() as stats:
+            m.digest(v)
+            for item in [1.0,Text('x'),Mapping(a=1),(1,)]:
+                v['body']['value']=item
+                self.assertEqual(m.digest(v),m.original(v))
+            v['body']['value']=v
+            with self.assertRaises(ValueError):m.digest(v)
+            self.assertEqual(stats()['hits'],0)
+
+    def test_list_size_change_during_comparison_cannot_accept_partial_zip(self):
+        for change in ('shrink','grow'):
+            with self.subTest(change=change),m.scope() as stats:
+                value={'body':[1,2]};first=m.digest(value);original=m.exact_match;changed=[]
+                def mutate(v,k):
+                    result=original(v,k)
+                    if type(v) is int and v==1 and not changed:
+                        changed.append(True)
+                        if change=='shrink':value['body'].pop()
+                        else:value['body'].append(3)
+                    return result
+                with patch.object(m,'exact_match',mutate):actual=m.digest(value)
+                self.assertEqual(actual,m.original(value))
+                self.assertNotEqual(actual,first)
+                self.assertEqual(stats()['hits'],0)
+
+    def test_bucket_indexes_are_bounded_evicted_and_cleared_with_entries(self):
+        with patch.object(m,'MAX_ENTRIES',2),m.scope() as stats:
+            values,_=m._SCOPE.get()
+            for i in range(20):
+                v={'format':str(i),'body':[i]}
+                self.assertEqual(m.digest(v),m.original(v))
+                self.assertEqual(sum(len(keys) for keys in values.buckets.values()),len(values))
+                self.assertTrue(all(key in values for keys in values.buckets.values() for key in keys))
+            self.assertEqual(stats()['evictions'],18)
+        self.assertFalse(values.buckets)
+        self.assertFalse(values.strings)
+
+    def test_wide_roots_and_non_builtin_keys_keep_existing_lookup_behavior(self):
+        class Text(str):pass
+        for v in ({str(i):i for i in range(33)}, {'x'*129:1}, {Text('body'):1}):
+            with m.scope():
+                self.assertIsNone(m.bucket(v))
+                self.assertEqual(m.digest(v),m.original(v))
+                self.assertEqual(m.digest(v),m.original(v))
+
 
 
 if __name__ == '__main__': unittest.main()

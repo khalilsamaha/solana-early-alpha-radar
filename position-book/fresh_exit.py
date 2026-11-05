@@ -14,6 +14,7 @@ from core import check
 from journal import read_only_journals
 import encoding_replay
 import canonical_replay
+import serialization_replay
 import admission_history_replay
 
 VERSION='fresh-exit-transport-1'
@@ -171,6 +172,7 @@ def replace_sign_submit(home,wallet,pool,*,expected_preparation_sha256,
     return r
 
 
+@serialization_replay.operation
 @canonical_replay.operation
 def continue_sign_submit(home,wallet,pool,*,expected_original_sha256,expected_current_sha256,
                          allow_unsigned_continuation=False,allow_private_key_signing=False,

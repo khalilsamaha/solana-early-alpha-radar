@@ -7,7 +7,7 @@ import json
 import hashlib
 import sys
 
-VERSION = 'exact-canonical-digest-2'
+VERSION = 'exact-canonical-digest-3'
 MAX_ENTRIES = 128
 MAX_BYTES = 32 * 1024 * 1024
 MAX_ENTRY_BYTES = 16 * 1024 * 1024
@@ -85,18 +85,72 @@ def frozen(value, shared):
     return key, size, size - shared_bytes, tuple(atoms)
 
 
+def bucket(value):
+    """Small candidate index only. It is never sufficient to accept a hit."""
+    if type(value) is not dict or len(value)>32:
+        return None
+    if any(type(k) is not str or len(k)>128 for k in value):
+        return None
+    label=value.get('format')
+    return (tuple(sorted(value)),label if type(label) is str and len(label)<=128 else None)
+
+
+def frozen_bucket(key):
+    if key[0]!='d' or len(key[1])>32:
+        return None
+    keys=[];label=None
+    for k,v in key[1]:
+        if len(k[1])>128:return None
+        keys.append(k[1])
+        if k[1]=='format' and v[0]=='s' and len(v[1])<=128:label=v[1]
+    return (tuple(keys),label)
+
+
+def exact_match(value,key):
+    """Compare every current value/type with a bounded immutable snapshot.
+
+    No mutable identity shortcut, hash-only equality, sorting of nested objects,
+    new snapshot or validation verdict. The stored tree bounds recursion even
+    when the current input is cyclic. Unsupported types cannot match.
+    """
+    tag=key[0];kind=type(value)
+    if tag=='s':return kind is str and value==key[1]
+    if tag=='i':return kind is int and value==key[1]
+    if tag=='b':return kind is bool and value==key[1]
+    if tag=='n':return value is None
+    if tag=='l':
+        return kind is list and len(value)==len(key[1]) and all(
+            exact_match(value[i],k) for i,k in enumerate(key[1])) and len(value)==len(key[1])
+    if kind is not dict or len(value)!=len(key[1]) or any(type(k) is not str for k in value):
+        return False
+    return all(k[1] in value and exact_match(value[k[1]],v) for k,v in key[1]) and len(value)==len(key[1])
+
+
 class Entries(OrderedDict):
     """Scope-local storage: shared strings live only while a retained key uses them."""
     def __init__(self):
         super().__init__()
         self.strings = {}
+        self.buckets = {}
+
+    def find_exact(self, value):
+        index=bucket(value)
+        if index is None:return None
+        for key in self.buckets.get(index, ()):
+            if exact_match(value,key):
+                return key,self[key][0]
+        return None
 
     def additional_bytes(self, structural, atoms):
         # Conservative allowance for each shared dictionary entry and refcount.
         return structural + sum(sys.getsizeof(s) + 512 for s in atoms if s not in self.strings)
 
     def remove_oldest(self):
-        _, (_, structural, atoms) = self.popitem(last=False)
+        key, (_, structural, atoms) = self.popitem(last=False)
+        index=frozen_bucket(key)
+        if index is not None:
+            keys=self.buckets[index];keys.remove(key)
+            if not keys:del self.buckets[index]
         removed = structural
         for s in atoms:
             row = self.strings[s]
@@ -114,11 +168,14 @@ class Entries(OrderedDict):
             else:
                 self.strings[s] = [s, 1, sys.getsizeof(s) + 512]
         self[key] = (result, structural, atoms)
+        index=frozen_bucket(key)
+        if index is not None:self.buckets.setdefault(index,[]).append(key)
         return additional
 
     def clear(self):
         super().clear()
         self.strings.clear()
+        self.buckets.clear()
 
 
 def materialize(key):
@@ -165,6 +222,16 @@ def digest(value):
     values, counts = current
     counts['calls'] += 1
     try:
+        matched=values.find_exact(value)
+    except (RuntimeError,KeyError,IndexError):
+        counts['ineligibleBypasses'] += 1
+        return original(value)
+    if matched is not None:
+        key,result=matched
+        counts['hits'] += 1
+        values.move_to_end(key)
+        return result
+    try:
         key, key_size, structural, atoms = frozen(value, values.strings)
     except (Ineligible, RuntimeError, KeyError):
         counts['ineligibleBypasses'] += 1
@@ -182,7 +249,10 @@ def digest(value):
         raise
     # Entry tuple, atom-reference tuple and OrderedDict/index bookkeeping are
     # charged in addition to the per-node frozen-tree allowance.
-    structural += sys.getsizeof(result) + 512
+    # Additional conservative 1,536 bytes cover the bounded root-key tuple,
+    # bucket/list references and index bookkeeping (at most 32 short keys).
+    # Strings and frozen trees are referenced, not duplicated by the index.
+    structural += sys.getsizeof(result) + 2048
     if key_size + sys.getsizeof(result) > MAX_ENTRY_BYTES or values.additional_bytes(structural, atoms) > MAX_BYTES:
         counts['capacityBypasses'] += 1
         return result
