@@ -80,10 +80,12 @@ class CommandTests(unittest.TestCase):
             with patch.object(m,'EXECUTE',operation):r=m.execute(home,wallet,pool,**kwargs)
             routed.append(r)
             self.assertTrue(r['dispatchCompleted'],r)
-            return dict(r['result'],preparation=r['preparation'])
+            return dict(r['result'],preparation=r['preparation'],canonicalDigestReplay=r.get('canonicalDigestReplay'))
         # Only trusted synthetic transports in this test. The production wrapper
         # has no corresponding injection parameters or CLI flags.
-        with patch.object(connected.m,'continue_sign_submit',bridge):r=connected.run()
+        faults=connected.fault_checks()
+        with patch.object(connected,'fault_checks',return_value=faults),patch.object(connected.m,'continue_sign_submit',bridge):
+            r=connected.run()
         self.assertEqual(r['state'],'offline-integration-passed',r)
         self.assertEqual(r['casesPassed'],16)
         self.assertEqual(len(routed),2)

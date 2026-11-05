@@ -1,5 +1,8 @@
 """Offline continuation-to-transport exercise with disposable keys and synthetic RPC."""
 from copy import deepcopy
+from contextlib import contextmanager
+from functools import wraps
+import base64
 from pathlib import Path
 import tempfile
 import json
@@ -45,17 +48,22 @@ def fault_checks():
                 if kind=='persisted-expiry' and result.get('createdThisRun'):c.timer.at+=10000
                 return result
             with patch.object(m.continuation,'write_record',hook),patch.object(m.continuation,'collect_and_prepare',delayed):
-                r=m._run(c.home,c.wallet,c.pool,signer_adapter=adapter,
-                    _continuation_expected=(c.expected,c.current),collection_opener=c.rpc,
-                    clock=c.clock,monotonic=lambda:mono[0])
+                with patch.object(m.backend,'_invoke',adapter):
+                    r=m.continue_sign_submit(c.home,c.wallet,c.pool,
+                        expected_original_sha256=c.expected,expected_current_sha256=c.current,
+                        allow_unsigned_continuation=True,allow_private_key_signing=True,allow_devnet_submit=True,
+                        collection_opener=c.rpc,clock=c.clock,monotonic=lambda:mono[0])
             check(r['sendRequestsThisRun']==0 and r['senderRequests']==0,'fault-send')
             check(len(signs)==(1 if kind=='lost-signer' else 0),'fault-sign')
             check(r['collectionRequests']==(0 if kind in ('stop','wrong-original','wrong-current','marker') else 20),'fault-count')
             check(all(rows(c,t)==v for t,v in before.items()),'fault-predecessors')
             if kind in ('budget','lost-signer','persisted-expiry'):
                 persisted=rows(c,'admission_exit_continuation')
-                again=m._run(c.home,c.wallet,c.pool,signer_adapter=adapter,
-                    _continuation_expected=(c.expected,c.current),clock=c.clock,monotonic=lambda:0)
+                with patch.object(m.backend,'_invoke',adapter):
+                    again=m.continue_sign_submit(c.home,c.wallet,c.pool,
+                        expected_original_sha256=c.expected,expected_current_sha256=c.current,
+                        allow_unsigned_continuation=True,allow_private_key_signing=True,allow_devnet_submit=True,
+                        clock=c.clock,monotonic=lambda:0)
                 check(again['networkRequests']==0 and len(signs)==(kind=='lost-signer') and
                       rows(c,'admission_exit_continuation')==persisted,'fault-repeat')
             if kind=='lost-signer':
@@ -135,20 +143,39 @@ def connected(fixture,report):
                     transports.append(FakeRpc(c,lost=True))
                 return transports[0].open(request,timeout)
         with phase(report,'continuation-sign-send') as diagnostic:
+            def timed(name,fn):
+                @wraps(fn)
+                def call(*args,**kwargs):
+                    with phase(report,name) as measured:
+                        value=fn(*args,**kwargs)
+                        measured['observation']=observation(value)
+                        return value
+                return call
             start=time.monotonic()
-            r=m.continue_sign_submit(f.home,f.wallet,f.pool,expected_original_sha256=old['recordSha256'],
-                expected_current_sha256=previous['recordSha256'],allow_unsigned_continuation=True,allow_private_key_signing=True,allow_devnet_submit=True,
-                collection_opener=rpc,submission_opener=Lazy(),clock=clock)
+            # Measurement wrappers only: use the original functions, arguments,
+            # clocks and deadlines. These hooks exist in this offline fixture,
+            # never in the operational CLI or the independent signer.
+            with patch.object(m.continuation,'collect_and_prepare',timed('continuation-collection-persistence',m.continuation.collect_and_prepare)),\
+                 patch.object(m.handoff,'dispatch',timed('continuation-signing-handoff',m.handoff.dispatch)),\
+                 patch.object(m.submission,'submit',timed('continuation-submission',m.submission.submit)):
+                r=m.continue_sign_submit(f.home,f.wallet,f.pool,expected_original_sha256=old['recordSha256'],
+                    expected_current_sha256=previous['recordSha256'],allow_unsigned_continuation=True,allow_private_key_signing=True,allow_devnet_submit=True,
+                    collection_opener=rpc,submission_opener=Lazy(),clock=clock)
             report['integrationElapsedMs']=round((time.monotonic()-start)*1000,3)
             report['deadlineHeadroomMs']=r.get('originalDeadlineMs',0)-r.get('completedAtMs',0) if r.get('completedAtMs') else None
             report['encodingReplay']=r.get('encodingReplay')
             report['admissionHistoryReplay']=r.get('admissionHistoryReplay')
+            report['canonicalDigestReplay']=m.canonical_replay.summary(r.get('canonicalDigestReplay'))
             report['integrationStage']=r['stage'];report['integrationDiagnostic']=r['diagnosticCode']
             report['collectionRequests']=r['collectionRequests'];report['senderRequests']=r['senderRequests']
             diagnostic['observation']=observation(r)
             report['exit']=leg(r)
         with phase(report,'preserved-records') as diagnostic:
             check(r['privateKeyAccessed'] is True and r['originalDeadlineCheckedBeforeSend'],'continuation-signing-evidence')
+            check(r['canonicalDigestReplay']['enabled'] is True and
+                  r['canonicalDigestReplay']['hits']>0 and
+                  r['canonicalDigestReplay']['reusesValidationOrAuthorization'] is False,
+                  'canonical-digest-reuse-missing')
             report['cases']['actual-isolated-signer-and-one-lost-response-send']='passed'
             check(r['preparation']['originalPreparationSha256']==old['recordSha256'] and
                   r['preparation']['previousPreparationSha256']==previous['recordSha256'],'continuation-lineage')
@@ -201,10 +228,42 @@ def connected(fixture,report):
             report['recovery']=dict(state=recovery['state'],sendRequests=0,reservationReleased=False)
 
 
-def run():
+@contextmanager
+def fixture_size(large):
+    """Only disposable generated fixtures, never a baseline or live RPC override."""
+    if type(large) is not bool:raise ValueError('fixture-mode')
+    if not large:
+        yield
+        return
+    import pool_fixtures
+    row=deepcopy(pool_fixtures.DEPLOY_ROW)
+    raw=base64.b64decode(row['data'][0])
+    check(len(raw)<=1024*1024,'synthetic-program-size')
+    row['data'][0]=base64.b64encode(raw+bytes(1024*1024-len(raw))).decode()
+    baseline=deepcopy(pool_fixtures.BASE)
+    baseline['identity'].update({k:v for k,v in pool_fixtures.deployment(row,100).items()
+                                if k in pool_fixtures.IDENTITY_FIELDS})
+    # The connected fixture replays generated historical files. Its constructors
+    # import these dictionary objects directly, so preserve their shared identity
+    # while changing only disposable fixture inputs, then restore both exactly.
+    with patch.dict(pool_fixtures.DEPLOY_ROW,row,clear=True),patch.dict(pool_fixtures.BASE,baseline,clear=True):
+        yield
+
+
+def run(*,large_fixture=False):
+    if type(large_fixture) is not bool:raise ValueError('fixture-mode')
+    # Keep the fault matrix small; expand the full connected signer/transport
+    # fixture only, including its historical source and both predecessors.
+    faults=fault_checks()
+    with fixture_size(large_fixture):
+        return _run(large_fixture=large_fixture,faults=faults)
+
+
+def _run(*,large_fixture=False,faults):
     import test_fresh_exit as fixture_module
     class Fixture(fixture_module.ActualBackendTests):pass
-    report=dict(format=VERSION,state='review-required',cases=fault_checks(),casesPassed=0,
+    report=dict(format=VERSION,state='review-required',cases=faults,casesPassed=0,
+        requestedProgramFixtureBytes=1024*1024 if large_fixture else None,programFixtureBytes=None,
         mode='synthetic-offline',realNetworkRequests=0,productionWalletAccessed=False,
         disposableTestKeySigning=True,transactionsSent=0,productionLedgerUpdated=False,
         runtimeIntegrated=False,executionApproved=False,automaticRetryAllowed=False,
@@ -221,6 +280,9 @@ def run():
                 with phase(report,'fixture-instance-setup'):
                     instance=Fixture();setup=True;instance.setUp()
                     check(instance.home.resolve().is_relative_to(Path(owned).resolve()),'temporary-scope')
+                    data=instance.e['costInputs']['capture']['evidence']['accounts']['result']['value'][-1]['data'][0]
+                    report['programFixtureBytes']=len(base64.b64decode(data,validate=True))
+                    check(not large_fixture or report['programFixtureBytes']==1024*1024,'synthetic-program-size')
                 with phase(report,'connected-rehearsal'):connected(instance,report)
                 report['state']='offline-integration-passed'
             except Exception:

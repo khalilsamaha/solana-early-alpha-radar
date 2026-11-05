@@ -1,14 +1,19 @@
-# Project roadmap — updated 4 November 2026
+# Project roadmap — updated 5 November 2026
 
-The held devnet continuation remains unresolved. The November 4 operational attempt
-stopped before signing/sending; local reinspection confirmed that the exact expired
-pair remains eligible. The 19:54 UTC observation passed with **858 ms** remaining
-after validation. Final binding and preserved validation consumed 3,319.221 ms.
-The next [canonical digest observation](CANONICAL-DIGEST-OBSERVATION.md) reuses pure
-hash computations only in the read-only observation, with full content checks,
-bounded transient retention and all original validators/deadlines. Host timing
-acceptance is pending. No execution retry, new preparation allowance or live
-activation follows a diagnostic pass. Scanner and study protocols are unchanged.
+The November 5 read-only digest observation passed: collection 7,114 ms, preserved
+validation 1,067 ms, remaining headroom 1,819 ms. Both expired predecessor identities
+and all inventory/fee holds remain unchanged; no preparation, signing or send
+occurred. This is observation evidence, not full execution timing acceptance.
+The next [continuation digest integration](CONTINUATION-DIGEST-INTEGRATION.md)
+scopes exact-content hash reuse to the explicit continuation operation and tests
+the complete persisted/sign/send path with disposable keys and an expanded
+synthetic program-account fixture. Original deadlines, validators and one-send
+rules remain enforced. The verified 1 MiB local connected fixture exposed a
+remaining timing blocker: 12,813.567 ms total operation and completion 1,463 ms
+after its deadline. It remains `review-required`; this integration is unmerged.
+Next: reduce repeated exact evidence processing in signer handoff and submission,
+then rerun this fixed workload before prescribing another host execution. Actual
+exit receipt reconciliation and scoped closure remain open.
 
 
 The next [controlled continuation boundary](CONTROLLED-CONTINUATION.md) adds an

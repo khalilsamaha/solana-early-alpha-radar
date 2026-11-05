@@ -1,5 +1,9 @@
 # Read-only canonical digest reuse — November 4, 2026
 
+The November 5 host observation passed. See the subsequent
+[continuation integration](CONTINUATION-DIGEST-INTEGRATION.md) for the current
+scope and acceptance status; the sections below record the observation-only release.
+
 The 19:54 UTC host reports confirm that the exact expired original/replacement
 pair remains eligible for the separately controlled continuation. Inspection made
 no RPC request. Observation completed all twenty fixed requests without modifying

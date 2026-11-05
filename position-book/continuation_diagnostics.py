@@ -8,10 +8,11 @@ import time
 
 VERSION='continuation-rehearsal-diagnostics-1'
 PHASES=frozenset(('connected-rehearsal','fixture-class-setup','fixture-instance-setup','entry-collection','entry-settlement',
+    'continuation-collection-persistence','continuation-signing-handoff','continuation-submission',
     'original-preparation','original-expiry-wait','replacement-preparation','replacement-expiry-wait',
     'predecessor-snapshot','continuation-fixture-inputs','continuation-sign-send','connected-assertions',
     'preserved-records','independent-contract','repeat-refusal-recovery','repeated-recovery','fixture-cleanup'))
-CODES=frozenset(('original-not-prepared','previous-not-prepared','temporary-scope',
+CODES=frozenset(('canonical-digest-reuse-missing','synthetic-program-size','original-not-prepared','previous-not-prepared','temporary-scope',
     'exit-capture-expired','exit-capture-time-budget','exit-capture-stopped','exit-capture-simulation',
     'exit-capture-initial-pool','exit-capture-source-changed','exit-capture-admission-changed',
     'exit-collection-expired','exit-evidence-unavailable','exit-preparation-expired',
@@ -25,6 +26,7 @@ CODES=frozenset(('original-not-prepared','previous-not-prepared','temporary-scop
     'independent-contract-cases','source-mutated','repeat-attempt','recovery-not-observation',
     'repeat-send','repeated-recovery-mutated','repeated-recovery-send'))
 STATES=frozenset(('unavailable','inspection-required','exit-prepared-research-only',
+    'exit-signed-recorded',
     'exit-preparation-expired','exit-preparation-stopped','exit-evidence-collected-research-only',
     'fresh-exit-inspection-required','exit-submission-unknown','rpc-acknowledged',
     'entry-position-open','entry-settled-exit-not-prepared','exit-finalized-evidence'))

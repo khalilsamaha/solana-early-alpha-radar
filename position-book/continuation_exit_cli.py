@@ -11,12 +11,15 @@ from report import publish
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--large-fixture',action='store_true',help='Use a fixed 1 MiB synthetic program in the offline connected fixture.')
     p.add_argument('--output',type=Path,required=True);a=p.parse_args()
     if a.output.exists() or a.output.is_symlink() or not a.output.parent.is_dir():raise ValueError('output-unavailable')
-    result=run();result['capturedAt']=datetime.now(timezone.utc).isoformat();publish(a.output,result)
+    result=run(large_fixture=True) if a.large_fixture else run();result['capturedAt']=datetime.now(timezone.utc).isoformat();publish(a.output,result)
     print('State:',result['state']);print('Checks passed:',result['casesPassed'])
     print('Independent signer contract checks:',len(result.get('independentContractCases',{})))
     print('Connected continuation/sign/send time (ms):',result['integrationElapsedMs'])
+    print('Synthetic program bytes:',result.get('programFixtureBytes'))
+    print('Canonical digest reuse:',result.get('canonicalDigestReplay'))
     print('Deadline headroom (ms):',result.get('deadlineHeadroomMs'))
     print('Failed phase:',result.get('failedPhase'))
     for row in result.get('diagnosticPhases',[]):

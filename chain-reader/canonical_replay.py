@@ -150,3 +150,25 @@ def operation(fn):
             result['canonicalDigestReplay'] = statistics()
             return result
     return wrapped
+
+
+def summary(value):
+    """Bounded diagnostics only; never copy retained inputs or arbitrary text."""
+    if type(value) is not dict or value.get('version') != VERSION:
+        return None
+    if (type(value.get('enabled')) is not bool or
+            value.get('reusesValidationOrAuthorization') is not False or
+            value.get('rechecksFullInputContent') is not True):
+        return None
+    limits = dict(calls=10_000_000, hits=10_000_000, computations=10_000_000,
+                  capacityBypasses=10_000_000, ineligibleBypasses=10_000_000,
+                  failures=10_000_000, evictions=10_000_000,
+                  retainedBytes=MAX_BYTES, entries=MAX_ENTRIES)
+    if any(type(value.get(k)) is not int or not 0 <= value[k] <= cap for k, cap in limits.items()):
+        return None
+    if (type(value.get('maximumEntries')) is not int or value['maximumEntries'] != MAX_ENTRIES or
+            type(value.get('maximumRetainedBytes')) is not int or value['maximumRetainedBytes'] != MAX_BYTES):
+        return None
+    return dict(version=VERSION, enabled=value['enabled'], **{k:value[k] for k in limits},
+                maximumEntries=MAX_ENTRIES, maximumRetainedBytes=MAX_BYTES,
+                reusesValidationOrAuthorization=False, rechecksFullInputContent=True)
