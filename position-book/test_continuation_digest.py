@@ -17,6 +17,36 @@ FLAGS = dict(expected_original_sha256='a'*64, expected_current_sha256='b'*64,
 
 
 class ContinuationDigestTests(unittest.TestCase):
+    def test_fixture_preparation_keeps_clock_and_starts_each_scope_empty(self):
+        stamps=iter([100,200]);clock=lambda:next(stamps)
+        def prepare(*args,**kwargs):
+            self.assertIs(kwargs['clock'],clock)
+            a=memo.digest({'x':'same'});self.assertEqual(memo.digest({'x':'same'}),a)
+            return dict(stamp=kwargs['clock']())
+        for expected in (100,200):
+            result=checks.prepare_fixture(prepare,clock=clock)
+            self.assertEqual(result['stamp'],expected)
+            self.assertEqual(result['canonicalDigestReplay']['computations'],1)
+            self.assertEqual(result['canonicalDigestReplay']['hits'],1)
+            checks.require_cold_reuse_scopes()
+
+    def test_fixture_preparation_failure_clears_all_reuse_and_keeps_expiry(self):
+        scopes=(memo._SCOPE,fresh.encoding_replay._SCOPE,
+                fresh.admission_history_replay._SCOPE,fresh.fresh_signing.timing.wire._SIGNATURE_SCOPE)
+        def expired():
+            self.assertTrue(all(scope.get() is not None for scope in scopes))
+            memo.digest({'large':'x'*5000})
+            raise ValueError('replacement-expired-before-write')
+        with self.assertRaisesRegex(ValueError,'replacement-expired-before-write'):
+            checks.prepare_fixture(expired)
+        checks.require_cold_reuse_scopes()
+        for scope in scopes:
+            token=scope.set(('unexpected',))
+            try:
+                with self.assertRaisesRegex(ValueError,'fixture-reuse-scope-leaked'):
+                    checks.require_cold_reuse_scopes()
+            finally:scope.reset(token)
+
     def test_scope_reuses_exact_hash_only_inside_continuation_wrapper(self):
         def inner(*args, **kwargs):
             memo.digest({'n': 1});memo.digest({'n': 1})
@@ -117,6 +147,7 @@ class ContinuationDigestTests(unittest.TestCase):
         self.assertEqual(result['state'],'review-required')
         self.assertEqual(result['programFixtureBytes'],5)
         self.assertEqual(result['failedPhase'],'fixture-instance-setup')
+        self.assertFalse(result['continuationStarted'])
         self.assertTrue(result['temporaryLedgersRemoved'])
         rows=[r for r in result['diagnosticPhases'] if r['phase']=='fixture-instance-setup']
         self.assertEqual(rows[0]['diagnosticCode'],'synthetic-program-size')

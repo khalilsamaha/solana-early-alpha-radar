@@ -21,6 +21,25 @@ from continuation_diagnostics import phase,observation
 VERSION='continuation-exit-integration-1'
 
 
+@m.fresh_signing.timing.signature_replay
+@m.encoding_replay.operation
+@m.admission_history_replay.operation
+@m.canonical_replay.operation
+def prepare_fixture(fn,*args,**kwargs):
+    """Optimize only disposable predecessor construction; keep every real clock.
+
+    These are fresh independent scopes for each prerequisite. They end before
+    the measured continuation; ordinary production preparation is not changed.
+    """
+    return fn(*args,**kwargs)
+
+
+def require_cold_reuse_scopes():
+    scopes=(m.canonical_replay._SCOPE,m.encoding_replay._SCOPE,
+            m.admission_history_replay._SCOPE,m.fresh_signing.timing.wire._SIGNATURE_SCOPE)
+    check(all(scope.get() is None for scope in scopes),'fixture-reuse-scope-leaked')
+
+
 def fault_checks():
     cases={}
     for kind in ('stop','wrong-original','wrong-current','marker','write-failure','budget','lost-signer','deadline','stop-after-write','persisted-expiry'):
@@ -98,8 +117,10 @@ def connected(fixture,report):
     with patch.object(m.collection.exit,'BASELINE',baseline):
         with phase(report,'original-preparation') as diagnostic:
             first,e=exit_inputs(f.e,accounting,clock())
-            old=m.collection.collect_and_prepare(f.home,f.wallet,f.pool,opener=Opener(first,e),clock=clock)
+            old=prepare_fixture(m.collection.collect_and_prepare,f.home,f.wallet,f.pool,opener=Opener(first,e),clock=clock)
             diagnostic['observation']=observation(old)
+            diagnostic['fixtureCanonicalDigestReplay']=m.canonical_replay.summary(old.get('canonicalDigestReplay'))
+            require_cold_reuse_scopes()
             check(old.get('createdThisRun') is True,'original-not-prepared')
         # Let actual wall time expire the synthetic original. Never move the real
         # signer's clock or widen the ten-second collection window to make a pass.
@@ -108,10 +129,12 @@ def connected(fixture,report):
         with phase(report,'replacement-preparation') as diagnostic:
             first,e=exit_inputs(f.e,accounting,clock());prior_rpc=Opener(first,e)
             prior_rpc.rows[7]['value']['blockhash']=fake_key('continuation-previous-blockhash')
-            previous=m.replacement.collect_and_replace(f.home,f.wallet,f.pool,
+            previous=prepare_fixture(m.replacement.collect_and_replace,f.home,f.wallet,f.pool,
                 expected_preparation_sha256=old['recordSha256'],allow_unsigned_replacement=True,
                 opener=prior_rpc,clock=clock)
             diagnostic['observation']=observation(previous)
+            diagnostic['fixtureCanonicalDigestReplay']=m.canonical_replay.summary(previous.get('canonicalDigestReplay'))
+            require_cold_reuse_scopes()
             check(previous.get('createdThisRun') is True,'previous-not-prepared')
         with phase(report,'replacement-expiry-wait') as diagnostic:
             time.sleep(max(0,(previous['binding']['validUntilExclusiveMs']-clock())/1000)+0.01)
@@ -143,6 +166,10 @@ def connected(fixture,report):
                     transports.append(FakeRpc(c,lost=True))
                 return transports[0].open(request,timeout)
         with phase(report,'continuation-sign-send') as diagnostic:
+            require_cold_reuse_scopes()
+            report['fixtureSetup']=dict(version='offline-predecessor-reuse-1',
+                realClocksUnchanged=True,scopesClearedBeforeContinuation=True,
+                changesProductionWrappers=False)
             def timed(name,fn):
                 @wraps(fn)
                 def call(*args,**kwargs):
@@ -152,6 +179,7 @@ def connected(fixture,report):
                         return value
                 return call
             start=time.monotonic()
+            report['continuationStarted']=True
             # Measurement wrappers only: use the original functions, arguments,
             # clocks and deadlines. These hooks exist in this offline fixture,
             # never in the operational CLI or the independent signer.
@@ -161,6 +189,7 @@ def connected(fixture,report):
                 r=m.continue_sign_submit(f.home,f.wallet,f.pool,expected_original_sha256=old['recordSha256'],
                     expected_current_sha256=previous['recordSha256'],allow_unsigned_continuation=True,allow_private_key_signing=True,allow_devnet_submit=True,
                     collection_opener=rpc,submission_opener=Lazy(),clock=clock)
+            require_cold_reuse_scopes()
             report['integrationElapsedMs']=round((time.monotonic()-start)*1000,3)
             report['deadlineHeadroomMs']=r.get('originalDeadlineMs',0)-r.get('completedAtMs',0) if r.get('completedAtMs') else None
             report['encodingReplay']=r.get('encodingReplay')
@@ -268,6 +297,7 @@ def _run(*,large_fixture=False,faults):
         disposableTestKeySigning=True,transactionsSent=0,productionLedgerUpdated=False,
         runtimeIntegrated=False,executionApproved=False,automaticRetryAllowed=False,
         integrationElapsedMs=None,integrationStage=None,integrationDiagnostic=None,
+        continuationStarted=False,
         limitations=['Synthetic RPC and disposable keys only; no real network latency or user position test.',
                     'The original ten-second freshness and thirty-second shared budget are unchanged.',
                     'A returned quote or finalized synthetic receipt is not evidence of profitability.'])

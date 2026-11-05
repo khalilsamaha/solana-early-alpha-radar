@@ -1,5 +1,10 @@
 # Bounded canonical content sharing — November 5, 2026
 
+Host follow-up: Kali stopped before this optimization could be measured, during
+legacy disposable replacement construction. See the
+[prerequisite correction](CONTINUATION-FIXTURE-SETUP.md). The local results below
+remain valid; host acceptance is not established by the failed setup run.
+
 ## Problem and change
 
 The verified 1 MiB continuation rehearsal previously failed its completion timing

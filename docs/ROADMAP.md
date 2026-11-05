@@ -1,5 +1,18 @@
 # Project roadmap — updated 5 November 2026
 
+Kali's content-sharing rehearsal stopped during disposable **replacement setup**
+(`replacement-expired-before-write`, 15,256.208 ms). It never entered the optimized
+continuation, so host timing acceptance is still unknown. Eleven preliminary
+fault checks passed; no real network or user-wallet action occurred. The
+[offline prerequisite correction](CONTINUATION-FIXTURE-SETUP.md) gives each setup
+operation independent existing bounded reuse scopes, keeps every real clock and
+deadline, and asserts that all caches are cleared before the measured continuation.
+Production wrappers and the held position are unchanged. The corrected local
+1 MiB rehearsal passed sixteen integration and fourteen signer checks: replacement
+setup 1,652.018 ms, continuation 8,918.826 ms with 2,176 ms headroom. Next: the
+corrected pinned offline Kali rehearsal, followed by review of its actual target
+timing. This local pass does not establish host or live-network acceptance.
+
 The [bounded canonical content-sharing correction](CANONICAL-CONTENT-SHARING.md)
 now passes the same verified 1 MiB connected fixture locally: 8,529.428 ms,
 2,603 ms positive completion headroom, all sixteen fault/integration cases and

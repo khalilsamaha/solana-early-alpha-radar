@@ -19,6 +19,8 @@ def main():
     print('Independent signer contract checks:',len(result.get('independentContractCases',{})))
     print('Connected continuation/sign/send time (ms):',result['integrationElapsedMs'])
     print('Synthetic program bytes:',result.get('programFixtureBytes'))
+    print('Measured continuation started:',result.get('continuationStarted'))
+    print('Fixture setup:',result.get('fixtureSetup'))
     print('Canonical digest reuse:',result.get('canonicalDigestReplay'))
     print('Deadline headroom (ms):',result.get('deadlineHeadroomMs'))
     print('Failed phase:',result.get('failedPhase'))
