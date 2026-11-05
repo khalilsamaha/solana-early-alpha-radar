@@ -53,6 +53,8 @@ class ContinuationDigestTests(unittest.TestCase):
         self.assertEqual(projected,value)
         self.assertNotIn('PRIVATE',json.dumps(projected))
         for key,bad in (('calls',True),('hits',-1),('entries',129),('retainedBytes',memo.MAX_BYTES+1),
+                        ('sharedStrings',True),('sharedStringBytes',memo.MAX_BYTES+1),
+                        ('sharedStringReferences',memo.MAX_NODES*memo.MAX_ENTRIES+1),
                         ('version','PRIVATE'),('rechecksFullInputContent',False)):
             with self.subTest(key=key):self.assertIsNone(memo.summary(dict(value,**{key:bad})))
         self.assertIsNone(memo.summary(None))

@@ -125,5 +125,104 @@ class CanonicalReplayTests(unittest.TestCase):
         self.assertFalse(result['canonicalDigestReplay']['reusesValidationOrAuthorization'])
         self.assertIsNone(m._SCOPE.get())
 
+    def test_equal_large_copies_share_storage_and_keep_distinct_record_hashes(self):
+        value='X'*(1024*1024)
+        expected=[m.original({'account':value,'record':i}) for i in range(24)]
+        with m.scope() as stats:
+            for _ in range(2):
+                for i in range(24):
+                    copy=value.encode().decode()
+                    self.assertIsNot(copy,value)
+                    self.assertEqual(m.digest({'account':copy,'record':i}),expected[i])
+            self.assertEqual(stats()['hits'],24)
+            self.assertEqual(stats()['sharedStrings'],1)
+            self.assertEqual(stats()['sharedStringReferences'],24)
+            self.assertLess(stats()['retainedBytes'],2*1024*1024)
+            entries,_=m._SCOPE.get()
+            held=[entry[2][0] for entry in entries.values()]
+            self.assertTrue(all(s is held[0] for s in held))
+        self.assertEqual(stats()['sharedStrings'],0)
+        self.assertEqual(stats()['sharedStringBytes'],0)
+
+    def test_eviction_releases_last_reference_and_counts_repeated_fields_once(self):
+        a='A'*5000;b='B'*5000
+        with patch.object(m,'MAX_ENTRIES',2),m.scope() as stats:
+            m.digest({'a':a,'again':a})
+            self.assertEqual(stats()['sharedStringReferences'],1)
+            m.digest({'a':a,'tag':2})
+            self.assertEqual(stats()['sharedStringReferences'],2)
+            m.digest({'b':b})
+            self.assertEqual(stats()['sharedStrings'],2)
+            m.digest({'small':True})
+            self.assertEqual(stats()['sharedStrings'],1)
+            values,_=m._SCOPE.get()
+            self.assertNotIn(a,values.strings)
+            m.digest({'last':False})
+            self.assertEqual(stats()['sharedStrings'],0)
+
+    def test_sharing_preserves_per_input_size_limit_and_changed_content(self):
+        text='a'*5000
+        with m.scope() as stats:
+            first=m.digest({'x':text})
+            changed={'x':text[:-1]+'b'}
+            self.assertNotEqual(first,m.digest(changed))
+            self.assertEqual(m.digest(changed),m.original(changed))
+            with patch.object(m,'MAX_ENTRY_BYTES',7000):
+                repeated={'x':text,'y':text}
+                self.assertEqual(m.digest(repeated),m.original(repeated))
+                self.assertEqual(stats()['ineligibleBypasses'],1)
+            self.assertEqual(stats()['entries'],2)
+
+    def test_shared_storage_is_within_byte_budget_through_churn(self):
+        with patch.object(m,'MAX_BYTES',14000),m.scope() as stats:
+            for i in range(60):
+                value={'x':chr(65+i%3)*5000,'i':i}
+                self.assertEqual(m.digest(value),m.original(value))
+                self.assertLessEqual(stats()['retainedBytes'],14000)
+                values,_=m._SCOPE.get()
+                # Every pool object has actual retained users; every retained
+                # large atom is the exact same immutable object as in the pool.
+                for s,(stored,refs,_) in values.strings.items():
+                    users=[atom for _,_,atoms in values.values() for atom in atoms if atom==s]
+                    self.assertEqual(len(users),refs)
+                    self.assertTrue(all(atom is stored for atom in users))
+            self.assertGreater(stats()['evictions'],0)
+        self.assertEqual(stats()['retainedBytes'],0)
+
+    def test_failed_large_computation_and_nested_scope_do_not_retain_strings(self):
+        text='x'*5000
+        with m.scope() as outer:
+            m.digest(text)
+            with m.scope() as inner:
+                with patch.object(m,'original',side_effect=ValueError('failed')):
+                    with self.assertRaises(ValueError):m.digest(text)
+                self.assertEqual(inner()['sharedStrings'],0)
+            self.assertEqual(outer()['sharedStrings'],1)
+            self.assertEqual(m.digest(text),m.original(text))
+            self.assertEqual(outer()['hits'],1)
+
+    def test_last_user_eviction_recalculates_shared_cost_before_admission(self):
+        text='x'*5000
+        with patch.object(m,'MAX_BYTES',7000),m.scope() as stats:
+            m.digest({'a':text})
+            self.assertEqual(stats()['entries'],1)
+            # Fits if the existing shared allocation is ignored, but cannot fit
+            # after its last retained user is evicted. Never undercount it.
+            value={'a':text,'b':text}
+            self.assertEqual(m.digest(value),m.original(value))
+            self.assertEqual(stats()['entries'],0)
+            self.assertEqual(stats()['retainedBytes'],0)
+            self.assertEqual(stats()['sharedStrings'],0)
+            self.assertEqual(stats()['capacityBypasses'],1)
+
+    def test_unicode_and_escaping_share_exact_content_only(self):
+        values=['é'*5000,'😀'*5000,('"\\\n\t')*2000]
+        with m.scope() as stats:
+            for s in values:
+                self.assertEqual(m.digest({s:s}),m.original({s:s}))
+                self.assertEqual(m.digest({s.encode().decode():s.encode().decode()}),m.original({s:s}))
+            self.assertEqual(stats()['sharedStrings'],3)
+            self.assertEqual(stats()['hits'],3)
+
 
 if __name__ == '__main__': unittest.main()

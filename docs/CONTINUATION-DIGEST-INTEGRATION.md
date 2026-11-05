@@ -1,5 +1,10 @@
 # Canonical digest continuation integration — November 5, 2026
 
+Follow-up: [bounded canonical content sharing](CANONICAL-CONTENT-SHARING.md)
+resolves this local large-fixture timing failure while preserving the same bounds.
+The failed measurements below are retained as historical evidence. Kali
+acceptance of the follow-up remains separate and pending.
+
 ## Host observation accepted; actual exit remains open
 
 The 04:58 CET inspection and observation reports passed their respective read-only

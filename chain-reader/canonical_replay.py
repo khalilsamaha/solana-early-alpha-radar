@@ -7,12 +7,13 @@ import json
 import hashlib
 import sys
 
-VERSION = 'exact-canonical-digest-1'
+VERSION = 'exact-canonical-digest-2'
 MAX_ENTRIES = 128
 MAX_BYTES = 32 * 1024 * 1024
 MAX_ENTRY_BYTES = 16 * 1024 * 1024
 MAX_NODES = 8192
 MAX_DEPTH = 48
+SHARED_STRING_MIN = 4096
 _SCOPE = ContextVar('exact_canonical_digest', default=None)
 
 
@@ -24,19 +25,22 @@ def original(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
 
 
-def frozen(value):
+def frozen(value, shared):
     """Exact typed content, not identity or digest. Never retain mutable inputs.
 
     Unsupported types and excessive traversal bypass reuse, not serialization.
-    A generous per-node allowance includes tuple/key/table bookkeeping; strings
-    are counted at their full Python allocation size even when shared.
+    The original full-size per-input cap still applies. Equal large immutable
+    strings may share storage across retained keys; no mutable object is shared.
+    Return structural bytes separately from the deduplicated string references.
     """
     nodes = 0
     size = 0
+    shared_bytes = 0
+    atoms = {}
     active = set()
 
     def visit(item, depth):
-        nonlocal nodes, size
+        nonlocal nodes, size, shared_bytes
         nodes += 1
         if nodes > MAX_NODES or depth > MAX_DEPTH:
             raise Ineligible
@@ -47,6 +51,14 @@ def frozen(value):
         if size > MAX_ENTRY_BYTES:
             raise Ineligible
         if kind is str:
+            if len(item) >= SHARED_STRING_MIN:
+                shared_bytes += sys.getsizeof(item)
+                canonical = atoms.get(item)
+                if canonical is None:
+                    stored = shared.get(item)
+                    canonical = item if stored is None else stored[0]
+                    atoms[canonical] = canonical
+                return ('s', canonical)
             return ('s', item)
         if kind is bool:
             return ('b', item)
@@ -70,7 +82,43 @@ def frozen(value):
             active.remove(id(item))
 
     key = visit(value, 0)
-    return key, size
+    return key, size, size - shared_bytes, tuple(atoms)
+
+
+class Entries(OrderedDict):
+    """Scope-local storage: shared strings live only while a retained key uses them."""
+    def __init__(self):
+        super().__init__()
+        self.strings = {}
+
+    def additional_bytes(self, structural, atoms):
+        # Conservative allowance for each shared dictionary entry and refcount.
+        return structural + sum(sys.getsizeof(s) + 512 for s in atoms if s not in self.strings)
+
+    def remove_oldest(self):
+        _, (_, structural, atoms) = self.popitem(last=False)
+        removed = structural
+        for s in atoms:
+            row = self.strings[s]
+            row[1] -= 1
+            if row[1] == 0:
+                removed += row[2]
+                del self.strings[s]
+        return removed
+
+    def remember(self, key, result, structural, atoms):
+        additional = self.additional_bytes(structural, atoms)
+        for s in atoms:
+            if s in self.strings:
+                self.strings[s][1] += 1
+            else:
+                self.strings[s] = [s, 1, sys.getsizeof(s) + 512]
+        self[key] = (result, structural, atoms)
+        return additional
+
+    def clear(self):
+        super().clear()
+        self.strings.clear()
 
 
 def materialize(key):
@@ -89,7 +137,7 @@ def materialize(key):
 def scope(*, enabled=True):
     if type(enabled) is not bool:
         raise ValueError('canonical-scope-mode')
-    values = OrderedDict()
+    values = Entries()
     counts = dict(calls=0, hits=0, computations=0, capacityBypasses=0,
                   ineligibleBypasses=0, failures=0, retainedBytes=0, evictions=0)
     token = _SCOPE.set((values, counts) if enabled else None)
@@ -98,6 +146,9 @@ def scope(*, enabled=True):
         return dict(version=VERSION, enabled=enabled, **counts,
                     entries=len(values), maximumEntries=MAX_ENTRIES,
                     maximumRetainedBytes=MAX_BYTES,
+                    sharedStrings=len(values.strings),
+                    sharedStringBytes=sum(row[2] for row in values.strings.values()),
+                    sharedStringReferences=sum(row[1] for row in values.strings.values()),
                     reusesValidationOrAuthorization=False, rechecksFullInputContent=True)
     try:
         yield snapshot
@@ -114,7 +165,7 @@ def digest(value):
     values, counts = current
     counts['calls'] += 1
     try:
-        key, key_size = frozen(value)
+        key, key_size, structural, atoms = frozen(value, values.strings)
     except (Ineligible, RuntimeError, KeyError):
         counts['ineligibleBypasses'] += 1
         return original(value)
@@ -129,16 +180,20 @@ def digest(value):
     except BaseException:
         counts['failures'] += 1
         raise
-    retained = key_size + sys.getsizeof(result)
-    if retained > MAX_ENTRY_BYTES or retained > MAX_BYTES:
+    # Entry tuple, atom-reference tuple and OrderedDict/index bookkeeping are
+    # charged in addition to the per-node frozen-tree allowance.
+    structural += sys.getsizeof(result) + 512
+    if key_size + sys.getsizeof(result) > MAX_ENTRY_BYTES or values.additional_bytes(structural, atoms) > MAX_BYTES:
         counts['capacityBypasses'] += 1
         return result
-    while values and (len(values) >= MAX_ENTRIES or counts['retainedBytes'] + retained > MAX_BYTES):
-        _, (_, removed) = values.popitem(last=False)
-        counts['retainedBytes'] -= removed
+    while values and (len(values) >= MAX_ENTRIES or
+                      counts['retainedBytes'] + values.additional_bytes(structural, atoms) > MAX_BYTES):
+        counts['retainedBytes'] -= values.remove_oldest()
         counts['evictions'] += 1
-    values[key] = (result, retained)
-    counts['retainedBytes'] += retained
+    if counts['retainedBytes'] + values.additional_bytes(structural, atoms) > MAX_BYTES:
+        counts['capacityBypasses'] += 1
+        return result
+    counts['retainedBytes'] += values.remember(key, result, structural, atoms)
     return result
 
 
@@ -163,7 +218,9 @@ def summary(value):
     limits = dict(calls=10_000_000, hits=10_000_000, computations=10_000_000,
                   capacityBypasses=10_000_000, ineligibleBypasses=10_000_000,
                   failures=10_000_000, evictions=10_000_000,
-                  retainedBytes=MAX_BYTES, entries=MAX_ENTRIES)
+                  retainedBytes=MAX_BYTES, entries=MAX_ENTRIES,
+                  sharedStrings=MAX_BYTES // SHARED_STRING_MIN,
+                  sharedStringBytes=MAX_BYTES, sharedStringReferences=MAX_NODES * MAX_ENTRIES)
     if any(type(value.get(k)) is not int or not 0 <= value[k] <= cap for k, cap in limits.items()):
         return None
     if (type(value.get('maximumEntries')) is not int or value['maximumEntries'] != MAX_ENTRIES or

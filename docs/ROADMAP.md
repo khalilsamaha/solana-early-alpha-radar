@@ -1,5 +1,16 @@
 # Project roadmap — updated 5 November 2026
 
+The [bounded canonical content-sharing correction](CANONICAL-CONTENT-SHARING.md)
+now passes the same verified 1 MiB connected fixture locally: 8,529.428 ms,
+2,603 ms positive completion headroom, all sixteen fault/integration cases and
+fourteen independent signer cases. It replaces duplicated immutable string storage
+inside the existing attempt-local cache, retaining the 32 MiB/128-entry limits,
+full-content equality and every validator/source reread. This resolves the local
+large-workload completion failure described below; **Kali acceptance is pending**.
+Next: run the pinned offline large-fixture check on Kali. No production restart,
+held-position execution, automatic retry, release or mainnet action follows from
+a synthetic pass. The actual devnet exit and scoped closure are still pending.
+
 The November 5 read-only digest observation passed: collection 7,114 ms, preserved
 validation 1,067 ms, remaining headroom 1,819 ms. Both expired predecessor identities
 and all inventory/fee holds remain unchanged; no preparation, signing or send
