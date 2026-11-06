@@ -19,6 +19,7 @@ class ContinuationExitTests(unittest.TestCase):
             phases={row['phase']:row for row in result['diagnosticPhases']}
             self.assertEqual(phases['continuation-signing-handoff']['signatureVerification']['verifierProcesses'],1)
             self.assertEqual(phases['continuation-submission']['signatureVerification']['verifierProcesses'],0)
+            self.assertEqual(phases['continuation-submission']['preservedGenerationReads'],8)
             self.assertGreater(result['signatureVerification']['memoHits'],0)
             self.assertTrue(result['temporaryLedgersRemoved'])
             self.assertEqual(result['realNetworkRequests'],0)

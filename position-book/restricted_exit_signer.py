@@ -19,7 +19,11 @@ ACK='exit-signer-ack.json'
 
 
 def attempt(root,book):
-    state=handoff.read(book,book.j.now());check(state is not None,'exit-signer-boundary-required')
+    return _attempt_for_state(root,book,handoff.read(book,book.j.now()))
+
+
+def _attempt_for_state(root,book,state):
+    check(state is not None,'exit-signer-boundary-required')
     path=handoff.preparation.entry.submission.handoff.storage(root).parent
     v=json.loads(private_file(path/ATTEMPT,1024))
     fields(v,{'format','requestSha256','signingHeadSha256','preparationSha256','atMs'},'exit-signer-attempt-schema')
@@ -32,7 +36,23 @@ def attempt(root,book):
 
 
 def acknowledgment(root,book):
-    state=attempt(root,book);path=handoff.preparation.entry.submission.handoff.storage(root).parent
+    return _read_ack(root,book,attempt(root,book))
+
+
+def _acknowledgment_in_snapshot(root,book,state):
+    """Internal transport use with its just-replayed signing state.
+
+    The caller owns one read-only transaction on this book. No state is cached,
+    and the attempt/ack files, database boundary and signed wire are rechecked.
+    Standalone acknowledgment/recovery always replays the ledger itself.
+    """
+    check(book.db.in_transaction and book.db.execute('PRAGMA query_only').fetchone()[0]==1,
+          'exit-ack-read-snapshot-required')
+    return _read_ack(root,book,_attempt_for_state(root,book,state))
+
+
+def _read_ack(root,book,state):
+    path=handoff.preparation.entry.submission.handoff.storage(root).parent
     ack=json.loads(private_file(path/ACK,4096))
     fields(ack,{'format','requestSha256','signedTransactionBase64','wireSha256'},'exit-signer-ack-schema')
     check(ack['format']=='exit-signer-ack-1' and ack['requestSha256']==state['requestSha256'],'exit-signer-ack-binding')

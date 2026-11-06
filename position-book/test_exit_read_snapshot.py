@@ -10,6 +10,74 @@ from exit_submission_checks import signed_case,submit,recover,FakeRpc
 
 
 class SnapshotTests(unittest.TestCase):
+    def test_ack_snapshot_requires_read_transaction_and_standalone_replays(self):
+        with signed_case() as c:
+            b=c.book();s=m.ExitSubmission(b)
+            try:
+                state=s.signing()
+                with self.assertRaisesRegex(ValueError,'exit-ack-read-snapshot-required'):
+                    m.backend._acknowledgment_in_snapshot(c.home,b,state)
+                b.db.execute('BEGIN')
+                with self.assertRaisesRegex(ValueError,'exit-ack-read-snapshot-required'):
+                    m.backend._acknowledgment_in_snapshot(c.home,b,state)
+                b.db.execute('ROLLBACK')
+                with s.snapshot():
+                    state=s.signing()
+                    with patch.object(m.handoff,'read',side_effect=AssertionError('duplicate replay')):
+                        self.assertEqual(m.backend._acknowledgment_in_snapshot(c.home,b,state),c.exit_wire)
+                with patch.object(m.handoff,'read',wraps=m.handoff.read) as replay:
+                    self.assertEqual(m.backend.acknowledgment(c.home,b),c.exit_wire)
+                    self.assertEqual(replay.call_count,1)
+            finally:b.close()
+
+    def test_ack_file_changes_are_checked_even_inside_same_snapshot(self):
+        with signed_case() as c:
+            b=c.book();s=m.ExitSubmission(b);path=c.path.parent/m.backend.ACK
+            try:
+                with s.snapshot():
+                    state=s.signing()
+                    self.assertEqual(m.backend._acknowledgment_in_snapshot(c.home,b,state),c.exit_wire)
+                    value=json.loads(path.read_text());value['wireSha256']='0'*64
+                    path.write_text(json.dumps(value))
+                    with self.assertRaisesRegex(ValueError,'exit-signer-ack-hash'):
+                        m.backend._acknowledgment_in_snapshot(c.home,b,state)
+            finally:b.close()
+
+    def test_rpc_has_no_read_transaction_and_changed_ack_blocks_boundary(self):
+        with signed_case() as c:
+            path=c.path.parent/m.backend.ACK;rpc_calls=[]
+            def change(method):
+                # An exclusive transaction can start only if transport released
+                # its read snapshot before invoking the provider.
+                db=sqlite3.connect(c.path,timeout=0,isolation_level=None)
+                try:db.execute('BEGIN EXCLUSIVE');db.execute('ROLLBACK')
+                finally:db.close()
+                rpc_calls.append(method)
+                if method=='getFeeForMessage':
+                    value=json.loads(path.read_text());value['requestSha256']='0'*64
+                    path.write_text(json.dumps(value))
+            rpc=FakeRpc(c,callback=change)
+            with self.assertRaisesRegex(ValueError,'exit-signer-ack-binding'):submit(c,rpc)
+            self.assertTrue(rpc_calls);self.assertNotIn('sendTransaction',rpc_calls)
+            b=c.book()
+            try:self.assertIsNone(b.db.execute('SELECT name FROM sqlite_master WHERE name=?',(m.BOUNDARY,)).fetchone())
+            finally:b.close()
+
+    def test_changed_signing_after_rpc_is_replayed_before_send(self):
+        with signed_case() as c:
+            def corrupt(method):
+                if method=='getFeeForMessage':
+                    db=sqlite3.connect(c.path)
+                    try:
+                        db.execute("UPDATE admission_exit_signing SET value='{}' WHERE seq=2");db.commit()
+                    finally:db.close()
+            rpc=FakeRpc(c,callback=corrupt)
+            with self.assertRaises(ValueError):submit(c,rpc)
+            self.assertFalse(any(r['method']=='sendTransaction' for r in rpc.requests))
+            b=c.book()
+            try:self.assertIsNone(b.db.execute('SELECT name FROM sqlite_master WHERE name=?',(m.BOUNDARY,)).fetchone())
+            finally:b.close()
+
     def test_snapshot_forbids_writes_and_restores_query_only(self):
         db=sqlite3.connect(':memory:',isolation_level=None)
         db.execute('CREATE TABLE probe (n INTEGER)')
