@@ -31,7 +31,6 @@ class ExitTests(unittest.TestCase):
         from signature_replay_checks import fixture
         encoded_wire=fixture()
         original=m.wire.subprocess.run
-        calls=[]
         source={'reservation':{'original':'source'}}
         record={'accounting':{'exitAttemptsConsumed':0,'ownedAcquiredAtomic':'1'}}
         def reviewed(book):
