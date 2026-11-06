@@ -175,21 +175,24 @@ def connected(fixture,report):
             def timed(name,fn):
                 @wraps(fn)
                 def call(*args,**kwargs):
-                    with phase(report,name) as measured:
-                        if name=='continuation-submission':
-                            original=m.collection.exit.saved
-                            count=0
-                            def counted(*read_args,**read_kwargs):
-                                nonlocal count
-                                count+=1
-                                return original(*read_args,**read_kwargs)
-                            try:
-                                with patch.object(m.collection.exit,'saved',counted):
-                                    value=fn(*args,**kwargs)
-                            finally:measured['preservedGenerationReads']=count
-                        else:value=fn(*args,**kwargs)
-                        measured['observation']=observation(value)
-                        return value
+                    with phase(report,name) as measured, m.fresh_signing.timing.wire.signature_verification_scope(reuse_current=True) as signatures:
+                        try:return measured_call(measured,*args,**kwargs)
+                        finally:measured['signatureVerification']=signatures()
+                def measured_call(measured,*args,**kwargs):
+                    if name=='continuation-submission':
+                        original=m.collection.exit.saved
+                        count=0
+                        def counted(*read_args,**read_kwargs):
+                            nonlocal count
+                            count+=1
+                            return original(*read_args,**read_kwargs)
+                        try:
+                            with patch.object(m.collection.exit,'saved',counted):
+                                value=fn(*args,**kwargs)
+                        finally:measured['preservedGenerationReads']=count
+                    else:value=fn(*args,**kwargs)
+                    measured['observation']=observation(value)
+                    return value
                 return call
             start=time.monotonic()
             report['continuationStarted']=True
@@ -205,6 +208,8 @@ def connected(fixture,report):
             require_cold_reuse_scopes()
             report['integrationElapsedMs']=round((time.monotonic()-start)*1000,3)
             report['deadlineHeadroomMs']=r.get('originalDeadlineMs',0)-r.get('completedAtMs',0) if r.get('completedAtMs') else None
+            report['signatureVerification']=r.get('signatureVerification')
+            report['collectionSignatureVerification']=(r.get('preparation') or {}).get('signatureVerification')
             report['encodingReplay']=r.get('encodingReplay')
             report['admissionHistoryReplay']=r.get('admissionHistoryReplay')
             report['canonicalDigestReplay']=m.canonical_replay.summary(r.get('canonicalDigestReplay'))
