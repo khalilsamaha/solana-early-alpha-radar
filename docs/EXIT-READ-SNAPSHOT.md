@@ -102,3 +102,13 @@ Compressed public report SHA-256:
 This local result does not establish Kali or real-network timing. Run the pinned
 offline large-fixture CLI on Kali next and review both timing and recovery checks.
 Keep the branch unmerged and the held operational position untouched meanwhile.
+
+## Kali functional acceptance
+
+The November 6 report passed all 16 integration/fault and 14 independent signer
+checks: 11,654.693 ms elapsed, 643 ms completion headroom, ten preserved-generation
+reads, and stopped/keyless/repeated recovery without another send. Report SHA-256:
+`9aea65abdcd050ef2cb9cc99178481e70575878445e932545b7ff2c66c5e39c8`.
+This supersedes the pending host functional gate above. The margin remains too
+small to establish real-network timing readiness; see
+[the consolidation record](REPLAY-CONSOLIDATION-20261106.md).

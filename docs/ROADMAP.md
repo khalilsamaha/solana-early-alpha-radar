@@ -1,5 +1,20 @@
 # Project roadmap — updated 6 November 2026
 
+The November 6 Kali snapshot correction passed all 16 integration/fault checks
+and 14 independent signer checks with the full 1 MiB fixture. Continuation took
+11,654.693 ms with 643 ms of positive deadline headroom; lost-response and repeated
+keyless recovery passed without resending. This establishes functional host
+acceptance, not robust real-network timing. The prior failed host results remain
+recorded below.
+
+The [November 6 consolidation](REPLAY-CONSOLIDATION-20261106.md) collects the
+validated command, diagnostics and bounded replay improvements. Merge requires
+all twelve CI partitions on the exact PR head. The next engineering work reduces
+remaining collection/signing cost while preserving fresh validation and deadlines.
+Actual devnet continuation, receipt reconciliation and scoped closure remain
+blocked on operational timing evidence. Scanner and study collection are unchanged.
+
+
 The November 6 Kali exact-replay run still misses completion by 457 ms:
 12,710.988 ms, eleven preliminary checks, one simulated lost-response send,
 and no real network or production-wallet activity. The complete signer/recovery
