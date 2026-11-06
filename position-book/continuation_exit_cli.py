@@ -27,7 +27,8 @@ def main():
     print('Failed phase:',result.get('failedPhase'))
     for row in result.get('diagnosticPhases',[]):
         print(row['phase']+':', 'completed='+str(row['completed']), 'ms='+str(row['elapsedMs']),
-              'code='+str(row.get('diagnosticCode')), 'observation='+str(row.get('observation')))
+              'code='+str(row.get('diagnosticCode')), 'observation='+str(row.get('observation')),
+              'preservedGenerationReads='+str(row.get('preservedGenerationReads')))
     print('Synthetic replies and disposable test keys only. No user wallet, real RPC or runtime changes.')
     print('Upload:',a.output.absolute())
     if result['state']!='offline-integration-passed':raise SystemExit(2)

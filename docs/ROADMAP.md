@@ -1,4 +1,20 @@
-# Project roadmap — updated 5 November 2026
+# Project roadmap — updated 6 November 2026
+
+The November 6 Kali exact-replay run still misses completion by 457 ms:
+12,710.988 ms, eleven preliminary checks, one simulated lost-response send,
+and no real network or production-wallet activity. The complete signer/recovery
+gate was not reached. This supersedes the pending host gate below.
+
+The next [consistent exit read correction](EXIT-READ-SNAPSHOT.md) removes repeated
+signing-chain validation within a single read-only database snapshot. Initial
+inspection, precommit validation and final status remain separate fresh reads;
+no verdict survives a write or RPC boundary. The fixture now measures synthetic
+adapter setup separately while keeping it inside the unchanged timing gate.
+Local validation passed 78 targeted regressions, all 16 connected/fault checks
+and 14 independent signer checks. The complete 1 MiB rehearsal took 5,099.893 ms
+with 5,885 ms headroom; submission preserved-generation reads fell from 14 to 10.
+Next: pinned offline Kali acceptance. The pending batch is unmerged; actual
+devnet closure remains outstanding.
 
 The corrected Kali fixture now reaches the continuation, but the host gate still
 fails: 12,480.238 ms overall, `fresh-signing-expired` during submission validation,

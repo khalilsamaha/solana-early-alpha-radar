@@ -3,6 +3,7 @@
 Raw evidence and reservation provenance belong to a trusted in-process caller.
 The standalone CLI exposes only synthetic checks, never an evidence-import permit.
 """
+from contextlib import nullcontext
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -216,7 +217,9 @@ A signing boundary marks uncertainty; it is not a callable signing capability.
     def private_accounting_handoff(self):
         """Private internal read. Never a CLI export or submission authorization."""
         import handoff_contract
-        with self.j.transaction():
+        # This method only reads. Join a caller's stable snapshot rather than
+        # starting a nested transaction or committing the caller's work.
+        with nullcontext() if self.db.in_transaction else self.j.transaction():
             state,_,_,_=self.read()
             check(state is not None and state['state'] in ('signed-recorded','stopped') and
                   state.get('accountingHandoff') is not None, 'handoff-not-ready')

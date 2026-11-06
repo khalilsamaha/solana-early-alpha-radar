@@ -8,7 +8,7 @@ import time
 
 VERSION='continuation-rehearsal-diagnostics-1'
 PHASES=frozenset(('connected-rehearsal','fixture-class-setup','fixture-instance-setup','entry-collection','entry-settlement',
-    'continuation-collection-persistence','continuation-signing-handoff','continuation-submission',
+    'continuation-collection-persistence','continuation-signing-handoff','continuation-submission','synthetic-sender-adapter-setup',
     'original-preparation','original-expiry-wait','replacement-preparation','replacement-expiry-wait',
     'predecessor-snapshot','continuation-fixture-inputs','continuation-sign-send','connected-assertions',
     'preserved-records','independent-contract','repeat-refusal-recovery','repeated-recovery','fixture-cleanup'))

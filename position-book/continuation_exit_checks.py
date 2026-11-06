@@ -156,15 +156,16 @@ def connected(fixture,report):
         class Lazy:
             def open(self,request,timeout=None):
                 if not transports:
-                    book=m.submission.transport._open(f.home,f.wallet,f.pool,clock)
-                    try:
-                        state=m.submission.ExitSubmission(book).signing()
-                        current=m.collection.exit.saved(book,clock())
-                        check(state['request']['preparationSha256']==digest(current) and
-                              state['request']['preparationSha256'] not in (old['recordSha256'],previous['recordSha256']),'continuation-signing-identity')
-                        c=SimpleNamespace(exit_state=state,exit_wire=state['signed']['signedWireBase64'],path=book.j.path,signed={})
-                    finally:book.close()
-                    transports.append(FakeRpc(c,lost=True))
+                    with phase(report,'synthetic-sender-adapter-setup'):
+                        book=m.submission.transport._open(f.home,f.wallet,f.pool,clock)
+                        try:
+                            state=m.submission.ExitSubmission(book).signing()
+                            current=m.collection.exit.saved(book,clock())
+                            check(state['request']['preparationSha256']==digest(current) and
+                                  state['request']['preparationSha256'] not in (old['recordSha256'],previous['recordSha256']),'continuation-signing-identity')
+                            c=SimpleNamespace(exit_state=state,exit_wire=state['signed']['signedWireBase64'],path=book.j.path,signed={})
+                        finally:book.close()
+                        transports.append(FakeRpc(c,lost=True))
                 return transports[0].open(request,timeout)
         with phase(report,'continuation-sign-send') as diagnostic:
             require_cold_reuse_scopes()
@@ -175,7 +176,18 @@ def connected(fixture,report):
                 @wraps(fn)
                 def call(*args,**kwargs):
                     with phase(report,name) as measured:
-                        value=fn(*args,**kwargs)
+                        if name=='continuation-submission':
+                            original=m.collection.exit.saved
+                            count=0
+                            def counted(*read_args,**read_kwargs):
+                                nonlocal count
+                                count+=1
+                                return original(*read_args,**read_kwargs)
+                            try:
+                                with patch.object(m.collection.exit,'saved',counted):
+                                    value=fn(*args,**kwargs)
+                            finally:measured['preservedGenerationReads']=count
+                        else:value=fn(*args,**kwargs)
                         measured['observation']=observation(value)
                         return value
                 return call

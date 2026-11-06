@@ -3,6 +3,7 @@
 No sender, signing, release, new allocation or production CLI. RPC claims are
 revalidated, not independently authenticated. Original reservations remain held.
 """
+from contextlib import nullcontext
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -156,7 +157,8 @@ class ReceiptGate:
 
     def status(self):
         private, identity = self.bound()
-        with self.a.j.transaction():
+        # Pure read: preserve an enclosing evidence snapshot or writer transaction.
+        with nullcontext() if self.db.in_transaction else self.a.j.transaction():
             current, count, _, _ = self.read(private, identity, self.a.j.now())
             return self.public(current, count)
 
