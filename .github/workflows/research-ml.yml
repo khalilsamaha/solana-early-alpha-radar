@@ -21,6 +21,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: research-ml-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   benchmark-tests:
     runs-on: ubuntu-24.04
