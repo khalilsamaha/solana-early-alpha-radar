@@ -1,11 +1,87 @@
-# Project roadmap — updated 4 November 2026
+# Project roadmap — updated 6 November 2026
+
+The November 6 Kali snapshot correction passed all 16 integration/fault checks
+and 14 independent signer checks with the full 1 MiB fixture. Continuation took
+11,654.693 ms with 643 ms of positive deadline headroom; lost-response and repeated
+keyless recovery passed without resending. This establishes functional host
+acceptance, not robust real-network timing. The prior failed host results remain
+recorded below.
+
+The [November 6 consolidation](REPLAY-CONSOLIDATION-20261106.md) collects the
+validated command, diagnostics and bounded replay improvements. Merge requires
+all twelve CI partitions on the exact PR head. The next engineering work reduces
+remaining collection/signing cost while preserving fresh validation and deadlines.
+Actual devnet continuation, receipt reconciliation and scoped closure remain
+blocked on operational timing evidence. Scanner and study collection are unchanged.
+
+
+The November 6 Kali exact-replay run still misses completion by 457 ms:
+12,710.988 ms, eleven preliminary checks, one simulated lost-response send,
+and no real network or production-wallet activity. The complete signer/recovery
+gate was not reached. This supersedes the pending host gate below.
+
+The next [consistent exit read correction](EXIT-READ-SNAPSHOT.md) removes repeated
+signing-chain validation within a single read-only database snapshot. Initial
+inspection, precommit validation and final status remain separate fresh reads;
+no verdict survives a write or RPC boundary. The fixture now measures synthetic
+adapter setup separately while keeping it inside the unchanged timing gate.
+Local validation passed 78 targeted regressions, all 16 connected/fault checks
+and 14 independent signer checks. The complete 1 MiB rehearsal took 5,099.893 ms
+with 5,885 ms headroom; submission preserved-generation reads fell from 14 to 10.
+Next: pinned offline Kali acceptance. The pending batch is unmerged; actual
+devnet closure remains outstanding.
+
+The corrected Kali fixture now reaches the continuation, but the host gate still
+fails: 12,480.238 ms overall, `fresh-signing-expired` during submission validation,
+and zero sender requests. Both disposable predecessors were prepared successfully;
+eleven preliminary fault cases passed. The connected timing and recovery gate
+remains unaccepted. No real network or user-wallet action occurred.
+
+The next [exact canonical comparison correction](CANONICAL-EXACT-MATCH.md) removes
+repeated deep snapshot allocation on exact cache hits and reuses original canonical
+JSON text in the explicit continuation. Each hit compares the full current input
+and exact built-in types against an immutable snapshot. Source reads, current
+validation, the independent signer and all original deadlines remain enforced.
+The digest cap stays 32 MiB; the separate text cache is bounded at 48 MiB and
+cleared after the operation. Scanner services and study collection are unchanged.
+Local verification passed 77 regression tests and the complete 1 MiB rehearsal:
+16 integration/fault checks, 14 signer checks, 7,835.831 ms with 3,448 ms headroom.
+Next: pinned offline Kali acceptance. No merge, actual held-position attempt or
+mainnet activation follows from this local pass.
+
+Earlier [content sharing](CANONICAL-CONTENT-SHARING.md) and
+[offline prerequisite setup](CONTINUATION-FIXTURE-SETUP.md) fixes passed locally,
+but the later Kali continuation timing failure supersedes those pending host
+gates. Actual devnet exit receipt reconciliation and scoped closure remain open.
+
+The November 5 read-only digest observation passed: collection 7,114 ms, preserved
+validation 1,067 ms, remaining headroom 1,819 ms. Both expired predecessor identities
+and all inventory/fee holds remain unchanged; no preparation, signing or send
+occurred. This is observation evidence, not full execution timing acceptance.
+The next [continuation digest integration](CONTINUATION-DIGEST-INTEGRATION.md)
+scopes exact-content hash reuse to the explicit continuation operation and tests
+the complete persisted/sign/send path with disposable keys and an expanded
+synthetic program-account fixture. Original deadlines, validators and one-send
+rules remain enforced. The verified 1 MiB local connected fixture exposed a
+remaining timing blocker: 12,813.567 ms total operation and completion 1,463 ms
+after its deadline. It remains `review-required`; this integration is unmerged.
+Next: reduce repeated exact evidence processing in signer handoff and submission,
+then rerun this fixed workload before prescribing another host execution. Actual
+exit receipt reconciliation and scoped closure remain open.
+
+
+The next [controlled continuation boundary](CONTROLLED-CONTINUATION.md) adds an
+offline command check, zero-RPC local inspection bound to both predecessors, and
+a separately explicit one-shot devnet action with the fixed reviewed backend.
+Local command and connected-wrapper verification precede host inspection. The operational attempt stopped during collection as recorded above; the held
+exit remains unresolved and no fourth preparation or automatic retry is added.
 
 The diagnostic continuation rerun passed on Kali at 19:13:19 UTC on November 4:
 16 fault/connected cases and 14 independent signer cases; every phase completed.
 The synthetic attempt took 5,550.364 ms within its original deadline. The prior
 11-case failed run did not recur and its cause remains unknown. The
-[continuation batch](CONTINUATION-CONSOLIDATION-20261104.md) is ready for grouped
-regression/CI review. Actual devnet exit and scoped settlement remain pending.
+[continuation batch](CONTINUATION-CONSOLIDATION-20261104.md) was merged through PR #76 after all twelve CI groups passed
+at `c18a6eb6d99a21d3b68515774cfd3deee8275a4e`. Actual devnet exit and scoped settlement remain pending.
 Next: an explicitly scoped operational continuation boundary with read-only
 preflight inspection and recovery after uncertain attempts. No automatic retry,
 policy change, extra continuation or mainnet activation is authorized by a pass.

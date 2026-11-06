@@ -73,6 +73,25 @@ class ExitSubmission:
             try:yield ExitSubmission(book)
             finally:book.close()
 
+    @contextmanager
+    def snapshot(self):
+        """One consistent local read; never retained across a write or RPC.
+
+        A caller's existing transaction already provides the snapshot. Otherwise
+        acquire a deferred read transaction and end only the one we opened.
+        No validation result is stored on the object or accepted from a caller.
+        """
+        owned=not self.db.in_transaction
+        query_only=self.db.execute('PRAGMA query_only').fetchone()[0]
+        self.db.execute('PRAGMA query_only=ON')
+        try:
+            if owned:self.db.execute('BEGIN')
+            try:yield
+            finally:
+                if owned:self.db.execute('ROLLBACK')
+        finally:
+            self.db.execute('PRAGMA query_only='+str(int(query_only)))
+
     def signing(self):
         active=[]
         state=handoff.read(self.b,self.b.j.now(),_preparation_sink=active.append)
@@ -96,7 +115,13 @@ class ExitSubmission:
         v=json.loads(rows[0]['value']);check(encoded(v)==rows[0]['value'],'exit-transport-canonical');return v
 
     def boundary(self):
-        state=self.signing();v=self.row(BOUNDARY,16384)
+        with self.snapshot():
+            return self._boundary(self.signing())
+
+    def _boundary(self,state):
+        # Private helper: state belongs to this call's stable database snapshot.
+        check(self.db.in_transaction,'exit-read-snapshot-required')
+        v=self.row(BOUNDARY,16384)
         if v is None:return None
         fields(v,{'format','requestSha256','signingHeadSha256','wireSha256','signature','endpoint','atMs','preflight'},'exit-boundary-schema')
         check(v['format']==VERSION and v['requestSha256']==state['requestSha256'] and
@@ -115,8 +140,10 @@ class ExitSubmission:
             with read_only_journals():
                 reader=transport._open(root,wallet,pool,clock)
                 try:
-                    check(ExitSubmission(reader).boundary() is None,'exit-already-attempted')
-                    state=ExitSubmission(reader).signing()
+                    current=ExitSubmission(reader)
+                    with current.snapshot():
+                        state=current.signing()
+                        check(current._boundary(state) is None,'exit-already-attempted')
                     check(state['state']=='exit-signed-recorded','exit-signing-not-usable')
                     request,_,_=handoff.current(root,reader,wallet,pool,clock)
                     check(request==state['request'],'exit-request-changed')
@@ -146,7 +173,12 @@ class ExitSubmission:
             self.db.execute(f'INSERT INTO {ACK} VALUES(1,?)',(encoded(v),))
 
     def captures(self):
-        boundary=self.boundary();exists=self.db.execute('SELECT type FROM sqlite_master WHERE name=?',(CAPTURES,)).fetchone()
+        with self.snapshot():
+            return self._captures(self._boundary(self.signing()))
+
+    def _captures(self,boundary):
+        check(self.db.in_transaction,'exit-read-snapshot-required')
+        exists=self.db.execute('SELECT type FROM sqlite_master WHERE name=?',(CAPTURES,)).fetchone()
         if not exists:return []
         check(exists[0]=='table' and boundary is not None,'exit-capture-boundary')
         rows=self.db.execute(f'SELECT seq,CASE WHEN length(value)<=? THEN value ELSE NULL END value,hash FROM {CAPTURES} ORDER BY seq LIMIT ?',
@@ -179,12 +211,16 @@ class ExitSubmission:
             check(self.db.execute('PRAGMA page_count').fetchone()[0]*self.db.execute('PRAGMA page_size').fetchone()[0]<=64*1024*1024,'exit-ledger-size-cap')
 
     def status(self,rpc=None):
-        signed=self.signing();boundary=self.boundary();ack=self.row(ACK,1024)
+        with self.snapshot():
+            return self._status(rpc)
+
+    def _status(self,rpc):
+        signed=self.signing();boundary=self._boundary(signed);ack=self.row(ACK,1024)
         if ack is not None:
             fields(ack,{'state','boundarySha256','atMs'},'exit-ack-schema')
             check(boundary is not None and ack['boundarySha256']==digest(boundary) and ack['state'] in ('rpc-acknowledged','transport-unknown','quarantined'),'exit-ack-binding')
             uint(ack['atMs'],self.b.j.now(),'exit-ack-clock',minimum=boundary['atMs'])
-        captures=self.captures();quarantined=signed['state']=='exit-signing-quarantined' or bool(ack and ack['state']=='quarantined')
+        captures=self._captures(boundary);quarantined=signed['state']=='exit-signing-quarantined' or bool(ack and ack['state']=='quarantined')
         outcome=None;identity=None
         minimum=0 if boundary is None else proof_check(boundary['preflight'],signed)
         for c in captures:
@@ -217,8 +253,10 @@ def submit(home,wallet,pool,*,allow_devnet_submit=False,opener=None,clock=view.n
         b=transport._open(root,wallet,pool,clock)
         try:
             s=ExitSubmission(b)
-            if s.boundary() is not None:return s.status()
-            state=s.signing();check(state['state']=='exit-signed-recorded','exit-signing-not-usable')
+            with s.snapshot():
+                state=s.signing()
+                if s._boundary(state) is not None:return s._status(None)
+                check(state['state']=='exit-signed-recorded','exit-signing-not-usable')
             handoff.current(root,b,wallet,pool,clock)
             check(backend.acknowledgment(root,b)==state['signed']['signedWireBase64'],'exit-backend-ack')
             if _guard is not None:_guard('before-preflight',state)

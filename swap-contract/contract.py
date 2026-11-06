@@ -7,6 +7,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'intent-journal'))
 from wire import b58, decode_wire
+from canonical_replay import digest as canonical_digest
 from reconcile import decode, EvidenceError
 
 VERSION = 'cpmm-instruction-policy-1'
@@ -63,8 +64,7 @@ def key(value):
 
 
 def digest(value):
-    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'),
-                                    allow_nan=False).encode()).hexdigest()
+    return canonical_digest(value)
 
 
 def _validate(packet, now_ms):

@@ -3,6 +3,7 @@
 Internal opt-in only. No live CLI, retry, refresh, receipt accounting or release.
 """
 import time
+import exit_collection_diagnostics as collection_diagnostics
 import admission_exit_collection as collection
 import exit_submission as submission
 import fresh_signing
@@ -12,6 +13,8 @@ from contract import digest
 from core import check
 from journal import read_only_journals
 import encoding_replay
+import canonical_replay
+import serialization_replay
 import admission_history_replay
 
 VERSION='fresh-exit-transport-1'
@@ -125,6 +128,7 @@ def _run(home,wallet,pool,*,signer_adapter,collection_opener=None,submission_ope
         } else 'fresh-exit-evidence-unavailable'
         r['recoveryRequired']=True
     finally:
+        r['collectionDiagnostic']=collection_diagnostics.summary(observations[-1]) if observations else None
         calls=[x for client in clients for x in client.calls]
         count=sum(x.get('networkRequests',0) for x in observations)
         sends=sum(x['method']=='sendTransaction' for x in calls)
@@ -168,6 +172,8 @@ def replace_sign_submit(home,wallet,pool,*,expected_preparation_sha256,
     return r
 
 
+@serialization_replay.operation
+@canonical_replay.operation
 def continue_sign_submit(home,wallet,pool,*,expected_original_sha256,expected_current_sha256,
                          allow_unsigned_continuation=False,allow_private_key_signing=False,
                          allow_devnet_submit=False,**kwargs):

@@ -11,17 +11,24 @@ from report import publish
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--large-fixture',action='store_true',help='Use a fixed 1 MiB synthetic program in the offline connected fixture.')
     p.add_argument('--output',type=Path,required=True);a=p.parse_args()
     if a.output.exists() or a.output.is_symlink() or not a.output.parent.is_dir():raise ValueError('output-unavailable')
-    result=run();result['capturedAt']=datetime.now(timezone.utc).isoformat();publish(a.output,result)
+    result=run(large_fixture=True) if a.large_fixture else run();result['capturedAt']=datetime.now(timezone.utc).isoformat();publish(a.output,result)
     print('State:',result['state']);print('Checks passed:',result['casesPassed'])
     print('Independent signer contract checks:',len(result.get('independentContractCases',{})))
     print('Connected continuation/sign/send time (ms):',result['integrationElapsedMs'])
+    print('Synthetic program bytes:',result.get('programFixtureBytes'))
+    print('Measured continuation started:',result.get('continuationStarted'))
+    print('Fixture setup:',result.get('fixtureSetup'))
+    print('Canonical digest reuse:',result.get('canonicalDigestReplay'))
+    print('Canonical text reuse:',result.get('canonicalTextReplay'))
     print('Deadline headroom (ms):',result.get('deadlineHeadroomMs'))
     print('Failed phase:',result.get('failedPhase'))
     for row in result.get('diagnosticPhases',[]):
         print(row['phase']+':', 'completed='+str(row['completed']), 'ms='+str(row['elapsedMs']),
-              'code='+str(row.get('diagnosticCode')), 'observation='+str(row.get('observation')))
+              'code='+str(row.get('diagnosticCode')), 'observation='+str(row.get('observation')),
+              'preservedGenerationReads='+str(row.get('preservedGenerationReads')))
     print('Synthetic replies and disposable test keys only. No user wallet, real RPC or runtime changes.')
     print('Upload:',a.output.absolute())
     if result['state']!='offline-integration-passed':raise SystemExit(2)

@@ -15,6 +15,7 @@ import time
 
 from wire import check, verify_wire
 from reconcile import binding, digest, reconcile, validate_intent
+from serialization_replay import encoded
 
 APPLICATION_ID = 0x52494A31
 MAX_EVENTS = 10000
@@ -33,9 +34,6 @@ def read_only_journals():
 FLAGS = {'executionApproved': False, 'resubmitAllowed': False, 'networkRequests': 0,
          'productionLedgerUpdated': False}
 
-
-def encoded(value):
-    return json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False)
 
 
 class Journal:
