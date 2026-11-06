@@ -107,8 +107,22 @@ class SessionTests(unittest.TestCase):
                 session=m.Session()
                 with self.assertRaises(urllib.error.HTTPError) as caught:self.exchange(session)
                 self.assertEqual(caught.exception.code,status)
+                self.assertTrue(caught.exception.closed)
+                self.assertTrue(caught.exception.fp.closed)
                 with self.assertRaises(ValueError):self.exchange(session)
             wire.finish();self.assertEqual(len(wire.requests),1)
+
+    def test_closed_http_error_preserves_collector_status_without_provider_body(self):
+        import admission_exit_capture  # Establish the existing collector import paths.
+        from recorded_capture import Client
+        wire=Wire([reply(body=b'private-provider-detail',status=429)])
+        with patch.object(m.http.client,'HTTPSConnection',wire.factory):
+            session=m.Session()
+            result=Client('devnet',opener=session).request('getGenesisHash',[])
+        wire.finish()
+        self.assertEqual(result,{'state':'http-error','httpStatus':429})
+        self.assertTrue(session.closed)
+        self.assertEqual(len(wire.requests),1)
 
     def test_connection_loss_and_truncated_response_poison_session(self):
         for response in (None,reply(close=True,length=999)):

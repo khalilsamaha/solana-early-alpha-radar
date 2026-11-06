@@ -66,7 +66,12 @@ class Session:
                 code = response.status
                 response.close()
                 self.close()
-                raise urllib.error.HTTPError(ENDPOINT, code, 'devnet-http-error', {}, None)
+                # HTTPError owns an empty file wrapper even when fp=None.
+                # Consumers only need the status; close that wrapper before
+                # raising so Python 3.14 does not rely on implicit cleanup.
+                error = urllib.error.HTTPError(ENDPOINT, code, 'devnet-http-error', {}, None)
+                error.close()
+                raise error
             return Response(self, response, deadline)
         except urllib.error.HTTPError:
             raise

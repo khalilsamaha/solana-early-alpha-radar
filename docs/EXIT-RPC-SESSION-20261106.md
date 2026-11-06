@@ -44,7 +44,7 @@ No live collection or transaction was performed during this development.
 
 ## Validation and host check
 
-Nine new tests use local Unix socket pairs and real HTTP framing with synthetic
+Ten tests use local Unix socket pairs and real HTTP framing with synthetic
 provider bodies. They cover reuse across twenty exchanges, server closure,
 redirect/status errors, dropped/truncated/chunked responses, size/read/deadline
 limits, fixed endpoint/header restrictions, and the connected collector's exact
@@ -99,3 +99,15 @@ extend this fixed study, relax its guard, refit into its evaluation window or
 activate the model. Any further availability confirmation needs a separately
 registered prospective study. Execution reliability and positive net economics
 remain separate requirements before a real-money pilot.
+
+## Kali acceptance and Python 3.14 cleanup
+
+Kali passed the initial nine tests in 4.020 seconds. Python 3.14 reported
+ResourceWarning for six synthetic HTTPError instances: HTTPError constructs an
+empty file wrapper even with fp=None. The socket and HTTP response were already
+closed, but the exception wrapper relied on implicit cleanup. The transport now
+closes that wrapper before raising. Tests assert closure for all six statuses
+and verify that the real collector still reports the sanitized HTTP status.
+No warning filters, retry policy, deadline or execution authorization changes.
+The follow-up was tested locally on Python 3.12; Kali's Python 3.14 rerun remains
+the host verification step.
