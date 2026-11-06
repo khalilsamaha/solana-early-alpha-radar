@@ -11,6 +11,7 @@ import time
 import exit_collection_diagnostics as diagnostics
 import admission_exit as exit
 import fresh_quote
+from exit_rpc_session import Session
 import preflight_capture
 from fresh_packet import build, scope_check
 from contract import digest
@@ -30,9 +31,13 @@ METHODS=(['getGenesisHash','getMultipleAccounts','getMultipleAccounts','getMulti
 class Transport(exit.unsigned_simulation.Transport):
     """Existing byte/time caps plus exact method order, STOP and wall-clock deadline."""
     def __init__(self,root,clock,opener,monotonic,start):
-        super().__init__(opener,monotonic)
+        self.session=Session(monotonic=monotonic) if opener is None else None
+        super().__init__(self.session if self.session is not None else opener,monotonic)
         self.root=root;self.clock=clock;self.start=start;self.last=start
         self.deadline=start+10000;self.request_hashes=[]
+
+    def close(self):
+        if self.session is not None:self.session.close()
 
     def open(self,request,timeout):
         check(not view.cycles.c.submit.swap.stop(self.root),'exit-capture-stopped')
@@ -201,5 +206,7 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
     finally:
         result['collectionTiming']=phase_timing.finish()
         if transport is not None:
+            transport.close()
+            result['rpcSession']=transport.session.summary() if transport.session is not None else None
             result.update(networkRequests=len(transport.calls),requestMethods=list(transport.calls))
     return result

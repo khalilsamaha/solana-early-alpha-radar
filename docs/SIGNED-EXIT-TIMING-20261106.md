@@ -88,3 +88,13 @@ These checks validate the diagnostic and preserve existing signer behavior.
 They do not prove that the live execution deadline can be met. GitHub-hosted
 CI and consolidation remain separate from local validation; this increment
 does not bypass PR #78's blocked checks or merge that PR.
+
+## Follow-up evidence received
+
+The 08:37 UTC report validates the saved timeline: collection-to-handoff took
+5804 ms and the signed acknowledgment row precedes the deadline by 262 ms.
+Later processing expired before submission. Exact commit and signature creation
+instants remain unknown. The availability review has also completed with an
+insufficient-evidence result; no further capture extends that registered window.
+See [connection reuse and remaining gates](EXIT-RPC-SESSION-20261106.md) for the
+next implementation and the fixed study conclusions.
