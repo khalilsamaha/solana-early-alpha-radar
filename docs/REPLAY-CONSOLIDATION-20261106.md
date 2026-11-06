@@ -49,3 +49,17 @@ under representative load. Do not relax deadlines or count profiler timing as
 acceptance. Actual held-position inspection and any separately explicit devnet
 continuation follow adequate operational evidence; finalized receipt accounting
 and scoped closure remain outstanding.
+
+## CI partition correction
+
+The first consolidation run (42160548380) passed ten jobs, but groups 2 and 5 hit
+the unchanged ten-minute runner limit. Group 5 completed every test and was marked
+cancelled at job cleanup; group 2 was interrupted during reservation-view tests.
+No failing assertion was reported, but cancelled jobs do not satisfy the merge gate.
+
+Measured module runtimes motivated five explicit assignment changes: accounting
+recovery (about 158 s) and read snapshots (58 s) to group 3; preserved observation
+(147 s) to group 4; restricted signer (33 s) to group 0; continuation integration
+(129 s) to group 5. All tests remain selected exactly once, dedicated heavy suites
+remain isolated, and no test deadline or workflow timeout is increased. The entire
+exact revised head must pass all twelve jobs before merge.
