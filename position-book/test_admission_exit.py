@@ -27,6 +27,46 @@ class ExitTests(unittest.TestCase):
 
     def test_portable_checks(self):self.assertEqual(run()['casesPassed'],27)
 
+    def test_owner_reuses_exact_signature_only_during_one_review(self):
+        from signature_replay_checks import fixture
+        encoded_wire=fixture()
+        original=m.wire.subprocess.run
+        calls=[]
+        source={'reservation':{'original':'source'}}
+        record={'accounting':{'exitAttemptsConsumed':0,'ownedAcquiredAtomic':'1'}}
+        def reviewed(book):
+            m.wire.verify_wire(encoded_wire)
+            m.wire.verify_wire(encoded_wire)
+            return source
+        with patch.object(m.entry,'review',side_effect=reviewed), \
+             patch.object(m.entry,'saved',return_value=record), \
+             patch.object(m.entry,'public',return_value={'accountingUsable':True,'state':'entry-position-open'}), \
+             patch.object(m.wire.subprocess,'run',wraps=original) as verifier:
+            self.assertEqual(m.owner(None,1),(record,source['reservation']))
+            self.assertEqual(verifier.call_count,1)
+            self.assertIsNone(m.wire._SIGNATURE_SCOPE.get())
+            self.assertEqual(m.owner(None,1),(record,source['reservation']))
+            self.assertEqual(verifier.call_count,2)
+            self.assertIsNone(m.wire._SIGNATURE_SCOPE.get())
+
+    def test_owner_failure_clears_scope_and_never_inherits_parent(self):
+        from signature_replay_checks import fixture
+        encoded_wire=fixture()
+        original=m.wire.subprocess.run
+        def failed(book):
+            m.wire.verify_wire(encoded_wire)
+            raise ValueError('synthetic-owner-rejected')
+        with patch.object(m.entry,'review',side_effect=failed), \
+             patch.object(m.wire.subprocess,'run',wraps=original) as verifier:
+            with m.wire.signature_verification_scope() as parent:
+                m.wire.verify_wire(encoded_wire)
+                for _ in range(2):
+                    with self.assertRaisesRegex(ValueError,'synthetic-owner-rejected'):
+                        m.owner(None,1)
+                self.assertEqual(verifier.call_count,3)
+                self.assertEqual(parent()['verificationCalls'],1)
+            self.assertIsNone(m.wire._SIGNATURE_SCOPE.get())
+
     def test_unprepared_status_never_creates_table(self):
         with case() as c:
             before=c.path.read_bytes();self.assertEqual(status(c,c.e['costInputs']['baseline'])['state'],'exit-not-prepared')
