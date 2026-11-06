@@ -23,6 +23,12 @@ def attempt(root,book):
 
 
 def _attempt_for_state(root,book,state):
+    _attempt_record_for_state(root,book,state)
+    return state
+
+
+def _attempt_record_for_state(root,book,state):
+    """Return the same fully checked marker for internal read-only diagnostics."""
     check(state is not None,'exit-signer-boundary-required')
     path=handoff.preparation.entry.submission.handoff.storage(root).parent
     v=json.loads(private_file(path/ATTEMPT,1024))
@@ -32,7 +38,7 @@ def _attempt_for_state(root,book,state):
           v['signingHeadSha256']==boundary['hash'] and v['preparationSha256']==state['request']['preparationSha256'],
           'exit-signer-attempt-binding')
     uint(v['atMs'],min(book.j.now(),state['request']['validUntilExclusiveMs']-1),'exit-signer-attempt-clock',minimum=boundary['at_ms'])
-    return state
+    return v
 
 
 def acknowledgment(root,book):

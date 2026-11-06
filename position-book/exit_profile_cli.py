@@ -41,6 +41,8 @@ def main():
         if r['timing']:
             for k in ('collectionElapsedMs','summedRecordedRequestIntervalsMs','finalResponseToDeliveryMs',
                       'deliveryToRecordTimestampMs','remainingAtRecordTimestampMs'):print(k+':',r['timing'][k])
+        if r.get('signingTimeline'):
+            print('Saved signing timeline:',r['signingTimeline'])
         print('Read-only saved evidence; no network, private-key access, replacement or signing.')
     r['capturedAt']=datetime.now(timezone.utc).isoformat();publish(a.output,r)
     print('Upload:',a.output.absolute());return 0 if ok else 2
