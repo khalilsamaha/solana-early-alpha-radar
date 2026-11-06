@@ -31,6 +31,8 @@ class ExitTests(unittest.TestCase):
         from signature_replay_checks import fixture
         encoded_wire=fixture()
         original=m.wire.subprocess.run
+        from types import SimpleNamespace
+        book=SimpleNamespace(db=object())
         source={'reservation':{'original':'source'}}
         record={'accounting':{'exitAttemptsConsumed':0,'ownedAcquiredAtomic':'1'}}
         def reviewed(book):
@@ -41,10 +43,10 @@ class ExitTests(unittest.TestCase):
              patch.object(m.entry,'saved',return_value=record), \
              patch.object(m.entry,'public',return_value={'accountingUsable':True,'state':'entry-position-open'}), \
              patch.object(m.wire.subprocess,'run',wraps=original) as verifier:
-            self.assertEqual(m.owner(None,1),(record,source['reservation']))
+            self.assertEqual(m.owner(book,1),(record,source['reservation']))
             self.assertEqual(verifier.call_count,1)
             self.assertIsNone(m.wire._SIGNATURE_SCOPE.get())
-            self.assertEqual(m.owner(None,1),(record,source['reservation']))
+            self.assertEqual(m.owner(book,1),(record,source['reservation']))
             self.assertEqual(verifier.call_count,2)
             self.assertIsNone(m.wire._SIGNATURE_SCOPE.get())
 
