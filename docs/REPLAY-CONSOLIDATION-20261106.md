@@ -63,3 +63,11 @@ recovery (about 158 s) and read snapshots (58 s) to group 3; preserved observati
 (129 s) to group 5. All tests remain selected exactly once, dedicated heavy suites
 remain isolated, and no test deadline or workflow timeout is increased. The entire
 exact revised head must pass all twelve jobs before merge.
+
+The second run (42161753986) passed eleven jobs. Group 3 completed its test
+assertions but was cancelled at the ten-minute cutoff on a slower runner. Its
+accounting-recovery module (131 s in that run) moves back to group 2, which
+completed in about 319 s. Read snapshots remain in group 3. The final assignment
+therefore changes four modules from the initial consolidation, preserving the
+same twelve jobs, coverage and time limits. The cancelled run is not accepted as
+a merge pass.
