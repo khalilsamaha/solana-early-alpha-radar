@@ -7,6 +7,7 @@ from copy import deepcopy
 import json
 
 import entry_accounting as entry
+import wire
 import preflight
 import quote_binding
 import unsigned_simulation
@@ -27,6 +28,10 @@ COLLECTED_FORMAT='admission-exit-collection-1-record'
 view=entry.submission.handoff.bridge.view
 
 
+# Each ownership review gets a fresh, bounded exact-wire authentication scope.
+# Replayed receipt contents, authorization, and source identity are NEVER cached;
+# neither parent operations nor subsequent reviews may inherit this memo.
+@wire.signature_verification_scope()
 def owner(book, now):
     source=entry.review(book);record=entry.saved(book.db,now)
     result=entry.public(source,record)
