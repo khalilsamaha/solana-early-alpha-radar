@@ -11,13 +11,21 @@ concurrency:
   cancel-in-progress: true
 jobs:
   checks:
-    name: checks (${{ matrix.group }})
+    name: checks (${{ matrix.pair.name }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    # Two isolated existing partitions are run sequentially per runner.
+    # Baseline individual partitions could approach the former 10-minute cap.
+    timeout-minutes: 22
     strategy:
       fail-fast: false
       matrix:
-        group: [core-base, position-book-0, position-book-1, position-book-2, position-book-3, position-book-4, position-book-5, position-book-6, position-book-7, position-book-8, position-book-9, devnet-pool]
+        pair:
+          - {name: core-and-book-1, first: core-base, second: position-book-1}
+          - {name: book-2-and-7, first: position-book-2, second: position-book-7}
+          - {name: book-0-and-8, first: position-book-0, second: position-book-8}
+          - {name: book-3-and-9, first: position-book-3, second: position-book-9}
+          - {name: book-4-and-6, first: position-book-4, second: position-book-6}
+          - {name: book-5-and-devnet, first: position-book-5, second: devnet-pool}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, verified at import
         with:
@@ -29,5 +37,10 @@ jobs:
         run: |
           node --version
           python3 --version
-      - name: Source integrity and offline regression tests
-        run: bash scripts/check.sh '${{ matrix.group }}'
+      - name: First independent regression partition (${{ matrix.pair.first }})
+        run: bash scripts/check.sh '${{ matrix.pair.first }}'
+      - name: Second independent regression partition (${{ matrix.pair.second }})
+        # Run even when the first partition fails; both independent partitions
+        # report their results, while an unsuccessful pair still fails the job.
+        if: ${{ !cancelled() }}
+        run: bash scripts/check.sh '${{ matrix.pair.second }}'
