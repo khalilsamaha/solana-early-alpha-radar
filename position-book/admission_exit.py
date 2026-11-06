@@ -31,8 +31,12 @@ view=entry.submission.handoff.bridge.view
 # Each ownership review gets a fresh, bounded exact-wire authentication scope.
 # Replayed receipt contents, authorization, and source identity are NEVER cached;
 # neither parent operations nor subsequent reviews may inherit this memo.
-@wire.signature_verification_scope()
 def owner(book, now):
+    with wire.signature_verification_scope():
+        return _owner_checked(book, now)
+
+
+def _owner_checked(book, now):
     source=entry.review(book);record=entry.saved(book.db,now)
     result=entry.public(source,record)
     check(result['accountingUsable'] and result['state']=='entry-position-open','exit-open-accounting-required')
