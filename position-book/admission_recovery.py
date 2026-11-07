@@ -175,6 +175,7 @@ def retirement_projection(book,home,wallet,pool,clock):
     from exit_retirement_guard import present
     from retired_exit_successor import present as successor_present, row as successor_row
     from successor_signing_handoff import present as successor_signing_present
+    from successor_submission import present as successor_transport_present
     import restricted_successor_signer as successor_backend
     sibling=accounting.submission.handoff.storage(home).parent
     markers=any(os.path.lexists(sibling/name) for name in (successor_backend.ATTEMPT,successor_backend.ACK))
@@ -182,6 +183,7 @@ def retirement_projection(book,home,wallet,pool,clock):
         check(not markers,'snapshot-orphan-successor-backend')
         check(not successor_present(book),'snapshot-orphan-successor')
         check(not successor_signing_present(book),'snapshot-orphan-successor-signing')
+        check(not successor_transport_present(book),'snapshot-orphan-successor-transport')
         return None
     from admission_lifecycle import projection
     phase,_,amounts,stages,ids,_=projection(book,home,wallet,pool,clock)
@@ -191,6 +193,9 @@ def retirement_projection(book,home,wallet,pool,clock):
     if 'exitSuccessorSigningHeadSha256' in ids:
         result['successorSigningHeadSha256']=ids['exitSuccessorSigningHeadSha256']
         result['successorSigningState']=stages['exitSuccessorSigning']
+    if 'exitSuccessorTransportHeadSha256' in ids:
+        result['successorTransportHeadSha256']=ids['exitSuccessorTransportHeadSha256']
+        result['successorTransportState']=stages['exitSuccessorTransport']
     if markers:
         from successor_signing_handoff import load
         record=successor_row(book)

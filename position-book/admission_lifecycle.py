@@ -18,7 +18,7 @@ MAX_READ_MS=120000
 ENTRY_TABLES={'admission_submission','admission_submission_ack','admission_rpc_captures',
               'admission_receipt_events','admission_receipt_raw','admission_entry_accounting'}
 EXIT_TRANSPORT={'admission_exit_submission','admission_exit_submission_ack','admission_exit_rpc_captures'}
-EXIT_TABLES=EXIT_TRANSPORT|{'admission_successor_signing','admission_exit_successor','admission_exit_retirement','admission_exit_continuation','admission_exit_replacement','admission_exit_preparation','admission_exit_signing','admission_exit_accounting','admission_exit_closure'}
+EXIT_TABLES=EXIT_TRANSPORT|{'admission_successor_transport','admission_successor_signing','admission_exit_successor','admission_exit_retirement','admission_exit_continuation','admission_exit_replacement','admission_exit_preparation','admission_exit_signing','admission_exit_accounting','admission_exit_closure'}
 KNOWN={'admission_policy','admission_events'}|ENTRY_TABLES|EXIT_TABLES
 
 
@@ -151,7 +151,9 @@ def projection(book,root,wallet,pool,clock):
     from exit_retirement_guard import present
     from retired_exit_successor import present as successor_present,replay as successor_replay
     import successor_signing_handoff as successor_signing
+    import successor_submission as successor_transport
     if not present(book):
+        check(not successor_transport.present(book),'lifecycle-orphan-successor-transport')
         check(not successor_signing.present(book),'lifecycle-orphan-successor-signing')
         check(not successor_present(book),'lifecycle-orphan-successor')
         return result
@@ -166,12 +168,18 @@ def projection(book,root,wallet,pool,clock):
         stages['exitSuccessor']='unsigned-successor-held'
         ids['exitSuccessorSha256']=digest(successor)
         signing=successor_signing.read(book,successor,clock())
+        transport=successor_transport.replay(book,successor,signing,clock())
+        if transport is not None:
+            stages['exitSuccessorTransport']=transport['state']
+            ids['exitSuccessorTransportHeadSha256']=transport['headSha256']
+            if transport['state']=='quarantined':return 'quarantined',orig,amounts,stages,ids,state
         if signing is not None:
             stages['exitSuccessorSigning']=signing['state']
             ids['exitSuccessorSigningHeadSha256']=signing['headSha256']
             if signing['state']=='successor-signing-quarantined':
                 return 'quarantined',orig,amounts,stages,ids,state
     else:
+        check(not successor_transport.present(book),'lifecycle-orphan-successor-transport')
         check(not successor_signing.present(book),'lifecycle-orphan-successor-signing')
     return 'exit-retired-held',orig,amounts,stages,ids,state
 

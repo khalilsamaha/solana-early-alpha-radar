@@ -171,6 +171,21 @@ primary connected run includes normal parent acknowledgment persistence; lost
 child responses are covered by the accepted component tests and the integration
 fault cases, not presented as an additional live result.
 
+## Corrected Kali acceptance — 22:06:51 UTC
+
+`radar-successor-signing-rehearsal-20261107T220418Z-1436253.json.gz`
+passed with `offline-integration-passed`: 4 setup + 4 replay + 11 boundary +
+5 connected checks, none skipped. Complete integration took 12,643.145 ms and
+returned with 1,106 ms of original deadline headroom. Collection/persistence:
+4,850.093 ms; signing handoff: 7,776.616 ms; independent adapter: 1,267.984 ms.
+Total integration includes prerequisite local work before the collection's
+freshness interval; the original ten-second collection deadline was not changed.
+
+Keyless and repeated recovery, preserved source/held accounting and cleanup all
+passed. There were zero real network requests or transactions. This accepts the
+complete synthetic signing gate, not live network timing or submission. The next
+[one-attempt transport](SUCCESSOR-SUBMISSION-20261107.md) has an offline-only CLI.
+
 ## Finite next gate
 
 After Kali accepts this complete rehearsal, bind a single controlled devnet send
