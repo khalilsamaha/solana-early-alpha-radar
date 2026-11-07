@@ -1,4 +1,10 @@
-# Project roadmap — updated 6 November 2026
+# Project roadmap — current review 7 November 2026
+
+The current decision and ordered gates are in [the November 7 project review](PROJECT-REVIEW-20261107.md). PR #78 is merged after all twelve CI checks passed. The retired-exit review and unsigned-successor contract have passed Kali acceptance. The next step is bounded, read-only successor collection; successor signing and the held exit's receipt reconciliation remain pending. Economic edge is unproven, and the completed availability study remains insufficient under its original criteria.
+
+The entries below preserve historical work and earlier pending states; use the current review above for present priorities.
+
+## Historical engineering record
 
 The November 6 Kali snapshot correction passed all 16 integration/fault checks
 and 14 independent signer checks with the full 1 MiB fixture. Continuation took

@@ -76,6 +76,60 @@ def reverse_scope(book,record,reservation):
     return scope
 
 
+def collect_locked(book,root,wallet,pool,before,scope,transport,clock,monotonic,stage,final_guard,*,want_envelope=True):
+    """Shared twenty-request pipeline; caller owns mode-specific locks and final guard."""
+    baseline=deepcopy(exit.BASELINE);start=transport.start
+    reviewer=lambda capture,now_ms:exit.preflight._review(capture,baseline,now_ms)
+    stage('pool')
+    first=preflight_capture._collect(pool=pool,opener=transport,now=clock,
+        monotonic=monotonic,baseline=baseline)
+    check(reviewer(first,clock())['state']=='pinned-pool-snapshot','exit-capture-initial-pool')
+    raw,_=exit.preflight.split_capture(first)
+    price=exit.derive(raw,scope,slippage_bps=100,now_ms=clock())
+    fresh=deepcopy(scope);fresh['minimumAmountOut']=price['quote']['minimumOutAmount']
+    stage('packet')
+    built=build(fresh,opener=transport,now=clock)
+    stage('accounts')
+    second=preflight_capture._collect(packet=built['packet'],opener=transport,now=clock,
+        monotonic=monotonic,baseline=baseline)
+    price,checked,_=fresh_quote.combine(first,built,second,scope,stamp=clock(),review=reviewer)
+    stage('simulation')
+    items=[];genesis_items=[]
+    sim=exit.unsigned_simulation.collect(built['packet'],second,price,transport=transport,
+        clock=clock,deadline=min(transport.deadline,checked['validUntilExclusiveMs']),
+        _evidence_sink=items.append,_genesis_sink=genesis_items.append)
+    check(sim['state']=='unsigned-effects-match-quote' and len(items)==len(genesis_items)==1,'exit-capture-simulation')
+    stage('final-binding')
+    after,_,_=identity(book,root,wallet,pool,clock)
+    check(before==after,'exit-capture-admission-changed')
+    final_guard()
+    evidence=dict(initialPool=raw,packet=built['packet'],capture=second,price=price,
+        simulationItem=items[0],simulationStartedAtMs=sim['requestedAtMs'],
+        simulationReceivedAtMs=sim['receivedAtMs'],completedAtMs=sim['finishedAtMs'])
+    binding=exit.review(book,evidence,clock())
+    finish=clock()
+    check(transport.last<=finish<min(transport.deadline,binding['validUntilExclusiveMs']),
+          'exit-capture-expired')
+    check(0<=monotonic()-transport.started<30,'exit-capture-time-budget')
+    check(not view.cycles.c.submit.swap.stop(root),'exit-capture-stopped')
+    check(transport.calls==METHODS and len(transport.request_hashes)==20,'exit-capture-incomplete')
+    provenance=dict(format=VERSION+'-provenance',identity=before,startedAtMs=start,completedAtMs=finish,
+        evidenceSha256=digest(evidence),initialCaptureSha256=digest(first),packetBuildSha256=digest(built),
+        requestTraceSha256=digest(transport.request_hashes),finalGenesisSha256=digest(genesis_items[0]),networkRequests=20,
+        simulationParametersSha256=digest(transport.expected),
+        validUntilExclusiveMs=min(transport.deadline,binding['validUntilExclusiveMs']),durable=False)
+    envelope=deepcopy(dict(evidence=evidence,initialCapture=first,packetBuild=built,
+        requestTrace=transport.request_hashes,finalGenesis=genesis_items[0],provenance=provenance)) if want_envelope else None
+    # Hashing and private-envelope construction also consume freshness.
+    delivered=clock()
+    check(finish<=delivered<provenance['validUntilExclusiveMs'],'exit-capture-expired')
+    check(0<=monotonic()-transport.started<30,'exit-capture-time-budget')
+    check(not view.cycles.c.submit.swap.stop(root),'exit-capture-stopped')
+    provenance['completedAtMs']=delivered
+    if envelope is not None:envelope['provenance']['completedAtMs']=delivered
+    return envelope,binding,provenance
+
+
 @view.cycles.binding.operation
 def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monotonic,_evidence_sink=None,
             _replacement_expected=None,_preserved_expected=None,_continuation_expected=None):
@@ -128,55 +182,10 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                         eligible(book,root,_replacement_expected,clock())
                 preparation_guard()
                 scope=reverse_scope(book,record,reservation)
-                baseline=deepcopy(exit.BASELINE)
                 start=clock();transport=Transport(root,clock,opener,monotonic,start)
-                reviewer=lambda capture,now_ms:exit.preflight._review(capture,baseline,now_ms)
-                stage('pool')
-                first=preflight_capture._collect(pool=pool,opener=transport,now=clock,
-                    monotonic=monotonic,baseline=baseline)
-                check(reviewer(first,clock())['state']=='pinned-pool-snapshot','exit-capture-initial-pool')
-                raw,_=exit.preflight.split_capture(first)
-                price=exit.derive(raw,scope,slippage_bps=100,now_ms=clock())
-                fresh=deepcopy(scope);fresh['minimumAmountOut']=price['quote']['minimumOutAmount']
-                stage('packet')
-                built=build(fresh,opener=transport,now=clock)
-                stage('accounts')
-                second=preflight_capture._collect(packet=built['packet'],opener=transport,now=clock,
-                    monotonic=monotonic,baseline=baseline)
-                price,checked,_=fresh_quote.combine(first,built,second,scope,stamp=clock(),review=reviewer)
-                stage('simulation')
-                items=[];genesis_items=[]
-                sim=exit.unsigned_simulation.collect(built['packet'],second,price,transport=transport,
-                    clock=clock,deadline=min(transport.deadline,checked['validUntilExclusiveMs']),
-                    _evidence_sink=items.append,_genesis_sink=genesis_items.append)
-                check(sim['state']=='unsigned-effects-match-quote' and len(items)==len(genesis_items)==1,'exit-capture-simulation')
-                stage('final-binding')
-                after,_,_=identity(book,root,wallet,pool,clock)
-                check(before==after,'exit-capture-admission-changed')
-                preparation_guard()
-                evidence=dict(initialPool=raw,packet=built['packet'],capture=second,price=price,
-                    simulationItem=items[0],simulationStartedAtMs=sim['requestedAtMs'],
-                    simulationReceivedAtMs=sim['receivedAtMs'],completedAtMs=sim['finishedAtMs'])
-                binding=exit.review(book,evidence,clock())
-                finish=clock()
-                check(transport.last<=finish<min(transport.deadline,binding['validUntilExclusiveMs']),
-                      'exit-capture-expired')
-                check(0<=monotonic()-transport.started<30,'exit-capture-time-budget')
-                check(not view.cycles.c.submit.swap.stop(root),'exit-capture-stopped')
-                check(transport.calls==METHODS and len(transport.request_hashes)==20,'exit-capture-incomplete')
-                provenance=dict(format=VERSION+'-provenance',identity=before,startedAtMs=start,completedAtMs=finish,
-                    evidenceSha256=digest(evidence),initialCaptureSha256=digest(first),packetBuildSha256=digest(built),
-                    requestTraceSha256=digest(transport.request_hashes),finalGenesisSha256=digest(genesis_items[0]),networkRequests=20,
-                    simulationParametersSha256=digest(transport.expected),
-                    validUntilExclusiveMs=min(transport.deadline,binding['validUntilExclusiveMs']),durable=False)
-                envelope=deepcopy(dict(evidence=evidence,initialCapture=first,packetBuild=built,
-                    requestTrace=transport.request_hashes,finalGenesis=genesis_items[0],provenance=provenance)) if _evidence_sink is not None or _preserved_expected is not None else None
-                # Hashing and private-envelope construction also consume freshness.
-                delivered=clock()
-                check(finish<=delivered<provenance['validUntilExclusiveMs'],'exit-capture-expired')
-                check(0<=monotonic()-transport.started<30,'exit-capture-time-budget')
-                check(not view.cycles.c.submit.swap.stop(root),'exit-capture-stopped')
-                provenance['completedAtMs']=delivered
+                envelope,binding,provenance=collect_locked(book,root,wallet,pool,before,scope,transport,clock,monotonic,stage,preparation_guard,
+                    want_envelope=_evidence_sink is not None or _preserved_expected is not None)
+                delivered=provenance['completedAtMs']
                 if envelope is not None:
                     envelope['provenance']['completedAtMs']=delivered
                     if _preserved_expected is not None:
@@ -188,12 +197,12 @@ def collect(home,wallet,pool,*,opener=None,clock=view.now,monotonic=time.monoton
                         result['observationTiming']=timing
                         stage('preserved-validation')
                         proof={k:v for k,v in envelope.items() if k!='evidence'}
-                        end=validate(book,root,_preserved_expected,evidence,proof,binding,
+                        end=validate(book,root,_preserved_expected,envelope['evidence'],proof,binding,
                                      clock,monotonic,transport.started)
                         binding=dict(binding,validUntilExclusiveMs=deadline)
                         timing.update(validatedAtMs=end,validationElapsedMs=end-delivered,
                                       headroomAfterValidationMs=deadline-end)
-                    else:
+                    elif _evidence_sink is not None:
                         _evidence_sink(envelope)
                 stage('complete')
                 result.update(state='exit-evidence-collected-research-only',stage='complete',

@@ -1,6 +1,6 @@
 # Solana Early Alpha Radar
 
-Private research system for discovering Solana tokens, recording paper signals and observing walletless route quotes. The scanner and quote observer do not trade. Separate, explicitly invoked tools can sign and submit tightly scoped **devnet** test transactions; they are not connected to trading signals or mainnet.
+Research system for discovering Solana tokens, recording paper signals and observing walletless route quotes. The scanner and quote observer do not trade. Separate, explicitly invoked tools can sign and submit tightly scoped **devnet** test transactions; they are not connected to trading signals or mainnet.
 
 **Latest integration consolidation: PR #68, 1 November 2026.** Fresh exit
 balances, durable scoped closure and the unified lifecycle view passed their
@@ -28,7 +28,9 @@ Its host exercise passed all 30 cases; live headroom rose to 1,131 ms. The next
 an atomic local reservation commit and read-only recovery, without occupying the
 operational slot or enabling signing.
 
-**Current engineering release: 25 October 2026.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. The **October 28 frozen review is complete: no strategy or model is promoted**. See the [review decision and offline diagnostic](docs/FROZEN-REVIEW-DECISION-20261028.md). Engineering reliability can improve independently; profitable execution remains unproven. The [October 29 availability confirmation](availability-study/README.md) adds a separate fixed-window research protocol after the accepted diagnostic replay.
+**Current project review: 7 November 2026.** See the [current evidence, priorities and remaining gates](docs/PROJECT-REVIEW-20261107.md). PR #78 is consolidated; subsequent successor work is a separate feature increment. The paragraphs below retain release provenance.
+
+**October 25 engineering release.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. The **October 28 frozen review is complete: no strategy or model is promoted**. See the [review decision and offline diagnostic](docs/FROZEN-REVIEW-DECISION-20261028.md). Engineering reliability can improve independently; profitable execution remains unproven. The [October 29 availability confirmation](availability-study/README.md) adds a separate fixed-window research protocol after the accepted diagnostic replay.
 
 **October 27 observation batch, under PR review:** the [consolidation record](docs/OBSERVATION-CONSOLIDATION-20261027.md) joins fresh quotes, locked reservations, unsigned simulation and single-leg cost evidence. Host checkpoints passed; round-trip economics and execution approval remain separate gates. No scanner deployment is required.
 
