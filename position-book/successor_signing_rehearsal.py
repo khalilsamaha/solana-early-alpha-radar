@@ -20,7 +20,8 @@ FIXTURE_SETUP_VERSION='successor-fixture-setup-2'
 DIAGNOSTIC_CODES=frozenset(('quote-read-stale-or-future','admission-raw-evidence',
     'admission-completion-clock','admission-read-deadline','reservation-read-deadline',
     'handoff-deadline','fixture-reuse-scope-leaked','temporary-scope','fixture-size',
-    'rehearsal-request-count','rehearsal-independent-signature','rehearsal-original-deadline','rehearsal-parent-ack'))
+    'rehearsal-request-count','rehearsal-independent-signature','rehearsal-original-deadline','rehearsal-parent-ack','rehearsal-send-state','rehearsal-durable-boundary',
+    'rehearsal-repeat-composition','rehearsal-recovery-state','rehearsal-repeat-recovery','rehearsal-held-accounting'))
 
 
 def setup_history(fixture):
@@ -51,7 +52,7 @@ def phase(report,name):
     finally:row['elapsedMs']=round((time.monotonic()-start)*1000,3)
 
 
-def connected(f,report):
+def connected(f,report,*,_exercise=None):
     import admission_exit as exit_contract
     import admission_exit_collection as original_collection
     import restricted_exit_signer as original_backend
@@ -108,6 +109,12 @@ def connected(f,report):
                     q=Opener(first,e);q.rows[7]['value']['blockhash']=fake_key('successor-rehearsal-distinct-blockhash')
                     quotes.append(q)
                 return quotes[0].open(request,timeout)
+        if _exercise is not None:
+            _exercise(SimpleNamespace(f=f,report=report,clock=clock,key=key,path=path,
+                expected=old['recordSha256'],retirement=retired['retirementSha256'],
+                expiry=Expiry(),quote=Quote(),before_tables=before_tables,
+                old_files=old_files,before_source=before_source))
+            return
         with phase(report,'collection-persistence-independent-signing') as measured:
             require_cold_reuse_scopes();start=time.monotonic()
             result=m._collect_sign(f.home,f.wallet,f.pool,old['recordSha256'],retired['retirementSha256'],
@@ -156,7 +163,7 @@ def table_rows(book):
     return {name:[tuple(r) for r in book.db.execute('SELECT * FROM '+name)] for name in names}
 
 
-def run():
+def run(*,_exercise=None):
     import test_fresh_exit as fixture_module
     class Fixture(fixture_module.ActualBackendTests):pass
     report=dict(format=VERSION,state='review-required',cases={},casesPassed=0,phases=[],failedPhase=None,
@@ -180,7 +187,7 @@ def run():
                     check(f.home.resolve().is_relative_to(Path(owned).resolve()),'temporary-scope')
                     report['programFixtureBytes']=len(base64.b64decode(f.e['costInputs']['capture']['evidence']['accounts']['result']['value'][-1]['data'][0]))
                     check(report['programFixtureBytes']==1024*1024,'fixture-size')
-                connected(f,report);report['state']='offline-integration-passed'
+                connected(f,report,_exercise=_exercise);report['state']='offline-integration-passed'
             except Exception:report['state']='review-required'
             finally:
                 try:

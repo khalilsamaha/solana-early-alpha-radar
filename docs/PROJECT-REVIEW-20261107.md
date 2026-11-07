@@ -53,6 +53,27 @@ small and synthetic replies omit real network delays. The next finite sequence:
 See [successor transport](SUCCESSOR-SUBMISSION-20261107.md). The failed setup and
 193 ms late result remain in the [rehearsal record](SUCCESSOR-SIGNING-REHEARSAL-20261107.md).
 
+## Submission component accepted; complete timing next
+
+The host report captured at 2026-11-07T22:31:31.352668+00:00 passed all 17
+successor submission cases, with no failures or skips. It validates the durable
+one-send boundary, exact-generation recovery and conservative held accounting
+using disposable data. It made zero network requests and sent no real transaction.
+
+The [combined execution rehearsal](SUCCESSOR-EXECUTION-20261107.md) now joins the
+actual collectors, independent key process and internal transport under one
+original freshness deadline and one bounded operation. It deliberately loses
+the synthetic send reply, then checks keyless signature observation after STOP
+and idempotent terminal recovery. Repeated composition does not refresh, sign or
+send again. The packaged local CLI passed all 22 checks; its combined path took
+6,157.620 ms, with 5,109 ms remaining;
+this is not a substitute for Kali timing acceptance or real network latency.
+
+The next decision is finite: if the complete Kali timing/recovery gate passes,
+prepare controlled devnet operation and exact successor receipt reconciliation.
+If it fails, investigate the measured phase while preserving original deadlines
+and attempts. Do not open a funded pilot or change the frozen study decisions.
+
 ## Earlier connected rehearsal failure — superseded by accepted run
 
 The November 7 21:49:54 UTC Kali run passed four setup and 11 boundary checks.
@@ -75,7 +96,7 @@ offline signing gate.
 
 1. **Bounded successor observation — accepted.** Collect eight expiry/account responses and at most twenty fresh quote/simulation responses while the source is pinned. Validate against the accepted successor contract. Report timings and headroom. Do not persist an expiring candidate during this observation.
 2. **Successor signing integration — complete offline host rehearsal accepted.** Bind an independently checked signing generation to the same retirement, attempt two and original cumulative reservation. Preserve old backend files and retired-sender denial. Test interruption, duplicate invocation and post-sign expiry before a live attempt.
-3. **Successor transport, then one controlled devnet exit and closure.** First accept the offline one-send/recovery component and combined real-clock rehearsal. Then check actual submission timing, signature recovery, exact token/fee deltas and idempotent scoped release. A timing failure is a failed gate, not permission to widen freshness or reset attempts.
+3. **Successor transport, then one controlled devnet exit and closure.** The offline one-send/recovery component is accepted; accept the combined real-clock rehearsal next. Then check actual submission timing, signature recovery, exact token/fee deltas and idempotent scoped release. A timing failure is a failed gate, not permission to widen freshness or reset attempts.
 4. **Target-route validation before any funded mechanics test.** Controlled test-pool success is not evidence that a mainnet aggregator route, liquidity, fees, account setup or failure behavior is equivalent. Specify the intended route and reconcile its complete costs first.
 
 Do not create further generic execution layers unless a concrete failure or integration requirement justifies them. Keep operations fixes separate from frozen research and continue the approved local-test/batched-PR rhythm.

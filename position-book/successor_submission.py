@@ -124,9 +124,11 @@ def public(record,state,rpc=None):
 
 @handoff.view.cycles.binding.operation
 @handoff.successor.history.fresh_signing.timing.signature_replay
-def _submit(home,wallet,pool,expected,*,allow_devnet_submit=False,opener=None,clock=handoff.view.now,monotonic=time.monotonic):
+def _submit(home,wallet,pool,expected,*,allow_devnet_submit=False,opener=None,clock=handoff.view.now,monotonic=time.monotonic,_guard=None,_rpc_sink=None):
     check(allow_devnet_submit is True,'explicit-successor-submit-required')
     check(opener is not None and callable(getattr(opener,'open',None)) and bool(opener),'successor-injected-transport-required')
+    check(_guard is None or callable(_guard),'successor-transport-guard')
+    check(_rpc_sink is None or callable(_rpc_sink),'successor-transport-sink')
     start=monotonic();wall=clock()
     with handoff.view.cycles.c.source_lock(home,wallet) as root:
         book=transport._open(root,wallet,pool,clock)
@@ -139,8 +141,10 @@ def _submit(home,wallet,pool,expected,*,allow_devnet_submit=False,opener=None,cl
                 nonlocal wall
                 now=clock();check(wall<=now and 0<=monotonic()-start<120,'successor-transport-clock-budget');wall=now
                 handoff.live_guard(root,book,request,stamp,clock)
-            guard()
+                if _guard is not None:_guard(method,signed)
+            guard('before-preflight')
             rpc=transport.SendRpc(opener,guard=guard)
+            if _rpc_sink is not None:_rpc_sink(rpc)
             proof={'genesisBefore':rpc.request('getGenesisHash',[])}
             check(transport.received(proof['genesisBefore'])==transport.GENESIS['devnet'],'successor-transport-wrong-cluster')
             proof['blockhash']=rpc.request('isBlockhashValid',[request['packet']['policy']['blockhash'],dict(commitment='confirmed',minContextSlot=signed['minimumContextSlot'])])
@@ -152,14 +156,14 @@ def _submit(home,wallet,pool,expected,*,allow_devnet_submit=False,opener=None,cl
                 fresh,ctx,retired,current,saved=load(root,book,wallet,pool,expected,clock)
                 check(fresh==record and current==signed and saved is None,'successor-transport-source-changed')
                 handoff.current(book,fresh,ctx,retired,clock)
-                minimum=original.proof_check(proof,current);guard()
+                minimum=original.proof_check(proof,current);guard('before-boundary')
                 boundary=dict(kind='boundary',format=VERSION,successorSha256=expected,retirementSha256=record['retirementSha256'],
                     requestSha256=signed['requestSha256'],signingHeadSha256=signed['headSha256'],
                     wireSha256=signed['signed']['wireSha256'],signature=signed['signed']['signature'],endpoint=transport.ENDPOINT,preflight=deepcopy(proof))
-                append(book,boundary,None,clock());guard()
+                append(book,boundary,None,clock());guard('before-boundary-commit')
             # A committed boundary consumes the only application send attempt,
             # even if the process stops or the deadline expires before transport.
-            guard()
+            guard('after-boundary-commit')
             item=rpc.request('sendTransaction',[signed['signed']['signedWireBase64'],dict(encoding='base64',skipPreflight=False,
                 preflightCommitment='confirmed',maxRetries=0,minContextSlot=minimum)])
             with book.j.transaction():

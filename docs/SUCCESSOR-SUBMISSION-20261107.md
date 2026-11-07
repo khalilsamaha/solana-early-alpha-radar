@@ -67,9 +67,16 @@ writer exclusion and unchanged accounting. A falsy injected adapter is rejected
 before source access so the shared RPC client cannot fall back to its default
 network adapter. These tests do not qualify real network timing.
 
+## Kali acceptance
+
+The report `radar-successor-submission-check-20261107T222159Z-1480388.json.gz`,
+captured at 2026-11-07T22:31:31.352668+00:00, passed all 17 cases with no failures
+or skips. User journals, user keys, the scanner and real network were untouched.
+This accepts transport semantics, not combined signing/send latency.
+
 ## Next acceptance gate
 
-Compose this component with fresh successor collection and independent signing
+The [combined execution rehearsal](SUCCESSOR-EXECUTION-20261107.md) composes this component with fresh successor collection and independent signing
 under the original deadline. Measure the complete path on Kali with the 1 MiB
 fixture, including lost-response recovery. The 1.106-second signing headroom is
 not sufficient evidence that real preflight and send will fit. This component's
