@@ -13,9 +13,12 @@ It never imports the uploaded report. It binds those observations to the exact
 saved preparation, signing state, signed wire, backend acknowledgment, account
 roles, and scoped accounting.
 
-After collection, a source lock and SQLite immediate transaction protect the
-commit. Source evidence is replayed again; stale evidence or a changed source
-prevents writing. A single canonical, hashed `admission_exit_retirement` row is
+Before collection, the source lock and a SQLite immediate transaction protect
+the source ledger. Full semantic replay finishes before any fresh RPC evidence is
+collected. The writer reservation remains held through collection and commit.
+Signer attempt and acknowledgment files are rechecked immediately before writing;
+no second full ledger replay consumes the fresh observation window. Stale
+evidence or conflicting signer files still prevent writing. A single canonical, hashed `admission_exit_retirement` row is
 committed atomically. No original row, signed packet, backend marker, preparation
 generation, token ownership, fee commitment, or replacement allowance is changed.
 
@@ -90,3 +93,25 @@ eligibility are unchanged.
 
 - https://solana.com/docs/rpc/http/getblockheight
 - https://solana.com/docs/rpc/http/gettransaction
+
+## Atomic observation correction
+
+The host reports from 05:37 UTC on November 7 did not confirm retirement. The
+separate status report established `retirement-not-recorded`. The old report did
+not retain the exact exception, so its root cause cannot be established from
+those files alone.
+
+Inspection found a timing hazard: the old flow repeated expensive semantic replay
+after network collection, before a commit limited to ten seconds. Host status
+replay took about twenty seconds. `held-retirement-atomic-2` moves all full replay
+before RPC and pins the ledger across the eight reads and commit. It does not
+increase the 10-second commit window, 30-second account-age allowance, RPC budget,
+or overall acceptance budget.
+
+Reports include a fixed stage, allowlisted diagnostic code, phase durations,
+network request count, and observation age. Exceptions before writing report a
+refusal with no mutation; uncertain write completion still requires read-only
+status. The writer reservation is on the private rehearsal ledger only, not the
+scanner's production database. It temporarily excludes other writers to that
+rehearsal ledger and is released on errors. The source lock covers cooperating
+local tools, not unrelated activity involving the wallet.

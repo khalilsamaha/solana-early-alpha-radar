@@ -95,6 +95,29 @@ def assess(ctx,ev,started,now):
         nextAction='review-controlled-retirement-policy' if not blockers else 'investigate-blockers-without-replacement')
 
 
+def collect_context(ctx,transport,clock):
+    """Eight exact reads; caller owns and validates the local source snapshot."""
+    i=ctx['identity'];plan=transport.plan
+    rpc=Rpc('devnet',transport);ev={};began=clock()
+    def ask(name,method,params):
+        check(len(plan)<8 and method==ORDER[len(plan)],'expiry-order')
+        plan.append((method,params));item=rpc.request(method,params)
+        value=chain.history.transport.transport.received(item);ev[name]=item
+        return value
+    check(ask('genesisBefore','getGenesisHash',[])==chain.GENESIS['devnet'],'expiry-cluster')
+    ask('validity','isBlockhashValid',[i['blockhash'],dict(commitment='finalized',minContextSlot=i['minimumContextSlot'])])
+    block_slot,_=chain.history.transport.transport.context(ev['validity'],i['minimumContextSlot'])
+    ask('height','getBlockHeight',[dict(commitment='finalized',minContextSlot=block_slot)])
+    ask('status','getSignatureStatuses',[[i['signature']],dict(searchTransactionHistory=True)])
+    status=chain.classify(ev['validity'],ev['status'],i['minimumContextSlot'])
+    ask('transaction','getTransaction',[i['signature'],dict(encoding='base64',commitment='finalized',maxSupportedTransactionVersion=0)])
+    accounts=ask('accounts','getMultipleAccounts',[ctx['accountKeys'],dict(encoding='base64',commitment='finalized',minContextSlot=status['signatureStatusContextSlot'])])
+    account_slot,_=snapshot(accounts,5)
+    ask('blockTime','getBlockTime',[account_slot])
+    check(ask('genesisAfter','getGenesisHash',[])==chain.GENESIS['devnet'],'expiry-cluster')
+    return dict(contextSha256=digest(ctx),startedAtMs=began,observedAtMs=clock(),rpcEvidence=ev)
+
+
 @view.cycles.binding.operation
 @chain.history.fresh_signing.timing.signature_replay
 def inspect(home,wallet,pool,expected,*,opener=None,clock=view.now,monotonic=time.monotonic,_evidence_sink=None):
@@ -116,23 +139,8 @@ def inspect(home,wallet,pool,expected,*,opener=None,clock=view.now,monotonic=tim
                     ctx=context(root,b,wallet,pool,expected,clock);i=ctx['identity']
                     elapsed=monotonic()-start;check(0<=elapsed<120,'expiry-budget')
                     plan=[];transport=chain.BoundedReads(plan,opener,monotonic,budget=min(30,120-elapsed))
-                    rpc=Rpc('devnet',transport);ev={};began=clock()
-                    def ask(name,method,params):
-                        check(len(plan)<8 and method==ORDER[len(plan)],'expiry-order')
-                        plan.append((method,params));item=rpc.request(method,params)
-                        value=chain.history.transport.transport.received(item);ev[name]=item
-                        return value
-                    check(ask('genesisBefore','getGenesisHash',[])==chain.GENESIS['devnet'],'expiry-cluster')
-                    ask('validity','isBlockhashValid',[i['blockhash'],dict(commitment='finalized',minContextSlot=i['minimumContextSlot'])])
-                    block_slot,_=chain.history.transport.transport.context(ev['validity'],i['minimumContextSlot'])
-                    ask('height','getBlockHeight',[dict(commitment='finalized',minContextSlot=block_slot)])
-                    ask('status','getSignatureStatuses',[[i['signature']],dict(searchTransactionHistory=True)])
-                    status=chain.classify(ev['validity'],ev['status'],i['minimumContextSlot'])
-                    ask('transaction','getTransaction',[i['signature'],dict(encoding='base64',commitment='finalized',maxSupportedTransactionVersion=0)])
-                    accounts=ask('accounts','getMultipleAccounts',[ctx['accountKeys'],dict(encoding='base64',commitment='finalized',minContextSlot=status['signatureStatusContextSlot'])])
-                    account_slot,_=snapshot(accounts,5)
-                    ask('blockTime','getBlockTime',[account_slot])
-                    check(ask('genesisAfter','getGenesisHash',[])==chain.GENESIS['devnet'],'expiry-cluster')
+                    proof=collect_context(ctx,transport,clock)
+                    ev=proof['rpcEvidence'];began=proof['startedAtMs']
                     check(0<=monotonic()-transport.started<=transport.budget,'expiry-budget')
                     after=context(root,b,wallet,pool,expected,clock);check(ctx==after,'expiry-local-changed')
                     stamp=clock();assessment=assess(ctx,ev,began,stamp)

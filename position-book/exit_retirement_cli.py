@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Explicit local retirement or read-only status; no transaction submission mode."""
 import argparse
+import json
 from pathlib import Path
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'launch-study'))
@@ -27,6 +28,9 @@ def main():
     print('State:',result['state'])
     print('Retirement created this run:',result['createdThisRun'])
     print('Read-only devnet requests:',result['networkRequests'])
+    if result.get('stage'):print('Stage:',result['stage'])
+    if result.get('diagnosticCode'):print('Diagnostic:',result['diagnosticCode'])
+    if result.get('timing'):print('Timing:',json.dumps(result['timing'],sort_keys=True))
     print('No signing, submission, replacement or release. All inventory and fee holds remain.')
     print('Upload only this public report:',a.output.absolute())
     return 0 if result['state']=='exit-retired-held' else 2

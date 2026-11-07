@@ -6,6 +6,7 @@ financial reservation are preserved; this is not settlement or replacement.
 from copy import deepcopy
 from datetime import datetime, timezone
 import json
+import sqlite3
 import time
 
 import expired_exit_evidence as expiry
@@ -123,49 +124,96 @@ def write_record(book,record):
     check(book.db.execute('PRAGMA page_count').fetchone()[0]*book.db.execute('PRAGMA page_size').fetchone()[0]<=64*1024*1024,'retirement-ledger-cap')
 
 
-def _commit(home,wallet,pool,expected,proof,*,clock,monotonic,started):
-    with view.cycles.c.source_lock(home,wallet) as root:
-        book=history.lifecycle.entry.submission._open(root,wallet,pool,clock)
-        try:
-            with book.j.transaction():
-                with read_only_journals():
-                    reader=history.lifecycle.entry.submission._open(root,wallet,pool,clock)
-                    try:
-                        ctx=expiry.context(root,reader,wallet,pool,expected,clock)
-                        old=row(reader)
-                        if old is not None:
-                            validate(old,ctx,clock());return public(old,ctx)
-                        record=dict(format=VERSION,recordedAtMs=clock(),preparationSha256=expected,**deepcopy(proof))
-                        validate(record,ctx,clock())
-                    finally:reader.close()
-                check(0<=monotonic()-started<=120,'retirement-operation-budget')
-                write_record(book,record)
-                # Revalidate time just before COMMIT; a failed write or deadline
-                # rolls back the table and row together, never consuming a slot.
-                end=clock();uint(end,record['observedAtMs']+COMMIT_WINDOW_MS,'retirement-commit-time',minimum=record['recordedAtMs'])
-                expiry.assess(ctx,record['rpcEvidence'],record['startedAtMs'],end)
-                check(0<=monotonic()-started<=120,'retirement-operation-budget')
-            return public(record,ctx,created=True)
-        finally:book.close()
+# Only these fixed reason codes can leave the process; raw exception text cannot.
+REASONS={'retirement-evidence-stale','retirement-operation-budget','retirement-commit-time',
+    'retirement-evidence-conflict','retirement-context-conflict','expiry-account-time',
+    'expiry-budget','retirement-source-conflict','exit-signer-ack-binding',
+    'exit-signer-ack-hash','exit-signer-ack-conflict','exit-signer-attempt-binding'}
+
+
+def reason(exc):
+    if isinstance(exc,sqlite3.Error):
+        code=getattr(exc,'sqlite_errorcode',0)
+        return 'sqlite-locked' if code & 255 in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) else 'sqlite-failure'
+    return str(exc) if str(exc) in REASONS else 'retirement-validation-unavailable'
+
+
+def _persist(book,reader,root,ctx,state,expected,proof,*,clock,monotonic,started):
+    """Caller owns source lock, writer reservation and a read-only pinned source.
+
+    Full semantic replay happened before RPC. No public report or cached state
+    enters this path. The existing writer reservation excludes ledger changes;
+    backend files are independently revalidated against the exact signed state.
+    """
+    check(book.db.in_transaction and reader.j.read_only,'retirement-snapshot-required')
+    guard.require_active(book)
+    check(digest(state)==ctx['identity']['signingStateSha256'],'retirement-source-conflict')
+    history.backend._attempt_record_for_state(root,reader,state)
+    check(history.backend._read_ack(root,reader,state)==ctx['signedWire'],'retirement-source-conflict')
+    record=dict(format=VERSION,recordedAtMs=clock(),preparationSha256=expected,**deepcopy(proof))
+    validate(record,ctx,clock())
+    check(0<=monotonic()-started<=120,'retirement-operation-budget')
+    return record
 
 
 @view.cycles.binding.operation
 @history.fresh_signing.timing.signature_replay
 def retire(home,wallet,pool,expected,*,allow_retire=False,opener=None,clock=view.now,monotonic=time.monotonic):
     check(allow_retire is True,'explicit-local-retirement-required')
-    started=monotonic();r=status(home,wallet,pool,expected,clock=clock)
-    if r['state']!='retirement-not-recorded':return r
-    captured=[]
-    observation=expiry.inspect(home,wallet,pool,expected,opener=opener,clock=clock,monotonic=monotonic,
-        _evidence_sink=captured.append)
-    requests=observation['networkRequests'];r=base();r['networkRequests']=requests
-    if observation['state']!='expired-exit-evidence-observed' or observation['assessment']['state']!='expiry-evidence-consistent-held':
-        r.update(state='retirement-refused-held',diagnosticCode='fresh-expiry-evidence-required');return r
+    started=monotonic();r=base();transport=None;write_started=False;proof=None
+    stage='local-replay';phase_start=started;durations={}
+    def advance(name):
+        nonlocal stage,phase_start
+        stamp=monotonic();check(stamp>=phase_start,'retirement-operation-budget')
+        durations[stage+'Ms']=round((stamp-phase_start)*1000,3);stage=name;phase_start=stamp
     try:
-        check(len(captured)==1,'retirement-private-evidence-required')
-        r=_commit(home,wallet,pool,expected,captured[0],clock=clock,monotonic=monotonic,started=started)
-        r['networkRequests']=requests
-    except view.ERRORS:
-        r.update(state='retirement-unconfirmed-held',recorded=None,createdThisRun=None,sourceStateChanged=None,
-            diagnosticCode='inspect-retirement-status-before-any-further-action')
+        with view.cycles.c.source_lock(home,wallet) as root:
+            book=history.lifecycle.entry.submission._open(root,wallet,pool,clock)
+            try:
+                with book.j.transaction():
+                    with read_only_journals():
+                        reader=history.lifecycle.entry.submission._open(root,wallet,pool,clock)
+                        try:
+                            ctx=expiry.context(root,reader,wallet,pool,expected,clock)
+                            old=row(reader)
+                            if old is not None:
+                                validate(old,ctx,clock());r=public(old,ctx);advance('complete')
+                            else:
+                                with history.transport.ExitSubmission(reader).snapshot():
+                                    state=history.transport.ExitSubmission(reader).signing()
+                                    check(digest(state)==ctx['identity']['signingStateSha256'],'retirement-source-conflict')
+                                elapsed=monotonic()-started
+                                check(0<=elapsed<120,'retirement-operation-budget')
+                                advance('rpc')
+                                transport=expiry.chain.BoundedReads([],opener,monotonic,budget=min(30,120-elapsed))
+                                proof=expiry.collect_context(ctx,transport,clock)
+                                check(0<=monotonic()-transport.started<=transport.budget,'expiry-budget')
+                                advance('precommit')
+                                record=_persist(book,reader,root,ctx,state,expected,proof,
+                                    clock=clock,monotonic=monotonic,started=started)
+                        finally:reader.close()
+                    if old is None:
+                        advance('write');write_started=True
+                        write_record(book,record)
+                        end=clock()
+                        uint(end,record['observedAtMs']+COMMIT_WINDOW_MS,'retirement-commit-time',minimum=record['recordedAtMs'])
+                        expiry.assess(ctx,record['rpcEvidence'],record['startedAtMs'],end)
+                        check(0<=monotonic()-started<=120,'retirement-operation-budget')
+                # Only successful COMMIT may report creation. If publication fails
+                # here, the caller gets uncertainty and must use read-only status.
+                if old is None:r=public(record,ctx,created=True);advance('complete')
+            finally:book.close()
+    except view.ERRORS as exc:
+        r=base();r['diagnosticCode']=reason(exc)
+        if write_started:
+            r.update(state='retirement-unconfirmed-held',recorded=None,createdThisRun=None,sourceStateChanged=None)
+        elif transport is not None:r.update(state='retirement-refused-held')
+    finally:
+        end=monotonic()
+        durations[stage+'Ms']=round(max(0,end-phase_start)*1000,3)
+        r.update(retirementImplementation='held-retirement-atomic-2',stage=stage,
+            timing=dict(durations,totalMs=round(max(0,end-started)*1000,3)),
+            networkRequests=0 if transport is None else len(transport.calls),
+            snapshotPinnedAcrossRpc=transport is not None,
+            observationAgeMs=None if proof is None else clock()-proof['observedAtMs'])
     r['capturedAt']=datetime.now(timezone.utc).isoformat();return r

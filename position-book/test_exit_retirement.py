@@ -102,15 +102,15 @@ class RetirementTests(unittest.TestCase):
             self.assertEqual(files(self.c),before);self.assertNotIn('private detail',json.dumps(result))
 
     def test_stale_handoff_or_changed_ack_between_collection_and_writer_refuses(self):
-        original=m._commit
+        original=m._persist
         for kind in ('stale','ack'):
             self.setUp();before=files(self.c)
             def changed(*args,**kw):
                 if kind=='stale':self.c.now+=10001
                 else:(self.c.path.parent/m.history.backend.ACK).write_text('{}')
                 return original(*args,**kw)
-            with patch.object(m,'_commit',side_effect=changed):result=self.retire()
-            self.assertEqual(result['state'],'retirement-unconfirmed-held',result)
+            with patch.object(m,'_persist',side_effect=changed):result=self.retire()
+            self.assertEqual(result['state'],'retirement-refused-held',result)
             self.assertNotIn(m.guard.TABLE,self.tables())
             self.assertEqual(self.c.path.read_bytes(),before[str(self.c.path)])
 
@@ -179,11 +179,12 @@ class RetirementTests(unittest.TestCase):
         self.assertNotIn(m.history.transport.BOUNDARY,self.tables())
 
     def test_lost_local_completion_after_commit_is_unknown_until_read_only_status(self):
-        original=m._commit
+        original=m.public
         def lost(*args,**kw):
-            original(*args,**kw)
-            raise OSError('lost local completion')
-        with patch.object(m,'_commit',side_effect=lost):result=self.retire()
+            value=original(*args,**kw)
+            if kw.get('created'):raise OSError('lost local completion')
+            return value
+        with patch.object(m,'public',side_effect=lost):result=self.retire()
         self.assertEqual(result['state'],'retirement-unconfirmed-held')
         for key in ('recorded','createdThisRun','sourceStateChanged'):self.assertIsNone(result[key])
         before=files(self.c);status=self.status()
