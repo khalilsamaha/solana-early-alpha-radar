@@ -64,9 +64,13 @@ def _run(home,wallet,pool,*,signer_adapter,collection_opener=None,submission_ope
         options=dict(opener=collection_opener,clock=clock,monotonic=monotonic,
                      _observation_sink=observations.append)
         if _continuation_expected is not None:
+            # This trusted nested phase joins _run's exact-wire verification
+            # owner. State/receipt/clock checks still run; no verdict survives
+            # the attempt, and direct collection/recovery remain isolated.
             prepared=continuation.collect_and_prepare(root,wallet,pool,
                 expected_original_sha256=_continuation_expected[0],
-                expected_current_sha256=_continuation_expected[1],allow_unsigned_continuation=True,**options)
+                expected_current_sha256=_continuation_expected[1],allow_unsigned_continuation=True,
+                _reuse_signature_scope=True,**options)
             check(prepared.get('originalPreparationSha256')==_continuation_expected[0] and
                   prepared.get('previousPreparationSha256')==_continuation_expected[1] and
                   prepared.get('continuationCount')==1 and prepared.get('originalPreserved') is True and

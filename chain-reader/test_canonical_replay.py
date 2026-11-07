@@ -276,6 +276,41 @@ class CanonicalReplayTests(unittest.TestCase):
                 self.assertNotEqual(actual,first)
                 self.assertEqual(stats()['hits'],0)
 
+    def test_deep_and_wide_exact_comparison_checks_last_leaf_and_types(self):
+        from copy import deepcopy
+        value={'body':[{'value':[i,True,None,'é']} for i in range(500)]}
+        key=m.frozen(value,{})[0]
+        self.assertTrue(m.exact_match(deepcopy(value),key))
+        for changed in (499.0,True,'499',None):
+            other=deepcopy(value);other['body'][-1]['value'][0]=changed
+            self.assertFalse(m.exact_match(other,key))
+        nested=1
+        for _ in range(40):nested=[nested]
+        key=m.frozen(nested,{})[0]
+        self.assertTrue(m.exact_match(deepcopy(nested),key))
+        other=deepcopy(nested);leaf=other
+        for _ in range(39):leaf=leaf[0]
+        leaf[0]=True
+        self.assertFalse(m.exact_match(other,key))
+
+    def test_dictionary_size_and_key_changes_during_comparison_do_not_hit(self):
+        for change in ('remove','add','rename'):
+            with self.subTest(change=change),m.scope() as stats:
+                value={'body':{'a':1,'z':2}};first=m.digest(value)
+                original=m.exact_match;changed=[]
+                def mutate(v,k):
+                    result=original(v,k)
+                    if type(v) is int and v==1 and not changed:
+                        changed.append(True)
+                        if change=='remove':del value['body']['z']
+                        elif change=='add':value['body']['zz']=3
+                        else:value['body']['zz']=value['body'].pop('z')
+                    return result
+                with patch.object(m,'exact_match',mutate):actual=m.digest(value)
+                self.assertEqual(actual,m.original(value))
+                self.assertNotEqual(actual,first)
+                self.assertEqual(stats()['hits'],0)
+
     def test_bucket_indexes_are_bounded_evicted_and_cleared_with_entries(self):
         with patch.object(m,'MAX_ENTRIES',2),m.scope() as stats:
             values,_=m._SCOPE.get()

@@ -18,7 +18,7 @@ MAX_READ_MS=120000
 ENTRY_TABLES={'admission_submission','admission_submission_ack','admission_rpc_captures',
               'admission_receipt_events','admission_receipt_raw','admission_entry_accounting'}
 EXIT_TRANSPORT={'admission_exit_submission','admission_exit_submission_ack','admission_exit_rpc_captures'}
-EXIT_TABLES=EXIT_TRANSPORT|{'admission_exit_continuation','admission_exit_replacement','admission_exit_preparation','admission_exit_signing','admission_exit_accounting','admission_exit_closure'}
+EXIT_TABLES=EXIT_TRANSPORT|{'admission_exit_retirement','admission_exit_continuation','admission_exit_replacement','admission_exit_preparation','admission_exit_signing','admission_exit_accounting','admission_exit_closure'}
 KNOWN={'admission_policy','admission_events'}|ENTRY_TABLES|EXIT_TABLES
 
 
@@ -54,7 +54,7 @@ def original(book,state):
         maximumExitAttempts=attempts,basis='original-reservation-history-not-extra-holds')
 
 
-def projection(book,root,wallet,pool,clock):
+def _projection(book,root,wallet,pool,clock):
     """Caller holds source lock and a separate shared SQLite read lock."""
     state,count,head,at=book.read();now=clock()
     check(state is not None and state.get('reservedAtMs') is not None,'lifecycle-funded-admission-required')
@@ -144,6 +144,19 @@ def projection(book,root,wallet,pool,clock):
     check(int(x['sourceProceedsHeldAtomic'])==int(amounts['sourceProceedsHeldAtomic'])+
           int(amounts['sourceProceedsReleasedAtomic']),'lifecycle-proceeds-conservation')
     return phase,orig,amounts,stages,ids,state
+
+
+def projection(book,root,wallet,pool,clock):
+    result=_projection(book,root,wallet,pool,clock)
+    from exit_retirement_guard import present
+    if not present(book):return result
+    phase,orig,amounts,stages,ids,state=result
+    check(phase=='exit-signed-not-submitted' and amounts is not None,'lifecycle-retirement-conflict')
+    from exit_retirement import replay_for_projection
+    record=replay_for_projection(book,root,wallet,pool,clock,amounts)
+    stages['exitRetirement']='expired-attempt-retired-held'
+    ids['exitRetirementSha256']=digest(record)
+    return 'exit-retired-held',orig,amounts,stages,ids,state
 
 
 @view.cycles.binding.operation

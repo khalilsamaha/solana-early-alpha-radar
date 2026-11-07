@@ -1,5 +1,32 @@
 # Solana Early-Alpha Radar — progress and roadmap
 
+## Current status — November 6, 2026
+
+PR #77 is the current consolidated base. The next three-increment performance
+batch is documented in [continuation performance consolidation](CONTINUATION-PERFORMANCE-CONSOLIDATION-20261106.md).
+Its latest Kali full-size offline run passed 16 integration/fault and 14 signer
+checks with 1.351 seconds remaining, versus 0.459 seconds previously. This is a
+host functional/timing improvement; real RPC execution reliability remains open.
+The held real devnet exit has not been completed by these synthetic checks.
+
+Immediate sequence:
+
+1. Consolidate the tested performance batch after all twelve CI jobs pass.
+2. Inspect the preserved devnet journals, then collect fresh read-only RPC timing
+   if that exact pair remains eligible. Preserve all existing commitments.
+3. Decide whether operational evidence supports the separately controlled one-shot
+   continuation; recover an unknown response without resending.
+4. Validate finalized receipt effects, fresh balances and scoped closure.
+5. Review the independent availability study when its scheduled evidence is
+   supplied. Technical execution success does not establish profitable selection.
+6. Consider a tightly bounded real-money pilot only after both execution and
+   economic criteria are met; no pilot date or profitability claim is justified
+   by the current offline results.
+
+The running scanner, notifications, backups, quote observer and frozen study
+remain unchanged by this batch. Earlier sections below are dated history.
+
+
 Updated 3 November 2026. This is a current engineering assessment, not a trading
 approval or profitability forecast. Earlier dated roadmap sections remain history.
 

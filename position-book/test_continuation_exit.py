@@ -15,6 +15,12 @@ class ContinuationExitTests(unittest.TestCase):
             self.assertTrue(all(r['completed'] for r in result['diagnosticPhases']))
             self.assertIn('replacement-preparation',[r['phase'] for r in result['diagnosticPhases']])
             self.assertEqual(len(result['independentContractCases']),14)
+            self.assertTrue(result['collectionSignatureVerification']['sharedWithParent'])
+            phases={row['phase']:row for row in result['diagnosticPhases']}
+            self.assertEqual(phases['continuation-signing-handoff']['signatureVerification']['verifierProcesses'],1)
+            self.assertEqual(phases['continuation-submission']['signatureVerification']['verifierProcesses'],0)
+            self.assertEqual(phases['continuation-submission']['preservedGenerationReads'],8)
+            self.assertGreater(result['signatureVerification']['memoHits'],0)
             self.assertTrue(result['temporaryLedgersRemoved'])
             self.assertEqual(result['realNetworkRequests'],0)
             self.assertFalse(result['productionWalletAccessed'])

@@ -31,7 +31,7 @@ MAX_TOTAL=320*1024*1024+10240
 NOW=accounting.submission.handoff.bridge.view.now
 TABLES=('admission_submission','admission_submission_ack','admission_rpc_captures',
         'admission_receipt_events','admission_receipt_raw','admission_entry_accounting',
-        'admission_exit_replacement',
+        'admission_exit_replacement','admission_exit_retirement',
         'admission_exit_submission','admission_exit_submission_ack','admission_exit_rpc_captures','admission_exit_accounting','admission_exit_closure')
 
 
@@ -163,8 +163,19 @@ def inspect_locked(home,wallet,pool,clock):
             import exit_closure
             r=exit_closure.public(exit_closure.replay(book,home,wallet,pool,clock))
             result['exitClosure']={k:r[k] for k in ('state','closureRecorded','recordSha256','scopedCommitmentsReleased')}
+        retirement=retirement_projection(book,home,wallet,pool,clock)
+        if retirement is not None:result['exitRetirement']=retirement
         return result
     finally:book.close()
+
+
+def retirement_projection(book,home,wallet,pool,clock):
+    from exit_retirement_guard import present
+    if not present(book):return None
+    from admission_lifecycle import projection
+    phase,_,amounts,_,ids,_=projection(book,home,wallet,pool,clock)
+    check(phase=='exit-retired-held' and amounts is not None,'snapshot-retirement-conflict')
+    return dict(state=phase,recordSha256=ids['exitRetirementSha256'],scopedAccounting=amounts)
 
 
 def inventories(source,sibling,*,original=False):

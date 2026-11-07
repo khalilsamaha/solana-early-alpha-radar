@@ -7,7 +7,7 @@ import json
 import hashlib
 import sys
 
-VERSION = 'exact-canonical-digest-3'
+VERSION = 'exact-canonical-digest-4'
 MAX_ENTRIES = 128
 MAX_BYTES = 32 * 1024 * 1024
 MAX_ENTRY_BYTES = 16 * 1024 * 1024
@@ -119,11 +119,19 @@ def exact_match(value,key):
     if tag=='b':return kind is bool and value==key[1]
     if tag=='n':return value is None
     if tag=='l':
-        return kind is list and len(value)==len(key[1]) and all(
-            exact_match(value[i],k) for i,k in enumerate(key[1])) and len(value)==len(key[1])
-    if kind is not dict or len(value)!=len(key[1]) or any(type(k) is not str for k in value):
-        return False
-    return all(k[1] in value and exact_match(value[k[1]],v) for k,v in key[1]) and len(value)==len(key[1])
+        if kind is not list or len(value)!=len(key[1]):return False
+        # Explicit loops avoid constructing one generator per nested container.
+        # Keep indexed access and the final length check: zip alone could accept
+        # a prefix if the current list shrinks during comparison.
+        for i,k in enumerate(key[1]):
+            if not exact_match(value[i],k):return False
+        return len(value)==len(key[1])
+    if kind is not dict or len(value)!=len(key[1]):return False
+    for k in value:
+        if type(k) is not str:return False
+    for k,v in key[1]:
+        if k[1] not in value or not exact_match(value[k[1]],v):return False
+    return len(value)==len(key[1])
 
 
 class Entries(OrderedDict):

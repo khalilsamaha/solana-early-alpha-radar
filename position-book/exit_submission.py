@@ -11,6 +11,7 @@ import json
 import admission_submission as transport
 import exit_signing_handoff as handoff
 import restricted_exit_signer as backend
+import exit_retirement_guard as retirement
 from contract import digest, fields, uint
 from core import check
 from journal import read_only_journals
@@ -135,6 +136,7 @@ class ExitSubmission:
 
     def mark(self,proof,root,wallet,pool,clock):
         with self.b.j.transaction():
+            retirement.require_active(self.b)
             # The writer reservation excludes a concurrent ledger writer. A second
             # read-only connection replays source and raw evidence before commit.
             with read_only_journals():
@@ -144,10 +146,10 @@ class ExitSubmission:
                     with current.snapshot():
                         state=current.signing()
                         check(current._boundary(state) is None,'exit-already-attempted')
-                    check(state['state']=='exit-signed-recorded','exit-signing-not-usable')
-                    request,_,_=handoff.current(root,reader,wallet,pool,clock)
-                    check(request==state['request'],'exit-request-changed')
-                    check(backend.acknowledgment(root,reader)==state['signed']['signedWireBase64'],'exit-backend-ack')
+                        check(state['state']=='exit-signed-recorded','exit-signing-not-usable')
+                        request,_,_=handoff.current(root,reader,wallet,pool,clock)
+                        check(request==state['request'],'exit-request-changed')
+                        check(backend._acknowledgment_in_snapshot(root,reader,state)==state['signed']['signedWireBase64'],'exit-backend-ack')
                 finally:reader.close()
             proof_check(proof,state);now=clock()
             check(state['lastAtMs']<=now<request['validUntilExclusiveMs'] and not handoff.stopped(root,self.b),'exit-boundary-expired-or-stopped')
@@ -254,11 +256,13 @@ def submit(home,wallet,pool,*,allow_devnet_submit=False,opener=None,clock=view.n
         try:
             s=ExitSubmission(b)
             with s.snapshot():
+                retirement.require_active(b)
                 state=s.signing()
                 if s._boundary(state) is not None:return s._status(None)
                 check(state['state']=='exit-signed-recorded','exit-signing-not-usable')
-            handoff.current(root,b,wallet,pool,clock)
-            check(backend.acknowledgment(root,b)==state['signed']['signedWireBase64'],'exit-backend-ack')
+                request,_,_=handoff.current(root,b,wallet,pool,clock)
+                check(request==state['request'],'exit-request-changed')
+                check(backend._acknowledgment_in_snapshot(root,b,state)==state['signed']['signedWireBase64'],'exit-backend-ack')
             if _guard is not None:_guard('before-preflight',state)
             rpc=transport.SendRpc(opener,guard=None if _guard is None else lambda method:_guard(method,state))
             if _rpc_sink is not None:_rpc_sink(rpc)
