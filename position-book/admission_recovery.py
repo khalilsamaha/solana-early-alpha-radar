@@ -171,11 +171,16 @@ def inspect_locked(home,wallet,pool,clock):
 
 def retirement_projection(book,home,wallet,pool,clock):
     from exit_retirement_guard import present
-    if not present(book):return None
+    from retired_exit_successor import present as successor_present
+    if not present(book):
+        check(not successor_present(book),'snapshot-orphan-successor')
+        return None
     from admission_lifecycle import projection
     phase,_,amounts,_,ids,_=projection(book,home,wallet,pool,clock)
     check(phase=='exit-retired-held' and amounts is not None,'snapshot-retirement-conflict')
-    return dict(state=phase,recordSha256=ids['exitRetirementSha256'],scopedAccounting=amounts)
+    result=dict(state=phase,recordSha256=ids['exitRetirementSha256'],scopedAccounting=amounts)
+    if 'exitSuccessorSha256' in ids:result['unsignedSuccessorSha256']=ids['exitSuccessorSha256']
+    return result
 
 
 def inventories(source,sibling,*,original=False):
