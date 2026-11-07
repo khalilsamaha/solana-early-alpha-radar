@@ -23,12 +23,12 @@ The performance numbers above are from the committed study decisions, not a new 
 
 ## November 7 collection acceptance update
 
-The 18:21:10 UTC host observation passed all 28 fixed reads, with unchanged holds and 3.245 seconds of original freshness remaining at return. The matching offline check passed 13/13. A separate durable successor signing handoff is now implemented for offline host acceptance; the independent key backend and full live preparation/sign/send timing remain pending. See [the handoff release](SUCCESSOR-SIGNING-HANDOFF-20261107.md). These engineering results do not change the research decisions above.
+The 18:21:10 UTC host observation passed all 28 fixed reads, with unchanged holds and 3.245 seconds of original freshness remaining at return. The matching offline check passed 13/13. The separate durable successor signing handoff passed all 15 Kali checks at 18:55:10 UTC. The independent key backend and keyless acknowledgment recovery are now implemented for offline acceptance; full live preparation/sign/send timing remains pending. See [the backend release](SUCCESSOR-KEY-BACKEND-20261107.md). See [the handoff release](SUCCESSOR-SIGNING-HANDOFF-20261107.md). These engineering results do not change the research decisions above.
 
 ## Remaining engineering sequence
 
 1. **Bounded successor observation — accepted.** Collect eight expiry/account responses and at most twenty fresh quote/simulation responses while the source is pinned. Validate against the accepted successor contract. Report timings and headroom. Do not persist an expiring candidate during this observation.
-2. **Successor signing integration — durable handoff implemented; backend pending.** Bind an independently checked signing generation to the same retirement, attempt two and original cumulative reservation. Preserve old backend files and retired-sender denial. Test interruption, duplicate invocation and post-sign expiry before a live attempt.
+2. **Successor signing integration — handoff host-accepted; independent backend built for offline acceptance.** Bind an independently checked signing generation to the same retirement, attempt two and original cumulative reservation. Preserve old backend files and retired-sender denial. Test interruption, duplicate invocation and post-sign expiry before a live attempt.
 3. **One controlled devnet exit and closure.** Check actual submission timing, signature recovery, exact token/fee deltas and idempotent scoped release. A timing failure is a failed gate, not permission to widen freshness or reset attempts.
 4. **Target-route validation before any funded mechanics test.** Controlled test-pool success is not evidence that a mainnet aggregator route, liquidity, fees, account setup or failure behavior is equivalent. Specify the intended route and reconcile its complete costs first.
 

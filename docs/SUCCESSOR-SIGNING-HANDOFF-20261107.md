@@ -80,6 +80,11 @@ Expected: `offline-checks-passed`, 15 cases. Upload only the generated public
 report. Test keys and journals are disposable; no user wallet or RPC is used.
 No Docker rebuild, observer restart, scanner deployment or study change is needed.
 
+## Host acceptance
+
+Kali passed all 15 cases at 18:55:10 UTC on November 7. The next
+[independent key backend](SUCCESSOR-KEY-BACKEND-20261107.md) builds on this accepted handoff.
+
 ## Next gate
 
 Implement the independently validating, generation-specific restricted signing
