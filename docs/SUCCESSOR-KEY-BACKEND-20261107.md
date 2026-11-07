@@ -63,9 +63,10 @@ successor regressions, six retirement snapshot regressions, two test-partition
 checks and six CLI scope/output refusals also passed. Source hygiene and package
 manifests passed.
 
-Host acceptance remains pending. Run the pinned commit and offline command from
-chat; upload only its public `radar-successor-key-check-*.json.gz` report. No
-Docker rebuild or service restart is required. Keep all existing private journals.
+Kali acceptance passed at 19:21:34 UTC on November 7: all 50 cases passed,
+with no failed or skipped cases. No user key, journal, network, transaction or
+runtime was accessed or changed. The complete collection/signing timing gate
+is separate; see [the connected rehearsal](SUCCESSOR-SIGNING-REHEARSAL-20261107.md).
 
 ## Finite next integration gate
 
