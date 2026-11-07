@@ -82,3 +82,16 @@ ResourceWarning treated as an error, then run `retired_exit_replan_cli.py` with 
 private rehearsal directory, wallet, pool, preparation SHA, retirement SHA and a
 new output path outside all private source directories. The CLI has no execution,
 report-import or custom endpoint flags. Upload only the public JSON gzip report.
+
+## Consolidation acceptance
+
+The November 7 host review reached `retired-exit-review-consistent-held` after
+eight reads, with no blockers. All five scoped accounts matched, the original
+signature and transaction were absent from the provider response, and one
+conservative attempt slot remained. These observations do not authorize a send.
+
+Consolidated PR #78 initially passed eleven CI jobs. Partition 1 was cancelled
+at its ten-minute runner limit while still executing the unsigned continuation
+suite, without a reported assertion failure. Its runner allowance is now fifteen
+minutes; all other jobs keep ten minutes. No tests, product deadlines, or safety
+checks are removed or relaxed. The full final-head run must pass before merge.
