@@ -24,6 +24,11 @@ class Rpc(chain.Client):
 def context(root,book,wallet,pool,expected,clock):
     identity=chain.local(root,book,wallet,pool,expected,clock)
     record=chain.history.lifecycle.preparation.saved(book,clock())
+    return scope_context(book,wallet,identity,record)
+
+
+def scope_context(book,wallet,identity,record):
+    """Bind already replayed position identity to its five saved account roles."""
     a=book.policy['scope']['accounts']
     keys=[wallet,a['source'],a['destination'],a['inputMint'],a['outputMint']]
     check(len(set(keys))==5 and NATIVE not in keys,'expiry-account-scope')
@@ -92,7 +97,7 @@ def assess(ctx,ev,started,now):
 
 @view.cycles.binding.operation
 @chain.history.fresh_signing.timing.signature_replay
-def inspect(home,wallet,pool,expected,*,opener=None,clock=view.now,monotonic=time.monotonic):
+def inspect(home,wallet,pool,expected,*,opener=None,clock=view.now,monotonic=time.monotonic,_evidence_sink=None):
     r=dict(format=VERSION,state='expiry-evidence-unavailable',assessment=None,identity=None,
         diagnosticCode=None,networkRequests=0,requestMethods=[],sourceStateChanged=False,
         databaseConnectionsReadOnly=True,privateKeyAccessed=False,signaturesCreated=0,transactionsSent=0,
@@ -100,6 +105,7 @@ def inspect(home,wallet,pool,expected,*,opener=None,clock=view.now,monotonic=tim
         limitations=['One fixed devnet provider, not independent consensus or complete historical proof.',
           'Matching present balances cannot rule out intervening offsetting transactions.',
           'No retirement, release, re-signing or replacement transition is implemented by this report.'])
+    check(_evidence_sink is None or callable(_evidence_sink),'expiry-evidence-sink')
     start=monotonic();transport=None
     try:
         check(type(expected) is str and len(expected)==64 and all(c in '0123456789abcdef' for c in expected),'expiry-id')
@@ -131,6 +137,9 @@ def inspect(home,wallet,pool,expected,*,opener=None,clock=view.now,monotonic=tim
                     after=context(root,b,wallet,pool,expected,clock);check(ctx==after,'expiry-local-changed')
                     stamp=clock();assessment=assess(ctx,ev,began,stamp)
                     check(0<=monotonic()-start<=120,'expiry-budget')
+                    if _evidence_sink is not None:
+                        _evidence_sink(deepcopy(dict(contextSha256=digest(ctx),startedAtMs=began,
+                            observedAtMs=stamp,rpcEvidence=ev)))
                     r.update(state='expired-exit-evidence-observed',assessment=assessment,
                         identity=dict(preparationSha256=expected,signingStateSha256=i['signingStateSha256'],
                             signatureSha256=digest(i['signature']),blockhashSha256=digest(i['blockhash'])),observedAtMs=stamp)

@@ -117,6 +117,8 @@ def public(state,now,stop=False,calls=0):
 
 
 def current(root,book,wallet,pool,clock):
+    from exit_retirement_guard import require_active
+    require_active(book)
     check(not stopped(root,book),'exit-signing-stopped')
     now=clock();record=preparation.saved(book,now);request=request_for(record)
     check(record['recordedAtMs']<=now<request['validUntilExclusiveMs'],'exit-signing-expired')

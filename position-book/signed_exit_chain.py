@@ -73,7 +73,7 @@ def local(root, book, wallet, pool, expected, clock):
     timeline = history.signing_timeline(root, book, record, clock())
     check(timeline.get('state') == 'expired-signed-locally-unsubmitted-held', 'chain-held-expired-required')
     phase, _, amounts, _, _, _ = history.lifecycle.projection(book, root, wallet, pool, clock)
-    check(phase == 'exit-signed-not-submitted' and amounts is not None, 'chain-held-position-required')
+    check(phase in ('exit-signed-not-submitted','exit-retired-held') and amounts is not None, 'chain-held-position-required')
     with history.transport.ExitSubmission(book).snapshot():
         state = history.transport.ExitSubmission(book).signing()
         check(state['request']['preparationSha256'] == expected, 'chain-signing-mismatch')

@@ -11,6 +11,7 @@ import json
 import admission_submission as transport
 import exit_signing_handoff as handoff
 import restricted_exit_signer as backend
+import exit_retirement_guard as retirement
 from contract import digest, fields, uint
 from core import check
 from journal import read_only_journals
@@ -135,6 +136,7 @@ class ExitSubmission:
 
     def mark(self,proof,root,wallet,pool,clock):
         with self.b.j.transaction():
+            retirement.require_active(self.b)
             # The writer reservation excludes a concurrent ledger writer. A second
             # read-only connection replays source and raw evidence before commit.
             with read_only_journals():
@@ -254,6 +256,7 @@ def submit(home,wallet,pool,*,allow_devnet_submit=False,opener=None,clock=view.n
         try:
             s=ExitSubmission(b)
             with s.snapshot():
+                retirement.require_active(b)
                 state=s.signing()
                 if s._boundary(state) is not None:return s._status(None)
                 check(state['state']=='exit-signed-recorded','exit-signing-not-usable')

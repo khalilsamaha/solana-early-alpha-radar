@@ -134,6 +134,15 @@ class EvidenceTests(unittest.TestCase):
         rpc=m.Rpc('devnet')
         with self.assertRaises(ValueError):rpc.request('sendTransaction',[])
 
+    def test_failed_private_handoff_never_publishes_success(self):
+        with signed_case() as c:
+            c.now+=30000;ctx=fixture(c);before=files(c)
+            def broken(_):raise ValueError('private handoff failed')
+            result=m.inspect(c.home,c.wallet,c.pool,c.exit_state['request']['preparationSha256'],
+                opener=Replies(c,ctx),clock=lambda:c.now,monotonic=lambda:0,_evidence_sink=broken)
+            self.assertEqual(result['state'],'expiry-evidence-unavailable')
+            self.assertIsNone(result['assessment']);self.assertEqual(files(c),before)
+
     def test_cli_has_no_execution_mode_and_preserves_existing_output(self):
         cli=Path(__file__).with_name('expired_exit_evidence_cli.py')
         with tempfile.TemporaryDirectory() as d:
