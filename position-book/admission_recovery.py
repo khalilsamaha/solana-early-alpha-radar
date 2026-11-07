@@ -172,14 +172,19 @@ def inspect_locked(home,wallet,pool,clock):
 def retirement_projection(book,home,wallet,pool,clock):
     from exit_retirement_guard import present
     from retired_exit_successor import present as successor_present
+    from successor_signing_handoff import present as successor_signing_present
     if not present(book):
         check(not successor_present(book),'snapshot-orphan-successor')
+        check(not successor_signing_present(book),'snapshot-orphan-successor-signing')
         return None
     from admission_lifecycle import projection
-    phase,_,amounts,_,ids,_=projection(book,home,wallet,pool,clock)
+    phase,_,amounts,stages,ids,_=projection(book,home,wallet,pool,clock)
     check(phase=='exit-retired-held' and amounts is not None,'snapshot-retirement-conflict')
     result=dict(state=phase,recordSha256=ids['exitRetirementSha256'],scopedAccounting=amounts)
     if 'exitSuccessorSha256' in ids:result['unsignedSuccessorSha256']=ids['exitSuccessorSha256']
+    if 'exitSuccessorSigningHeadSha256' in ids:
+        result['successorSigningHeadSha256']=ids['exitSuccessorSigningHeadSha256']
+        result['successorSigningState']=stages['exitSuccessorSigning']
     return result
 
 

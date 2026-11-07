@@ -1,6 +1,6 @@
 # Project roadmap — current review 7 November 2026
 
-The current decision and ordered gates are in [the November 7 project review](PROJECT-REVIEW-20261107.md). PR #78 is merged after all twelve CI checks passed. The retired-exit review and unsigned-successor contract have passed Kali acceptance. The next step is bounded, read-only successor collection; successor signing and the held exit's receipt reconciliation remain pending. Economic edge is unproven, and the completed availability study remains insufficient under its original criteria.
+The current decision and ordered gates are in [the November 7 project review](PROJECT-REVIEW-20261107.md). PR #78 is merged after all twelve CI checks passed. The retired-exit review and unsigned-successor contract have passed Kali acceptance. Bounded read-only successor collection has now passed Kali acceptance: 28 requests and 3.245 seconds of original freshness remaining. The separate durable [successor signing handoff](SUCCESSOR-SIGNING-HANDOFF-20261107.md) is implemented for offline acceptance. The independent key backend, complete live timing and held exit receipt reconciliation remain pending. Economic edge is unproven, and the completed availability study remains insufficient under its original criteria.
 
 The entries below preserve historical work and earlier pending states; use the current review above for present priorities.
 
