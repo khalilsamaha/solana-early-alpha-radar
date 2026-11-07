@@ -25,7 +25,9 @@ CODES=set(collection.CODES)|{'successor-key-opt-in-required','successor-prepare-
     'successor-key-slot-occupied','successor-integration-clock','successor-integration-budget',
     'successor-signing-expired','successor-signing-expired-or-stopped',
     'successor-expired-before-commit','restricted-successor-signer-refused',
-    'successor-integration-expired','successor-integration-ack-required'}
+    'successor-integration-expired','successor-integration-ack-required',
+    'successor-backend-request-mismatch','successor-backend-candidate-mismatch',
+    'successor-backend-boundary-mismatch'}
 
 
 @serialization_replay.operation
@@ -107,7 +109,7 @@ def _run(home,wallet,pool,expected,expected_retirement,*,
         r['signerAcknowledgmentValidated']=signed['acknowledgmentRecorded']
         check(signed['state']=='successor-signed-recorded' and signed['signerAdapterCallsThisRun']==1,
               'successor-integration-ack-required')
-        end=guard()
+        r['stage']='completion-check';end=guard()
         r.update(state='successor-signed-within-deadline',stage='complete',completedWithinOriginalDeadline=True,
                  completedAtMs=end,deadlineHeadroomMs=r['originalDeadlineMs']-end)
     except (ValueError,KeyError,TypeError,OSError,subprocess.SubprocessError,view.sqlite3.Error) as exc:
@@ -130,6 +132,8 @@ def _collect_sign(home,wallet,pool,expected,expected_retirement,*,
         clock=clock,monotonic=monotonic,_expiry_opener=_expiry_opener,_quote_opener=_quote_opener)
     wall=clock();tick=monotonic()
     r['timing']['totalElapsedMs']=round((tick-start)*1000,3)
+    r['returnedAtMs']=wall
+    r['headroomAtReturnMs']=None if r.get('originalDeadlineMs') is None else r['originalDeadlineMs']-wall
     if r['completedWithinOriginalDeadline']:
         old=r['completedAtMs'];r['completedAtMs']=wall;r['deadlineHeadroomMs']=r['originalDeadlineMs']-wall
         if not (old<=wall<r['originalDeadlineMs'] and 0<=tick-start<=120):

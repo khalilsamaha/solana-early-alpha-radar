@@ -60,6 +60,15 @@ def inspect_markers(root,book,state):
 
 
 def _invoke(root,wallet,pool,expected,request,clock):
+    """Internal child/ACK adapter, only within handoff._dispatch's locked phases.
+
+    The parent fully replays before the child and again after this adapter returns,
+    before appending its acknowledgment. Here re-read the committed candidate and
+    signing boundary and bind the child ACK to the exact request. Repeating the
+    complete historical replay here adds no intervening write/transport boundary.
+    This return is a signed response, not a validated position or send permission.
+    """
+    check(request['successorSha256']==expected,'successor-backend-request-mismatch')
     node=shutil.which('node');check(node is not None,'node-runtime-unavailable')
     r=subprocess.run([str(Path(node).resolve()),str(Path(__file__).with_name('successor_signer.mjs'))],
         input=json.dumps(dict(directory=str(root),requestSha256=digest(request))),text=True,
@@ -69,7 +78,12 @@ def _invoke(root,wallet,pool,expected,request,clock):
         b=handoff.preparation.entry.submission._open(root,wallet,pool,clock)
         try:
             with handoff.successor.history.lifecycle.admission_read_lock(b.j.path):
-                _,_,_,state=handoff.load(root,b,wallet,pool,expected,clock)
+                record=handoff.successor.row(b)
+                check(record is not None and digest(record)==expected,'successor-backend-candidate-mismatch')
+                state=handoff.read(b,record,clock())
+                check(state is not None and state['state']=='successor-signing-unknown' and
+                      state['request']==request and state['requestSha256']==digest(request),
+                      'successor-backend-boundary-mismatch')
                 return _ack(root,b,state)
         finally:b.close()
 

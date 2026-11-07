@@ -45,6 +45,53 @@ checks and source hygiene passed. These are local measurements, not predictions
 of Kali latency. Host acceptance must still pass before proceeding to successor
 submission integration.
 
+## Second Kali result and handoff cost correction
+
+The corrected Kali report captured at 21:49:54 UTC passed four setup checks and
+11 boundary checks. Historical setup completed, and the 1 MiB connected path
+collected all 28 responses and recorded the disposable successor signature and
+acknowledgment. It nevertheless failed the original completion deadline:
+14,305.128 ms total integration, with **-193 ms** headroom at return. Collection
+and persistence took 5,318.839 ms; signing handoff took 8,972.402 ms, including
+2,503.126 ms in the child adapter. No transaction was sent. Recovery and final
+preservation assertions were not reached, so this remains `review-required`.
+
+A diagnostic local profile identified four full historical `handoff.load` calls
+within the signing handoff. The child adapter repeated the full replay immediately
+before the parent did the same post-child replay. The correction removes only
+that duplicate from the internal adapter. The parent still performs full replay
+before committing the unknown boundary, again before invoking the child, and
+after the child returns before appending its acknowledgment. Separate source and
+database locks, original freshness, STOP, protected inventory, fee reservations
+and independent Node compilation remain enforced.
+
+The child adapter still reads the committed candidate and signing chain through
+a read-only connection, checks exact candidate/request identities, and validates
+the saved marker, ACK hash and Ed25519 signature. Its return is a signed response,
+not a position validation or send permission. Standalone keyless recovery retains
+its full historical replay. No validation verdict is reused across a write or
+child invocation; no new cache is introduced.
+
+Four regression cases verify the three required full replay boundaries, refusal
+to record success after old marker mutation, rejection of a corrupt new ACK, and
+request-identity refusal before starting the child. They are included in the
+public CLI as `Backend replay checks: 4`. The report also gives return-time
+headroom on failed completions and identifies the completion check correctly.
+This is a measured timing correction, not permission for live submission.
+
+The existing independent signer regressions (9 cases) and signing handoff regressions
+(15 cases) also passed with ResourceWarning treated as an error. Six CLI refusals,
+two partition-coverage checks, source hygiene and package manifest checks passed.
+
+The local corrected CLI passed all 24 checks: four setup, four backend replay,
+11 boundary and five connected checks. Complete integration took 4,269.518 ms,
+with 7,186 ms remaining at return. The adapter took 406.690 ms and the complete
+signing handoff took 2,478.492 ms. Keyless recovery after STOP, byte-identical
+repeated recovery, original source/marker preservation, held accounting and
+temporary cleanup passed. The earlier local adapter measurement was 856.387 ms;
+these are separate local runs, not a guaranteed host speedup. A new complete
+Kali pass remains required. No live invocation or deployment command is added.
+
 ## This increment
 
 An internal composition now connects the actual eight expiry/account reads and
@@ -91,7 +138,7 @@ marker and cumulative-hold preservation are then checked. All temporary material
 is removed. The fixture's amounts are synthetic, not a current host balance audit.
 
 Expected success is `offline-integration-passed`, four fixture setup checks,
-11 boundary checks and five connected checks. The report must show positive original-deadline headroom,
+four backend replay checks, 11 boundary checks and five connected checks. The report must show positive original-deadline headroom,
 unchanged original source, preserved holds and completed cleanup. A failed phase
 or expired deadline requires investigation; it is not permission to retry an
 operational signing attempt or relax freshness.

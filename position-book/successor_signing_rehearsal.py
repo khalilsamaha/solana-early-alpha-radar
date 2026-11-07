@@ -19,7 +19,8 @@ VERSION='successor-signing-rehearsal-1'
 FIXTURE_SETUP_VERSION='successor-fixture-setup-2'
 DIAGNOSTIC_CODES=frozenset(('quote-read-stale-or-future','admission-raw-evidence',
     'admission-completion-clock','admission-read-deadline','reservation-read-deadline',
-    'handoff-deadline','fixture-reuse-scope-leaked','temporary-scope','fixture-size'))
+    'handoff-deadline','fixture-reuse-scope-leaked','temporary-scope','fixture-size',
+    'rehearsal-request-count','rehearsal-independent-signature','rehearsal-original-deadline','rehearsal-parent-ack'))
 
 
 def setup_history(fixture):

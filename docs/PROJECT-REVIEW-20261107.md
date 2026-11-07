@@ -27,14 +27,20 @@ The 18:21:10 UTC host observation passed all 28 fixed reads, with unchanged hold
 
 ## Connected rehearsal host failure
 
-The November 7 21:42:46 UTC Kali report passed 11 boundary cases but stopped in
-historical fixture class setup after 67.529 seconds. No connected case or
-successor timing measurement ran. The prior 50-case backend acceptance stands;
-this new gate remains blocked. The rehearsal-only correction scopes existing
-exact-content reuse around history construction and adds precise bounded
-contract diagnostics. It does not widen deadlines or alter the operational
-signer, scanner, studies or reserved funds. Require a complete corrected Kali
-pass before successor submission integration.
+The November 7 21:49:54 UTC Kali run passed four setup and 11 boundary checks.
+It reached the full 1 MiB successor path and durably recorded its disposable
+signature and acknowledgment, but finished 193 ms after the original deadline.
+No transaction was sent; keyless recovery and final preservation assertions were
+not reached. The earlier fixture setup failure was resolved. Complete signing
+acceptance remains blocked on timing, independently of the accepted component
+checks.
+
+A profile found a duplicate full historical replay in the child adapter,
+immediately before the parent's required post-child replay. The targeted
+correction preserves full validation before boundary commitment, before key
+invocation and after key invocation, plus exact saved-ACK binding. It changes no
+clock, deadline, fee or inventory rule and does not affect scanner or research
+services. Require a complete corrected Kali pass before submission integration.
 
 ## Remaining engineering sequence
 
