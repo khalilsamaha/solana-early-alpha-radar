@@ -50,10 +50,12 @@ class ExitTests(unittest.TestCase):
             self.assertEqual(verifier.call_count,2)
             self.assertIsNone(m.wire._SIGNATURE_SCOPE.get())
 
-    def test_owner_failure_clears_scope_and_never_inherits_parent(self):
+    def test_owner_joins_active_parent_scope_and_parent_clears_after_failure(self):
         from signature_replay_checks import fixture
         encoded_wire=fixture()
         original=m.wire.subprocess.run
+        from types import SimpleNamespace
+        book=SimpleNamespace(db=object())
         def failed(book):
             m.wire.verify_wire(encoded_wire)
             raise ValueError('synthetic-owner-rejected')
@@ -63,9 +65,16 @@ class ExitTests(unittest.TestCase):
                 m.wire.verify_wire(encoded_wire)
                 for _ in range(2):
                     with self.assertRaisesRegex(ValueError,'synthetic-owner-rejected'):
-                        m.owner(None,1)
-                self.assertEqual(verifier.call_count,3)
-                self.assertEqual(parent()['verificationCalls'],1)
+                        m.owner(book,1)
+                self.assertEqual(verifier.call_count,1)
+                self.assertEqual(parent()['verificationCalls'],3)
+                self.assertEqual(parent()['memoHits'],2)
+                self.assertEqual(parent()['memoEntries'],1)
+            self.assertIsNone(m.wire._SIGNATURE_SCOPE.get())
+            self.assertEqual(parent()['memoEntries'],0)
+            with self.assertRaisesRegex(ValueError,'synthetic-owner-rejected'):
+                m.owner(book,1)
+            self.assertEqual(verifier.call_count,2)
             self.assertIsNone(m.wire._SIGNATURE_SCOPE.get())
 
     def test_unprepared_status_never_creates_table(self):
