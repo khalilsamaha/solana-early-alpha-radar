@@ -7,6 +7,44 @@ cases: 41 Node backend cases and nine Python adapter/recovery cases. These
 component tests used disposable keys and synthetic providers. They did not
 measure complete collection-to-signing latency.
 
+## Kali result and setup correction
+
+The first Kali report, captured at 21:42:46 UTC on November 7, is
+`review-required`: 11/11 boundary cases passed, but fixture class setup stopped
+after 67,528.731 ms. No connected case ran; `integration` and fixture size were
+null. Cleanup completed. No real network, user key, user journal or transaction
+was involved. This is **not host acceptance** of the signing path.
+
+The bounded trace ends at the historical entry's raw quote derivation during
+its signing-boundary validation. The old diagnostic did not retain the specific
+contract rejection code. Expired setup evidence on the slower host is consistent
+with this trace, but the report does not establish that exact reason.
+
+The `successor-fixture-setup-2` correction adds the existing bounded exact-content
+reuse scopes around disposable history construction. Those scopes were previously
+applied to later prerequisite phases but omitted from class setup. They are
+checked empty before construction and after success or failure, before the
+measured successor path. Wall clocks, monotonic clocks, validators and deadlines
+are unchanged. Nothing is signed against an altered clock, no failure is retried,
+and no validation result is substituted. The correction affects rehearsal code
+only; the internal successor integration and operational modules are unchanged.
+
+Four additional checks verify scope lifetime, real clock function identity,
+cleanup without retry on failure, expired-input rejection by the actual validator,
+and bounded diagnostic reporting. Known `Rejected` contract codes are now
+reported through an explicit allowlist; arbitrary exception text is never copied.
+The corrected host CLI reports these as `Fixture setup checks: 4`, separately
+from the 11 boundary and five connected checks.
+
+The corrected local CLI passed all four setup, 11 boundary and five connected
+checks. Historical class setup completed in 20,007.059 ms (previous local run:
+32,234.511 ms). The measured successor integration took 4,553.029 ms with
+6,759 ms of original quote headroom. Keyless and repeat recovery, original source
+preservation, held accounting and cleanup all passed. Two partition-coverage
+checks and source hygiene passed. These are local measurements, not predictions
+of Kali latency. Host acceptance must still pass before proceeding to successor
+submission integration.
+
 ## This increment
 
 An internal composition now connects the actual eight expiry/account reads and
@@ -52,8 +90,8 @@ before the measured successor operation. Keyless recovery and original ledger,
 marker and cumulative-hold preservation are then checked. All temporary material
 is removed. The fixture's amounts are synthetic, not a current host balance audit.
 
-Expected success is `offline-integration-passed`, 11 boundary checks and five
-connected checks. The report must show positive original-deadline headroom,
+Expected success is `offline-integration-passed`, four fixture setup checks,
+11 boundary checks and five connected checks. The report must show positive original-deadline headroom,
 unchanged original source, preserved holds and completed cleanup. A failed phase
 or expired deadline requires investigation; it is not permission to retry an
 operational signing attempt or relax freshness.

@@ -10,11 +10,30 @@ from unittest.mock import patch
 
 import successor_signing_integration as m
 from core import check
+from contract import Rejected
 from lifecycle_rehearsal import exit_inputs
 from continuation_exit_checks import fixture_size,prepare_fixture,require_cold_reuse_scopes
 from continuation_diagnostics import locations
 
 VERSION='successor-signing-rehearsal-1'
+FIXTURE_SETUP_VERSION='successor-fixture-setup-2'
+DIAGNOSTIC_CODES=frozenset(('quote-read-stale-or-future','admission-raw-evidence',
+    'admission-completion-clock','admission-read-deadline','reservation-read-deadline',
+    'handoff-deadline','fixture-reuse-scope-leaked','temporary-scope','fixture-size'))
+
+
+def setup_history(fixture):
+    """Bounded exact-content reuse for disposable history only; real clocks.
+
+    This owner must end before instance setup and the measured successor path.
+    No validation outcome, timing limit or signing rule is replaced.
+    """
+    require_cold_reuse_scopes()
+    def construct():
+        fixture.setUpClass()
+        return {}
+    try:return prepare_fixture(construct)
+    finally:require_cold_reuse_scopes()
 
 @contextmanager
 def phase(report,name):
@@ -23,7 +42,9 @@ def phase(report,name):
     try:
         yield row;row['completed']=True
     except Exception as exc:
-        report['failedPhase']=name;row['exceptionType']=type(exc).__name__ if type(exc).__name__ in ('ValueError','AssertionError','OSError','TimeoutError','TimeoutExpired','CalledProcessError') else 'unclassified'
+        report['failedPhase']=name;row['exceptionType']=type(exc).__name__ if type(exc).__name__ in ('ValueError','Rejected','AssertionError','OSError','TimeoutError','TimeoutExpired','CalledProcessError') else 'unclassified'
+        row['diagnosticCode']=(exc.args[0] if type(exc) in (ValueError,Rejected) and len(exc.args)==1
+            and type(exc.args[0]) is str and exc.args[0] in DIAGNOSTIC_CODES else 'unclassified')
         row['codeLocations']=locations(exc)
         raise
     finally:row['elapsedMs']=round((time.monotonic()-start)*1000,3)
@@ -138,6 +159,7 @@ def run():
     import test_fresh_exit as fixture_module
     class Fixture(fixture_module.ActualBackendTests):pass
     report=dict(format=VERSION,state='review-required',cases={},casesPassed=0,phases=[],failedPhase=None,
+        fixtureSetupVersion=FIXTURE_SETUP_VERSION,fixtureSetupReuse=None,
         mode='synthetic-offline',realNetworkRequests=0,transactionsSent=0,productionWalletAccessed=False,
         productionLedgerUpdated=False,scannerRuntimeChanged=False,disposableTestKeySigning=True,
         realClocks=True,programFixtureBytes=None,integration=None,originalSourceUnchanged=False,
@@ -150,7 +172,8 @@ def run():
         started=False;setup=False;f=None
         with patch.object(tempfile,'tempdir',owned),patch('socket.socket',side_effect=AssertionError('real network')):
             try:
-                with phase(report,'fixture-class-setup'):started=True;Fixture.setUpClass()
+                with phase(report,'fixture-class-setup'):
+                    started=True;report['fixtureSetupReuse']=setup_history(Fixture)
                 with phase(report,'fixture-instance-setup'):
                     f=Fixture();setup=True;f.setUp()
                     check(f.home.resolve().is_relative_to(Path(owned).resolve()),'temporary-scope')

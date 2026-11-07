@@ -18,19 +18,28 @@ def main():
     if a.output.exists() or a.output.is_symlink() or not a.output.parent.is_dir():raise ValueError('output-unavailable')
     from test_successor_signing_integration import IntegrationTests
     from successor_signing_rehearsal import run
+    from test_successor_fixture_setup import FixtureSetupTests
     with patch.object(socket.socket,'connect',side_effect=AssertionError('network-disabled')):
+        setup_tests=unittest.TextTestRunner(stream=io.StringIO(),verbosity=0).run(unittest.defaultTestLoader.loadTestsFromTestCase(FixtureSetupTests))
         tests=unittest.TextTestRunner(stream=io.StringIO(),verbosity=0).run(unittest.defaultTestLoader.loadTestsFromTestCase(IntegrationTests))
     faults=dict(casesRun=tests.testsRun,casesPassed=max(0,tests.testsRun-len(tests.errors)-len(tests.failures)-len(tests.skipped)),
         failedCases=[t.id() for t,_ in tests.errors+tests.failures],skippedCases=[t.id() for t,_ in tests.skipped])
-    if tests.wasSuccessful() and not tests.skipped:r=run()
+    fixture_checks=dict(casesRun=setup_tests.testsRun,
+        casesPassed=max(0,setup_tests.testsRun-len(setup_tests.errors)-len(setup_tests.failures)-len(setup_tests.skipped)),
+        failedCases=[t.id() for t,_ in setup_tests.errors+setup_tests.failures],
+        skippedCases=[t.id() for t,_ in setup_tests.skipped])
+    if tests.wasSuccessful() and not tests.skipped and setup_tests.wasSuccessful() and not setup_tests.skipped:r=run()
     else:r=dict(format='successor-signing-rehearsal-1',state='review-required',casesPassed=0,phases=[],
         realNetworkRequests=0,transactionsSent=0,productionWalletAccessed=False,executionApproved=False)
-    r['capturedAt']=datetime.now(timezone.utc).isoformat();r['boundaryChecks']=faults
+    r['capturedAt']=datetime.now(timezone.utc).isoformat();r['boundaryChecks']=faults;r['fixtureSetupChecks']=fixture_checks
     publish(a.output,r)
-    print('State:',r['state']);print('Boundary checks:',faults['casesPassed']);print('Connected checks:',r['casesPassed'])
+    print('State:',r['state']);print('Fixture setup checks:',fixture_checks['casesPassed'])
+    print('Boundary checks:',faults['casesPassed']);print('Connected checks:',r['casesPassed'])
     if r.get('integration'):
         print('Integration elapsed ms:',r['integrationElapsedMs']);print('Original deadline headroom ms:',r['headroomAtReturnMs'])
-    for row in r['phases']:print(row['phase']+':',row['elapsedMs'],'ms; completed:',row['completed'])
+    for row in r['phases']:
+        print(row['phase']+':',row['elapsedMs'],'ms; completed:',row['completed'])
+        if not row['completed']:print('Diagnostic:',row.get('diagnosticCode','unclassified'))
     print('Offline only: temporary ledgers, disposable keys, synthetic providers; no transaction or runtime change.')
     print('Upload:',a.output.absolute())
     return 0 if r['state']=='offline-integration-passed' else 2

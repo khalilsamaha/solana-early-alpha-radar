@@ -25,6 +25,17 @@ The performance numbers above are from the committed study decisions, not a new 
 
 The 18:21:10 UTC host observation passed all 28 fixed reads, with unchanged holds and 3.245 seconds of original freshness remaining at return. The matching offline check passed 13/13. The separate durable successor signing handoff passed all 15 Kali checks at 18:55:10 UTC. The independent key backend and keyless acknowledgment recovery passed all 50 Kali cases at 19:21:34 UTC. The [connected successor signing rehearsal](SUCCESSOR-SIGNING-REHEARSAL-20261107.md) now measures the complete collection, persistence, independent signing and acknowledgment path with a 1 MiB fixture and real clocks. Full live preparation/sign/send timing remains pending. See [the backend release](SUCCESSOR-KEY-BACKEND-20261107.md). See [the handoff release](SUCCESSOR-SIGNING-HANDOFF-20261107.md). These engineering results do not change the research decisions above.
 
+## Connected rehearsal host failure
+
+The November 7 21:42:46 UTC Kali report passed 11 boundary cases but stopped in
+historical fixture class setup after 67.529 seconds. No connected case or
+successor timing measurement ran. The prior 50-case backend acceptance stands;
+this new gate remains blocked. The rehearsal-only correction scopes existing
+exact-content reuse around history construction and adds precise bounded
+contract diagnostics. It does not widen deadlines or alter the operational
+signer, scanner, studies or reserved funds. Require a complete corrected Kali
+pass before successor submission integration.
+
 ## Remaining engineering sequence
 
 1. **Bounded successor observation — accepted.** Collect eight expiry/account responses and at most twenty fresh quote/simulation responses while the source is pinned. Validate against the accepted successor contract. Report timings and headroom. Do not persist an expiring candidate during this observation.
