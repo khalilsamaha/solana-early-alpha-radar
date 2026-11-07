@@ -28,11 +28,13 @@ COLLECTED_FORMAT='admission-exit-collection-1-record'
 view=entry.submission.handoff.bridge.view
 
 
-# Each ownership review gets a fresh, bounded exact-wire authentication scope.
-# Replayed receipt contents, authorization, and source identity are NEVER cached;
-# neither parent operations nor subsequent reviews may inherit this memo.
+# Reuse only an explicitly active operation-owned exact-wire scope. When
+# called independently, owner creates and clears its own bounded scope. This
+# memo authenticates exact wire bytes only: source state, receipt contents,
+# deadlines, accounting and authorization are replayed on every call.
 def owner(book, now):
-    with wire.signature_verification_scope():
+    reuse = wire._SIGNATURE_SCOPE.get() is not None
+    with wire.signature_verification_scope(reuse_current=reuse):
         return _owner_checked(book, now)
 
 
