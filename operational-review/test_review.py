@@ -1,4 +1,5 @@
 import copy
+from contextlib import closing
 import gzip
 import hashlib
 import json
@@ -122,7 +123,7 @@ class OperationalTests(unittest.TestCase):
     def test_sqlite_metadata_only_read_and_allowlisted_export(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);dbpath=root/'observer.sqlite'
-            with sqlite3.connect(dbpath) as db:
+            with closing(sqlite3.connect(dbpath)) as db, db:
                 db.execute('CREATE TABLE meta(k TEXT PRIMARY KEY,v TEXT)')
                 for k,v in {'lastPollAt':NOW-2000,'version':'quote-observer-0.9.0','halted':'arbitrary-private-error'}.items():db.execute('INSERT INTO meta VALUES(?,?)',(k,json.dumps(v)))
             config=root/'config.json';config.write_text(json.dumps({'reports':tmp,'private':'secret'}))
