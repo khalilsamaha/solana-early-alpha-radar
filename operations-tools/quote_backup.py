@@ -29,7 +29,7 @@ def deadline(seconds):
     finally:signal.setitimer(signal.ITIMER_REAL,0);signal.signal(signal.SIGALRM,previous)
 
 def logical_summary(path):
-    with sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=1) as db:
+    with contextlib.closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=1)) as db, db:
         db.execute('PRAGMA query_only=ON');db.execute('PRAGMA cache_size=-4096')
         end=time.monotonic()+45;db.set_progress_handler(lambda:int(time.monotonic()>end),1000)
         if db.execute('PRAGMA integrity_check').fetchall()!=[('ok',)]:raise ValueError('SQLite integrity failed')
@@ -59,7 +59,8 @@ def snapshot(source,target):
         if time.monotonic()>end:raise TimeoutError('SQLite snapshot deadline')
         if wal.exists() and wal.stat().st_size-start_wal>64*1024*1024:raise ValueError('WAL growth budget exceeded')
         if target.exists() and target.stat().st_size>MAX_BYTES:raise ValueError('Snapshot size budget exceeded')
-    with sqlite3.connect(source.as_uri()+'?mode=ro',uri=True,timeout=1) as src, sqlite3.connect(target) as dst:
+    with contextlib.closing(sqlite3.connect(source.as_uri()+'?mode=ro',uri=True,timeout=1)) as src, \
+         contextlib.closing(sqlite3.connect(target)) as dst, src, dst:
         src.execute('PRAGMA query_only=ON');src.execute('PRAGMA cache_size=-4096')
         # Pin one read snapshot; ongoing writes cannot repeatedly restart the copy.
         src.execute('BEGIN');src.execute('SELECT count(*) FROM meta').fetchone()
