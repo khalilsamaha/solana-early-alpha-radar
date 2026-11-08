@@ -94,3 +94,18 @@ with an operational key or submit a real transaction. Next work addresses a
 separately scoped operational command and provider timing, followed by exact
 successor receipt effects, residual balances and durable closure. The research
 decisions remain unchanged; see the [conditional timeline](PROJECT-TIMELINE-20261108.md).
+
+## CI partition correction
+
+The initial PR run `42463521461` cancelled partition 3 at its ten-minute runner
+limit, while it was still running signed-exit timing tests. Completed tests in
+that job reported no assertion failure, but the unfinished run is not accepted.
+The read-snapshot module took 77.714 seconds and the retired-successor module
+took 31.410 seconds there. Partition 0 completed in 414 seconds. Both modules
+move from partition 3 to partition 0, balancing the measured work without
+changing test contents, the twelve-job matrix or any runner/application deadline.
+
+All modules had already passed locally in isolated per-module processes. The
+assignment change is checked with the two partition-coverage tests and an exact
+before/after module-union comparison; nothing is omitted or duplicated. The full
+twelve-job CI run must pass again on the updated PR head before merge.
