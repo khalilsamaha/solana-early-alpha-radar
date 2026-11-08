@@ -109,3 +109,21 @@ All modules had already passed locally in isolated per-module processes. The
 assignment change is checked with the two partition-coverage tests and an exact
 before/after module-union comparison; nothing is omitted or duplicated. The full
 twelve-job CI run must pass again on the updated PR head before merge.
+
+## Hosted runner budget correction
+
+The rebalanced run `42464398047` passed partition 3 but cancelled partitions
+0, 2 and 4 at the ten-minute runner cutoff. Their available logs show no failed
+assertions. Partition 2 printed successful completion of every module immediately
+before cancellation; that cancelled job still does not satisfy acceptance.
+Unchanged partition 2 had completed in 507 seconds and partition 4 in 502 seconds
+on the prior run, showing that the earlier remaining margin was insufficient
+under observed runner variation.
+
+Keep the measured reassignment and all twelve jobs. Give position-book jobs a
+15-minute runner budget, with 20 minutes for partition 1, whose complete local
+run took 988.279 seconds. Core and devnet-pool jobs retain ten minutes. This
+changes only how long GitHub permits each entire regression job to run: every
+test, per-test timeout, application clock, freshness limit, STOP guard and
+acceptance assertion remains unchanged. No cancelled run is treated as a pass.
+The updated full PR run and post-merge run must both complete successfully.
