@@ -57,6 +57,28 @@ and exception cleanup. The public offline CLI now expects **4 setup + 12 boundar
 `retirement-snapshot-replay-1`. Earlier 28-check results above are historical.
 No deadline, account check, request count or spending limit was relaxed.
 
+## Third November 8 host result
+
+The attached report captured at 04:21:39.566375 UTC identifies
+`retirement-snapshot-replay-1`. All 4 setup, 12 boundary, 5 owner and 6 snapshot
+checks passed. The complete path took 13,660.734 ms; signing returned with 3,894 ms
+remaining, submission took 4,104.592 ms, and final headroom was **-216 ms**.
+One synthetic send and a durable boundary were recorded. The deliberately lost
+response remained `successor-submission-unknown`, while the enclosing completion
+guard returned `successor-execution-expired` and `review-required`.
+
+Zero of seven connected acceptance checks completed. Recovery and preservation
+assertions were not reached. `originalSourceUnchanged=false` is not evidence of a
+detected source mutation. Cleanup succeeded; real network requests, real
+transactions, production-wallet access and production-ledger updates were zero.
+The report has implementation-version markers but no Git SHA or runtime versions.
+
+Independent unmodified local reproduction of commit `39a374d85e0ca77c97fc0b46057bebd002cffb8d`
+passed all 34 checks: 4,881.511 ms and 6,448 ms headroom, including recovery and
+preservation. Local source hygiene and both partition tests passed. This confirms
+an environment-dependent timing difference, not its cause or Kali acceptance.
+The next step is [bounded offline phase-cost profiling](SUCCESSOR-PROFILE-20261108.md).
+
 ## What is connected
 
 The existing eight expiry/account reads and twenty quote/simulation reads feed

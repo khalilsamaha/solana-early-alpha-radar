@@ -30,7 +30,13 @@ operational slot or enabling signing.
 
 **Current project review: 7 November 2026.** See the [current evidence, priorities and remaining gates](docs/PROJECT-REVIEW-20261107.md). PR #78 is consolidated; subsequent successor work is a separate feature increment. The independent successor backend passed 50 Kali checks; the next [connected signing rehearsal](docs/SUCCESSOR-SIGNING-REHEARSAL-20261107.md) measures the original deadline across collection, persistence and the separate key process. The corrected complete Kali signing rehearsal passed all 24 checks at 22:06:51 UTC with 1,106 ms of original-deadline headroom, including recovery and preserved holds. The [successor submission boundary](docs/SUCCESSOR-SUBMISSION-20261107.md) passed all 17 Kali checks at 22:31:31 UTC. The next [combined successor execution rehearsal](docs/SUCCESSOR-EXECUTION-20261107.md) measures collection, signing, preflight, one send and lost-response recovery under the original deadline. Its CLI remains offline only; real network timing and exact receipt reconciliation remain separate gates. The paragraphs below retain release provenance.
 
-**November 8 correction:** the combined Kali run expired before sender preflight (90 ms late at return). All 15 setup/boundary checks passed, but connected recovery/preservation was not reached. Explicit nested computational reuse is corrected and covered by the 28-check offline rehearsal; Kali timing remains the blocking gate. No operational submission or funded pilot is approved.
+**November 8 current host result:** the pinned-snapshot correction passed 27
+preliminary checks but the connected Kali operation returned 216 ms late after
+one synthetic send. Recovery and preservation assertions were not reached.
+The [offline phase-cost diagnostic](docs/SUCCESSOR-PROFILE-20261108.md) measures
+remaining validation, signer, transaction and submission costs without changing
+execution rules. Complete Kali timing acceptance remains blocked; no operational
+submission or funded pilot is approved.
 
 
 **October 25 engineering release.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. The **October 28 frozen review is complete: no strategy or model is promoted**. See the [review decision and offline diagnostic](docs/FROZEN-REVIEW-DECISION-20261028.md). Engineering reliability can improve independently; profitable execution remains unproven. The [October 29 availability confirmation](availability-study/README.md) adds a separate fixed-window research protocol after the accepted diagnostic replay.
@@ -140,8 +146,7 @@ connects bounded raw collection to the durable signer handoff internally. Its
 17-case CLI is synthetic-only; live sender integration and latency acceptance
 remain open. The isolated unsigned commit/recovery host gate passed November 2.
 
-Current timing follow-up: the second November 8 successor host rehearsal still
-expired before sending. The [snapshot replay correction](docs/SUCCESSOR-EXECUTION-20261107.md#second-november-8-host-result-and-snapshot-correction)
-removes repeated validation within one pinned retirement read and expands the
-offline gate to 34 checks. Host acceptance remains pending; no runtime deployment
-or live execution is included.
+Current timing follow-up: the latest Kali report is recorded in
+[the combined rehearsal record](docs/SUCCESSOR-EXECUTION-20261107.md#third-november-8-host-result).
+The [phase-cost diagnostic](docs/SUCCESSOR-PROFILE-20261108.md) is diagnostic only;
+it does not replace the unchanged 34-check acceptance command.

@@ -8,18 +8,21 @@ The project has spent substantial effort on exit freshness, repeated validation 
 
 ## November 8 update — complete host timing has not passed
 
-The combined Kali report at 03:47:50 UTC passed all 15 setup/boundary checks but
-expired before the first sender RPC. Signing had 2,657 ms of headroom; submission
-preparation used 2,742 ms. The operation returned 90 ms late, and recovery and
-preservation checks were not reached. Do not advance to operational devnet
-submission based on this report.
+The latest report, captured at 04:21:39 UTC, identifies the pinned-snapshot
+correction. All 27 preliminary tests passed, but the connected operation took
+13,660.734 ms and returned 216 ms late. Signing left 3,894 ms; submission took
+4,104.592 ms. One synthetic send occurred and its unknown response was retained.
+The final completion guard refused acceptance. Recovery and preservation checks
+were not reached; the false preservation flag is not proof of a detected mutation.
+There were zero real network requests or transactions and cleanup succeeded.
 
-The next correction joins the already bounded computational scopes explicitly
-across nested stages; independent calls remain isolated. It also verifies owner
-identity through the actual connected path. The original deadline, source reads,
-semantic checks, STOP handling, one-send attempts and held accounting stay fixed.
-See [corrected rehearsal and host acceptance](SUCCESSOR-EXECUTION-20261107.md).
-No research promotion or real-money gate changes.
+The unchanged pinned commit passed all 34 checks in a separate local run:
+4,881.511 ms and 6,448 ms headroom. This does not override the Kali failure or
+identify its cause. The next step is [offline phase-cost profiling](SUCCESSOR-PROFILE-20261108.md)
+on the same 1 MiB fixture, including runtime and checkout metadata. Diagnostics
+cannot authorize execution, enlarge freshness or replace uninstrumented host
+acceptance. The [combined rehearsal record](SUCCESSOR-EXECUTION-20261107.md)
+preserves earlier failures and the snapshot correction.
 
 ## What the evidence establishes
 
