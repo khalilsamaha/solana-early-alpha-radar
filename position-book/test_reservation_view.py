@@ -98,9 +98,12 @@ class ReservationViewCase(unittest.TestCase):
         self.assertEqual(r['reservations']['phase'],'exit-unresolved')
         self.assertEqual(r['reservations']['nativeHeldLamports'],'10000')
         self.assertGreater(int(r['reservations']['tokenAccounts'][1]['heldAtomic']),0)
+        # Exercise the semantic closed-history guard independently of machine
+        # speed. Clock regression and deadline refusal have a separate test.
+        stamp=m.now()
         with m.cycles.c.source_lock(self.home,self.wallet),m.read_only_journals():
             with self.assertRaisesRegex(ValueError,'closed-history-required'):
-                m.read_locked(self.home,self.wallet,self.pool,m.now,_closed_history=True)
+                m.read_locked(self.home,self.wallet,self.pool,lambda:stamp,_closed_history=True)
         self.assertEqual(before,self.files())
 
     def test_tampered_hash_chain_is_unavailable(self):

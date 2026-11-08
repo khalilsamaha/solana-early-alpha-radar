@@ -2,11 +2,11 @@
 
 ## Current position
 
-The Kali successor cost profile is accepted as diagnostic evidence only. It
-records a clean diagnostic checkout and valid timings. Complete successor
-execution timing, connected recovery and preservation remain unaccepted on Kali.
-The next development change removes repeated preparation replay within an unsent
-lifecycle snapshot. Its host acceptance command runs 42 cases.
+The full uninstrumented Kali gate passed all 42 checks at 08:07:13 UTC with
+1,343 ms of positive deadline headroom, including recovery, preservation and
+cleanup. Phase consolidation is now in progress. The prior 53 ms failure remains
+relevant to timing variability; actual-provider readiness is not established.
+See [the consolidation record](SUCCESSOR-CONSOLIDATION-20261108.md).
 
 The engineering objective is a finite, reconciled controlled-devnet exit from
 the held position, with conservative accounting and recovery. Scanner research
@@ -22,7 +22,7 @@ returns to diagnosis and moves every dependent item; elapsed days cannot clear i
 
 | Order | Work and acceptance evidence | Planning range | Dependency |
 |---|---|---|---|
-| 1 | Validate lifecycle replay correction on Kali: all 42 cases, positive original-deadline headroom, recovery, preservation and cleanup | 1–3 working days for correction/host-review iterations | Current blocker; could take longer if profiling exposes another cost |
+| 1 | Validate lifecycle replay correction on Kali: all 42 cases, positive original-deadline headroom, recovery, preservation and cleanup | Completed November 8, 08:07 UTC | Functional offline acceptance only; preserve the earlier failed run |
 | 2 | Consolidate the completed diagnostic/performance phase; full repository regression, review, required PR CI, merge and post-merge verification | About 1 working day after gate 1 | No per-increment PR/CI before full Kali acceptance |
 | 3 | Prepare and validate a separately scoped operational successor command; assess real-provider latency and authorize one bounded devnet attempt | 2–4 working days after the accepted base | Offline timing is necessary but does not include provider latency; a failure may consume the attempt and require observation/recovery |
 | 4 | Implement/validate exact successor receipt accounting, fresh residual balances, durable scoped closure and interrupted/idempotent recovery | 2–4 working days, partly preparable with gate 3 | An RPC acknowledgment or finalized claim alone cannot release holds; requires exact receipt/effect evidence |
@@ -32,7 +32,7 @@ returns to diagnosis and moves every dependent item; elapsed days cannot clear i
 | 8 | Any funded mechanics test or strategy pilot | No committed date | Target-route validation, full costs, bounded risk, execution/recovery acceptance and separate funding authorization; a strategy pilot additionally needs credible prospective economic evidence |
 
 The near-term planning envelope for the engineering sequence is roughly one to
-three weeks, conditional on closing the current latency blocker and on actual
+three weeks, conditional on consolidation, operational timing and actual
 devnet evidence. This is not a mainnet/trading launch forecast. Mainnet aggregator
 routes, liquidity/account behavior and costs are not proven equivalent to the
 controlled direct-pool devnet route.

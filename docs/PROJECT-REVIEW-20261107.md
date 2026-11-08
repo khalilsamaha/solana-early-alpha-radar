@@ -6,7 +6,17 @@ Continue a bounded devnet exit/recovery integration, but do not promote a tradin
 
 The project has spent substantial effort on exit freshness, repeated validation and recovery. These were real defects exposed by host tests. The next milestone must be a complete, measured devnet exit and reconciliation, rather than an open-ended sequence of additional capabilities. In parallel, research must answer whether any fixed entry/exit hypothesis survives prospective testing and realistic costs.
 
-## November 8 update — complete host timing has not passed
+## November 8 current decision — full offline host gate accepted
+
+The 08:07:13 UTC Kali report passed all 42 checks, including all seven connected
+cases. Collection/signing/submission took 11,889.065 ms with 1,343 ms remaining.
+Original source, holds, recovery and cleanup passed; no real transaction or
+runtime change occurred. The current phase can enter full regression and
+PR/CI consolidation, tracked in the [consolidation record](SUCCESSOR-CONSOLIDATION-20261108.md).
+It does not authorize an operational attempt or infer adequate provider margin.
+The earlier failed observations below remain historical evidence.
+
+## Earlier November 8 result — complete host timing had not passed
 
 The latest report, captured at 04:21:39 UTC, identifies the pinned-snapshot
 correction. All 27 preliminary tests passed, but the connected operation took
@@ -24,7 +34,7 @@ cannot authorize execution, enlarge freshness or replace uninstrumented host
 acceptance. The [combined rehearsal record](SUCCESSOR-EXECUTION-20261107.md)
 preserves earlier failures and the snapshot correction.
 
-## November 8 diagnostic accepted; lifecycle correction pending Kali
+## Earlier November 8 diagnosis — lifecycle correction awaiting Kali
 
 The cost report captured at 05:38:36 UTC identifies clean commit `1f2c910`,
 Python 3.14.6 and Node 24.19.0 before and after the run. Span data is valid;
@@ -58,7 +68,7 @@ provides conditional estimates; no profitable-launch date is established.
 | Availability hypothesis | Fixed October 30–November 6 window: 304 predictions, 302 known labels, seven UTC dates; only 15 excluded known labels against the registered minimum 20 | `insufficient-fixed-window-evidence`; do not extend this completed window or relax its threshold |
 | Availability economics | Selected returned quotes averaged -7.18% at 30s and -13.89% at 120s; failures are separate | Avoiding some quote failures did not establish positive returns |
 | Exit mechanics | Immutable signed evidence, conservative holds, one-send boundaries, recovery and retirement accepted in separate host tests | Useful reliability foundation; the currently retired held exit still needs a separately bound successor and exact settlement |
-| Latest host acceptance | November 7 22:06:51 UTC: complete successor signing rehearsal, all 24 checks; 1,106 ms headroom; recovery and preservation passed | Offline signing composition accepted; complete real-network submission timing and settlement remain pending |
+| Latest host acceptance | November 8 08:07:13 UTC: full successor execution rehearsal, all 42 checks; 1,343 ms headroom; recovery and preservation passed | Offline execution gate accepted for consolidation; real-provider timing and settlement remain pending |
 
 The performance numbers above are from the committed study decisions, not a new rerun, enlarged sample, or new analysis of raw data. [Frozen review](FROZEN-REVIEW-DECISION-20261028.md) and [closed availability study](EXIT-RPC-SESSION-20261106.md#closed-availability-study) preserve their definitions and limitations. Quotes are not fills. Conditional returned-quote means exclude missing or failed quotes and are not a portfolio or failure-adjusted net return.
 

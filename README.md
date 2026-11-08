@@ -30,14 +30,15 @@ operational slot or enabling signing.
 
 **Current project review: 7 November 2026.** See the [current evidence, priorities and remaining gates](docs/PROJECT-REVIEW-20261107.md). PR #78 is consolidated; subsequent successor work is a separate feature increment. The independent successor backend passed 50 Kali checks; the next [connected signing rehearsal](docs/SUCCESSOR-SIGNING-REHEARSAL-20261107.md) measures the original deadline across collection, persistence and the separate key process. The corrected complete Kali signing rehearsal passed all 24 checks at 22:06:51 UTC with 1,106 ms of original-deadline headroom, including recovery and preserved holds. The [successor submission boundary](docs/SUCCESSOR-SUBMISSION-20261107.md) passed all 17 Kali checks at 22:31:31 UTC. The next [combined successor execution rehearsal](docs/SUCCESSOR-EXECUTION-20261107.md) measures collection, signing, preflight, one send and lost-response recovery under the original deadline. Its CLI remains offline only; real network timing and exact receipt reconciliation remain separate gates. The paragraphs below retain release provenance.
 
-**November 8 current host result:** the Kali cost profile is valid diagnostic
-evidence, but its instrumented attempt returned 827 ms late before sending.
-Repeated preparation and lifecycle replay dominate measured costs. The
-[lifecycle snapshot correction](docs/LIFECYCLE-SNAPSHOT-REPLAY-20261108.md) removes
-two duplicate preparation replays per unsent lifecycle projection and adds eight
-checks to the offline gate (**42 total**). Kali acceptance remains pending.
-See the [updated project timeline](docs/PROJECT-TIMELINE-20261108.md). No
-operational submission, consolidation or funded pilot follows from diagnostics.
+**November 8 full Kali acceptance:** the uninstrumented successor execution
+rehearsal passed **42/42 checks** at 08:07:13 UTC. The complete measured path took
+11,889.065 ms with **1,343 ms** of original-deadline headroom. Recovery,
+preservation and cleanup passed, with one synthetic send and zero real
+transactions. The earlier 53 ms failure and the separate profiler pass remain
+recorded; this is functional offline acceptance, not robust real-provider timing.
+The [successor consolidation record](docs/SUCCESSOR-CONSOLIDATION-20261108.md)
+tracks the full-check/PR/CI/merge gate. No deployment or operational attempt is
+included. See the [updated timeline](docs/PROJECT-TIMELINE-20261108.md).
 
 
 **October 25 engineering release.** The [consolidated release and rollback procedure](docs/ENGINEERING-RELEASE-20261025.md) brings the frozen-study tools, controlled devnet spending/recovery, two-cycle accounting and local readiness inspection onto one source base. The release does not deploy the scanner or enable mainnet trading. The **October 28 frozen review is complete: no strategy or model is promoted**. See the [review decision and offline diagnostic](docs/FROZEN-REVIEW-DECISION-20261028.md). Engineering reliability can improve independently; profitable execution remains unproven. The [October 29 availability confirmation](availability-study/README.md) adds a separate fixed-window research protocol after the accepted diagnostic replay.

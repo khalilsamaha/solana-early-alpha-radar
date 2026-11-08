@@ -1,5 +1,11 @@
 # Offline successor phase-cost diagnosis — November 8
 
+Current acceptance: the full Kali CLI passed all 42 checks at 08:07:13 UTC on
+November 8, with 1,343 ms remaining. Recovery, preservation and cleanup passed.
+The [consolidation record](SUCCESSOR-CONSOLIDATION-20261108.md) preserves the
+failed run, diagnostic result and current phase status. Earlier pending states
+below are historical. Real-provider execution and settlement remain separate.
+
 Current status: the 05:38:36 UTC Kali profile supplied valid diagnostic evidence
 but missed timing by 827 ms before sending. Its findings and the next bounded
 correction are recorded in [lifecycle snapshot replay](LIFECYCLE-SNAPSHOT-REPLAY-20261108.md).

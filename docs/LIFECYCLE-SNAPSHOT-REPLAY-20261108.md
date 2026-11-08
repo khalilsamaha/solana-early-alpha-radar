@@ -1,5 +1,11 @@
 # Unsent lifecycle snapshot replay — November 8
 
+Current acceptance: the full Kali CLI passed all 42 checks at 08:07:13 UTC on
+November 8, with 1,343 ms remaining. Recovery, preservation and cleanup passed.
+The [consolidation record](SUCCESSOR-CONSOLIDATION-20261108.md) preserves the
+failed run, diagnostic result and current phase status. Earlier pending states
+below are historical. Real-provider execution and settlement remain separate.
+
 ## Measured problem
 
 The Kali profile captured at 05:38:36 UTC is valid diagnostic evidence from clean

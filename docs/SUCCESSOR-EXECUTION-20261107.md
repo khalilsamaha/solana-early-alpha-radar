@@ -1,5 +1,11 @@
 # Combined successor execution rehearsal — 7 November 2026
 
+Current acceptance: the full Kali CLI passed all 42 checks at 08:07:13 UTC on
+November 8, with 1,343 ms remaining. Recovery, preservation and cleanup passed.
+The [consolidation record](SUCCESSOR-CONSOLIDATION-20261108.md) preserves the
+failed run, diagnostic result and current phase status. Earlier pending states
+below are historical. Real-provider execution and settlement remain separate.
+
 The separate signing rehearsal passed all 24 Kali checks with 1,106 ms of
 original-deadline headroom. The submission component then passed all 17 Kali
 checks. This release joins them into a measured internal operation. Its public
