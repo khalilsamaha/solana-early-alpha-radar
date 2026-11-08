@@ -86,3 +86,9 @@ ledger. A second durable boundary marks signing uncertainty and survives process
 death without releasing funds or permitting another attempt. This is not wired
 to the live signer or the signed position book. `pre_sign_cli.py` runs 15 synthetic
 cases only. See [scope, trust boundary and next integration](../docs/PRE-SIGN-ADMISSION.md).
+
+## Independent successor signer
+
+The restricted attempt-two backend and saved-acknowledgment recovery preserve
+the retired signing evidence and cumulative holds. Its public CLI runs disposable
+checks only. See [scope and remaining live gate](../docs/SUCCESSOR-KEY-BACKEND-20261107.md).

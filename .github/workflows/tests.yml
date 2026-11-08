@@ -13,9 +13,9 @@ jobs:
   checks:
     name: checks (${{ matrix.group }})
     runs-on: ubuntu-24.04
-    # The retirement batch adds measured replay work to partition 1. This is
-    # only a runner budget; application and test deadlines are unchanged.
-    timeout-minutes: ${{ matrix.group == 'position-book-1' && 15 || 10 }}
+    # Full successor regressions exceed ten minutes on slower hosted runners.
+    # These are job budgets only; no application or test deadline is changed.
+    timeout-minutes: ${{ matrix.group == 'position-book-1' && 20 || startsWith(matrix.group, 'position-book-') && 15 || 10 }}
     strategy:
       fail-fast: false
       matrix:

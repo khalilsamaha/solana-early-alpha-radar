@@ -1,4 +1,21 @@
-# Project roadmap — updated 6 November 2026
+# Project roadmap — current review 7 November 2026
+
+The current decision and ordered gates are in [the November 7 project review](PROJECT-REVIEW-20261107.md). PR #78 is merged after all twelve CI checks passed. The retired-exit review and unsigned-successor contract have passed Kali acceptance. Bounded read-only successor collection has now passed Kali acceptance: 28 requests and 3.245 seconds of original freshness remaining. The separate durable [successor signing handoff](SUCCESSOR-SIGNING-HANDOFF-20261107.md) passed all 15 Kali checks at 18:55:10 UTC. The [independent successor key backend](SUCCESSOR-KEY-BACKEND-20261107.md) and keyless recovery passed all 50 Kali checks at 19:21:34 UTC. The [complete successor signing rehearsal](SUCCESSOR-SIGNING-REHEARSAL-20261107.md) now joins actual collectors, durable preparation, the independent key process and parent acknowledgment under the original deadline; the corrected complete Kali run passed all 24 checks at 22:06:51 UTC with 1,106 ms of original-deadline headroom. Keyless recovery, original-source preservation and cleanup passed. The [successor one-attempt transport](SUCCESSOR-SUBMISSION-20261107.md) passed all 17 Kali checks at 22:31:31 UTC. The next [combined real-clock rehearsal](SUCCESSOR-EXECUTION-20261107.md) includes all 33 collection/preflight/send requests and exact-signature recovery. Its CLI remains offline only and Kali timing acceptance is required before exposing an operational command. Complete live timing and held exit receipt reconciliation remain pending. Economic edge is unproven, and the completed availability study remains insufficient under its original criteria.
+
+**November 8 full Kali acceptance:** the uninstrumented successor execution
+rehearsal passed **42/42 checks** at 08:07:13 UTC. The complete measured path took
+11,889.065 ms with **1,343 ms** of original-deadline headroom. Recovery,
+preservation and cleanup passed, with one synthetic send and zero real
+transactions. The earlier 53 ms failure and the separate profiler pass remain
+recorded; this is functional offline acceptance, not robust real-provider timing.
+The [successor consolidation record](SUCCESSOR-CONSOLIDATION-20261108.md)
+tracks the full-check/PR/CI/merge gate. No deployment or operational attempt is
+included. See the [updated timeline](PROJECT-TIMELINE-20261108.md).
+
+
+The entries below preserve historical work and earlier pending states; use the current review above for present priorities.
+
+## Historical engineering record
 
 The November 6 Kali snapshot correction passed all 16 integration/fault checks
 and 14 independent signer checks with the full 1 MiB fixture. Continuation took

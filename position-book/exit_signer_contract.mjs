@@ -82,10 +82,11 @@ export function validate(data,metadata,pair,requestedHash,now){
   return {...result,notBeforeMs:signingRows[0].at_ms,requestHash:requestedHash,signingHead:signingRows[0].hash};
 }
 
-function preparation(prep,entry,policy,s,metadata,pair,req,now,signingAtMs){
+export function preparation(prep,entry,policy,s,metadata,pair,req,now,signingAtMs,generation=1){
+  check(generation===1||generation===2);
   fields(prep,['format','recordedAtMs','evidence','binding','collection']);
   fields(entry,['format','recordedAtMs','accounting']);
-  check(prep.format==='admission-exit-collection-1-record'&&hash(prep)===req.preparationSha256);
+  check(prep.format===(generation===1?'admission-exit-collection-1-record':'retired-exit-successor-1-signing-view')&&hash(prep)===req.preparationSha256);
   check(entry.format==='admission-entry-accounting-1-record'&&hash(entry)===req.entryAccountingSha256);
   num(entry.recordedAtMs,1,prep.recordedAtMs);num(prep.recordedAtMs,1,signingAtMs);
   const b=prep.binding,a=entry.accounting,c=prep.collection,p=c.provenance;
@@ -96,7 +97,7 @@ function preparation(prep,entry,policy,s,metadata,pair,req,now,signingAtMs){
   check(c.finalGenesis.state==='received'&&c.finalGenesis.result===GENESIS&&p.networkRequests===20&&c.requestTrace.length===20);
   check(a.format==='admission-entry-accounting-1'&&a.state==='entry-position-open'&&a.owner==='same-admission-ledger'&&a.exitAttemptsConsumed===0);
   check(a.policySha256===hash(policy)&&a.handoffSha256===s.accountingHandoffSha256&&a.wireSha256===s.signedWireSha256);
-  check(b.entryReceiptIdentity===a.receiptIdentity&&b.attemptNumber===1&&b.attemptsConsumed===0);
+  check(b.entryReceiptIdentity===a.receiptIdentity&&b.attemptNumber===generation&&b.attemptsConsumed===generation-1);
   const held=atomic(a.feeCommitmentRemainingLamports),feeCap=atomic(req.feeCapLamports);
   check(atomic(a.originalFeeCommitmentLamports)===atomic(s.reservedFeeLamports)&&atomic(a.entryFeePaidLamports)>0n&&
     held+atomic(a.entryFeePaidLamports)===atomic(s.reservedFeeLamports));

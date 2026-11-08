@@ -26,8 +26,9 @@ SIBLING='source-entry-handoff-v1'
 MANIFEST='manifest.json'
 ADMISSION_CAPS={'entry.admission.sqlite':64*1024*1024,
                 'signer-attempt.json':1024,'signer-ack.json':4096,
-                'exit-signer-attempt.json':1024,'exit-signer-ack.json':4096}
-MAX_TOTAL=320*1024*1024+10240
+                'exit-signer-attempt.json':1024,'exit-signer-ack.json':4096,
+                'successor-signer-attempt.json':1024,'successor-signer-ack.json':4096}
+MAX_TOTAL=320*1024*1024+15360
 NOW=accounting.submission.handoff.bridge.view.now
 TABLES=('admission_submission','admission_submission_ack','admission_rpc_captures',
         'admission_receipt_events','admission_receipt_raw','admission_entry_accounting',
@@ -48,6 +49,7 @@ def admission_inventory(root):
     check('entry.admission.sqlite' in files,'admission-ledger-required')
     check('signer-ack.json' not in files or 'signer-attempt.json' in files,'orphan-signer-ack')
     check('exit-signer-ack.json' not in files or 'exit-signer-attempt.json' in files,'orphan-exit-signer-ack')
+    check('successor-signer-ack.json' not in files or 'successor-signer-attempt.json' in files,'orphan-successor-signer-ack')
     return dict(directories=[],files=dict(sorted(files.items())),bytes=total)
 
 
@@ -171,11 +173,36 @@ def inspect_locked(home,wallet,pool,clock):
 
 def retirement_projection(book,home,wallet,pool,clock):
     from exit_retirement_guard import present
-    if not present(book):return None
+    from retired_exit_successor import present as successor_present, row as successor_row
+    from successor_signing_handoff import present as successor_signing_present
+    from successor_submission import present as successor_transport_present
+    import restricted_successor_signer as successor_backend
+    sibling=accounting.submission.handoff.storage(home).parent
+    markers=any(os.path.lexists(sibling/name) for name in (successor_backend.ATTEMPT,successor_backend.ACK))
+    if not present(book):
+        check(not markers,'snapshot-orphan-successor-backend')
+        check(not successor_present(book),'snapshot-orphan-successor')
+        check(not successor_signing_present(book),'snapshot-orphan-successor-signing')
+        check(not successor_transport_present(book),'snapshot-orphan-successor-transport')
+        return None
     from admission_lifecycle import projection
-    phase,_,amounts,_,ids,_=projection(book,home,wallet,pool,clock)
+    phase,_,amounts,stages,ids,_=projection(book,home,wallet,pool,clock)
     check(phase=='exit-retired-held' and amounts is not None,'snapshot-retirement-conflict')
-    return dict(state=phase,recordSha256=ids['exitRetirementSha256'],scopedAccounting=amounts)
+    result=dict(state=phase,recordSha256=ids['exitRetirementSha256'],scopedAccounting=amounts)
+    if 'exitSuccessorSha256' in ids:result['unsignedSuccessorSha256']=ids['exitSuccessorSha256']
+    if 'exitSuccessorSigningHeadSha256' in ids:
+        result['successorSigningHeadSha256']=ids['exitSuccessorSigningHeadSha256']
+        result['successorSigningState']=stages['exitSuccessorSigning']
+    if 'exitSuccessorTransportHeadSha256' in ids:
+        result['successorTransportHeadSha256']=ids['exitSuccessorTransportHeadSha256']
+        result['successorTransportState']=stages['exitSuccessorTransport']
+    if markers:
+        from successor_signing_handoff import load
+        record=successor_row(book)
+        check(record is not None,'snapshot-orphan-successor-backend')
+        _,_,_,state=load(home,book,wallet,pool,digest(record),clock)
+        result.update(successor_backend.inspect_markers(home,book,state))
+    return result
 
 
 def inventories(source,sibling,*,original=False):

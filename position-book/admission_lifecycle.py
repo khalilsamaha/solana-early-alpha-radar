@@ -18,7 +18,7 @@ MAX_READ_MS=120000
 ENTRY_TABLES={'admission_submission','admission_submission_ack','admission_rpc_captures',
               'admission_receipt_events','admission_receipt_raw','admission_entry_accounting'}
 EXIT_TRANSPORT={'admission_exit_submission','admission_exit_submission_ack','admission_exit_rpc_captures'}
-EXIT_TABLES=EXIT_TRANSPORT|{'admission_exit_retirement','admission_exit_continuation','admission_exit_replacement','admission_exit_preparation','admission_exit_signing','admission_exit_accounting','admission_exit_closure'}
+EXIT_TABLES=EXIT_TRANSPORT|{'admission_successor_transport','admission_successor_signing','admission_exit_successor','admission_exit_retirement','admission_exit_continuation','admission_exit_replacement','admission_exit_preparation','admission_exit_signing','admission_exit_accounting','admission_exit_closure'}
 KNOWN={'admission_policy','admission_events'}|ENTRY_TABLES|EXIT_TABLES
 
 
@@ -108,17 +108,23 @@ def _projection(book,root,wallet,pool,clock):
     if phase=='entry-failed-held':
         check(not present.intersection(EXIT_TABLES),'lifecycle-exit-after-failed-entry')
         return phase,orig,amounts,stages,ids,state
-    prepared=preparation.saved(book,clock())
-    if prepared is not None:stages['exitPreparation']='recorded';phase='exit-prepared'
-    signed=signing.read(book,clock())
-    if signed is not None:
-        stages['exitSigning']=signed['state'];phase=signed['state']
-        if signed['state']=='exit-signing-quarantined':return 'quarantined',orig,None,stages,ids,state
-    if signed is None or signed['signed'] is None:
-        check(not present.intersection(EXIT_TRANSPORT|{'admission_exit_accounting','admission_exit_closure'}),'lifecycle-exit-before-signing')
-        return phase,orig,amounts,stages,ids,state
-    xsource=exit_accounting.review(book);xrecord=exit_accounting.saved(book.db,clock())
-    xr=exit_accounting.public(xsource,xrecord)
+    sender=exit_accounting.submission.ExitSubmission(book)
+    with sender.snapshot():
+        prepared,signed,transport_status=sender._lifecycle_evidence(clock)
+        if prepared is not None:stages['exitPreparation']='recorded';phase='exit-prepared'
+        if signed is not None:
+            stages['exitSigning']=signed['state'];phase=signed['state']
+            if signed['state']=='exit-signing-quarantined':return 'quarantined',orig,None,stages,ids,state
+        if signed is None or signed['signed'] is None:
+            check(not present.intersection(EXIT_TRANSPORT|{'admission_exit_accounting','admission_exit_closure'}),'lifecycle-exit-before-signing')
+            return phase,orig,amounts,stages,ids,state
+        # An unsent exit has no receipt to evaluate. The same snapshot has
+        # already validated its complete signing state and absence of transport
+        # evidence, including orphan ACK/capture refusal. Submitted generations
+        # retain the full existing receipt/accounting review.
+        xsource=(exit_accounting.pending(transport_status) if transport_status['state']=='not-attempted'
+                 else exit_accounting.review(book))
+        xrecord=exit_accounting.saved(book.db,clock());xr=exit_accounting.public(xsource,xrecord)
     stages.update(exitTransport=xsource['transportState'],exitAccounting=xr['state'])
     if xr['state']=='quarantined':return 'quarantined',orig,None,stages,ids,state
     phase='exit-signed-not-submitted' if xsource['transportState']=='not-attempted' else 'exit-unresolved'
@@ -149,13 +155,38 @@ def _projection(book,root,wallet,pool,clock):
 def projection(book,root,wallet,pool,clock):
     result=_projection(book,root,wallet,pool,clock)
     from exit_retirement_guard import present
-    if not present(book):return result
+    from retired_exit_successor import present as successor_present,replay as successor_replay
+    import successor_signing_handoff as successor_signing
+    import successor_submission as successor_transport
+    if not present(book):
+        check(not successor_transport.present(book),'lifecycle-orphan-successor-transport')
+        check(not successor_signing.present(book),'lifecycle-orphan-successor-signing')
+        check(not successor_present(book),'lifecycle-orphan-successor')
+        return result
     phase,orig,amounts,stages,ids,state=result
     check(phase=='exit-signed-not-submitted' and amounts is not None,'lifecycle-retirement-conflict')
     from exit_retirement import replay_for_projection
     record=replay_for_projection(book,root,wallet,pool,clock,amounts)
     stages['exitRetirement']='expired-attempt-retired-held'
     ids['exitRetirementSha256']=digest(record)
+    successor=successor_replay(book,root,wallet,pool,clock,amounts)
+    if successor is not None:
+        stages['exitSuccessor']='unsigned-successor-held'
+        ids['exitSuccessorSha256']=digest(successor)
+        signing=successor_signing.read(book,successor,clock())
+        transport=successor_transport.replay(book,successor,signing,clock())
+        if transport is not None:
+            stages['exitSuccessorTransport']=transport['state']
+            ids['exitSuccessorTransportHeadSha256']=transport['headSha256']
+            if transport['state']=='quarantined':return 'quarantined',orig,amounts,stages,ids,state
+        if signing is not None:
+            stages['exitSuccessorSigning']=signing['state']
+            ids['exitSuccessorSigningHeadSha256']=signing['headSha256']
+            if signing['state']=='successor-signing-quarantined':
+                return 'quarantined',orig,amounts,stages,ids,state
+    else:
+        check(not successor_transport.present(book),'lifecycle-orphan-successor-transport')
+        check(not successor_signing.present(book),'lifecycle-orphan-successor-signing')
     return 'exit-retired-held',orig,amounts,stages,ids,state
 
 

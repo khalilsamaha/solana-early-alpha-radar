@@ -18,6 +18,12 @@ _KINDS = {
 }
 
 
+def statistics(values, counts, enabled=True):
+    return dict(version=VERSION, enabled=enabled, **counts,
+                entries=len(values), maximumEntries=MAX_ENTRIES,
+                storesStateOrAuthorization=False)
+
+
 @contextmanager
 def scope(*, enabled=True):
     if type(enabled) is not bool:
@@ -26,12 +32,8 @@ def scope(*, enabled=True):
     counts = dict(calls=0, hits=0, computations=0, capacityBypasses=0,
                   ineligibleBypasses=0, failures=0)
     token = _SCOPE.set((values, counts) if enabled else None)
-    def snapshot():
-        return dict(version=VERSION, enabled=enabled, **counts,
-                    entries=len(values), maximumEntries=MAX_ENTRIES,
-                    storesStateOrAuthorization=False)
     try:
-        yield snapshot
+        yield lambda: statistics(values, counts, enabled)
     finally:
         values.clear()
         _SCOPE.reset(token)
@@ -70,8 +72,15 @@ def replay(kind, value, compute):
 def operation(fn):
     @wraps(fn)
     def wrapped(*args, **kwargs):
-        with scope() as statistics:
+        reuse = kwargs.pop('_reuse_encoding_scope', False)
+        if type(reuse) is not bool: raise ValueError('computation-scope-mode')
+        current = _SCOPE.get()
+        if reuse and current is not None:
             result = fn(*args, **kwargs)
-            result['encodingReplay'] = statistics()
+            result['encodingReplay'] = statistics(*current)
+            return result
+        with scope() as snapshot:
+            result = fn(*args, **kwargs)
+            result['encodingReplay'] = snapshot()
             return result
     return wrapped

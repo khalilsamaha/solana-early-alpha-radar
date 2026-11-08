@@ -56,5 +56,6 @@
   "test_exit_collection_diagnostics.py": 2,
   "test_exit_canonical.py": 2,
   "test_continuation_digest.py": 2,
-  "test_exit_read_snapshot.py": 3
+  "test_exit_read_snapshot.py": 0,
+  "test_retired_exit_successor.py": 0
 }

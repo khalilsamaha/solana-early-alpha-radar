@@ -16,16 +16,18 @@ MAX_TOTAL_BYTES=2*1024*1024
 _SCOPE=ContextVar('exact_admission_history',default=None)
 
 
+def statistics(values, counts, enabled=True):
+    return dict(version=VERSION,enabled=enabled,**counts,entries=len(values),
+        maximumEntries=MAX_ENTRIES,maximumRetainedBytes=MAX_TOTAL_BYTES,
+        sqlReadsSkipped=0,authorizationDecisionsCached=False)
+
+
 @contextmanager
 def scope(*,enabled=True):
     if type(enabled) is not bool:raise ValueError('history-scope-mode')
     values={};counts=dict(calls=0,hits=0,validations=0,bypasses=0,failures=0,retainedBytes=0)
     token=_SCOPE.set((values,counts) if enabled else None)
-    def statistics():
-        return dict(version=VERSION,enabled=enabled,**counts,entries=len(values),
-            maximumEntries=MAX_ENTRIES,maximumRetainedBytes=MAX_TOTAL_BYTES,
-            sqlReadsSkipped=0,authorizationDecisionsCached=False)
-    try:yield statistics
+    try:yield lambda: statistics(values, counts, enabled)
     finally:
         values.clear();counts['retainedBytes']=0;_SCOPE.reset(token)
 
@@ -72,8 +74,15 @@ def replay(policy,rows,compute):
 def operation(fn):
     @wraps(fn)
     def wrapped(*args,**kwargs):
-        with scope() as statistics:
+        reuse = kwargs.pop('_reuse_history_scope', False)
+        if type(reuse) is not bool: raise ValueError('computation-scope-mode')
+        current = _SCOPE.get()
+        if reuse and current is not None:
+            result = fn(*args, **kwargs)
+            result['admissionHistoryReplay'] = statistics(*current)
+            return result
+        with scope() as snapshot:
             result=fn(*args,**kwargs)
-            result['admissionHistoryReplay']=statistics()
+            result['admissionHistoryReplay']=snapshot()
             return result
     return wrapped
