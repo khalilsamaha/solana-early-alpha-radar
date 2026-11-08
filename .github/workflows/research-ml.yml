@@ -1,6 +1,8 @@
 name: Offline ML regression checks
 on:
   push:
+    # Publish development heads for Kali first; CI belongs to consolidation.
+    branches: [main]
     paths:
       - 'research-ml/**'
       - 'forward-study/**'

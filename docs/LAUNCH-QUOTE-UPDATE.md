@@ -1,5 +1,19 @@
 # Joined launch and quote report — 11 October 2026
 
+## November 8 baseline compatibility correction
+
+The current wrapper explicitly uses installed observer `0.9.0`, matching the
+repository observer and dataset export wrapper. It previously selected `0.6.0`.
+Verify the installed/configured/self-reported version and source hashes with the
+operational review before invoking this corrected wrapper on Kali. There is no
+fallback to an older exporter and no installation, service restart or schema
+change. Export failure still cleans temporary files and publishes no joined
+report. Historical report definitions and source identities are unchanged.
+
+This correction is a development increment awaiting host evidence, not a completed
+baseline gate or a newly accepted research result. The original release record
+below retains its historical version references.
+
 This development automates the comparison between information available at a signal, the observer's admission decision, original-pool paper observations and walletless route quotes. It runs alongside production with bounded, read-only database reads. No installer, scanner rebuild, service restart, new quote request, notification, wallet or trading rule is introduced.
 
 ## Run on Kali

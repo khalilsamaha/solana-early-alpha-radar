@@ -170,7 +170,7 @@ assert args[:3]==['python3','-E','-s']
 if args[3].endswith('/report.py'):
     assert args[4:]==['--project',os.getcwd(),'--hours','6','--output',args[-1]]
     shutil.copyfile(os.environ['TEST_STUDY'],args[-1])
-elif args[3:]==['/usr/local/lib/solana-radar-quotes/0.6.0/manage.py','export','--hours','7']:
+elif args[3:]==['/usr/local/lib/solana-radar-quotes/0.9.0/manage.py','export','--hours','7']:
     if os.environ.get('TEST_EXPORT_FAIL')=='1':sys.exit(8)
     sys.stdout.buffer.write(Path(os.environ['TEST_QUOTES']).read_bytes())
 else:sys.exit(9)

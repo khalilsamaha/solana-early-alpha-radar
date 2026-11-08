@@ -21,5 +21,5 @@ work_dir="$(mktemp -d "$PWD/.launch-join-XXXXXX")"
 trap 'rm -rf -- "$work_dir"' EXIT
 output="$PWD/radar-launch-quotes-$(date -u +%Y%m%dT%H%M%SZ)-$$.json.gz"
 sudo python3 -E -s "$bundle/report.py" --project "$PWD" --hours "$hours" --output "$work_dir/study.json.gz" > "$work_dir/study.log"
-sudo python3 -E -s /usr/local/lib/solana-radar-quotes/0.6.0/manage.py export --hours "$quote_hours" > "$work_dir/quotes.json.gz"
+sudo python3 -E -s /usr/local/lib/solana-radar-quotes/0.9.0/manage.py export --hours "$quote_hours" > "$work_dir/quotes.json.gz"
 python3 -E -s "$bundle/joined_report.py" --study "$work_dir/study.json.gz" --quotes "$work_dir/quotes.json.gz" --output "$output"
