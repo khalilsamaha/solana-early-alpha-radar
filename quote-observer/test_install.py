@@ -1,4 +1,5 @@
 """Installation control-flow tests use temporary files and mocked system services."""
+from contextlib import closing
 import contextlib,hashlib,io,json,os,sqlite3,subprocess,tempfile,unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -11,9 +12,9 @@ class InstallTests(unittest.TestCase):
         (bundle/'manifest.json').write_text(json.dumps(manifest))
         project=root/'project';project.mkdir();(project/'package.json').write_text('{"version":"0.2.9"}')
         data=root/'data';data.mkdir();database=data/'radar.sqlite'
-        with sqlite3.connect(database) as d:d.execute('CREATE TABLE evidence(x)');d.execute('INSERT INTO evidence VALUES(99)')
+        with closing(sqlite3.connect(database)) as d, d:d.execute('CREATE TABLE evidence(x)');d.execute('INSERT INTO evidence VALUES(99)')
         reports=root/'reports';reports.mkdir();ledger=reports/'observer.sqlite'
-        with sqlite3.connect(ledger) as d:d.execute('CREATE TABLE preserved(x)');d.execute("INSERT INTO preserved VALUES('cursor and data')")
+        with closing(sqlite3.connect(ledger)) as d, d:d.execute('CREATE TABLE preserved(x)');d.execute("INSERT INTO preserved VALUES('cursor and data')")
         paths={'BUNDLE':bundle,'DEST':root/'lib'/'0.9.0','CONFIG':root/'config.json','REPORTS':reports,'UNIT':root/'quotes.service'}
         return project,database,ledger,paths
 
@@ -44,7 +45,7 @@ class InstallTests(unittest.TestCase):
             backups=list(paths['REPORTS'].glob('pre-0.9.0-*.sqlite'));self.assertEqual(len(backups),1)
             for b in backups:
                 self.assertEqual(b.stat().st_mode&0o777,0o600)
-                with sqlite3.connect(b) as db:self.assertEqual(db.execute('SELECT * FROM preserved').fetchall(),[('cursor and data',)])
+                with closing(sqlite3.connect(b)) as db, db:self.assertEqual(db.execute('SELECT * FROM preserved').fetchall(),[('cursor and data',)])
             self.assertFalse(any('compose' in c and 'up' in c for c in calls))
             self.assertEqual(sum(c[:2]==['systemctl','restart'] for c in calls),1)
             self.assertEqual(sum(c[:2]==['systemctl','stop'] for c in calls),1)

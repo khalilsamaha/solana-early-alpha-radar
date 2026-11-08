@@ -64,6 +64,7 @@ def rpc(network, method, params, request_id, opener=None):
             return {'state': 'rpc-error'}  # Never export arbitrary provider messages.
         return {'state': 'received', 'result': data['result']} if 'result' in data else {'state': 'invalid-rpc-envelope'}
     except urllib.error.HTTPError as e:
+        e.close()
         return {'state': 'http-error', 'httpStatus': e.code}
     except (urllib.error.URLError, TimeoutError, OSError):
         return {'state': 'network-error'}

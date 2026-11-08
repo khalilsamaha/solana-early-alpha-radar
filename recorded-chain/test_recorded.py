@@ -195,7 +195,9 @@ class TransportTests(unittest.TestCase):
 
     def test_http_429_and_network_error_stop_without_retry(self):
         for error in (urllib.error.HTTPError('https://example.invalid', 429, 'PRIVATE', {}, None), urllib.error.URLError('PRIVATE')):
+            if isinstance(error, urllib.error.HTTPError): self.addCleanup(error.close)
             fake = FakeOpener([error]); c = collect(sample=True, opener=fake)
+            if isinstance(error, urllib.error.HTTPError): self.assertTrue(error.closed)
             self.assertEqual(c['rpcRequestsAttempted'], 1); self.assertNotIn('PRIVATE', json.dumps(c))
 
     def test_provider_error_and_wrong_id_are_sanitized(self):

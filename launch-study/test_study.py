@@ -1,3 +1,4 @@
+from contextlib import closing
 import copy
 import gzip
 import hashlib
@@ -136,7 +137,7 @@ class StudyTests(unittest.TestCase):
 
     def database(self,path,es=None):
         c=captured(entries=es)
-        with sqlite3.connect(path) as db:
+        with closing(sqlite3.connect(path)) as db, db:
             db.executescript('CREATE TABLE events(seq INTEGER PRIMARY KEY,kind TEXT,id TEXT,at INTEGER,data TEXT,UNIQUE(kind,id));CREATE INDEX events_at ON events(kind,at);CREATE TABLE kv(key TEXT PRIMARY KEY,data TEXT);CREATE TABLE launch_registry(mint TEXT PRIMARY KEY,received_at INTEGER,data TEXT);CREATE INDEX launch_registry_received ON launch_registry(received_at);')
             db.execute('INSERT INTO kv VALUES(?,?)',('launch-registry-registration',json.dumps(c['registration'])))
             db.execute('INSERT INTO kv VALUES(?,?)',('health',json.dumps({'lastLoopAt':T,'lastMarketAt':T-1})))
@@ -163,7 +164,7 @@ class StudyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'Entry cap'):capture(f,now=T+400000,max_entries=0)
             with self.assertRaises(CaptureError) as failure:capture(f,now=T+400000,budget=-0.5)
             self.assertEqual(failure.exception.diagnostic['reason'],'read-deadline')
-            with sqlite3.connect(f) as db:db.execute("UPDATE events SET data=? WHERE kind='fast-shadow-entries'",('x'*262145,))
+            with closing(sqlite3.connect(f)) as db, db:db.execute("UPDATE events SET data=? WHERE kind='fast-shadow-entries'",('x'*262145,))
             with self.assertRaisesRegex(ValueError,'cap'):capture(f,now=T+400000)
 
     def test_future_outcomes_and_entries_before_registration_are_not_captured(self):
@@ -195,7 +196,7 @@ class StudyTests(unittest.TestCase):
     def test_large_outcome_history_uses_bounded_exact_lookups(self):
         with tempfile.TemporaryDirectory() as d:
             f=self.database(Path(d)/'db');e=entry()
-            with sqlite3.connect(f) as db:
+            with closing(sqlite3.connect(f)) as db, db:
                 db.executemany('INSERT INTO events(kind,id,at,data) VALUES(?,?,?,?)',
                     [('fast-shadow-outcomes','unrelated:'+str(i),T-1000,'{}') for i in range(50000)])
                 db.commit()

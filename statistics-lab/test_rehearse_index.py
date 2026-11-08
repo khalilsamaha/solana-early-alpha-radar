@@ -1,3 +1,4 @@
+from contextlib import closing
 import datetime
 import hashlib
 import importlib.util
@@ -33,7 +34,7 @@ class RehearsalTests(unittest.TestCase):
         self.assertEqual(r['installation']['deadlineSeconds'],180);self.assertEqual(r['installation']['indexedRows'],4)
         self.assertEqual(r['verifiedCounts'],self.meta['counts']);self.assertEqual(m.stamp(self.file),stamp)
         self.assertEqual(hashlib.sha256(self.file.read_bytes()).hexdigest(),before)
-        with sqlite3.connect(self.file) as db:self.assertFalse(db.execute('SELECT 1 FROM sqlite_master WHERE name=?',(m.index.NAME,)).fetchone())
+        with closing(sqlite3.connect(self.file)) as db, db:self.assertFalse(db.execute('SELECT 1 FROM sqlite_master WHERE name=?',(m.index.NAME,)).fetchone())
         self.assertFalse(r['liveDatabaseOpened']);self.assertFalse(r['scannerStopped']);self.assertEqual(r['networkRequests'],0)
     def test_stale_failed_future_and_malformed_status_refused(self):
         cases=[{'success':False},{'state':'running'},{'finished_at':(datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=2)).isoformat()},{'finished_at':(datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(days=1)).isoformat()},{'counts':{}},{'bytes':True}]

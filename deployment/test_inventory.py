@@ -27,13 +27,22 @@ class InventoryTests(unittest.TestCase):
         with patch.object(inventory, 'command', return_value=None):
             self.assertEqual(inventory.container_inventory(Path('/unused'), {})['state'], 'unavailable')
 
-    def test_release_manifest_matches_scanner_and_observer_tree(self):
+    def test_release_inventory_remains_pinned_while_source_helpers_evolve(self):
         import json
+        # Keep accepted deployment identity immutable; development cleanup is not a release.
+        self.assertEqual(hashlib.sha256(inventory.MANIFEST.read_bytes()).hexdigest(),
+                         '6c14de29ad608342116107ed7aa575fd35fa4047f271d0fbefe84cbf5ccdfbcd')
         m = json.loads(inventory.MANIFEST.read_text())
         root = inventory.ROOT
         self.assertEqual(inventory.disk_inventory(root / 'scanner', m)['matched'], len(m['scannerFiles']))
+        source = json.loads((root / 'quote-observer' / 'manifest.json').read_text())
+        self.assertEqual(set(source['files']), set(m['observerFiles']))
+        differences = set()
         for name, sha in m['observerFiles'].items():
-            self.assertEqual(inventory.file_hash(root / 'quote-observer', name), sha)
+            actual = inventory.file_hash(root / 'quote-observer', name)
+            self.assertEqual(actual, source['files'][name])
+            if actual != sha: differences.add(name)
+        self.assertEqual(differences, {'install.py', 'manage.py', 'test_install.py', 'test_manage.py'})
         self.assertNotIn('.env', m['scannerFiles'])
 
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Status and bounded report export. No credentials, scanner writes or network."""
 import argparse, gzip, json, os, sqlite3, sys, time
+from contextlib import closing
 from pathlib import Path
 from exit_evidence import summarize
 CONFIG=Path('/etc/solana-radar-quotes.json')
@@ -9,7 +10,7 @@ def read_report(config, hours=24, status=False):
     file=Path(config['reports'])/'observer.sqlite'
     if not file.is_file():raise RuntimeError('Observer has not created its ledger yet')
     started=time.monotonic();deadline=started+10
-    with sqlite3.connect(file.as_uri()+'?mode=ro',uri=True,timeout=1) as db:
+    with closing(sqlite3.connect(file.as_uri()+'?mode=ro',uri=True,timeout=1)) as db, db:
         db.execute('PRAGMA query_only=ON');db.execute('PRAGMA cache_size=-4096')
         db.set_progress_handler(lambda: int(time.monotonic()>deadline),1000)
         db.execute('BEGIN')

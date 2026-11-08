@@ -1,3 +1,4 @@
+from contextlib import closing
 import unittest,tempfile,sqlite3,json,time
 from pathlib import Path
 from manage import read_report
@@ -5,19 +6,19 @@ class ReportTests(unittest.TestCase):
     def test_status_export_preserves_failed_and_skipped(self):
         with tempfile.TemporaryDirectory() as d:
             p=Path(d)/'observer.sqlite';now=int(time.time()*1000)
-            with sqlite3.connect(p) as db:
+            with closing(sqlite3.connect(p)) as db, db:
                 db.executescript('CREATE TABLE meta(k TEXT,v TEXT);CREATE TABLE signals(seq INTEGER,cohort TEXT,decision TEXT,detected INTEGER,data TEXT);CREATE TABLE probes(seq INTEGER,at INTEGER,state TEXT,data TEXT);CREATE TABLE incidents(at INTEGER,kind TEXT,detail TEXT);')
                 db.execute('INSERT INTO meta VALUES(?,?)',('lastPollAt',json.dumps(now)))
                 db.execute('INSERT INTO signals VALUES(?,?,?,?,?)',(1,'early-activity','observer-busy',now,'{"seq":1}'))
                 db.execute('INSERT INTO probes VALUES(?,?,?,?)',(2,now,'buy-quote-failed','{"signal":{"seq":2}}'))
             r=read_report({'reports':d});self.assertEqual(r['signals'][0]['decision'],'observer-busy');self.assertEqual(r['probes'][0]['state'],'buy-quote-failed')
             self.assertNotIn('signals',read_report({'reports':d},status=True))
-            with sqlite3.connect(p) as db:self.assertEqual(db.execute('SELECT count(*) FROM signals').fetchone()[0],1)
+            with closing(sqlite3.connect(p)) as db, db:self.assertEqual(db.execute('SELECT count(*) FROM signals').fetchone()[0],1)
     def test_capacity_includes_legacy_admissions_and_reports_release_time(self):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as d:
             p=Path(d)/'observer.sqlite';now=1800000000000
-            with sqlite3.connect(p) as db:
+            with closing(sqlite3.connect(p)) as db, db:
                 db.executescript('CREATE TABLE meta(k TEXT,v TEXT);CREATE TABLE signals(seq INTEGER,cohort TEXT,decision TEXT,detected INTEGER,data TEXT);CREATE TABLE probes(seq INTEGER,at INTEGER,state TEXT,data TEXT);CREATE TABLE incidents(at INTEGER,kind TEXT,detail TEXT);')
                 db.execute('INSERT INTO meta VALUES(?,?)',('samplingRegistration',json.dumps({'id':'cohort-budgets-v2'})))
                 for seq,mins in enumerate([1,10,20,30]):
@@ -32,7 +33,7 @@ class ReportTests(unittest.TestCase):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as d:
             now=1800000000000
-            with sqlite3.connect(Path(d)/'observer.sqlite') as db:
+            with closing(sqlite3.connect(Path(d)/'observer.sqlite')) as db, db:
                 db.executescript('CREATE TABLE meta(k TEXT,v TEXT);CREATE TABLE signals(seq INTEGER,cohort TEXT,decision TEXT,detected INTEGER,data TEXT);CREATE TABLE probes(seq INTEGER,at INTEGER,state TEXT,data TEXT);CREATE TABLE incidents(at INTEGER,kind TEXT,detail TEXT);')
                 policy={'id':'three-cohort-budgets-v3','cohorts':['baseline','early-activity','fast30-shadow'],'perCohortHour':2,'perCohortDay':48,'minimumCohortSpacingMs':1800000}
                 db.execute('INSERT INTO meta VALUES(?,?)',('samplingRegistration',json.dumps(policy)))

@@ -188,8 +188,11 @@ class LookupTransportTests(unittest.TestCase):
         self.assertEqual(len(op.calls),1); self.assertEqual(review_lookups(source(),c)['state'],'mismatch')
 
     def test_http_failure_no_retry(self):
-        op=FakeOpener([GENESIS['devnet'],urllib.error.HTTPError('url',429,'secret',{},None)])
+        error=urllib.error.HTTPError('url',429,'secret',{},None)
+        self.addCleanup(error.close)
+        op=FakeOpener([GENESIS['devnet'],error])
         c=collect_lookups(source(),op)
+        self.assertTrue(error.closed)
         self.assertEqual(len(op.calls),2); self.assertNotIn('secret',json.dumps(c))
         self.assertEqual(review_lookups(source(),c)['state'],'unknown')
 
