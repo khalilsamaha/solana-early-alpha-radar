@@ -6,6 +6,31 @@ checks. This release joins them into a measured internal operation. Its public
 CLI only creates disposable test data and synthetic RPC replies. It offers no
 wallet, journal-directory, RPC-endpoint or execution arguments.
 
+## November 8 host result — gate still blocked
+
+The report captured at 03:47:50 UTC passed 4 setup and 11 boundary checks but
+failed the complete real-clock gate. Signing finished with 2,657 ms remaining;
+submission preparation then took 2,742.007 ms and refused with
+`successor-signing-expired`. The full operation returned 90 ms past the original
+deadline. No sender RPC or send request occurred. Seven connected recovery and
+preservation checks were not reached, not passed. `originalSourceUnchanged=false`
+in that report is an uncompleted assertion, not evidence of a detected mutation.
+Temporary fixture cleanup succeeded; no production wallet or runtime was used.
+
+The earlier text described one shared computational owner, but nested decorators
+still created fresh scopes. The November 8 correction makes that reuse explicit
+for canonical digest/text, public encoding, admission-chain exact-row replay and
+signature verification. Independent callers remain isolated by default. Nested
+phases do not clear their parent's cache; only the outer owner clears it. Full
+source reads and semantic, clock, STOP and spending checks remain in place.
+
+The corrected CLI includes 4 setup, 12 boundary, 5 scope-ownership and 7 connected
+checks (**28 total**). Its report identifies `successor-computation-owner-1` and
+labels whether preservation checks completed. Nested computational counters are
+cumulative owner snapshots and must not be summed; signature phase counters keep
+the existing delta semantics. No freshness limit, operation budget or cache
+capacity has increased. Kali acceptance remains required.
+
 ## What is connected
 
 The existing eight expiry/account reads and twenty quote/simulation reads feed
@@ -46,20 +71,27 @@ complete report is `offline-integration-passed` only after all of these pass:
 7. All held accounting remains conservative; no receipt settlement or closure is
    inferred from a finalized RPC claim.
 
-The command also runs four fixture-setup checks and eleven composition fault
-checks. Expected counts: **4 setup + 11 boundary + 7 connected = 22 checks**.
+The corrected command also runs four fixture-setup, twelve composition fault
+checks and five scope-ownership checks. Expected total: **28 checks**.
 Temporary data is removed, including on a failed phase. A failed report remains
 `review-required`; it is not approval to repeat an operational signing attempt.
 
 ## Local validation
 
-The packaged CLI passed 4 setup, 11 boundary and 7 connected checks. Its
-combined path took **6,157.620 ms**, leaving **5,109 ms** on the original
-deadline. These are local synthetic-provider measurements, not Kali or live RPC
-results. Six output/scope refusal checks preserved existing files, and both test
-partition checks passed. The existing submission suite passed 17 tests and
-the signing integration suite passed 11 tests with ResourceWarnings treated as
-errors. Source hygiene and staged whitespace checks also passed.
+The November 8 corrected packaged CLI passed **4 setup + 12 boundary + 5 scope
+ownership + 7 connected = 28 checks**. Its measured combined path took
+**5,758.970 ms**, leaving **5,604 ms** on the original deadline. The first corrected
+local run took 5,627.292 ms with 5,721 ms headroom; neither result substitutes for
+Kali or real RPC measurements. The original November 7 package took 6,157.620 ms
+with 5,109 ms headroom locally and subsequently failed the host gate above.
+
+Regression results: 45 canonical/text/encoding replay cases, 7 admission-history
+cases, 11 signing integration cases and 4 post-child historical/ACK mutation cases
+passed with ResourceWarnings treated as errors. The new owner tests cover parent
+identity through actual nested calls, mutation, exception cleanup, thread
+isolation, strict opt-in flags and original capacity limits. Six CLI output/scope
+refusals preserved files. Both partition checks, source hygiene and staged
+whitespace checks passed.
 
 ## Kali command
 

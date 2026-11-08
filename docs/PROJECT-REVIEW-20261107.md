@@ -6,6 +6,21 @@ Continue a bounded devnet exit/recovery integration, but do not promote a tradin
 
 The project has spent substantial effort on exit freshness, repeated validation and recovery. These were real defects exposed by host tests. The next milestone must be a complete, measured devnet exit and reconciliation, rather than an open-ended sequence of additional capabilities. In parallel, research must answer whether any fixed entry/exit hypothesis survives prospective testing and realistic costs.
 
+## November 8 update — complete host timing has not passed
+
+The combined Kali report at 03:47:50 UTC passed all 15 setup/boundary checks but
+expired before the first sender RPC. Signing had 2,657 ms of headroom; submission
+preparation used 2,742 ms. The operation returned 90 ms late, and recovery and
+preservation checks were not reached. Do not advance to operational devnet
+submission based on this report.
+
+The next correction joins the already bounded computational scopes explicitly
+across nested stages; independent calls remain isolated. It also verifies owner
+identity through the actual connected path. The original deadline, source reads,
+semantic checks, STOP handling, one-send attempts and held accounting stay fixed.
+See [corrected rehearsal and host acceptance](SUCCESSOR-EXECUTION-20261107.md).
+No research promotion or real-money gate changes.
+
 ## What the evidence establishes
 
 | Track | Evidence | Current conclusion |

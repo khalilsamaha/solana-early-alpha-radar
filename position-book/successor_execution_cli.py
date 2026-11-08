@@ -24,15 +24,17 @@ def main():
     if a.output.exists() or a.output.is_symlink() or not a.output.parent.is_dir():raise ValueError('output-unavailable')
     from test_successor_execution import ExecutionTests
     from test_successor_fixture_setup import FixtureSetupTests
+    from test_successor_scope_ownership import ScopeOwnershipTests
     from successor_execution_checks import run,VERSION
     with patch.object(socket.socket,'connect',side_effect=AssertionError('network-disabled')):
-        setup=checks(FixtureSetupTests);faults=checks(ExecutionTests)
-    if all(t['casesRun']>0 and t['casesRun']==t['casesPassed'] and not t['failedCases'] and not t['skippedCases'] for t in (setup,faults)):
+        setup=checks(FixtureSetupTests);faults=checks(ExecutionTests);ownership=checks(ScopeOwnershipTests)
+    if all(t['casesRun']>0 and t['casesRun']==t['casesPassed'] and not t['failedCases'] and not t['skippedCases'] for t in (setup,faults,ownership)):
         report=run()
     else:report=dict(format=VERSION,state='review-required',casesPassed=0,phases=[],realNetworkRequests=0,transactionsSent=0,executionApproved=False)
-    report.update(capturedAt=datetime.now(timezone.utc).isoformat(),fixtureSetupChecks=setup,boundaryChecks=faults)
+    report.update(capturedAt=datetime.now(timezone.utc).isoformat(),fixtureSetupChecks=setup,boundaryChecks=faults,scopeOwnershipChecks=ownership,
+        computationScopeVersion='successor-computation-owner-1')
     publish(a.output,report)
-    print('State:',report['state']);print('Setup checks:',setup['casesPassed']);print('Boundary checks:',faults['casesPassed']);print('Connected checks:',report['casesPassed'])
+    print('State:',report['state']);print('Setup checks:',setup['casesPassed']);print('Boundary checks:',faults['casesPassed']);print('Scope ownership checks:',ownership['casesPassed']);print('Connected checks:',report['casesPassed'])
     result=report.get('integration')
     if result:
         print('Combined integration elapsed ms:',report['integrationElapsedMs'])

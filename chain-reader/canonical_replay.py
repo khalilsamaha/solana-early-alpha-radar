@@ -198,6 +198,16 @@ def materialize(key):
     return key[1]
 
 
+def statistics(values, counts, enabled=True):
+    return dict(version=VERSION, enabled=enabled, **counts,
+                entries=len(values), maximumEntries=MAX_ENTRIES,
+                maximumRetainedBytes=MAX_BYTES,
+                sharedStrings=len(values.strings),
+                sharedStringBytes=sum(row[2] for row in values.strings.values()),
+                sharedStringReferences=sum(row[1] for row in values.strings.values()),
+                reusesValidationOrAuthorization=False, rechecksFullInputContent=True)
+
+
 @contextmanager
 def scope(*, enabled=True):
     if type(enabled) is not bool:
@@ -207,16 +217,8 @@ def scope(*, enabled=True):
                   ineligibleBypasses=0, failures=0, retainedBytes=0, evictions=0)
     token = _SCOPE.set((values, counts) if enabled else None)
 
-    def snapshot():
-        return dict(version=VERSION, enabled=enabled, **counts,
-                    entries=len(values), maximumEntries=MAX_ENTRIES,
-                    maximumRetainedBytes=MAX_BYTES,
-                    sharedStrings=len(values.strings),
-                    sharedStringBytes=sum(row[2] for row in values.strings.values()),
-                    sharedStringReferences=sum(row[1] for row in values.strings.values()),
-                    reusesValidationOrAuthorization=False, rechecksFullInputContent=True)
     try:
-        yield snapshot
+        yield lambda: statistics(values, counts, enabled)
     finally:
         values.clear()
         counts['retainedBytes'] = 0
@@ -278,9 +280,16 @@ def digest(value):
 def operation(fn):
     @wraps(fn)
     def wrapped(*args, **kwargs):
-        with scope() as statistics:
+        reuse = kwargs.pop('_reuse_canonical_scope', False)
+        if type(reuse) is not bool: raise ValueError('computation-scope-mode')
+        current = _SCOPE.get()
+        if reuse and current is not None:
             result = fn(*args, **kwargs)
-            result['canonicalDigestReplay'] = statistics()
+            result['canonicalDigestReplay'] = statistics(*current)
+            return result
+        with scope() as snapshot:
+            result = fn(*args, **kwargs)
+            result['canonicalDigestReplay'] = snapshot()
             return result
     return wrapped
 

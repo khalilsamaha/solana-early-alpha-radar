@@ -26,7 +26,7 @@ CODES=signing.CODES|{'successor-execution-clock','successor-execution-budget',
 @signing.admission_history_replay.operation
 def _run(home,wallet,pool,expected,retirement,*,clock,monotonic,expiry_opener,quote_opener,submission_opener):
     start=monotonic();last_tick=start;last_wall=clock();root=Path(home).absolute();clients=[]
-    r=dict(format=VERSION,state='successor-execution-review-required',stage='collection-signing',diagnosticCode=None,
+    r=dict(format=VERSION,computationScopeVersion='successor-computation-owner-1',state='successor-execution-review-required',stage='collection-signing',diagnosticCode=None,
         signing=None,submission=None,successorSha256=None,originalDeadlineMs=None,
         applicationSendBoundaryRecorded=False,sendRequestsThisRun=0,senderRequests=0,collectionRequests=0,
         requestMethods=[],completedWithinOriginalDeadline=False,originalDeadlineCheckedBeforeSend=False,
@@ -44,7 +44,7 @@ def _run(home,wallet,pool,expected,retirement,*,clock,monotonic,expiry_opener,qu
         guard();begin=monotonic()
         r['signing']=signing._collect_sign(root,wallet,pool,expected,retirement,
             allow_unsigned_successor=True,allow_private_key_signing=True,clock=clock,monotonic=monotonic,
-            _expiry_opener=expiry_opener,_quote_opener=quote_opener)
+            _expiry_opener=expiry_opener,_quote_opener=quote_opener,_reuse_computation_scope=True)
         r['timing']['collectionSigningMs']=round((monotonic()-begin)*1000,3)
         s=r['signing'];r['successorSha256']=s['successorSha256'];r['originalDeadlineMs']=s['originalDeadlineMs']
         r['recoveryRequired']=s['preparationCreatedThisRun'] or s['successorSha256'] is not None
@@ -61,7 +61,7 @@ def _run(home,wallet,pool,expected,retirement,*,clock,monotonic,expiry_opener,qu
         begin=monotonic()
         try:
             r['submission']=submission._submit(root,wallet,pool,r['successorSha256'],allow_devnet_submit=True,
-                opener=submission_opener,clock=clock,monotonic=monotonic,_guard=sender_guard,_rpc_sink=clients.append)
+                opener=submission_opener,clock=clock,monotonic=monotonic,_guard=sender_guard,_rpc_sink=clients.append,_reuse_signature_scope=True)
         finally:r['timing']['submissionMs']=round((monotonic()-begin)*1000,3)
         outcome=r['submission'];r['applicationSendBoundaryRecorded']=outcome['applicationSendBoundaryRecorded']
         check(outcome['sendRequestsThisRun']==1 and outcome['state'] in ('rpc-acknowledged','successor-submission-unknown'),

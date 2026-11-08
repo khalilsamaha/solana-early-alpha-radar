@@ -22,6 +22,16 @@ def original(value):
     return json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False)
 
 
+def statistics(values, counts, enabled=True):
+    return dict(version=VERSION, enabled=enabled, **counts,
+                entries=len(values), maximumEntries=MAX_ENTRIES,
+                maximumRetainedBytes=MAX_BYTES,
+                sharedStrings=len(values.strings),
+                sharedStringBytes=sum(row[2] for row in values.strings.values()),
+                sharedStringReferences=sum(row[1] for row in values.strings.values()),
+                reusesValidationOrAuthorization=False, rechecksFullInputContent=True)
+
+
 @contextmanager
 def scope(*, enabled=True):
     if type(enabled) is not bool:
@@ -31,16 +41,8 @@ def scope(*, enabled=True):
                   ineligibleBypasses=0, failures=0, retainedBytes=0, evictions=0)
     token = _SCOPE.set((values, counts) if enabled else None)
 
-    def snapshot():
-        return dict(version=VERSION, enabled=enabled, **counts,
-                    entries=len(values), maximumEntries=MAX_ENTRIES,
-                    maximumRetainedBytes=MAX_BYTES,
-                    sharedStrings=len(values.strings),
-                    sharedStringBytes=sum(row[2] for row in values.strings.values()),
-                    sharedStringReferences=sum(row[1] for row in values.strings.values()),
-                    reusesValidationOrAuthorization=False, rechecksFullInputContent=True)
     try:
-        yield snapshot
+        yield lambda: statistics(values, counts, enabled)
     finally:
         values.clear()
         counts['retainedBytes'] = 0
@@ -99,9 +101,16 @@ def encoded(value):
 def operation(fn):
     @wraps(fn)
     def wrapped(*args, **kwargs):
-        with scope() as statistics:
+        reuse = kwargs.pop('_reuse_serialization_scope', False)
+        if type(reuse) is not bool: raise ValueError('computation-scope-mode')
+        current = _SCOPE.get()
+        if reuse and current is not None:
             result = fn(*args, **kwargs)
-            result['canonicalTextReplay'] = statistics()
+            result['canonicalTextReplay'] = statistics(*current)
+            return result
+        with scope() as snapshot:
+            result = fn(*args, **kwargs)
+            result['canonicalTextReplay'] = snapshot()
             return result
     return wrapped
 

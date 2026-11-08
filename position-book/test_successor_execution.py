@@ -147,4 +147,24 @@ class ExecutionTests(unittest.TestCase):
         self.assertEqual(r['headroomAtReturnMs'],-1);self.assertEqual(r['sendRequestsThisRun'],1)
 
 
+
+    def test_connected_nested_phases_keep_exact_computation_owner(self):
+        modules=(m.signing.canonical_replay,m.signing.serialization_replay,
+                 m.signing.encoding_replay,m.signing.admission_history_replay)
+        import wire
+        seen=[];load=m.submission.handoff.load
+        def observed(*a,**kw):
+            seen.append(tuple(x._SCOPE.get() for x in modules)+(wire._SIGNATURE_SCOPE.get(),))
+            return load(*a,**kw)
+        with patch.object(m.submission.handoff,'load',side_effect=observed):
+            result,_,_,_=self.run_case()
+        self.assertEqual(result['state'],'successor-submission-unknown')
+        self.assertGreaterEqual(len(seen),6)
+        for row in seen:
+            for current,first in zip(row,seen[0]):
+                self.assertIsNotNone(current);self.assertIs(current,first)
+        self.assertTrue(all(x._SCOPE.get() is None for x in modules))
+        self.assertIsNone(wire._SIGNATURE_SCOPE.get())
+
+
 if __name__=='__main__':unittest.main()

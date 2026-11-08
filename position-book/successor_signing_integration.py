@@ -96,7 +96,7 @@ def _run(home,wallet,pool,expected,expected_retirement,*,
         guard();start=monotonic()
         try:
             prepared=successor._prepare_from_producer(root,wallet,pool,expected,expected_retirement,produce,
-                allow_unsigned_successor=True,clock=clock,monotonic=monotonic)
+                allow_unsigned_successor=True,clock=clock,monotonic=monotonic,_reuse_signature_scope=True)
         finally:r['timing']['collectionPersistenceMs']=round((monotonic()-start)*1000,3)
         r['preparationCreatedThisRun']=prepared['createdThisRun'];r['successorSha256']=prepared['recordSha256']
         r['originalDeadlineMs']=prepared['binding']['validUntilExclusiveMs']
@@ -104,7 +104,7 @@ def _run(home,wallet,pool,expected,expected_retirement,*,
             r.update(state='existing-successor-held',stage='existing-candidate');return r
         guard();r['stage']='signing-handoff';start=monotonic()
         try:
-            signed=handoff._dispatch(root,wallet,pool,r['successorSha256'],signer_adapter=sign,clock=clock)
+            signed=handoff._dispatch(root,wallet,pool,r['successorSha256'],signer_adapter=sign,clock=clock,_reuse_signature_scope=True)
         finally:r['timing']['signingHandoffMs']=round((monotonic()-start)*1000,3)
         r['signerAcknowledgmentValidated']=signed['acknowledgmentRecorded']
         check(signed['state']=='successor-signed-recorded' and signed['signerAdapterCallsThisRun']==1,
@@ -124,12 +124,17 @@ def _run(home,wallet,pool,expected,expected_retirement,*,
 
 def _collect_sign(home,wallet,pool,expected,expected_retirement,*,
                   allow_unsigned_successor=False,allow_private_key_signing=False,
-                  clock=view.now,monotonic=time.monotonic,_expiry_opener=None,_quote_opener=None):
+                  clock=view.now,monotonic=time.monotonic,_expiry_opener=None,_quote_opener=None,
+                  _reuse_computation_scope=False):
     """Include owner-scope cleanup in the reported original deadline."""
+    check(type(_reuse_computation_scope) is bool,'computation-scope-mode')
     start=monotonic()
     r=_run(home,wallet,pool,expected,expected_retirement,
         allow_unsigned_successor=allow_unsigned_successor,allow_private_key_signing=allow_private_key_signing,
-        clock=clock,monotonic=monotonic,_expiry_opener=_expiry_opener,_quote_opener=_quote_opener)
+        clock=clock,monotonic=monotonic,_expiry_opener=_expiry_opener,_quote_opener=_quote_opener,
+        _reuse_serialization_scope=_reuse_computation_scope,_reuse_canonical_scope=_reuse_computation_scope,
+        _reuse_encoding_scope=_reuse_computation_scope,_reuse_history_scope=_reuse_computation_scope,
+        _reuse_signature_scope=_reuse_computation_scope)
     wall=clock();tick=monotonic()
     r['timing']['totalElapsedMs']=round((tick-start)*1000,3)
     r['returnedAtMs']=wall

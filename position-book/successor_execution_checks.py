@@ -114,6 +114,7 @@ def connected(c):
 def run():
     r=fixture.run(_exercise=connected)
     r.update(format=VERSION,liveSenderIntegrated=False,executionApproved=False,
+        preservationChecksCompleted=r.get('originalSourceUnchanged') is True,
         limitations=['Synthetic RPC replies and disposable keys only; no operational wallet or real network.',
             'Real-clock 1 MiB collection/sign/send path; original freshness limit and cumulative holds unchanged.',
             'One simulated lost send response; recovery observes the exact signature and does not resend.',
