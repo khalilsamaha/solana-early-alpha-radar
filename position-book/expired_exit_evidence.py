@@ -29,6 +29,18 @@ def context(root,book,wallet,pool,expected,clock):
 
 def scope_context(book,wallet,identity,record):
     """Bind already replayed position identity to its five saved account roles."""
+    with chain.history.transport.ExitSubmission(book).snapshot():
+        signed=chain.history.transport.ExitSubmission(book).signing()['signed']['signedWireBase64']
+        return _scope_values(book,wallet,identity,record,signed)
+
+
+def _scope_values(book,wallet,identity,record,signed):
+    """Pure projection of inputs replayed by the caller in this snapshot.
+
+    Does not authorize an action or retain state. Public scope_context still
+    performs its own signing replay; retirement supplies its status replay.
+    """
+    check(book.db.in_transaction,'exit-read-snapshot-required')
     a=book.policy['scope']['accounts']
     keys=[wallet,a['source'],a['destination'],a['inputMint'],a['outputMint']]
     check(len(set(keys))==5 and NATIVE not in keys,'expiry-account-scope')
@@ -37,8 +49,6 @@ def scope_context(book,wallet,identity,record):
     expected_rows=deepcopy([rows[k] for k in keys])
     height=record['collection']['packetBuild']['lastValidBlockHeight']
     uint(height,2**64-1,'expiry-last-height',minimum=1)
-    with chain.history.transport.ExitSubmission(book).snapshot():
-        signed=chain.history.transport.ExitSubmission(book).signing()['signed']['signedWireBase64']
     return dict(identity=identity,accountKeys=keys,expectedAccounts=expected_rows,
                 lastValidBlockHeight=height,signedWire=signed)
 

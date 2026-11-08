@@ -25,21 +25,20 @@ history=expiry.chain.history
 
 def position_context(book,root,wallet,pool,clock,amounts):
     """No lifecycle call: used during the lifecycle's own retirement replay."""
-    record=history.lifecycle.preparation.saved(book,clock())
-    check(record is not None,'retirement-preparation-required')
     with history.transport.ExitSubmission(book).snapshot():
-        sender=history.transport.ExitSubmission(book);state=sender.signing()
-        check(sender._boundary(state) is None,'retirement-locally-unsent-required')
-        status=sender._status(None)
+        sender=history.transport.ExitSubmission(book)
+        status,state,record=sender._status_evidence()
+        check(record is not None,'retirement-preparation-required')
+        check(not status['applicationSendBoundaryRecorded'],'retirement-locally-unsent-required')
         check(status['state']=='not-attempted' and not status['receiptCaptureCount'],'retirement-transport-conflict')
         check(state['state']=='exit-signed-recorded' and clock()>=state['request']['validUntilExclusiveMs'],
               'retirement-expired-signature-required')
         history.backend._attempt_record_for_state(root,book,state)
         check(history.backend._read_ack(root,book,state)==state['signed']['signedWireBase64'],'retirement-backend-conflict')
-    identity=dict(preparationSha256=digest(record),signingStateSha256=digest(state),
-        signature=state['signed']['signature'],blockhash=state['request']['packet']['policy']['blockhash'],
-        minimumContextSlot=state['minimumContextSlot'],scopedAccounting=amounts)
-    return expiry.scope_context(book,wallet,identity,record)
+        identity=dict(preparationSha256=digest(record),signingStateSha256=digest(state),
+            signature=state['signed']['signature'],blockhash=state['request']['packet']['policy']['blockhash'],
+            minimumContextSlot=state['minimumContextSlot'],scopedAccounting=amounts)
+        return expiry._scope_values(book,wallet,identity,record,state['signed']['signedWireBase64'])
 
 
 def validate(record,ctx,now):

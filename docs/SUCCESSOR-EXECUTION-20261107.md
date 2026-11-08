@@ -31,6 +31,32 @@ cumulative owner snapshots and must not be summed; signature phase counters keep
 the existing delta semantics. No freshness limit, operation budget or cache
 capacity has increased. Kali acceptance remains required.
 
+## Second November 8 host result and snapshot correction
+
+The 03:59:10 UTC report identifies the computational-owner correction but still
+returns `review-required`: 21 setup/boundary/owner checks passed and zero of seven
+connected checks completed. The measured operation took 14,326.928 ms and returned
+1,241 ms late. Signing left 2,239 ms; submission took 3,474.309 ms, made four
+synthetic preflight reads and expired before sending. No synthetic send occurred.
+The boundary state was unavailable after the exception; it is not asserted absent.
+Preservation checks were not reached, not evidence of a detected source mutation.
+
+A full-size real-clock profile found repeated preparation replay in retirement
+context construction. The correction returns the validated signing state and
+preparation alongside transport status from one pinned read snapshot. Retirement
+uses those outputs for its account-role projection before ending that snapshot.
+It accepts no caller-supplied validation result. Boundary, acknowledgment, capture,
+expiry and private signer marker checks still run. Fresh replay remains required
+on subsequent calls, after network calls and inside the pre-send writer boundary.
+
+The old and new retirement contexts and hashes compare exactly; the new path
+replays preparation once instead of four times. Six additional tests cover this
+equality, snapshot ownership, changed journals, orphan records, clock/ACK refusal
+and exception cleanup. The public offline CLI now expects **4 setup + 12 boundary
++ 5 owner + 6 snapshot + 7 connected = 34 checks** and identifies
+`retirement-snapshot-replay-1`. Earlier 28-check results above are historical.
+No deadline, account check, request count or spending limit was relaxed.
+
 ## What is connected
 
 The existing eight expiry/account reads and twenty quote/simulation reads feed
@@ -72,7 +98,7 @@ complete report is `offline-integration-passed` only after all of these pass:
    inferred from a finalized RPC claim.
 
 The corrected command also runs four fixture-setup, twelve composition fault
-checks and five scope-ownership checks. Expected total: **28 checks**.
+checks, five scope-ownership checks and six snapshot-replay checks. Expected total: **34 checks**.
 Temporary data is removed, including on a failed phase. A failed report remains
 `review-required`; it is not approval to repeat an operational signing attempt.
 
@@ -92,6 +118,19 @@ identity through actual nested calls, mutation, exception cleanup, thread
 isolation, strict opt-in flags and original capacity limits. Six CLI output/scope
 refusals preserved files. Both partition checks, source hygiene and staged
 whitespace checks passed.
+
+The pinned-snapshot follow-up passed 51 related regression tests: 12 retirement,
+17 successor submission, 12 original transport (including its 24-case portable
+exercise), and 10 read-snapshot tests. The six new snapshot tests also passed.
+Six CLI output/scope refusals preserved files. Source hygiene covers 936 tracked
+files; both partition coverage tests passed. ResourceWarnings were errors in the
+transport and snapshot regression runs.
+
+The full corrected offline CLI passed **all 34 checks**. Collection, signing,
+preflight and the single synthetic send took **4,945.738 ms**, leaving **6,310 ms**
+on the original deadline. Lost-response recovery, repeated recovery, original
+source preservation and conservative held accounting all passed; cleanup passed.
+This is local synthetic timing, not Kali acceptance or real RPC latency evidence.
 
 ## Kali command
 

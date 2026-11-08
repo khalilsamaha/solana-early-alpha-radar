@@ -93,7 +93,9 @@ class ExitSubmission:
         finally:
             self.db.execute('PRAGMA query_only='+str(int(query_only)))
 
-    def signing(self):
+    def signing(self,*,_preparation_sink=None):
+        check(_preparation_sink is None or callable(_preparation_sink),
+              'exit-preparation-sink')
         active=[]
         state=handoff.read(self.b,self.b.j.now(),_preparation_sink=active.append)
         check(state is not None and state['signed'] is not None,'exit-signed-ack-required')
@@ -105,6 +107,7 @@ class ExitSubmission:
         slots=[e['simulationItem']['result']['context']['slot'],e['capture']['evidence']['accounts']['result']['context']['slot'],e['price']['quote']['contextSlot']]
         for slot in slots:uint(slot,2**53-1,'exit-minimum-context')
         state['minimumContextSlot']=max(slots)
+        if _preparation_sink is not None:_preparation_sink(active[0])
         return state
 
     def row(self,table,cap):
@@ -217,7 +220,18 @@ class ExitSubmission:
             return self._status(rpc)
 
     def _status(self,rpc):
-        signed=self.signing();boundary=self._boundary(signed);ack=self.row(ACK,1024)
+        return self._status_evidence(rpc)[0]
+
+    def _status_evidence(self,rpc=None):
+        """Return status and its replayed inputs from this pinned snapshot.
+
+        Inputs are read and validated here, never supplied by a caller. The
+        returned values must not be reused across a transaction or RPC boundary.
+        """
+        check(self.db.in_transaction,'exit-read-snapshot-required')
+        active=[]
+        signed=self.signing(_preparation_sink=active.append)
+        boundary=self._boundary(signed);ack=self.row(ACK,1024)
         if ack is not None:
             fields(ack,{'state','boundarySha256','atMs'},'exit-ack-schema')
             check(boundary is not None and ack['boundarySha256']==digest(boundary) and ack['state'] in ('rpc-acknowledged','transport-unknown','quarantined'),'exit-ack-binding')
@@ -237,7 +251,7 @@ class ExitSubmission:
         if outcome:state=outcome
         if quarantined:state='quarantined'
         calls=[] if rpc is None else rpc.calls
-        return dict(format=VERSION,state=state,applicationSendBoundaryRecorded=boundary is not None,
+        result=dict(format=VERSION,state=state,applicationSendBoundaryRecorded=boundary is not None,
             rpcAcknowledgedSignature=bool(ack and ack['state']=='rpc-acknowledged'),receiptCaptureCount=len(captures),
             finalizedEvidenceObserved=bool(outcome and not quarantined),terminalEvidenceSha256=identity,
             networkRequestsThisRun=len(calls),sendRequestsThisRun=sum(x['method']=='sendTransaction' for x in calls),
@@ -245,6 +259,7 @@ class ExitSubmission:
             receiptEffectsReconciled=False,residualInventoryVerified=False,reservationReleased=False,
             allocationTransferred=False,nextCycleAuthorized=False,runtimeIntegrated=False,
             provenanceBasis='Fixed devnet endpoint RPC claims and application journal; not cryptographic finality proof')
+        return result,signed,active[0]
 
 
 def submit(home,wallet,pool,*,allow_devnet_submit=False,opener=None,clock=view.now,_guard=None,_rpc_sink=None):

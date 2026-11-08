@@ -139,3 +139,9 @@ The [fresh collection-to-signing integration](docs/FRESH-SIGNING-INTEGRATION.md)
 connects bounded raw collection to the durable signer handoff internally. Its
 17-case CLI is synthetic-only; live sender integration and latency acceptance
 remain open. The isolated unsigned commit/recovery host gate passed November 2.
+
+Current timing follow-up: the second November 8 successor host rehearsal still
+expired before sending. The [snapshot replay correction](docs/SUCCESSOR-EXECUTION-20261107.md#second-november-8-host-result-and-snapshot-correction)
+removes repeated validation within one pinned retirement read and expands the
+offline gate to 34 checks. Host acceptance remains pending; no runtime deployment
+or live execution is included.

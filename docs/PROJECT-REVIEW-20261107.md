@@ -132,3 +132,14 @@ A small funded mechanics test and a strategy pilot answer different questions. N
 - Strategy: a frozen prospective rule must show credible net economic evidence, with failures, execution costs, concentration and uncertainty accounted for.
 
 There is no evidence-backed profitable-launch date. The useful schedule is milestone-based: finish the finite devnet closure, review the economic hypothesis, then decide whether a funded mechanics test would answer an unresolved question. Waiting more days alone does not satisfy these gates.
+
+## November 8 pinned-snapshot follow-up
+
+The 03:59:10 UTC owner-corrected host report still failed: 14,326.928 ms total,
+1,241 ms late, four synthetic preflight reads and zero sends. The 21 setup,
+boundary and owner checks passed; connected recovery/preservation did not run.
+The next bounded correction removes three duplicate preparation replays inside
+each retirement context, retaining every original source, clock, signature,
+transport and backend check. It adds six snapshot/equality/mutation tests to the
+public offline gate. Host acceptance and later real-provider timing are still
+required; research criteria and the no-funded-pilot decision are unchanged.
