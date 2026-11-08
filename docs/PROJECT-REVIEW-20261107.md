@@ -24,6 +24,29 @@ cannot authorize execution, enlarge freshness or replace uninstrumented host
 acceptance. The [combined rehearsal record](SUCCESSOR-EXECUTION-20261107.md)
 preserves earlier failures and the snapshot correction.
 
+## November 8 diagnostic accepted; lifecycle correction pending Kali
+
+The cost report captured at 05:38:36 UTC identifies clean commit `1f2c910`,
+Python 3.14.6 and Node 24.19.0 before and after the run. Span data is valid;
+the complete acceptance suite was not run. The instrumented path took
+14,884.318 ms and returned 827 ms late before sending. It did not establish
+recovery or preservation acceptance. Cleanup passed, with no real network,
+wallet, transaction or runtime effects.
+
+Forty preparation replays used 6,026.277 ms of exclusive wall time and
+5,919.947 ms of thread CPU. Other lifecycle work used 4,188.953 ms exclusive wall
+time; journal commit contexts totalled only 9.913 ms. This points to repeated
+CPU work in this sample, not a demonstrated disk-flush problem. Runtime/version
+and hardware differences remain confounded; the report does not prove Python
+3.14 is the cause. Earlier uninstrumented and current instrumented totals are
+not a controlled performance comparison.
+
+The [bounded lifecycle correction](LIFECYCLE-SNAPSHOT-REPLAY-20261108.md) changes
+three preparation replays to one inside each unsent lifecycle snapshot, preserving
+fresh checks at later calls, writes, RPC and signer boundaries. Eight new cases
+expand the next offline acceptance gate to 42. The [project timeline](PROJECT-TIMELINE-20261108.md)
+provides conditional estimates; no profitable-launch date is established.
+
 ## What the evidence establishes
 
 | Track | Evidence | Current conclusion |

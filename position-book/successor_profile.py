@@ -186,7 +186,7 @@ def run():
                 'Only the first connected 1 MiB attempt is instrumented; setup and recovery remain outside the spans.',
                 'Real clocks and original deadlines are unchanged. Instrumentation can itself cause expiry.',
                 'A diagnostic-collected state means usable timings, not execution or timing acceptance.',
-                'This runs the connected rehearsal, not the separate 27 preliminary acceptance tests.',
+                'This runs the connected rehearsal, not the separate preliminary acceptance tests.',
                 'Nested inclusive times overlap; exclusive time excludes directly recorded children only.',
                 'Thread CPU excludes child processes. Wall minus thread CPU is not proof of disk or scheduler delay.',
                 'No arguments, SQL, transaction bytes, keys, arbitrary exceptions or source paths are exported.'])

@@ -79,6 +79,21 @@ preservation. Local source hygiene and both partition tests passed. This confirm
 an environment-dependent timing difference, not its cause or Kali acceptance.
 The next step is [bounded offline phase-cost profiling](SUCCESSOR-PROFILE-20261108.md).
 
+## November 8 cost profile and lifecycle correction
+
+The 05:38:36 UTC Kali profile is `diagnostic-collected`, not timing acceptance.
+The instrumented attempt returned 827 ms late after four sender preflight reads
+and zero sends. Its clean source revision is `1f2c910`, Python 3.14.6, Node
+24.19.0. Forty preparation replays consumed about 6.03 seconds exclusive wall
+time. See [the measured correction](LIFECYCLE-SNAPSHOT-REPLAY-20261108.md).
+
+The current public gate includes eight additional lifecycle snapshot checks:
+**4 setup + 12 boundary + 5 ownership + 6 retirement snapshot + 8 lifecycle
+snapshot + 7 connected = 42**. Earlier 34-check observations remain historical.
+Expect `lifecycleReplayVersion=lifecycle-snapshot-replay-1`; all 42 cases,
+positive original-deadline headroom, completed preservation and cleanup are
+required for Kali acceptance. This is still a disposable offline rehearsal.
+
 ## What is connected
 
 The existing eight expiry/account reads and twenty quote/simulation reads feed
@@ -119,8 +134,9 @@ complete report is `offline-integration-passed` only after all of these pass:
 7. All held accounting remains conservative; no receipt settlement or closure is
    inferred from a finalized RPC claim.
 
-The corrected command also runs four fixture-setup, twelve composition fault
-checks, five scope-ownership checks and six snapshot-replay checks. Expected total: **34 checks**.
+The current command also runs four fixture-setup, twelve composition fault
+checks, five scope-ownership checks, six retirement snapshot-replay checks and
+eight lifecycle snapshot-replay checks. Expected total: **42 checks**.
 Temporary data is removed, including on a failed phase. A failed report remains
 `review-required`; it is not approval to repeat an operational signing attempt.
 

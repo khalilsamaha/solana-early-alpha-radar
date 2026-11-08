@@ -1,5 +1,11 @@
 # Offline successor phase-cost diagnosis — November 8
 
+Current status: the 05:38:36 UTC Kali profile supplied valid diagnostic evidence
+but missed timing by 827 ms before sending. Its findings and the next bounded
+correction are recorded in [lifecycle snapshot replay](LIFECYCLE-SNAPSHOT-REPLAY-20261108.md).
+The current uninstrumented acceptance gate has 42 checks. Counts and local
+measurements below describe the earlier diagnostic package, not current acceptance.
+
 ## Why this is the next gate
 
 The 04:21:39 UTC Kali report for the pinned-snapshot correction passed all 27
@@ -102,6 +108,6 @@ Upload the resulting public report even if its underlying rehearsal is late.
 No Docker restart, service installation or operational wallet action is needed.
 Compare the host's span counts and stage costs, runtime metadata and location of
 deadline crossing before designing a bounded correction. After a correction,
-the unchanged uninstrumented 34-check Kali gate, including recovery and
+the full uninstrumented Kali gate (now 42 checks), including recovery and
 preservation, remains required. Real-provider timing and exact successor receipt
 reconciliation remain later separately authorized gates.

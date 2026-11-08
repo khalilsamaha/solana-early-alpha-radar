@@ -98,6 +98,11 @@ class ExitSubmission:
               'exit-preparation-sink')
         active=[]
         state=handoff.read(self.b,self.b.j.now(),_preparation_sink=active.append)
+        state=self._signed_generation(state,active)
+        if _preparation_sink is not None:_preparation_sink(active[0])
+        return state
+
+    def _signed_generation(self,state,active):
         check(state is not None and state['signed'] is not None,'exit-signed-ack-required')
         # Use the same active generation as the signing request. An expired
         # original can have older slots than the linked replacement.
@@ -106,9 +111,25 @@ class ExitSubmission:
         e=active[0]['evidence']
         slots=[e['simulationItem']['result']['context']['slot'],e['capture']['evidence']['accounts']['result']['context']['slot'],e['price']['quote']['contextSlot']]
         for slot in slots:uint(slot,2**53-1,'exit-minimum-context')
-        state['minimumContextSlot']=max(slots)
-        if _preparation_sink is not None:_preparation_sink(active[0])
-        return state
+        return dict(state,minimumContextSlot=max(slots))
+
+    def _lifecycle_evidence(self,clock=None):
+        """Read preparation/signing/transport together, with no supplied verdict.
+
+        Only the owning snapshot may consume these outputs. Unsigned/quarantined
+        signing states keep the lifecycle's existing early-return behavior.
+        """
+        check(self.db.in_transaction,'exit-read-snapshot-required')
+        clock=self.b.j.now if clock is None else clock
+        check(callable(clock),'exit-lifecycle-clock')
+        active=[]
+        signed=handoff.read(self.b,clock(),_preparation_sink=active.append)
+        check(len(active)==int(signed is not None),'exit-preparation-required')
+        prepared=active[0] if signed is not None else handoff.preparation.saved(self.b,clock())
+        status=None
+        if signed is not None and signed['signed'] is not None and signed['state']!='exit-signing-quarantined':
+            status=self._status_for_signing(self._signed_generation(signed,active))
+        return prepared,signed,status
 
     def row(self,table,cap):
         found=self.db.execute('SELECT type FROM sqlite_master WHERE name=?',(table,)).fetchone()
@@ -231,6 +252,11 @@ class ExitSubmission:
         check(self.db.in_transaction,'exit-read-snapshot-required')
         active=[]
         signed=self.signing(_preparation_sink=active.append)
+        return self._status_for_signing(signed,rpc),signed,active[0]
+
+    def _status_for_signing(self,signed,rpc=None):
+        """Internal transport projection of the signing replay in this snapshot."""
+        check(self.db.in_transaction,'exit-read-snapshot-required')
         boundary=self._boundary(signed);ack=self.row(ACK,1024)
         if ack is not None:
             fields(ack,{'state','boundarySha256','atMs'},'exit-ack-schema')
@@ -259,7 +285,7 @@ class ExitSubmission:
             receiptEffectsReconciled=False,residualInventoryVerified=False,reservationReleased=False,
             allocationTransferred=False,nextCycleAuthorized=False,runtimeIntegrated=False,
             provenanceBasis='Fixed devnet endpoint RPC claims and application journal; not cryptographic finality proof')
-        return result,signed,active[0]
+        return result
 
 
 def submit(home,wallet,pool,*,allow_devnet_submit=False,opener=None,clock=view.now,_guard=None,_rpc_sink=None):

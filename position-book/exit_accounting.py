@@ -77,9 +77,14 @@ def derive(opened,prepared,boundary,summary,private,policy):
         exitAttemptsConsumed=1,maximumExitAttempts=attempts)
 
 
+def pending(status):
+    """Accounting projection only; the caller independently validates transport."""
+    return dict(state='exit-accounting-pending',accounting=None,evidenceAtMs=0,captureSha256=None,transportState=status['state'])
+
+
 def review(book):
     t=submission.ExitSubmission(book);status=t.status();now=book.j.now()
-    result=dict(state='exit-accounting-pending',accounting=None,evidenceAtMs=0,captureSha256=None,transportState=status['state'])
+    result=pending(status)
     if status['state']=='quarantined':result['state']='quarantined';return result
     if not status['applicationSendBoundaryRecorded']:return result
     signing=t.signing();prepared=submission.handoff.preparation.saved(book,now);opened=entry.saved(book.db,now)
