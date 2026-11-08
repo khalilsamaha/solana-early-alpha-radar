@@ -1,7 +1,38 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {projectHealth,collect,getJson,age} from './health.mjs';
+import {projectHealth,projectLaunchRegistry,collect,getJson,age} from './health.mjs';
 const response=(body,status=200)=>new Response(JSON.stringify(body),{status});
+const registry=()=>({version:'launch-registry-1',retained:12,limits:{maxRows:20,retentionDays:30},
+ sinceRestart:{inserted:2,duplicate:1,rejected:0,capacityDropped:3,pruned:0,errors:0}});
+test('launch health preserves full capacity and cumulative counters using an allowlist',()=>{
+ const input=registry();input.retained=20;input.private='secret';input.limits.path='secret';input.sinceRestart.rawError='secret';
+ input.coverage={sourceIdentity:'secret'};
+ const result=projectHealth({ready:true,launchRegistry:input},1000);
+ assert.equal(result.ready,true);
+ assert.deepEqual(result.launchRegistry,{state:'read',version:'launch-registry-1',retained:20,
+  limits:{maxRows:20,retentionDays:30},sinceRestart:registry().sinceRestart});
+ assert(!JSON.stringify(result).includes('secret'));
+});
+test('invalid or missing launch identity and capacity never become available',()=>{
+ for(const value of [undefined,null,[],{},'registry'])assert.deepEqual(projectLaunchRegistry(value),{state:'unavailable'});
+ const wrong=registry();wrong.version='future-version';assert.equal(projectLaunchRegistry(wrong).state,'unavailable');
+ for(const field of ['retained','maxRows','retentionDays']){
+  for(const value of [undefined,null,true,'12',-1,1.5,NaN,Infinity,Number.MAX_SAFE_INTEGER+1,...(field==='retained'?[]:[0])]){
+   const input=registry();(field==='retained'?input:input.limits)[field]=value;
+   assert.deepEqual(projectLaunchRegistry(input),{state:'unavailable'});
+  }
+ }
+ const empty=registry();empty.retained=0;assert.equal(projectLaunchRegistry(empty).retained,0);
+});
+test('missing and invalid launch counters stay unknown while valid zero survives',()=>{
+ for(const value of [undefined,null,true,'0',-1,.5,NaN,Infinity,Number.MAX_SAFE_INTEGER+1]){
+  const input=registry();input.sinceRestart.capacityDropped=value;
+  const result=projectLaunchRegistry(input);
+  assert.equal(result.state,'read');assert.equal(result.sinceRestart.capacityDropped,null);assert.equal(result.sinceRestart.errors,0);
+ }
+ const input=registry();delete input.sinceRestart;
+ assert(Object.values(projectLaunchRegistry(input).sinceRestart).every(x=>x===null));
+});
 test('health exports allowlisted operational fields, never error text or research outcomes',()=>{
  const r=projectHealth({ready:true,lastLoopAt:900,lastMarketAt:800,notifications:{sent:1},
   providers:{dex:{state:'error',lastError:'secret',lastSuccessAt:700}},

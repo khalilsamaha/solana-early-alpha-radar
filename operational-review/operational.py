@@ -121,6 +121,23 @@ def findings(local,health,frozen,now):
         n=h.get('notifications',{})
         if n.get('failed',0): add('notification-failures-recorded')
         if n.get('pending',0): add('notifications-pending','info')
+        registry=h.get('launchRegistry')
+        def count(value): return type(value) is int and 0<=value<=9007199254740991
+        limits=registry.get('limits') if isinstance(registry,dict) else None
+        if (not isinstance(registry,dict) or registry.get('state')!='read'
+            or registry.get('version')!='launch-registry-1' or not isinstance(limits,dict)
+            or not count(registry.get('retained')) or not count(limits.get('maxRows')) or limits['maxRows']==0
+            or not count(limits.get('retentionDays')) or limits['retentionDays']==0):
+            add('launch-registry-unavailable')
+        else:
+            if registry['retained']>=limits['maxRows']: add('launch-registry-capacity-reached','error')
+            counters=registry.get('sinceRestart')
+            if not isinstance(counters,dict): counters={}
+            if any(not count(counters.get(k)) for k in ('inserted','duplicate','rejected','capacityDropped','pruned','errors')):
+                add('launch-registry-counters-unavailable')
+            # These are cumulative counters, not current rates or incident timestamps.
+            if count(counters.get('capacityDropped')) and counters['capacityDropped']>0: add('launch-registry-capacity-drops-recorded')
+            if count(counters.get('errors')) and counters['errors']>0: add('launch-registry-errors-recorded')
     obs=local.get('observer',{})
     if obs.get('state')!='read': add('observer-metadata-unavailable')
     else:
