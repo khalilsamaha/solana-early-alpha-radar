@@ -1,4 +1,5 @@
 import unittest,copy,tempfile,sqlite3,json,time
+from contextlib import closing
 from pathlib import Path
 from quality_report import shadow_summary,quote_movements,capture
 class Tests(unittest.TestCase):
@@ -37,7 +38,7 @@ class Tests(unittest.TestCase):
  def test_readonly_capture_excludes_unrelated_and_preserves_db(self):
   with tempfile.TemporaryDirectory() as tmp:
    p=Path(tmp)/'db.sqlite';now=int(time.time()*1000)
-   with sqlite3.connect(p) as db:
+   with closing(sqlite3.connect(p)) as db, db:
     db.executescript('CREATE TABLE events(seq INTEGER PRIMARY KEY,kind TEXT,at INTEGER,data TEXT); CREATE INDEX events_at ON events(kind,at); CREATE TABLE kv(key TEXT PRIMARY KEY,data TEXT);')
     db.execute('INSERT INTO events VALUES(1,?,?,?)',('fast-shadow-entries',now,json.dumps({'id':'e','at':now})))
     db.execute('INSERT INTO events VALUES(2,?,?,?)',('outbox',now,'do not read'))

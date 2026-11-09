@@ -156,8 +156,12 @@ def rpc(network, method, params, request_id, opener):
     request = urllib.request.Request(ENDPOINTS[network], method='POST',
         headers={'Content-Type': 'application/json'}, data=json.dumps(dict(
             jsonrpc='2.0', id=request_id, method=method, params=params), allow_nan=False).encode())
-    with opener.open(request, timeout=5) as response:
-        raw = response.read(MAX_RESPONSE + 1)
+    try:
+        with opener.open(request, timeout=5) as response:
+            raw = response.read(MAX_RESPONSE + 1)
+    except urllib.error.HTTPError as error:
+        error.close()
+        raise
     require(len(raw) <= MAX_RESPONSE, 'rpc-response-size')
     result = json.loads(raw, object_pairs_hook=unique, parse_constant=no_constant)
     require(type(result) is dict and result.get('jsonrpc') == '2.0' and

@@ -2,6 +2,7 @@
 """Offline, bounded evidence export from an already completed Radar backup."""
 import argparse
 import collections
+from contextlib import closing
 import datetime as dt
 import gzip
 import hashlib
@@ -256,7 +257,7 @@ def main():
     signal.signal(signal.SIGALRM, lambda *_: (_ for _ in ()).throw(TimeoutError('Hard 150-second time limit reached')))
     signal.alarm(150)
     before = path.stat()
-    with sqlite3.connect(path.as_uri()+'?mode=ro&immutable=1', uri=True) as db:
+    with closing(sqlite3.connect(path.as_uri()+'?mode=ro&immutable=1', uri=True)) as db, db:
         db.execute('PRAGMA query_only=ON')
         db.execute('PRAGMA cache_size=-8192')
         db.execute('PRAGMA mmap_size=0')

@@ -34,7 +34,12 @@ class InventoryTests(unittest.TestCase):
                          '6c14de29ad608342116107ed7aa575fd35fa4047f271d0fbefe84cbf5ccdfbcd')
         m = json.loads(inventory.MANIFEST.read_text())
         root = inventory.ROOT
-        self.assertEqual(inventory.disk_inventory(root / 'scanner', m)['matched'], len(m['scannerFiles']))
+        scanner = inventory.disk_inventory(root / 'scanner', m)
+        self.assertEqual(scanner['matched'], len(m['scannerFiles']) - 1)
+        self.assertEqual(scanner['mismatched'], ['scripts/evidence-check.py'])
+        self.assertEqual(scanner['unavailable'], [])
+        self.assertEqual(inventory.file_hash(root / 'scanner', 'scripts/evidence-check.py'),
+                         'ab07ae1cc77c798324415e71deae0412cff92da6503243af21112872c530f575')
         source = json.loads((root / 'quote-observer' / 'manifest.json').read_text())
         self.assertEqual(set(source['files']), set(m['observerFiles']))
         differences = set()

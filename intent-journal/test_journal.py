@@ -1,5 +1,6 @@
 import base64
 import concurrent.futures
+from contextlib import closing
 import copy
 import json
 import os
@@ -250,7 +251,7 @@ class JournalTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'unsafe'): Journal(link)
         link.unlink()
         foreign = Path(self.tmp.name) / 'foreign.sqlite'
-        with sqlite3.connect(foreign) as db: db.execute('CREATE TABLE other(x)')
+        with closing(sqlite3.connect(foreign)) as db, db: db.execute('CREATE TABLE other(x)')
         foreign.chmod(0o600)
         with self.assertRaisesRegex(ValueError, 'unrecognized'): Journal(foreign)
         Path(self.tmp.name).chmod(0o755)
