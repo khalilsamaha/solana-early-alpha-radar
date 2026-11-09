@@ -176,10 +176,12 @@ def retirement_projection(book,home,wallet,pool,clock):
     from retired_exit_successor import present as successor_present, row as successor_row
     from successor_signing_handoff import present as successor_signing_present
     from successor_submission import present as successor_transport_present
+    from successor_accounting import present as successor_accounting_present
     import restricted_successor_signer as successor_backend
     sibling=accounting.submission.handoff.storage(home).parent
     markers=any(os.path.lexists(sibling/name) for name in (successor_backend.ATTEMPT,successor_backend.ACK))
     if not present(book):
+        check(not successor_accounting_present(book),'snapshot-orphan-successor-accounting')
         check(not markers,'snapshot-orphan-successor-backend')
         check(not successor_present(book),'snapshot-orphan-successor')
         check(not successor_signing_present(book),'snapshot-orphan-successor-signing')
@@ -187,7 +189,8 @@ def retirement_projection(book,home,wallet,pool,clock):
         return None
     from admission_lifecycle import projection
     phase,_,amounts,stages,ids,_=projection(book,home,wallet,pool,clock)
-    check(phase=='exit-retired-held' and amounts is not None,'snapshot-retirement-conflict')
+    check(phase in ('exit-retired-held','successor-accounted-flat-held','successor-accounted-failed-held')
+          and amounts is not None,'snapshot-retirement-conflict')
     result=dict(state=phase,recordSha256=ids['exitRetirementSha256'],scopedAccounting=amounts)
     if 'exitSuccessorSha256' in ids:result['unsignedSuccessorSha256']=ids['exitSuccessorSha256']
     if 'exitSuccessorSigningHeadSha256' in ids:
@@ -196,6 +199,9 @@ def retirement_projection(book,home,wallet,pool,clock):
     if 'exitSuccessorTransportHeadSha256' in ids:
         result['successorTransportHeadSha256']=ids['exitSuccessorTransportHeadSha256']
         result['successorTransportState']=stages['exitSuccessorTransport']
+    if 'exitSuccessorAccountingSha256' in ids:
+        result['successorAccountingSha256']=ids['exitSuccessorAccountingSha256']
+        result['successorAccountingState']=stages['exitSuccessorAccounting']
     if markers:
         from successor_signing_handoff import load
         record=successor_row(book)

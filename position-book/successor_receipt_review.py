@@ -69,6 +69,7 @@ def review(root, book, wallet, pool, expected, clock):
     record, _, retired, signed, saved = submission.load(root, book, wallet, pool, expected, clock)
     result = dict(format=VERSION, state='successor-receipt-pending-held', successorSha256=digest(record),
         transportState='not-attempted' if saved is None else saved['state'], effects=None,
+        evidenceAtMs=0, captureSha256=None,
         receiptEffectsValidated=False, accountingApplied=False, receiptEffectsReconciled=False,
         scopedClosureRecorded=False, currentWalletBalanceEstablished=False,
         retiredAttemptNonExecutionProven=False, sourceStateChanged=False,
@@ -103,12 +104,15 @@ def review(root, book, wallet, pool, expected, clock):
             if kind == 'quarantined': raise ValueError('successor-receipt-conflict')
             if kind not in original.receipt.TERMINAL.values(): continue
             observed = effects(opened, record, retired, summary, private, book.policy)
-            if result['effects'] is not None and result['effects'] != observed:
-                raise ValueError('successor-receipt-conflicting-effects')
-            result.update(state=observed['state'], effects=deepcopy(observed), receiptEffectsValidated=True)
+            if result['effects'] is not None:
+                if result['effects'] != observed: raise ValueError('successor-receipt-conflicting-effects')
+                continue
+            result.update(state=observed['state'], effects=deepcopy(observed), receiptEffectsValidated=True,
+                          evidenceAtMs=finished, captureSha256=digest(capture))
         except (ValueError, KeyError, TypeError, IndexError) as exc:
             if str(exc) == 'node-runtime-unavailable': raise
-            result.update(state='quarantined', effects=None, receiptEffectsValidated=False)
+            result.update(state='quarantined', effects=None, receiptEffectsValidated=False,
+                          evidenceAtMs=0, captureSha256=None)
             return result
     return result
 

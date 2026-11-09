@@ -18,7 +18,7 @@ MAX_READ_MS=120000
 ENTRY_TABLES={'admission_submission','admission_submission_ack','admission_rpc_captures',
               'admission_receipt_events','admission_receipt_raw','admission_entry_accounting'}
 EXIT_TRANSPORT={'admission_exit_submission','admission_exit_submission_ack','admission_exit_rpc_captures'}
-EXIT_TABLES=EXIT_TRANSPORT|{'admission_successor_transport','admission_successor_signing','admission_exit_successor','admission_exit_retirement','admission_exit_continuation','admission_exit_replacement','admission_exit_preparation','admission_exit_signing','admission_exit_accounting','admission_exit_closure'}
+EXIT_TABLES=EXIT_TRANSPORT|{'admission_successor_accounting','admission_successor_transport','admission_successor_signing','admission_exit_successor','admission_exit_retirement','admission_exit_continuation','admission_exit_replacement','admission_exit_preparation','admission_exit_signing','admission_exit_accounting','admission_exit_closure'}
 KNOWN={'admission_policy','admission_events'}|ENTRY_TABLES|EXIT_TABLES
 
 
@@ -158,7 +158,9 @@ def projection(book,root,wallet,pool,clock):
     from retired_exit_successor import present as successor_present,replay as successor_replay
     import successor_signing_handoff as successor_signing
     import successor_submission as successor_transport
+    import successor_accounting
     if not present(book):
+        check(not successor_accounting.present(book),'lifecycle-orphan-successor-accounting')
         check(not successor_transport.present(book),'lifecycle-orphan-successor-transport')
         check(not successor_signing.present(book),'lifecycle-orphan-successor-signing')
         check(not successor_present(book),'lifecycle-orphan-successor')
@@ -184,7 +186,26 @@ def projection(book,root,wallet,pool,clock):
             ids['exitSuccessorSigningHeadSha256']=signing['headSha256']
             if signing['state']=='successor-signing-quarantined':
                 return 'quarantined',orig,amounts,stages,ids,state
+        if successor_accounting.present(book):
+            settled=successor_accounting.replay(root,book,wallet,pool,digest(successor),clock)
+            stages['exitSuccessorAccounting']=settled['state']
+            ids['exitSuccessorAccountingSha256']=settled['recordSha256']
+            if not settled['accountingUsable']:return 'quarantined',orig,amounts,stages,ids,state
+            effects=settled['effects']
+            amounts.update(sourceProceedsHeldAtomic=effects['sourceProceedsObservedAtomic'],
+                ownedAcquiredHeldAtomic=effects['ownedAcquiredResidualAtomic'],
+                protectedAcquiredInventoryAtomic=effects['protectedAcquiredInventoryAtomic'],
+                feeHeldLamports=effects['projectedFeeHoldAfterKnownFeesLamports'],
+                feePaidLamports=effects['knownFeesPaidLamports'],
+                retiredFeeExposureHeldLamports=effects['retiredFeeExposureHeldLamports'],
+                basis='successor-settled-retired-exposure-held')
+            check(int(orig['feeCommitmentLamports'])==int(amounts['feeHeldLamports'])+int(amounts['feePaidLamports']),
+                  'lifecycle-successor-fee-conservation')
+            check(int(amounts['feeHeldLamports'])>=int(amounts['retiredFeeExposureHeldLamports'])>0,
+                  'lifecycle-retired-exposure-preserved')
+            return settled['state'],orig,amounts,stages,ids,state
     else:
+        check(not successor_accounting.present(book),'lifecycle-orphan-successor-accounting')
         check(not successor_transport.present(book),'lifecycle-orphan-successor-transport')
         check(not successor_signing.present(book),'lifecycle-orphan-successor-signing')
     return 'exit-retired-held',orig,amounts,stages,ids,state

@@ -43,8 +43,9 @@ FIELDS = {'state', 'phase', 'stage', 'coherent', 'stopRequested', 'diagnosticCod
 ATOMIC_FIELDS = {'sourcePrincipalHeldAtomic', 'sourcePrincipalSpentAtomic',
     'sourceProceedsHeldAtomic', 'ownedAcquiredHeldAtomic', 'protectedAcquiredInventoryAtomic',
     'feeHeldLamports', 'feePaidLamports', 'sourceProceedsReleasedAtomic',
-    'unusedFeeReleasedLamports', 'protectedInventoryReleasedAtomic'}
-IDENTITY_FIELDS = {'admissionHeadSha256', 'entryAccountingSha256', 'exitAccountingSha256', 'closureSha256'}
+    'unusedFeeReleasedLamports', 'protectedInventoryReleasedAtomic', 'retiredFeeExposureHeldLamports'}
+IDENTITY_FIELDS = {'admissionHeadSha256', 'entryAccountingSha256', 'exitAccountingSha256', 'closureSha256',
+                   'exitSuccessorAccountingSha256'}
 
 
 def validate(action, *, allow_private_key_signing=False, allow_devnet_submit=False,
