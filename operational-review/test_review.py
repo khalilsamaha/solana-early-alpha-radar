@@ -1,4 +1,5 @@
 import copy
+from contextlib import closing
 import gzip
 import hashlib
 import json
@@ -22,6 +23,9 @@ def baseline():
       'backups':{'jobs':{k:{'evidence':{'status':'read','success':True,'localVerified':True,'cloudVerified':True,'cloud_verified':True,
         'finishedAt':review.datetime.fromtimestamp((NOW-60000)/1000,review.timezone.utc).isoformat()}} for k in ('scanner-local','scanner-cloud','quote-ledger')}}}
     health={'readiness':{'state':'read','httpStatus':200,'ready':True},'health':{'state':'read','lastMarketAgeSeconds':1,'lastLoopAgeSeconds':1}}
+    health['health']['launchRegistry']={'state':'read','version':'launch-registry-1','retained':12,
+      'limits':{'maxRows':20,'retentionDays':30},
+      'sinceRestart':{k:0 for k in ('inserted','duplicate','rejected','capacityDropped','pruned','errors')}}
     study={'state':'registration-verified','preservation':{'state':'indexes-checked','captures':1,'preservationLagSeconds':100}}
     return local,health,study
 
@@ -31,6 +35,31 @@ def codes(args): return {x['code'] for x in review.findings(*args,NOW)}
 
 class OperationalTests(unittest.TestCase):
     def test_good_evidence_has_no_findings(self): self.assertEqual(codes(baseline()),set())
+    def test_full_launch_registry_is_error_even_when_scanner_ready(self):
+        for retained in (20,21):
+            a=baseline();a[1]['health']['ready']=True;a[1]['health']['launchRegistry']['retained']=retained
+            self.assertEqual(review.findings(*a,NOW),[{'code':'launch-registry-capacity-reached','severity':'error'}])
+    def test_historical_launch_counters_do_not_claim_current_capacity_failure(self):
+        a=baseline();c=a[1]['health']['launchRegistry']['sinceRestart'];c['capacityDropped']=3;c['errors']=1
+        self.assertEqual(review.findings(*a,NOW),[
+          {'code':'launch-registry-capacity-drops-recorded','severity':'warning'},
+          {'code':'launch-registry-errors-recorded','severity':'warning'}])
+    def test_unavailable_launch_evidence_is_never_healthy(self):
+        for value in (None,{},[],{'state':'unavailable'}):
+            a=baseline();a[1]['health']['launchRegistry']=value
+            self.assertEqual(codes(a),{'launch-registry-unavailable'})
+        a=baseline();del a[1]['health']['launchRegistry']
+        self.assertEqual(codes(a),{'launch-registry-unavailable'})
+        for key in ('retained','maxRows','retentionDays'):
+            for value in (None,True,'12',-1,1.5,9007199254740992):
+                a=baseline();r=a[1]['health']['launchRegistry'];(r if key=='retained' else r['limits'])[key]=value
+                self.assertEqual(codes(a),{'launch-registry-unavailable'})
+    def test_missing_launch_counters_do_not_hide_full_capacity(self):
+        a=baseline();r=a[1]['health']['launchRegistry'];r['retained']=20;r['sinceRestart']={}
+        self.assertEqual(codes(a),{'launch-registry-capacity-reached','launch-registry-counters-unavailable'})
+        for value in (None,True,'0',-1,1.5,9007199254740992):
+            a=baseline();a[1]['health']['launchRegistry']['sinceRestart']['capacityDropped']=value
+            self.assertEqual(codes(a),{'launch-registry-counters-unavailable'})
     def test_running_process_does_not_mask_stale_poll(self):
         a=baseline();a[0]['observer']['lastPollAgeSeconds']=61
         self.assertIn('observer-poll-stale',codes(a))
@@ -94,7 +123,7 @@ class OperationalTests(unittest.TestCase):
     def test_sqlite_metadata_only_read_and_allowlisted_export(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);dbpath=root/'observer.sqlite'
-            with sqlite3.connect(dbpath) as db:
+            with closing(sqlite3.connect(dbpath)) as db, db:
                 db.execute('CREATE TABLE meta(k TEXT PRIMARY KEY,v TEXT)')
                 for k,v in {'lastPollAt':NOW-2000,'version':'quote-observer-0.9.0','halted':'arbitrary-private-error'}.items():db.execute('INSERT INTO meta VALUES(?,?)',(k,json.dumps(v)))
             config=root/'config.json';config.write_text(json.dumps({'reports':tmp,'private':'secret'}))

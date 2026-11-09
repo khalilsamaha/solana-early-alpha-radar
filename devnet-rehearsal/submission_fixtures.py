@@ -1,4 +1,5 @@
 """Synthetic submission transport. Never opens a socket."""
+from contextlib import closing
 import io,json,sqlite3
 from urllib.error import URLError
 from core import SYSTEM, GENESIS, b58
@@ -9,7 +10,7 @@ class SubmissionRpc:
         self.home,self.mode,self.sent,self.expired=home,mode,sent,expired
         self.calls=[]; self.base=FakeRpc(home=home)
     def plan(self):
-        with sqlite3.connect(self.home/'rehearsal.sqlite') as db:
+        with closing(sqlite3.connect(self.home/'rehearsal.sqlite')) as db, db:
             row=db.execute('SELECT id,signed_wire,result FROM plans ORDER BY id DESC LIMIT 1').fetchone()
         return row[0],row[1],json.loads(row[2]) if row[2] else None
     def open(self,request,timeout):
@@ -28,7 +29,7 @@ class SubmissionRpc:
             value={'context':{'slot':120},'value':[st]}
         elif m=='getLatestBlockhash': value={'context':{'slot':100},'value':{'blockhash':b58(bytes([1])*32),'lastValidBlockHeight':200}}
         elif m=='sendTransaction':
-            with sqlite3.connect(self.home/'rehearsal.sqlite') as db:
+            with closing(sqlite3.connect(self.home/'rehearsal.sqlite')) as db, db:
                 row=db.execute('SELECT state,attempts FROM submission').fetchone()
             assert row==('submission-unknown',1),'Boundary must be durable before transport'
             assert p['params'][0]==self.plan()[1]

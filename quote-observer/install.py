@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Install separate bounded observer; never rebuild or modify scanner."""
 import argparse,hashlib,json,os,re,shutil,subprocess,tempfile,sqlite3,time
+from contextlib import closing
 from pathlib import Path
 BUNDLE=Path(__file__).resolve().parent
 DEST=Path('/usr/local/lib/solana-radar-quotes/0.9.0')
@@ -108,7 +109,7 @@ def main():
             def progress(status,remaining,total):
                 if time.monotonic()>deadline:raise RuntimeError('Ledger safety copy exceeded deadline')
             try:
-                with sqlite3.connect(ledger.as_uri()+'?mode=ro',uri=True) as src, sqlite3.connect(backup) as dst:
+                with closing(sqlite3.connect(ledger.as_uri()+'?mode=ro',uri=True)) as src, closing(sqlite3.connect(backup)) as dst, src, dst:
                     src.backup(dst,pages=1024,progress=progress)
                     dst.set_progress_handler(lambda:int(time.monotonic()>deadline),1000)
                     if dst.execute('PRAGMA quick_check').fetchall()!=[('ok',)]:raise RuntimeError('Ledger safety copy failed integrity check')

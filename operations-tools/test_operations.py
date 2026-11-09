@@ -1,4 +1,5 @@
 import importlib.util, json, sqlite3, tempfile, unittest, time
+from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 import quote_backup as backup
@@ -6,7 +7,7 @@ from launch_audit import audit,FIELDS
 
 class OperationsTests(unittest.TestCase):
     def ledger(self,path):
-        with sqlite3.connect(path) as db:
+        with closing(sqlite3.connect(path)) as db, db:
             db.executescript('CREATE TABLE meta(k TEXT PRIMARY KEY,v TEXT);CREATE TABLE signals(seq INTEGER PRIMARY KEY,at INTEGER,cohort TEXT,mint TEXT,decision TEXT,detected INTEGER,data TEXT);CREATE TABLE probes(seq INTEGER PRIMARY KEY,at INTEGER,mint TEXT,state TEXT,data TEXT);CREATE TABLE incidents(at INTEGER,kind TEXT,detail TEXT);')
             for k,v in {'sourceIdentity':'dev:ino','cursor':{'alerts':42},'samplingRegistration':{'id':'frozen','at':1},'registeredAt':1}.items():db.execute('INSERT INTO meta VALUES(?,?)',(k,json.dumps(v)))
             db.execute("INSERT INTO signals VALUES(42,1,'baseline','mint','admitted',1,'{}')")
@@ -15,7 +16,7 @@ class OperationsTests(unittest.TestCase):
     def test_live_wal_snapshot_restore_preserves_every_table_and_cursor_without_recovery(self):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d);src=self.ledger(root/'source.sqlite')
-            with sqlite3.connect(src) as writer:
+            with closing(sqlite3.connect(src)) as writer, writer:
                 writer.execute('PRAGMA journal_mode=WAL');writer.execute("INSERT INTO incidents VALUES(2,'test','evidence')");writer.commit()
                 expected=backup.logical_summary(src);result=backup.backup(src,root/'output')
                 self.assertTrue(result['success']);self.assertFalse(result['cloudVerified'])
@@ -56,7 +57,7 @@ class OperationsTests(unittest.TestCase):
     def test_audit_unknown_zero_and_reported_creator_roles(self):
         with tempfile.TemporaryDirectory() as d:
             file=Path(d)/'radar.sqlite';now=int(time.time()*1000)
-            with sqlite3.connect(file) as db:
+            with closing(sqlite3.connect(file)) as db, db:
                 db.executescript('CREATE TABLE kv(key TEXT PRIMARY KEY,data TEXT);CREATE TABLE launch_registry(mint TEXT PRIMARY KEY,received_at INTEGER,data TEXT);')
                 for n in range(2):
                     e={'version':'launch-registry-1','receivedAt':now,'availableAt':now,'fields':{'creatorReported':'actor','traderReported':'other','initialBuyReported':'0'}}

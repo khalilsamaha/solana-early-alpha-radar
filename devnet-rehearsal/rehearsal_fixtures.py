@@ -1,4 +1,5 @@
 """Synthetic RPC only: no socket, chain access, faucet or broadcaster."""
+from contextlib import closing
 import io
 import json
 import sqlite3
@@ -24,7 +25,7 @@ class FakeRpc:
             if mode=='regressed-context': value['context']['slot']=99
         elif method=='simulateTransaction':
             if self.home:
-                with sqlite3.connect(self.home/'rehearsal.sqlite') as db:
+                with closing(sqlite3.connect(self.home/'rehearsal.sqlite')) as db, db:
                     row=db.execute('SELECT state,signed_wire FROM plans ORDER BY id DESC LIMIT 1').fetchone()
                 assert row==('signed-not-submitted',p['params'][0]), 'Signed bytes must be committed before simulation'
             if mode=='timeout': raise URLError('private-error-marker')

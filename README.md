@@ -1,5 +1,10 @@
 # Solana Early Alpha Radar
 
+**Current working agenda — 8 November 2026:** [independent review, priorities,
+dated checkpoints and acceptance gates](docs/PROJECT-AGENDA-20261108.md).
+PR #79 is merged as `e62e2f2`, with all 12 post-merge checks passed. The agenda
+supersedes the phase ordering below; dated release paragraphs preserve history.
+
 Research system for discovering Solana tokens, recording paper signals and observing walletless route quotes. The scanner and quote observer do not trade. Separate, explicitly invoked tools can sign and submit tightly scoped **devnet** test transactions; they are not connected to trading signals or mainnet.
 
 **Latest integration consolidation: PR #68, 1 November 2026.** Fresh exit

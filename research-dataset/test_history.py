@@ -1,4 +1,5 @@
 import copy
+from contextlib import closing
 import gzip
 import json
 import os
@@ -18,7 +19,7 @@ HOUR = 3600000
 
 
 def ledger(path, reports):
-    with sqlite3.connect(path) as db:
+    with closing(sqlite3.connect(path)) as db, db:
         db.executescript('''
           PRAGMA journal_mode=WAL;
           CREATE TABLE meta(k TEXT PRIMARY KEY,v TEXT NOT NULL);
@@ -95,7 +96,7 @@ class HistoryTests(unittest.TestCase):
         def publishing(path, data):
             nonlocal written
             if not written:
-                with sqlite3.connect(self.db) as db:
+                with closing(sqlite3.connect(self.db)) as db, db:
                     insert(db, later)
                 written = True
             original(path, data)
@@ -103,7 +104,7 @@ class HistoryTests(unittest.TestCase):
             self.capture()
         reports, _, _ = history.load_capture(self.out)
         self.assertEqual(sum(len(r['signals']) for r in reports), 1)
-        with sqlite3.connect(self.db) as db:
+        with closing(sqlite3.connect(self.db)) as db, db:
             self.assertEqual(db.execute('SELECT count(*) FROM signals').fetchone()[0], 2)
 
     def test_caps_fail_without_publishing_partial_capture(self):
@@ -115,11 +116,11 @@ class HistoryTests(unittest.TestCase):
                 self.assertFalse(list(self.root.glob('.quote-history-*')))
 
     def test_bad_index_identity_and_missing_index_fail(self):
-        with sqlite3.connect(self.db) as db:
+        with closing(sqlite3.connect(self.db)) as db, db:
             db.execute('UPDATE signals SET detected=detected+1')
         with self.assertRaisesRegex(ValueError, 'index fields'):
             self.capture()
-        with sqlite3.connect(self.db) as db:
+        with closing(sqlite3.connect(self.db)) as db, db:
             db.execute('DROP INDEX signals_at')
         with self.assertRaises(sqlite3.OperationalError):
             self.capture()
@@ -162,6 +163,24 @@ class HistoryTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'checksum'):
                 with history.restored(archive):
                     self.fail('unverified archive accepted')
+
+    def test_capture_restore_and_failure_close_all_database_handles(self):
+        original=sqlite3.connect;connections=[]
+        class Tracked(sqlite3.Connection):
+            closed=False
+            def close(self):
+                super().close();self.closed=True
+        def connect(*args,**kwargs):
+            db=original(*args,**kwargs,factory=Tracked);connections.append(db);return db
+        with patch.object(sqlite3,'connect',side_effect=connect):
+            status=history.quote_backup.backup(self.db,self.root/'backup-handles')
+            with history.restored(Path(status['archive'])) as (db,cutoff,source):
+                history.capture(db,self.out,hours=3,chunk_hours=1,evidence_cutoff=cutoff,source=source)
+            with patch.object(history,'CHUNK_ROWS',0):
+                with self.assertRaises(ValueError):
+                    history.capture(self.db,self.root/'failed',hours=3,chunk_hours=1,evidence_cutoff=self.end)
+        self.assertGreater(len(connections),3)
+        self.assertTrue(all(db.closed for db in connections))
 
     def test_cli_builds_history_directory(self):
         self.capture()

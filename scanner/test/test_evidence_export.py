@@ -1,4 +1,5 @@
 import importlib.util
+from contextlib import closing
 import gzip
 import json
 import sqlite3
@@ -72,7 +73,7 @@ class AuditTests(unittest.TestCase):
             self.db.backup(target)
             target.close()
             before=p.read_bytes()
-            with sqlite3.connect(p.as_uri()+'?mode=ro&immutable=1',uri=True) as ro:
+            with closing(sqlite3.connect(p.as_uri()+'?mode=ro&immutable=1',uri=True)) as ro, ro:
                 audit.analyze(ro,T+7200000)
                 with self.assertRaises(sqlite3.OperationalError):
                     ro.execute('DELETE FROM events')
@@ -97,8 +98,20 @@ class AuditTests(unittest.TestCase):
             (root/'last-run.json').write_text(json.dumps({'success':True,'state':'complete','backup':str(p),
                 'bytes':p.stat().st_size,'snapshot_at':audit.iso(T+7200000)}))
             out=root/'report.json.gz'
-            with patch.object(audit,'ROOT',root), patch.object(audit.sys,'argv',['audit','--output',str(out)]):
+            original=sqlite3.connect;connections=[]
+            def tracked_connect(*args, **kwargs):
+                db=original(*args, **kwargs);connections.append(db);self.addCleanup(db.close);return db
+            with patch.object(audit,'ROOT',root), patch.object(audit.sys,'argv',['audit','--output',str(out)]), \
+                 patch.object(sqlite3,'connect',side_effect=tracked_connect), \
+                 patch.object(audit.signal,'alarm'), patch.object(audit.signal,'signal'):
                 audit.main()
+                before=out.read_bytes()
+                with patch.object(audit,'analyze',side_effect=RuntimeError('fixture failure')):
+                    with self.assertRaisesRegex(RuntimeError,'fixture failure'): audit.main()
+                self.assertEqual(out.read_bytes(),before)
+            self.assertEqual(len(connections),2)
+            for db in connections:
+                with self.assertRaises(sqlite3.ProgrammingError): db.execute('SELECT 1')
             with gzip.open(out,'rt') as f:
                 report=json.load(f)
             self.assertEqual(report['backup']['filename'],'auto-test.sqlite')

@@ -1,5 +1,10 @@
 # Project timeline — November 8, 2026
 
+**Historical estimate:** the [independent review and working agenda](PROJECT-AGENDA-20261108.md)
+now governs priorities and dated checkpoints. The estimates below describe the
+earlier execution-first sequence, not a trading-launch commitment. PR #79 and
+all 12 post-merge checks have since completed successfully.
+
 ## Current position
 
 The full uninstrumented Kali gate passed all 42 checks at 08:07:13 UTC with

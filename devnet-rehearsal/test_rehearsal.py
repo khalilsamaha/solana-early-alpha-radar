@@ -1,3 +1,4 @@
+from contextlib import closing
 import base64
 import gzip
 import json
@@ -112,7 +113,7 @@ class RehearsalTests(unittest.TestCase):
         path=self.home/'wallet.json'; data=json.loads(path.read_text()); data['network']='mainnet-beta'; path.write_text(json.dumps(data))
         with self.assertRaises(ValueError): core.Session(self.home)
         data['network']='devnet'; path.write_text(json.dumps(data))
-        with sqlite3.connect(self.home/'rehearsal.sqlite') as db: db.execute('PRAGMA application_id=1')
+        with closing(sqlite3.connect(self.home/'rehearsal.sqlite')) as db, db: db.execute('PRAGMA application_id=1')
         with self.assertRaises(ValueError): core.Session(self.home)
     def test_rpc_allowlist_and_fixed_network(self):
         rpc=core.Rpc(FakeRpc()); self.assertEqual(rpc.network,'devnet')

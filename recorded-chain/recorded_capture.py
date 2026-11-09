@@ -86,6 +86,7 @@ class Client:
                         value = [{k: row[k] for k in ('signature', 'slot', 'err', 'confirmationStatus') if k in row} for row in value]
                     result = {'state': 'received', 'result': value}
         except urllib.error.HTTPError as e:
+            e.close()
             result = {'state': 'http-error', 'httpStatus': e.code}
         except (urllib.error.URLError, TimeoutError, OSError):
             result = {'state': 'network-error'}

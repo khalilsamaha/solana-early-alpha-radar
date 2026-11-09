@@ -1,4 +1,5 @@
 """Synthetic transport for the fixed atomic token lifecycle. Never opens a socket."""
+from contextlib import closing
 import io,json,sqlite3
 from urllib.error import URLError
 from core import SYSTEM,GENESIS,b58
@@ -10,7 +11,7 @@ class FakeTokenRpc:
         self.calls=[]
 
     def plan(self):
-        with sqlite3.connect(self.home/'token-lifecycle-v1/lifecycle.sqlite') as db:
+        with closing(sqlite3.connect(self.home/'token-lifecycle-v1/lifecycle.sqlite')) as db, db:
             db.row_factory=sqlite3.Row;r=dict(db.execute('SELECT * FROM run').fetchone())
         for k in ('intent','simulation','result'):r[k]=json.loads(r[k]) if r[k] else None
         return r

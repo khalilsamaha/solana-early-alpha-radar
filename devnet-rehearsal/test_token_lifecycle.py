@@ -1,3 +1,4 @@
+from contextlib import closing
 import base64
 import copy
 import gzip
@@ -43,13 +44,13 @@ class TokenTests(unittest.TestCase):
         tx=decode_wire(p['signed_wire'])[4];ops=tx['transaction']['message']['instructions']
         self.assertEqual(len(ops),7);self.assertEqual(len(base64.b64decode(p['signed_wire'])),643)
         self.assertEqual(r['intent']['amountLamports'],1000)
-        with sqlite3.connect(self.home/'rehearsal.sqlite') as db:self.assertEqual(db.execute('SELECT COUNT(*) FROM plans').fetchone()[0],0)
+        with closing(sqlite3.connect(self.home/'rehearsal.sqlite')) as db, db:self.assertEqual(db.execute('SELECT COUNT(*) FROM plans').fetchone()[0],0)
         self.assertNotIn('signed_wire',json.dumps(r));self.assertNotIn('private-provider-error',json.dumps(r))
     def test_intent_committed_before_signer(self):
         real=signer;seen=[]
         def watch(home,action,**fields):
             if action=='sign':
-                with sqlite3.connect(home/CHILD/'lifecycle.sqlite') as db:
+                with closing(sqlite3.connect(home/CHILD/'lifecycle.sqlite')) as db, db:
                     row=db.execute('SELECT state,signed_wire,boundary FROM run').fetchone()
                 self.assertEqual(row,('intent-recorded',None,0));seen.append(True)
             return real(home,action,**fields)
@@ -60,10 +61,10 @@ class TokenTests(unittest.TestCase):
         from rehearsal_fixtures import FakeRpc
         prior=prepare(self.home,opener=FakeRpc(home=self.home))
         self.assertEqual(prior['state'],'simulation-passed-not-submitted')
-        with sqlite3.connect(self.home/'rehearsal.sqlite') as db:
+        with closing(sqlite3.connect(self.home/'rehearsal.sqlite')) as db, db:
             before=db.execute('SELECT * FROM plans ORDER BY id').fetchall()
         self.assertEqual(self.execute()['state'],'finalized-success')
-        with sqlite3.connect(self.home/'rehearsal.sqlite') as db:
+        with closing(sqlite3.connect(self.home/'rehearsal.sqlite')) as db, db:
             self.assertEqual(db.execute('SELECT * FROM plans ORDER BY id').fetchall(),before)
     def test_existing_execution_and_terminal_recovery_zero_requests(self):
         first=self.execute();again=self.execute()
@@ -146,7 +147,7 @@ class TokenTests(unittest.TestCase):
             with self.assertRaises(ValueError):signer(self.home,'sign',messageBase64=base64.b64encode(msg).decode(),**{**fields,'rent':rent})
     def test_local_intent_tamper_is_not_recovered(self):
         self.execute();p=self.plan();i=p['intent'];i['amountLamports']=1001
-        with sqlite3.connect(self.home/CHILD/'lifecycle.sqlite') as db:db.execute('UPDATE run SET intent=?',(json.dumps(i),))
+        with closing(sqlite3.connect(self.home/CHILD/'lifecycle.sqlite')) as db, db:db.execute('UPDATE run SET intent=?',(json.dumps(i),))
         fake=FakeTokenRpc(self.home)
         with self.assertRaises(ValueError):recover(self.home,self.wallet,opener=fake)
         self.assertEqual(fake.calls,[])

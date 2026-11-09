@@ -136,7 +136,7 @@ def capture(database, output, *, hours=72, chunk_hours=6, end_at=None, evidence_
 
     with tempfile.TemporaryDirectory(dir=output.parent, prefix='.quote-history-') as tmp:
         stage = Path(tmp)
-        with sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True, timeout=1) as db:
+        with contextlib.closing(sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True, timeout=1)) as db, db:
             db.execute('PRAGMA query_only=ON')
             db.execute('PRAGMA cache_size=-4096')
             db.execute('PRAGMA trusted_schema=OFF')

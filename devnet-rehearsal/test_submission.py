@@ -1,3 +1,4 @@
+from contextlib import closing
 import gzip,json,os,sqlite3,subprocess,sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -118,7 +119,7 @@ class SubmissionTests(unittest.TestCase):
             with self.assertRaises(ValueError): rpc.request(m,[])
         self.assertEqual(rpc.calls,[])
     def test_invalid_saved_message_rejected(self):
-        with sqlite3.connect(self.home/'rehearsal.sqlite') as db:
+        with closing(sqlite3.connect(self.home/'rehearsal.sqlite')) as db, db:
             db.execute("UPDATE plans SET signed_wire='bad'")
         r,rpc=self.run_case(); self.assertEqual(rpc.calls,[]); self.assertEqual(r['submissionAttempts'],0)
     def test_abrupt_exit_after_boundary_recovers_without_send(self):

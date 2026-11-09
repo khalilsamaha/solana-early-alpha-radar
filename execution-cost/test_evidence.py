@@ -232,8 +232,10 @@ class EvidenceTests(unittest.TestCase):
             self.assertEqual(c['stopReason'], 'rpc-evidence-unavailable')
             self.assertNotIn('SECRET', json.dumps(c))
         for error in (TimeoutError('SECRET'), urllib.error.HTTPError('SECRET',429,'SECRET',{},None)):
+            if isinstance(error, urllib.error.HTTPError): self.addCleanup(error.close)
             opener = unittest.mock.Mock(); opener.open.side_effect = error
             c = collect(fixture(), opener=opener, clock=lambda: NOW)
+            if isinstance(error, urllib.error.HTTPError): self.assertTrue(error.closed)
             self.assertEqual(opener.open.call_count, 1)
             self.assertNotIn('SECRET', json.dumps(c))
 

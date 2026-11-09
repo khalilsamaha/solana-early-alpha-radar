@@ -13,6 +13,16 @@ from fixtures import fixture, SIGNATURE, WALLET, MINT, ACCOUNT
 
 
 class ReaderTests(unittest.TestCase):
+    def test_http_error_response_is_closed_and_sanitized(self):
+        error = urllib.error.HTTPError('https://example.invalid', 429, 'PRIVATE', {}, io.BytesIO(b'PRIVATE'))
+        self.addCleanup(error.close)
+        class FailingOpener:
+            def open(self, request, timeout):
+                raise error
+        self.assertEqual(rpc('devnet', 'getTransaction', [], 1, FailingOpener()),
+                         {'state': 'http-error', 'httpStatus': 429})
+        self.assertTrue(error.closed)
+
     def result(self, b):
         r = reconcile(b, SIGNATURE, WALLET, MINT)
         self.assertFalse(r['executionApproved'])

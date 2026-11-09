@@ -3,6 +3,14 @@ import {pathToFileURL} from 'node:url';
 const num=x=>typeof x==='number'&&Number.isFinite(x)&&x>=0?x:null;
 const bool=x=>typeof x==='boolean'?x:null;
 const version=x=>typeof x==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9.-]{0,63}$/.test(x)?x:null;
+const count=x=>Number.isSafeInteger(x)&&x>=0?x:null;
+export function projectLaunchRegistry(value){
+ if(!value||typeof value!=='object'||Array.isArray(value))return {state:'unavailable'};
+ const retained=count(value.retained),maxRows=count(value.limits?.maxRows),retentionDays=count(value.limits?.retentionDays);
+ if(value.version!=='launch-registry-1'||retained===null||maxRows===null||maxRows===0||retentionDays===null||retentionDays===0)return {state:'unavailable'};
+ return {state:'read',version:value.version,retained,limits:{maxRows,retentionDays},
+  sinceRestart:Object.fromEntries(['inserted','duplicate','rejected','capacityDropped','pruned','errors'].map(k=>[k,count(value.sinceRestart?.[k])]))};
+}
 export function age(at,now){return num(at)!==null&&at>0?(at>now?null:(now-at)/1000):null;}
 export function projectHealth(h,now){
  const n=h.notifications&&typeof h.notifications==='object'&&!Array.isArray(h.notifications)?h.notifications:null,m=h.statisticsReader||{},w=h.statisticsWorker||{};
@@ -14,6 +22,7 @@ export function projectHealth(h,now){
   statistics:{version:version(w.version),hasError:typeof w.lastError==='string'&&w.lastError.length>0,
     attempts:num(w.attempts),failures:num(w.failures),eventLoopP95Ms:num(w.eventLoop?.p95Ms),eventLoopMaxMs:num(w.eventLoop?.maxMs)},
   notifications:Object.fromEntries(['pending','failed','sent'].map(k=>[k,n===null?null:Object.hasOwn(n,k)?num(n[k]):0])),
+  launchRegistry:projectLaunchRegistry(h.launchRegistry),
   providers:Object.fromEntries(['dex','jupiter','helius','pumpportal'].map(k=>{const p=h.providers?.[k]||{};return [k,{
     state:['disabled','error','waiting','stale','ok'].includes(p.state)?p.state:'unknown',
     consecutiveFailures:num(p.failures),lastSuccessAgeSeconds:age(p.lastSuccessAt,now)}];}))};
