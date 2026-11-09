@@ -33,8 +33,8 @@ Run the pinned development source with:
 python3 -B -E -s -W error::ResourceWarning position-book/successor_recovery_cli.py --output NEW.json.gz
 ```
 
-Expected: `offline-integration-passed`, all 17 connected checks (the prior 12
-completion checks plus five snapshot/recovery checks), both positive deadline
+Expected: `offline-integration-passed`, seven successor-load snapshot checks and
+all 17 connected checks (the prior 12 completion checks plus five snapshot/recovery checks), both positive deadline
 headrooms, every phase complete and private snapshot fixtures removed. The
 snapshot operations happen after submission and do not extend its original
 deadline. Balance freshness is independently measured after accounting.
@@ -47,3 +47,32 @@ log, never an operational private snapshot or signing material.
 This is another offline E0 acceptance boundary, not full E0 closure. It neither
 refreshes operational state nor reconciles retired exposure. Operational action
 requires separate scope; a full phase must pass Kali before PR/CI/merge clearance.
+
+## Same-snapshot successor load
+
+`successor_signing_handoff.load` now pins its full read in the existing query-only
+SQLite snapshot. Lifecycle replay supplies the already-validated original
+preparation, signed generation and not-attempted transport state to retirement
+context construction. This removes one duplicate preparation replay per load
+(three become two), without retaining evidence after the call. The successor
+binding still performs its own original-preparation check.
+
+Original backend attempt and acknowledgment files are reread, the clock is checked,
+and retirement, successor and successor-signing records are fully validated.
+New loads, writes, signer calls and RPC boundaries do not inherit this evidence.
+The helper refuses a missing or writable transaction. Caller transaction and
+query-only ownership are preserved even on failure. No deadline, freshness limit,
+reservation, transport state or retired exposure rule changes.
+
+The seven checks compare context and hashes with the previous load, count replay
+calls, reject concurrent writes and later tampering, verify clock/backend checks
+and STOP history, preserve transaction ownership, require a pinned snapshot and
+reject orphan transport evidence before publishing reusable inputs. They run
+with network connections denied before the connected recovery rehearsal; any
+failure or skip blocks that rehearsal. The report records `loadSnapshotChecks`
+and `successorLoadReplayVersion=successor-load-snapshot-1`.
+
+Timing diagnostics identify repeated replay as a cost; they are not acceptance.
+The full Kali rehearsal must pass with positive send and balance headroom on the
+pinned source before accepting this increment. Local timing does not predict
+Kali performance or establish operational readiness.

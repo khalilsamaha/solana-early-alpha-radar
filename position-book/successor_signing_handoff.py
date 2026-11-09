@@ -97,18 +97,24 @@ def append(book,value,state,now):
 
 def load(root,book,wallet,pool,expected,clock):
     successor.replan.identity(expected)
-    record=successor.row(book)
-    check(record is not None and digest(record)==expected,'successor-signing-candidate-mismatch')
-    # Includes all historical source, retired backend files and original holds;
-    # lifecycle replay checks the separate signing table without recursing here.
-    phase,_,amounts,_,_,_=successor.history.lifecycle._projection(book,root,wallet,pool,clock)
-    check(phase=='exit-signed-not-submitted' and amounts is not None,'successor-signing-original-position')
-    ctx=successor.retirement.position_context(book,root,wallet,pool,clock,amounts)
-    retired=successor.retirement.row(book)
-    check(retired is not None,'successor-signing-retirement-required')
-    successor.retirement.validate(retired,ctx,clock())
-    successor.validate(book,ctx,retired,record,clock())
-    return record,ctx,retired,read(book,record,clock())
+    with successor.history.transport.ExitSubmission(book).snapshot():
+        record=successor.row(book)
+        check(record is not None and digest(record)==expected,'successor-signing-candidate-mismatch')
+        # Lifecycle already replays the retired generation's preparation,
+        # signing and transport. Consume those outputs only in this pinned read;
+        # later loads, writes, signer calls and RPC boundaries replay afresh.
+        unsent=[]
+        phase,_,amounts,_,_,_=successor.history.lifecycle._projection(
+            book,root,wallet,pool,clock,_unsent_exit_sink=unsent.append)
+        check(phase=='exit-signed-not-submitted' and amounts is not None and len(unsent)==1,
+              'successor-signing-original-position')
+        prepared,signed,status=unsent[0]
+        ctx=successor.retirement._context_from_evidence(book,root,wallet,clock,amounts,prepared,signed,status)
+        retired=successor.retirement.row(book)
+        check(retired is not None,'successor-signing-retirement-required')
+        successor.retirement.validate(retired,ctx,clock())
+        successor.validate(book,ctx,retired,record,clock())
+        return record,ctx,retired,read(book,record,clock())
 
 
 def current(book,record,ctx,retired,clock):

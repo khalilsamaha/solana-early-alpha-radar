@@ -54,8 +54,12 @@ def original(book,state):
         maximumExitAttempts=attempts,basis='original-reservation-history-not-extra-holds')
 
 
-def _projection(book,root,wallet,pool,clock):
+def _projection(book,root,wallet,pool,clock,*,_unsent_exit_sink=None):
     """Caller holds source lock and a separate shared SQLite read lock."""
+    check(_unsent_exit_sink is None or callable(_unsent_exit_sink),'lifecycle-exit-sink')
+    if _unsent_exit_sink is not None:
+        check(book.db.in_transaction and book.db.execute('PRAGMA query_only').fetchone()[0]==1,
+              'lifecycle-exit-snapshot-required')
     state,count,head,at=book.read();now=clock()
     check(state is not None and state.get('reservedAtMs') is not None,'lifecycle-funded-admission-required')
     uint(now,2**53-1,'lifecycle-clock',minimum=at)
@@ -131,6 +135,8 @@ def _projection(book,root,wallet,pool,clock):
     if xsource['accounting'] is not None:phase='exit-receipt-awaiting-accounting'
     if not xr['accountingUsable']:
         check('admission_exit_closure' not in present,'lifecycle-closure-before-accounting')
+        if phase=='exit-signed-not-submitted' and _unsent_exit_sink is not None:
+            _unsent_exit_sink((prepared,sender._signed_generation(signed,[prepared]),transport_status))
         return phase,orig,amounts,stages,ids,state
     x=xrecord['accounting'];ids['exitAccountingSha256']=digest(xrecord)
     amounts.update(sourceProceedsHeldAtomic=x['sourceProceedsHeldAtomic'],ownedAcquiredHeldAtomic=x['ownedAcquiredResidualAtomic'],

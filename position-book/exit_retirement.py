@@ -28,17 +28,28 @@ def position_context(book,root,wallet,pool,clock,amounts):
     with history.transport.ExitSubmission(book).snapshot():
         sender=history.transport.ExitSubmission(book)
         status,state,record=sender._status_evidence()
-        check(record is not None,'retirement-preparation-required')
-        check(not status['applicationSendBoundaryRecorded'],'retirement-locally-unsent-required')
-        check(status['state']=='not-attempted' and not status['receiptCaptureCount'],'retirement-transport-conflict')
-        check(state['state']=='exit-signed-recorded' and clock()>=state['request']['validUntilExclusiveMs'],
-              'retirement-expired-signature-required')
-        history.backend._attempt_record_for_state(root,book,state)
-        check(history.backend._read_ack(root,book,state)==state['signed']['signedWireBase64'],'retirement-backend-conflict')
-        identity=dict(preparationSha256=digest(record),signingStateSha256=digest(state),
-            signature=state['signed']['signature'],blockhash=state['request']['packet']['policy']['blockhash'],
-            minimumContextSlot=state['minimumContextSlot'],scopedAccounting=amounts)
-        return expiry._scope_values(book,wallet,identity,record,state['signed']['signedWireBase64'])
+        return _context_from_evidence(book,root,wallet,clock,amounts,record,state,status)
+
+
+def _context_from_evidence(book,root,wallet,clock,amounts,record,state,status):
+    """Internal same-snapshot projection; caller has replayed signing/transport.
+
+    No cache or externally supplied report. Backend files and clock are still
+    checked here; the database must remain pinned and query-only throughout.
+    """
+    check(book.db.in_transaction and book.db.execute('PRAGMA query_only').fetchone()[0]==1,
+          'retirement-read-snapshot-required')
+    check(record is not None,'retirement-preparation-required')
+    check(not status['applicationSendBoundaryRecorded'],'retirement-locally-unsent-required')
+    check(status['state']=='not-attempted' and not status['receiptCaptureCount'],'retirement-transport-conflict')
+    check(state['state']=='exit-signed-recorded' and clock()>=state['request']['validUntilExclusiveMs'],
+          'retirement-expired-signature-required')
+    history.backend._attempt_record_for_state(root,book,state)
+    check(history.backend._read_ack(root,book,state)==state['signed']['signedWireBase64'],'retirement-backend-conflict')
+    identity=dict(preparationSha256=digest(record),signingStateSha256=digest(state),
+        signature=state['signed']['signature'],blockhash=state['request']['packet']['policy']['blockhash'],
+        minimumContextSlot=state['minimumContextSlot'],scopedAccounting=amounts)
+    return expiry._scope_values(book,wallet,identity,record,state['signed']['signedWireBase64'])
 
 
 def validate(record,ctx,now):
