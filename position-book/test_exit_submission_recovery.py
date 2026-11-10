@@ -53,10 +53,13 @@ class SubmissionRestoreTests(unittest.TestCase):
             self.assertEqual(prepared['state'],'exit-prepared-research-only',prepared)
             self.assertTrue(prepared['collectionRecorded']);self.assertEqual(len(rpc.calls),20)
             key=self.home/'signer.pk8';key.write_bytes(self.ephemeral_exit_key);key.chmod(0o600)
-            r=backend.dispatch(self.home,self.wallet,self.pool,allow_private_key_signing=True,clock=m.view.now)
+            self.stamp=clock.at+1
+            with source.fixture_backend_clock(self.clock) as backend_calls:
+                r=backend.dispatch(self.home,self.wallet,self.pool,allow_private_key_signing=True,clock=self.clock)
+            self.assertEqual(backend_calls,[self.stamp])
             self.assertEqual(r['state'],'exit-signed-recorded');self.assertTrue(r['backendInvokedThisRun'])
             self.assertFalse(r['validForSubmission']);self.assertEqual(r['transactionsSent'],0)
-            b=backend.handoff.preparation.entry.submission._open(self.home,self.wallet,self.pool,m.view.now)
+            b=backend.handoff.preparation.entry.submission._open(self.home,self.wallet,self.pool,self.clock)
             try:state=transport.ExitSubmission(b).signing()
             finally:b.close()
             c=SimpleNamespace(home=self.home,wallet=self.wallet,pool=self.pool,path=b.j.path,
@@ -64,6 +67,7 @@ class SubmissionRestoreTests(unittest.TestCase):
             # Synthetic transport uses a deterministic clock. This is a semantic
             # integration/restore test, not a live RPC latency acceptance test.
             self.stamp=state['lastAtMs']
+            self.assertLess(self.stamp,state['request']['validUntilExclusiveMs'])
             sent=transport.submit(self.home,self.wallet,self.pool,allow_devnet_submit=True,opener=FakeRpc(c),clock=self.clock)
             self.assertEqual(sent['state'],'rpc-acknowledged');self.assertEqual(sent['sendRequestsThisRun'],1)
             key.unlink();self.stamp=m.view.now()+30000
