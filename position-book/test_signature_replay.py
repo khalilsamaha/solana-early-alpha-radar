@@ -6,10 +6,12 @@ import json
 from pathlib import Path
 import subprocess
 import time
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
 import admission_timing as m
+import recorded_capture
 import signature_replay_checks as checks
 import test_reservation_view as f
 
@@ -68,7 +70,10 @@ class SourceReplayTests(unittest.TestCase):
         def disabled():yield lambda:{'version':'disabled-for-comparison'}
         scope=m.wire.signature_verification_scope if memo else disabled
         real=m.wire.subprocess.run
+        # Fake HTTP duration metadata is part of the hashed raw capture. Pin only
+        # its diagnostic clock; observer/transport deadlines still use real time.
         with patch.object(m.wire,'signature_verification_scope',scope),\
+             patch.object(recorded_capture,'time',SimpleNamespace(monotonic=lambda:0)),\
              patch.object(m.wire.subprocess,'run',wraps=real) as verifier,\
              patch('simulation_baseline.BASELINE',baseline),patch.object(m.admission,'BASELINE',baseline),\
              patch.object(m.view,'read_locked',source),\
