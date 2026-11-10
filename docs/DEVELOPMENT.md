@@ -2,13 +2,16 @@
 
 ## Agreed batch rhythm
 
-The user-approved workflow update supersedes the per-increment PR cadence
-below. Make small local commits with relevant local tests and source hygiene;
-publish pinned development heads when Kali acceptance is needed. Build related
-increments on their reviewed predecessor, recording that lineage. Consolidate
-about three successful increments into one PR, run the full repository checks and
-CI for that batch, and review before merging. A required host check remains an
-acceptance gate. Neither publishing a branch nor merging deploys to Kali.
+The user-approved full-phase workflow and [project agenda](PROJECT-AGENDA-20261108.md)
+supersede any per-increment or fixed-count PR cadence. Make small local commits
+with relevant local tests and source hygiene; publish pinned development heads
+when Kali acceptance is needed. Build related increments on their reviewed
+predecessor, recording that lineage. Consolidate only after a complete agreed gate
+or engineering phase has passed its applicable Kali acceptance. The number of
+increments does not establish completion. Before that point, do not open a PR,
+dispatch CI or merge. Then run full repository checks and applicable separate
+research suites, review the PR and required CI on its final head, and obtain any
+required merge approval. Neither development publication nor merge deploys to Kali.
 
 The numbered workflow below describes the consolidated release cycle.
 
