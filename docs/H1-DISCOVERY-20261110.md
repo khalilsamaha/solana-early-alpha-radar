@@ -33,3 +33,19 @@ are for Kali review; no PR or CI dispatch until this complete phase is accepted.
 
 The same maximum two focused engineering days applies. Negative or uninformative
 results close this candidate's exploration; do not search replacements here.
+
+## Accepted outcome and combined consolidation
+
+Kali accepted source `a980b497aad73488f54832d59c38da0ef80f27b9` on November 10:
+all 64 dataset tests passed, both pinned original captures replayed, and the full
+report matched its logged canonical digest
+`8c24eca0c448515fa2c0f91bed4034762c6392117e6648e1cea33286b7f4d94f`.
+The 71 selected of 141 baseline tokens averaged -1.505907% quoted change versus
+-2.560539% for the overlapping comparator, before illustrative extra costs.
+This is a negative absolute-economic discovery result; no trial, model promotion
+or trading activation follows. The candidate remains closed without retuning.
+
+The owner's requested combined package is this unchanged H1 implementation plus
+[the early C1 scope decision](C1-SCOPE-DECISION-20261110.md). Its documentation
+acceptance and subsequent full-phase consolidation remain separate from the
+already accepted H1 test/replay evidence. E0 remains outside this package.
