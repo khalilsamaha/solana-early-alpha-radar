@@ -74,7 +74,7 @@ class IntegratedBackendTests(unittest.TestCase):
     source_bytes=source.SigningRecoveryTests.source_bytes
     edit_db=source.SigningRecoveryTests.edit_db
 
-    def test_real_source_to_independent_backend_and_keyless_restore(self):
+    def exercise(self,*,expired_backend=False):
         import admission_exit_collection as collected
         import admission_exit_capture_checks as fixtures
         self.collect();accounting=self.settle()['accounting'];self.stamp=m.view.now()
@@ -99,7 +99,26 @@ class IntegratedBackendTests(unittest.TestCase):
             self.assertEqual(prepared['state'],'exit-prepared-research-only',prepared)
             self.assertTrue(prepared['collectionRecorded']);self.assertEqual(len(rpc.calls),20)
             key=self.home/'signer.pk8';key.write_bytes(self.ephemeral_exit_key);key.chmod(0o600)
-            r=backend.dispatch(self.home,self.wallet,self.pool,allow_private_key_signing=True,clock=m.view.now)
+            self.stamp=clock.at+1
+            if expired_backend:
+                # The same real child must reject an expired injected clock;
+                # this fixture mechanism cannot bypass its deadline contract.
+                expired=self.stamp+30000
+                with source.fixture_backend_clock(lambda:expired) as backend_calls:
+                    with self.assertRaisesRegex(ValueError,'restricted-exit-signer-refused'):
+                        backend.dispatch(self.home,self.wallet,self.pool,allow_private_key_signing=True,clock=self.clock)
+                self.assertEqual(backend_calls,[expired])
+                storage=backend.handoff.preparation.entry.submission.handoff.storage(self.home).parent
+                self.assertFalse((storage/backend.ATTEMPT).exists())
+                self.assertFalse((storage/backend.ACK).exists())
+                with patch.object(backend,'_invoke',side_effect=AssertionError('retry')):
+                    r=backend.dispatch(self.home,self.wallet,self.pool,allow_private_key_signing=True,clock=self.clock)
+                self.assertEqual(r['state'],'exit-signing-unknown')
+                self.assertFalse(r['backendInvokedThisRun']);self.assertFalse(r['acknowledgmentRecorded'])
+                return
+            with source.fixture_backend_clock(self.clock) as backend_calls:
+                r=backend.dispatch(self.home,self.wallet,self.pool,allow_private_key_signing=True,clock=self.clock)
+            self.assertEqual(backend_calls,[self.stamp])
             self.assertEqual(r['state'],'exit-signed-recorded');self.assertTrue(r['backendInvokedThisRun'])
             self.assertFalse(r['validForSubmission']);self.assertEqual(r['transactionsSent'],0)
             key.unlink();self.stamp=m.view.now()+30000
@@ -115,6 +134,10 @@ class IntegratedBackendTests(unittest.TestCase):
             manifest['inventories']=recovery.inventories(self.snapshot/recovery.SOURCE,self.snapshot/recovery.SIBLING)
             (self.snapshot/recovery.MANIFEST).write_text(json.dumps(manifest))
             with self.assertRaisesRegex(ValueError,'exit-signer-attempt-binding'):self.verify()
+
+    def test_real_source_to_independent_backend_and_keyless_restore(self):self.exercise()
+
+    def test_fixed_fixture_clock_preserves_backend_expiry_and_no_retry(self):self.exercise(expired_backend=True)
 
 
 if __name__=='__main__':unittest.main()

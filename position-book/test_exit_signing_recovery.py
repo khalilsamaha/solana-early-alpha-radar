@@ -1,5 +1,6 @@
 """Full historical-source restore retains unknown and signed exit handoffs."""
 import base64
+from contextlib import contextmanager
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -13,6 +14,29 @@ import exit_signing_handoff as signing
 import test_admission_exit_recovery as original
 from test_admission_exit_recovery import delayed
 from contract import digest
+
+
+@contextmanager
+def fixture_backend_clock(clock):
+    """Use one logical clock across Python and the real disposable-key process.
+
+    Restore fixtures test evidence semantics, not wall-time signing readiness.
+    Only this backend child's Date.now is controlled; its real subprocess timeout,
+    crypto, SQLite validation, key restrictions and durable markers are unchanged.
+    """
+    import restricted_exit_signer as backend
+    script=Path(backend.__file__).with_name('exit_signer.mjs')
+    run=subprocess.run;calls=[]
+    def child(args,**kwargs):
+        if len(args)==2 and args[1]==str(script):
+            stamp=clock();assert type(stamp) is int and stamp>0
+            calls.append(stamp)
+            args=[args[0],'--input-type=module','-e',
+                'Date.now=()=>Number(process.argv[1]); await import(process.argv[2]);',
+                str(stamp),script.as_uri()]
+        return run(args,**kwargs)
+    with patch.object(backend.subprocess,'run',side_effect=child):
+        yield calls
 
 
 class SigningRecoveryTests(unittest.TestCase):
