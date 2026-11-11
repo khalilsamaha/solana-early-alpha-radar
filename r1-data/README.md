@@ -10,8 +10,9 @@ Kali-accepted at `7fe6493`; finalized block positions are Kali-accepted at
 B2 round trip at `904a805`, both independently replayed from uploaded packages.
 The provider wire is Kali-accepted at `a2fdf580` for its offline scope.
 The offline supervisor is Kali-accepted at `1e8bed1a` and local measurement at
-`ccf80858`. The current increment packages the complete capture and journal
-together for checksum-bound transfer and independent replay. It has **no live collector launcher, credential-file reader,
+`ccf80858`. Complete-session handoff is Kali-accepted at `324a32e4` and its
+uploaded archive independently restored. The current increment adds one fixed-
+input B2 round trip for that exact complete synthetic session. It has **no live collector launcher, credential-file reader,
 trading operation, profitability evaluator or curve reconstruction**. Its factory
 opens a fixed provider connection only when explicitly invoked; no provider
 connection is opened by the acceptance runner. Public RPC/B2 CLIs remain separate.
@@ -44,16 +45,50 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-session-bundle-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-session-backup-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `.venv/bin/python -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 275 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test, 181-test, 198-test, 210-test, 227-test, 241-test and 259-test Kali reports
+The current suite contains 287 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test, 181-test, 198-test, 210-test, 227-test, 241-test, 259-test and 275-test Kali reports
 remain accepted for their original pinned sources; they do not validate this addition.
 
-## Complete-session handoff (current Kali step — offline only)
+## Complete-session B2 round trip (current Kali step)
+
+First run the **287-test offline runner**, which pins 39 source files. No
+`--session-artifacts` option is needed: reuse the exact **existing** accepted
+27,148-byte session and its original 275-test receipt. Then explicitly run:
+
+```sh
+sudo -v
+.venv/bin/python -E -s -B -W error::ResourceWarning r1-data/session_backup.py \
+  --bundle /absolute/existing/session.zip \
+  --acceptance-report /absolute/existing/275-test-report.json \
+  --output-directory /absolute/new/session-roundtrip \
+  --round-trip-b2
+```
+
+Only the accepted archive and report hashes are allowed. Local capture/journal
+replay precedes any backup credential access. The fixed runner performs backend
+verification, one upload and one download using the existing B2 configuration,
+a separate random `session-` object in the R1 rehearsal prefix and the same
+bounded command limits. It never retries, deletes, syncs or changes schedules.
+
+Expected remote result: `synthetic-session-backup-passed-live-blocked`, with
+both downloaded components replayed. Upload the offline report, the new
+`report.json` and `downloaded.zip` when present. If the result is unavailable,
+upload the diagnostic once without retrying. Exit zero means a report was
+retained, not necessarily a pass. Retain the local evidence and remote object.
+
+This validates one synthetic complete-session round trip, not actual live
+capture retention or paid-feed activation. Existing B2 storage/API accounting
+can apply. See `docs/R1-SESSION-BACKUP-20261111.md`.
+
+## Complete-session handoff (Kali and independent replay accepted)
+
+The following records the completed 275-test handoff. Do not regenerate its
+archive for the fixed-input backup check above.
 
 Run `check.py` with its usual new `--output` path and additionally
 `--session-artifacts /absolute/new/directory`. This retains a fixed synthetic

@@ -1,8 +1,20 @@
-# R1 complete-session handoff — implemented offline, Kali pending
+# R1 complete-session handoff — Kali and independent replay accepted
 
 Date: 2026-11-11. This closes the local packaging gap between the capture and
 its measurement journal. It continues the existing R1 phase and effort cap;
 it does not authorize live collection, establish remote retention or close R1.
+
+## Complete-session acceptance
+
+The 275-test Kali report for `324a32e4a3755309fb1c1974315a9ad5427ab94d`
+passed review, with all 37 source hashes matched. Report SHA-256:
+`2fe0273ec7850d5ceec9091f76bd57d6e72adddb5355558b4ef300ee81ed3196`.
+The uploaded 27,148-byte `session.zip`, SHA-256
+`f055648fdd804d29c1dfb25087c32314667b27fddb3adbf48db27e6617eb023d`,
+was independently restored. Database, journal, inner archive and all measurement
+results match the Kali receipt. This accepts the transferred synthetic complete
+session; its B2 round trip is next, documented in `R1-SESSION-BACKUP-20261111.md`.
+The following records the completed handoff increment.
 
 ## Accepted measurement evidence
 

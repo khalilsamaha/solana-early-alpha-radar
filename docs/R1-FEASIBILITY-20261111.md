@@ -12,8 +12,9 @@ is accepted on Kali and independently replayed from its uploaded synthetic
 package. Its fixed-input B2 round trip is now Kali-accepted. A bounded provider
 wire and offline process supervisor are Kali-accepted for their pinned scopes.
 Local subscription timing and measurement evidence are Kali-accepted.
-Complete capture-plus-journal packaging is now development-tested, pending Kali
-and independent uploaded-archive replay; see `docs/R1-SESSION-BUNDLE-20261111.md`
+Complete capture-plus-journal packaging is Kali-accepted and its uploaded
+archive independently replayed. Its fixed-input B2 round trip is implemented
+offline, pending Kali; see `docs/R1-SESSION-BACKUP-20261111.md`
 and `r1-data/README.md`. No live collector
 launcher is supplied and no paid subscription,
 wallet funding or study registration was performed by this work. The owner

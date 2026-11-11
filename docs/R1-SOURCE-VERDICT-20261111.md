@@ -15,7 +15,7 @@ assessment by automatically adding more small historical probes.
 
 | Area | Evidence and limit | Decision |
 | --- | --- | --- |
-| Capture and local replay | Kali-accepted capture/controller; provider wire accepted on Kali with in-memory protocol peer | Offline process supervision accepted on Kali; local measurement accepted on Kali; complete-session handoff pending; no actual provider session/TLS test or live launcher accepted |
+| Capture and local replay | Kali-accepted capture/controller; provider wire accepted on Kali with in-memory protocol peer | Offline process supervision accepted on Kali; local measurement accepted on Kali; complete-session handoff and independent replay accepted; no actual provider session/TLS test or live launcher accepted |
 | Transaction identity/finality | Three original saved transactions pass the bounded public-RPC reconciliation | Provider-reported sample evidence; not independent consensus proof |
 | Schema | Accepted event inspection and pinned schema comparison | Supports the observed layouts; not every program version, token or transaction type |
 | Native-SOL accounting | Two observed creation-plus-buy transactions and one creation-only transaction pass their supported accounting paths | Internal sample consistency; not an executable counterfactual or profitable trade |
@@ -70,8 +70,9 @@ registered measurement contract prepared before activation.
    pinned dependency and offline protocol tests, accepted on Kali at `a2fdf580`.
    Offline process supervision and local preservation are Kali-accepted at
    `1e8bed1a`. Local send/selection timing evidence is Kali-accepted at `ccf80858`.
-   Complete capture/journal packaging is development-tested, pending Kali and
-   uploaded-artifact replay; see `R1-SESSION-BUNDLE-20261111.md`. Resolve coexistence before any
+   Complete capture/journal packaging is Kali-accepted at `324a32e4`, and the
+   uploaded archive independently replayed. Its fixed-input B2 round trip is
+   now implemented offline, pending Kali; see `R1-SESSION-BACKUP-20261111.md`. Resolve coexistence before any
    provider connection and complete the remaining live-launch controls.
    Prove bounded receive memory, cancellation/abort, credential redaction,
    no reconnect across gaps, and no paid subscription after a terminal limit.

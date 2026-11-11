@@ -36,6 +36,9 @@ def trusted_programs():
 class Transfer:
     """No user-controlled shell, endpoint, config, local filename or environment."""
     def __init__(self):
+        self.expected_bundle = EXPECTED_BUNDLE
+        self.bundle_bytes = BUNDLE_BYTES
+        self.object_label = "handoff"
         self.calls = []
         self.deadline = time.monotonic() + 135
         self.remote = None
@@ -51,16 +54,16 @@ class Transfer:
             args = ["listremotes", "--long"]
         else:
             if (not isinstance(remote, str) or not remote.startswith(PREFIX)
-                    or not re.fullmatch(r"handoff-[0-9a-f]{32}-"+EXPECTED_BUNDLE[:12]+r"\.zip", remote[len(PREFIX):])):
+                    or not re.fullmatch(re.escape(self.object_label)+r"-[0-9a-f]{32}-"+self.expected_bundle[:12]+r"\.zip", remote[len(PREFIX):])):
                 raise h.c.CaptureError("remote-scope")
             if operation == "upload":
-                if type(payload) is not bytes or len(payload) != BUNDLE_BYTES or h.c.digest(payload) != EXPECTED_BUNDLE:
+                if type(payload) is not bytes or len(payload) != self.bundle_bytes or h.c.digest(payload) != self.expected_bundle:
                     raise h.c.CaptureError("upload-scope")
                 self.remote = remote
-                args = ["rcat", remote, "--size", str(BUNDLE_BYTES)]
+                args = ["rcat", remote, "--size", str(self.bundle_bytes)]
             else:
                 if remote != self.remote or payload is not None: raise h.c.CaptureError("download-scope")
-                args = ["cat", remote, "--count", str(BUNDLE_BYTES+1)]
+                args = ["cat", remote, "--count", str(self.bundle_bytes+1)]
         remaining = min(40, max(1, int(self.deadline-time.monotonic())-3))
         command = [SUDO, "-n", TIMEOUT, "--signal=TERM", "--kill-after=2s", str(remaining)+"s", RCLONE,
                    "--config", CONFIG, "--transfers", "1", "--checkers", "1", "--buffer-size", "64Ki",
@@ -76,7 +79,7 @@ class Transfer:
             if response.returncode != 0:
                 raise h.c.CaptureError("subprocess-failed")
             raw = response.stdout or b""
-            cap = 4096 if operation == "backend" else BUNDLE_BYTES+1
+            cap = 4096 if operation == "backend" else self.bundle_bytes+1
             if len(raw) > cap: raise h.c.CaptureError("subprocess-output-cap")
             call["state"] = "completed"
             return raw
