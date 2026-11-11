@@ -1,0 +1,93 @@
+# R1 source assessment — partial feasibility, funded activation blocked
+
+Decision date: 2026-11-11. Evidence reviewed through development commit
+`4d46229bdb8405eff55cc755fe1717f9be26152f`, with 181 Kali tests and the
+uploaded real ordering bundle accepted. This closes the current bounded source
+assessment with a **partial** verdict. It does not close the R1 engineering gate.
+
+The three saved creation transactions demonstrate that the supported records
+can be retrieved, decoded, checked for internal accounting consistency and
+placed in provider-reported finalized block order. They cannot establish the
+coverage, continuity or cost of a future paid trade feed. Do not extend this
+assessment by automatically adding more small historical probes.
+
+## What the evidence establishes
+
+| Area | Evidence and limit | Decision |
+| --- | --- | --- |
+| Capture and local replay | Kali-accepted capture, persistent limits, restart gaps, local export/restore and injected transport tests | Implemented offline; no actual collector connection validated |
+| Transaction identity/finality | Three original saved transactions pass the bounded public-RPC reconciliation | Provider-reported sample evidence; not independent consensus proof |
+| Schema | Accepted event inspection and pinned schema comparison | Supports the observed layouts; not every program version, token or transaction type |
+| Native-SOL accounting | Two observed creation-plus-buy transactions and one creation-only transaction pass their supported accounting paths | Internal sample consistency; not an executable counterfactual or profitable trade |
+| Deployment window | Pump/Pump Fees modification slots predate all three samples, with stable current metadata | Temporal metadata only; not bytecode/source equivalence or historical configuration |
+| Record positions | Cases 1,2,3 located at zero-based indices 22,45,89 in slots 468050019,468049941,468049828 | Sample block-list order established; no complete history or feed-order claim |
+| Early trade coverage | Two selected creation transactions also contain a buy | Subscribing after observing creation cannot be assumed to include that buy; no omission rate measured |
+| Recovery | No historical trade feed or complete gap-recovery path validated | Gaps must remain explicit; no silent continuation as complete data |
+| Preservation | Local capture restore already passed; portable handoff now implemented separately | Independent-host and storage-provider round trips still pending |
+| Cost/connection coexistence | Documented paid feed and one-connection guidance; scanner already opens a separate connection | Numeric exposure approval and compliant connection design remain prerequisites |
+
+The block result is sufficient to stop investigating **these three** positions.
+Further sample success would not by itself close missing-event or recovery
+questions. A study cannot treat a measurable subset as representative without
+recording the selection denominator, missingness and exclusion rules.
+
+## Collector and pilot decisions
+
+Proceed with isolated implementation and offline validation. Do not activate a
+paid subscriber, fund a wallet, alter the production scanner or start ML fitting.
+The existing dedicated provider wallet can be reused; no replacement is requested.
+
+The provider's [real-time documentation](https://pumpportal.fun/data-api/real-time/)
+states one WebSocket connection at a time and distinguishes free creation/
+migration events from paid token/account trades. The [FAQ](https://pumpportal.fun/FAQ/)
+states live-only data and processed feed commitment. Both were rechecked on
+2026-11-11. These statements do not resolve account/IP scope or establish a
+hard billing cutoff. The baseline scanner code opens an unauthenticated data
+socket and subscribes to creation/migration events; a second collector socket
+must not be assumed compliant merely because it uses a funded API key.
+
+Before any live collector test, resolve either a single shared connection design
+with separately approved scanner integration, or explicit provider confirmation
+that the intended coexistence is permitted. A separate key/host is not evidence
+of permission. No provider message has been sent by this work.
+
+A first pilot, if the remaining prerequisites pass, measures feed availability,
+selection denominators, creation-to-subscription delay, finality matching,
+unresolved records, explicit gaps and observed charges. It must not claim exact
+curve reconstruction without historical state/configuration and executable
+pricing applicability. No return labels or strategy tuning are authorized by
+this measurement pilot. Outcomes must remain pass/fail/insufficient against a
+registered measurement contract prepared before activation.
+
+## Sequence to follow
+
+1. **Current:** Kali-validate the capture handoff and submit its synthetic package
+   for independent-host replay. Keep the original checksum receipt separate from
+   the transferred package. This verifies portability without funded traffic.
+2. **Preservation completion:** perform a controlled upload/download of that
+   synthetic package through the selected backup destination, retain the transfer
+   receipt and replay against the original checksum. Existing scanner B2 backups
+   do not automatically cover R1 output directories. A local copy is insufficient.
+3. **Collector completion:** implement and validate the actual network adapter,
+   select a supported dependency, and resolve coexistence before any connection.
+   Prove bounded receive memory, cancellation/abort, credential redaction,
+   no reconnect across gaps, and no paid subscription after a terminal limit.
+4. **Pre-activation review:** combine Kali evidence, preservation receipt,
+   connection decision and fixed measurement contract. Present exact funding and
+   exposed-balance terms for owner approval. The earlier 0.05 SOL funding and
+   0.02 SOL fee figures remain proposals, not approved spending.
+5. **Conditional pilot:** up to 24–48 hours, stopping earlier at any cap. Review
+   coverage/cost against the fixed contract. A satisfactory measurement pilot
+   permits consideration of a separately registered study, not a profit claim.
+
+These are engineering dependencies, not calendar promises. The agreed total
+five-working-day build/validation effort cap remains in force; this document
+does not restart it. If coexistence, recovery adequacy or the adapter cannot be
+resolved within it, report the concrete blocked/insufficient verdict and
+reassess scope. Do not extend data collection or retune on observed outcomes.
+
+Full-gate Kali validation precedes PR/CI consolidation; merging still follows
+the owner's decision. H1 closure, C1 inventory acceptance and independent E0
+work are not changed by this R1 assessment. The confirmation-study timeline is
+still conditional on adequate fresh data, registration and owner acceptance;
+no new study start date is established here.

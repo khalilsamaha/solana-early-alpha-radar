@@ -1,4 +1,4 @@
-# R1 finalized block positions — development tested, Kali pending
+# R1 finalized block positions — Kali accepted for their limited scope
 
 Date: 2026-11-11. Deployment metadata is accepted on Kali at
 `7fe649340ec0ccfa133a625f9e21e5e733adbd81` for its limited scope; see
@@ -117,3 +117,37 @@ The five-working-day build/validation effort cap remains unchanged. Missing
 evidence at that limit leads to a limited/incomplete verdict and reassessment,
 not an automatic extension. This development increment does not close R1 or
 authorize PR/CI consolidation, main merge, deployment, signing, trades or ML fitting.
+
+## Kali acceptance — 2026-11-11
+
+Reviewed implementation `4d46229bdb8405eff55cc755fe1717f9be26152f`, tree
+`5f358af4184bdaf8abcd2c54540c45cd5402e2c3`. The uploaded runner passed all
+**181 tests** with zero failures/errors/skips in 2.435042 seconds on Python
+3.14.6 and SQLite 3.53.4. All 23 runner and ten probe source hashes match.
+The compressed/decoded bundle checksums and original input hashes match;
+independent socket-forbidden offline replay exactly reproduces the report.
+All five captured calls have the expected method, request ID and received state.
+
+Result: `finalized-block-positions-reconciled-live-blocked`, mainnet genesis
+verified before/after. Positions are zero-based:
+
+| Case | Slot | Transaction position | Block transaction count |
+| --- | --- | --- | --- |
+| 1 | 468050019 | 22 | 253 |
+| 2 | 468049941 | 45 | 188 |
+| 3 | 468049828 | 89 | 273 |
+
+Case order is 3,2,1. None of the three sparse blocks is another selected block's
+immediate parent, so zero parent links were checked. Broader chain continuity,
+feed completeness/recovery, executable pricing and full R1 remain unaccepted.
+
+| Uploaded artifact | SHA-256 |
+| --- | --- |
+| radar-r1-ordering-offline-20261111T130837Z-889211.json | b0cb9cb88942a897fe40faff12a2c7f02e8f6569860bbdb4a602a82208becbde |
+| report(2).json | 703cc9e24e3acebd91bc1645f22bf59eafda046db464331f7d25f97d5f78fe9b |
+| evidence.json(2).gz | 4f24a702047eb52ba4f25a7dc0bc3d9c008df89a1f9d5a038158a3a4bb0eca33 |
+| decoded evidence | 31825a93f29964ddfa7a6a5261f3b0b6535d061bd1f7f67edbac0a49fd9a22d6 |
+
+No new public ordering reads are required. Continue with the consolidated
+[source verdict](R1-SOURCE-VERDICT-20261111.md) and the offline
+[capture handoff](R1-CAPTURE-HANDOFF-20261111.md), preserving the existing R1 cap.

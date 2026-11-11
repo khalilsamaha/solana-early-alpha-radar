@@ -5,8 +5,8 @@ and source metadata probe are Kali-accepted at `55ddf7a`; the bounded public RPC
 probe is Kali-accepted at `d880134`; the event inspector is Kali-accepted at
 `b28c8ff`; the documented schema comparator is Kali-accepted at `5d64039`;
 native-SOL accounting is Kali-accepted at `27f812c`; deployment metadata is
-Kali-accepted at `7fe6493`. The current increment adds a bounded finalized
-block-position probe for the same saved transactions. It has **no live WebSocket adapter,
+Kali-accepted at `7fe6493`; finalized block positions are Kali-accepted at
+`4d46229`. The current increment adds an offline capture export/restore handoff. It has **no live WebSocket adapter,
 credential-file reader, trading operation, profitability evaluator or curve
 reconstruction**. It cannot activate paid data. Only the separate RPC, deployment and ordering probe CLIs open network connections; the acceptance runner remains entirely offline.
 No change to the production scanner, frozen studies, E0 or CI is required.
@@ -27,16 +27,63 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-ordering-probe-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-handoff-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `python3 -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 181 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test and 167-test Kali reports
+The current suite contains 198 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test and 181-test Kali reports
 remain accepted for their original pinned sources; they do not validate this addition.
 
-## Bounded finalized block positions
+## Offline capture handoff (current Kali step)
+
+```sh
+python3 -E -s -B -W error::ResourceWarning r1-data/handoff.py rehearse \
+  --output-directory /absolute/new/handoff-run
+```
+
+This writes a four-message synthetic capture with a recorded restart gap,
+exports a deterministic stored ZIP, and restores it locally with an externally
+supplied expected checksum. Expected status:
+`offline-handoff-rehearsal-passed-live-blocked`. Upload the **198-test offline
+runner report**, `handoff-run/report.json` and `handoff-run/export/capture.zip`
+for independent replay. The ZIP is synthetic and contains no real wallet/key.
+Retain the entire new directory. No existing scanner or RPC inputs are needed.
+
+The reusable `export` command accepts a closed R1 capture, creates a new private
+output directory, and writes `capture.zip` plus `report.json`. The `restore`
+command requires the original trusted report's `bundle_sha256`, the returned
+bundle and a new output directory:
+
+```sh
+python3 -E -s -B -W error::ResourceWarning r1-data/handoff.py export \
+  --capture /absolute/closed/capture --output-directory /absolute/new/export
+python3 -E -s -B -W error::ResourceWarning r1-data/handoff.py restore \
+  --bundle /absolute/returned/capture.zip \
+  --expected-sha256 ORIGINAL_TRUSTED_REPORT_BUNDLE_SHA256 \
+  --output-directory /absolute/new/restore
+```
+
+These are interface examples, not a request to locate or export production data.
+Input bundles must be private regular files owned by the current user, with no
+symlinks/hardlinks. Transferring to another machine may require a new private
+copy there; never change an existing production archive to satisfy this rule.
+The ZIP contains exactly a database and manifest, without compression, arbitrary
+paths or links. Both package bytes and restored SQLite replay must match.
+
+No remote service is called and no backup configuration is read. A successful
+local restore leaves `off_machine_restore_verified: false` and
+`remote_download_verified: false`. Independent-host replay and a storage-provider
+upload/download receipt are distinct evidence still to collect. The existing
+B2 scanner backup does not automatically cover these separate R1 packages.
+See `docs/R1-CAPTURE-HANDOFF-20261111.md` and the consolidated
+`docs/R1-SOURCE-VERDICT-20261111.md`. Full R1 and funded activation remain blocked.
+
+## Bounded finalized block positions (Kali accepted)
+
+The saved five-read result is accepted for its limited scope. No repeated public
+ordering probe is requested; the following documents that earlier increment.
 
 After the offline runner passes, use the **original** saved RPC report/bundle:
 
