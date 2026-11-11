@@ -10,8 +10,9 @@ scopes. The consolidated verdict is **partial source feasibility**, not full
 source adequacy; see `docs/R1-SOURCE-VERDICT-20261111.md`. The export/restore handoff
 is accepted on Kali and independently replayed from its uploaded synthetic
 package. Its fixed-input B2 round trip is now Kali-accepted. A bounded provider
-wire is implemented and protocol-tested offline, pending Kali; see
-`docs/R1-PROVIDER-WIRE-20261111.md` and `r1-data/README.md`. No live collector
+wire and offline process supervisor are Kali-accepted for their pinned scopes.
+Local subscription timing and measurement evidence are now development-tested,
+pending Kali; see `docs/R1-MEASUREMENT-20261111.md` and `r1-data/README.md`. No live collector
 launcher is supplied and no paid subscription,
 wallet funding or study registration was performed by this work. The owner
 reports the original project wallet is ready; reuse the dedicated PumpPortal

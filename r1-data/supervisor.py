@@ -21,7 +21,8 @@ from capture import (CaptureError, Limits, canonical, digest, exclusive_file,
 from handoff import MAX_PACKAGE, path_without_links, read_private
 
 ROOT = Path(__file__).resolve().parent
-SOURCES = ("supervisor.py", "supervisor_worker.py", "capture.py", "transport.py", "handoff.py")
+SOURCES = ("supervisor.py", "supervisor_worker.py", "capture.py", "transport.py", "handoff.py",
+           "measurement.py", "rpc_probe.py", "source_probe.py")
 LIMITS = Limits(messages=4, seconds=5, sample_modulus=1)
 RESOURCES = {"address_space_bytes": 256 * 1024 * 1024, "cpu_seconds": 5,
              "file_bytes": 36 * 1024 * 1024, "open_files": 32,
@@ -141,7 +142,7 @@ def validate_receipt(run, manifest_bytes):
     result = strict_json(read_private(run / "worker-result.json", 16_384))
     expected = {"schema_version", "manifest_sha256", "resources", "offline_guards",
                 "session", "bundle_sha256", "bundle_bytes", "database_sha256",
-                "source_preserved", "local_restore_replay_verified"}
+                "source_preserved", "local_restore_replay_verified", "measurement", "measurement_restore_replayed"}
     if (set(result) != expected or type(result["schema_version"]) is not int
             or result["schema_version"] != 1
             or result["manifest_sha256"] != digest(manifest_bytes)
@@ -154,7 +155,8 @@ def validate_receipt(run, manifest_bytes):
                                      "connections_opened": 1, "subscription_acknowledged": False,
                                      "provider_billing_verified": False}
             or result["source_preserved"] is not True
-            or result["local_restore_replay_verified"] is not True):
+            or result["local_restore_replay_verified"] is not True
+            or result["measurement_restore_replayed"] is not True):
         raise CaptureError("invalid-worker-receipt")
     bundle = read_private(run / "export" / "capture.zip", MAX_PACKAGE)
     database = read_private(run / "capture" / "ticks.db", 32 * 1024 * 1024)
@@ -163,6 +165,13 @@ def validate_receipt(run, manifest_bytes):
             or result["database_sha256"] != digest(database)
             or read_private(run / "manifest.json", 16_384) != manifest_bytes):
         raise CaptureError("receipt-content-mismatch")
+    import measurement
+    journal = read_private(run / "session.jsonl", measurement.MAX_BYTES)
+    if (journal != read_private(run / "export" / "session.jsonl", measurement.MAX_BYTES)
+            or journal != read_private(run / "restore" / "session.jsonl", measurement.MAX_BYTES)
+            or result["measurement"] != measurement.replay(run / "capture", run / "session.jsonl")
+            or result["measurement"] != measurement.replay(run / "restore" / "restored", run / "restore" / "session.jsonl")):
+        raise CaptureError("measurement-receipt-mismatch")
     return result
 
 

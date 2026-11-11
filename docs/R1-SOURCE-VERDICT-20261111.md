@@ -15,7 +15,7 @@ assessment by automatically adding more small historical probes.
 
 | Area | Evidence and limit | Decision |
 | --- | --- | --- |
-| Capture and local replay | Kali-accepted capture/controller; provider wire accepted on Kali with in-memory protocol peer | Offline process supervision now development-tested, pending Kali; no actual provider session/TLS test or live launcher accepted |
+| Capture and local replay | Kali-accepted capture/controller; provider wire accepted on Kali with in-memory protocol peer | Offline process supervision accepted on Kali; local measurement evidence pending Kali; no actual provider session/TLS test or live launcher accepted |
 | Transaction identity/finality | Three original saved transactions pass the bounded public-RPC reconciliation | Provider-reported sample evidence; not independent consensus proof |
 | Schema | Accepted event inspection and pinned schema comparison | Supports the observed layouts; not every program version, token or transaction type |
 | Native-SOL accounting | Two observed creation-plus-buy transactions and one creation-only transaction pass their supported accounting paths | Internal sample consistency; not an executable counterfactual or profitable trade |
@@ -68,8 +68,9 @@ registered measurement contract prepared before activation.
    the remote object and receipt. Future live capture coverage remains to implement.
 3. **Current — collector completion:** the provider wire is implemented with a
    pinned dependency and offline protocol tests, accepted on Kali at `a2fdf580`.
-   Offline process supervision and local preservation are now development-tested,
-   pending Kali; see `R1-SUPERVISOR-20261111.md`. Resolve coexistence before any
+   Offline process supervision and local preservation are Kali-accepted at
+   `1e8bed1a`. Local send/selection timing evidence is now development-tested,
+   pending Kali; see `R1-MEASUREMENT-20261111.md`. Resolve coexistence before any
    provider connection and complete the remaining live-launch controls.
    Prove bounded receive memory, cancellation/abort, credential redaction,
    no reconnect across gaps, and no paid subscription after a terminal limit.

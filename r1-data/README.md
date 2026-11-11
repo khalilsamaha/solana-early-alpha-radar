@@ -9,8 +9,8 @@ Kali-accepted at `7fe6493`; finalized block positions are Kali-accepted at
 `4d46229`; the capture handoff is Kali-accepted at `be8fcfe` and the synthetic
 B2 round trip at `904a805`, both independently replayed from uploaded packages.
 The provider wire is Kali-accepted at `a2fdf580` for its offline scope.
-The current increment adds offline process supervision and integrated local
-preservation, with real subprocess failure tests. It has **no live collector launcher, credential-file reader,
+The offline supervisor is Kali-accepted at `1e8bed1a`. The current increment
+adds durable local subscription measurement and replay alongside the capture. It has **no live collector launcher, credential-file reader,
 trading operation, profitability evaluator or curve reconstruction**. Its factory
 opens a fixed provider connection only when explicitly invoked; no provider
 connection is opened by the acceptance runner. Public RPC/B2 CLIs remain separate.
@@ -43,18 +43,40 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-supervisor-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-measurement-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `.venv/bin/python -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 241 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test, 181-test, 198-test, 210-test and 227-test Kali reports
+The current suite contains 259 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test, 181-test, 198-test, 210-test, 227-test and 241-test Kali reports
 remain accepted for their original pinned sources; they do not validate this addition.
 
-## Process supervision (current Kali step — offline only)
+## Local measurement evidence (current Kali step — offline only)
 
-Upload the **241-test offline runner report**. It pins 33 source files and adds
+Upload the **259-test offline runner report**, which pins 35 source files.
+The supervised worker now records an exclusive, bounded `session.jsonl` sidecar:
+selected-creation receive timestamps, durable send intents, local completions,
+abandoned commands and terminal state. Replay binds it to verified capture rows.
+Delay uses monotonic time from local receive return to local send return; this
+does not measure provider acknowledgement or the first complete trade stream.
+
+The controller rechecks the capture deadline after flushing each intent. A
+logging failure stops the session; selected-but-unsent creations and unresolved
+sends remain explicit. Provider acknowledgement, external creation denominator,
+initial-trade coverage and actual billing remain unknown. The report exposes
+these fields under `supervision.worker_receipt.measurement`.
+
+The journal is copied and replayed with the restored capture; expected
+`measurement_restore_replayed: true`. The original two-member capture ZIP does
+not embed the sidecar, so future off-machine coverage must preserve both files
+and their binding receipt. No new cloud probe or live connection is requested.
+See `docs/R1-MEASUREMENT-20261111.md` for the definitions and remaining critical
+path. This continues the same R1 phase and its original effort cap.
+
+## Process supervision (offline scope accepted on Kali)
+
+The accepted **241-test offline runner report** pins 33 source files and records
 `supervision`, including a reaped worker and a source-preserving capture/export/
 restore receipt. The supervisor starts one fixed synthetic worker with a minimal
 environment, Linux resource caps, a child wall alarm, parent-death termination,

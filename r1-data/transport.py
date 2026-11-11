@@ -9,7 +9,7 @@ import asyncio
 from capture import CaptureError, canonical, strict_json
 
 
-async def run_session(capture, wire_factory, *, poll_seconds=0.25, send_seconds=1.0):
+async def run_session(capture, wire_factory, *, poll_seconds=0.25, send_seconds=1.0, journal=None):
     """Never reconnect. Terminate on gaps, capture limits or transport failure."""
     if not (0.01 <= poll_seconds <= 1 and 0.01 <= send_seconds <= 2):
         raise CaptureError("invalid-transport-timeouts")
@@ -31,20 +31,28 @@ async def run_session(capture, wire_factory, *, poll_seconds=0.25, send_seconds=
         payload = {"method": method}
         if keys is not None:
             payload["keys"] = keys
+        intent = journal.intent(payload, capture) if journal is not None else None
+        if journal is not None and not capture.tick():
+            journal.abandon(intent)
+            return False  # durable logging must not let a stale deadline authorize a send
         await asyncio.wait_for(wire.send(canonical(payload)), send_seconds)
         commands += 1
+        if journal is not None:
+            journal.sent(intent)
         # Conservative ceiling below the documented 200 messages/second. The
         # final network adapter must also enforce bounded connection/close I/O.
         await asyncio.sleep(0.01)
         return capture.tick()
 
     try:
-        if not capture.tick():
-            return {"outcome": outcome, "commands_sent": 0, "connections_opened": 0}
-        if capture.state["messages"] or capture.state["gaps"]:
-            raise CaptureError("fresh-session-required")
-        wire = await asyncio.wait_for(wire_factory(), 5.0)
-        ready = await send("subscribeNewToken") and await send("subscribeMigration")
+        if journal is not None:
+            journal.start(capture)
+        ready = capture.tick()
+        if ready:
+            if capture.state["messages"] or capture.state["gaps"]:
+                raise CaptureError("fresh-session-required")
+            wire = await asyncio.wait_for(wire_factory(), 5.0)
+            ready = await send("subscribeNewToken") and await send("subscribeMigration")
         while ready and capture.tick():
             now = capture.wall()
             expired = sorted(m for m, until in subscribed.items() if until <= now)
@@ -59,7 +67,10 @@ async def run_session(capture, wire_factory, *, poll_seconds=0.25, send_seconds=
                 continue  # next tick enforces the original deadline during silence
             if isinstance(raw, str):
                 raw = raw.encode("utf-8")
+            received = journal.stamp() if journal is not None else None
             decision = capture.receive(raw)
+            if journal is not None and decision == "watch-planned":
+                journal.selected(capture, received)
             if capture.state["status"] != "active":
                 break  # close instead of subscribing after the final allowed frame
             if decision == "watch-planned":
@@ -75,6 +86,7 @@ async def run_session(capture, wire_factory, *, poll_seconds=0.25, send_seconds=
                         break
                     subscribed.pop(mint, None)
     except asyncio.CancelledError:
+        outcome = "transport-cancelled"
         if capture.state["status"] == "active":
             capture.gap()
         raise
@@ -95,6 +107,11 @@ async def run_session(capture, wire_factory, *, poll_seconds=0.25, send_seconds=
                 await asyncio.wait_for(wire.close(), 1.0)
             except Exception:
                 outcome = "transport-cleanup-failed"
+        if journal is not None:
+            try:
+                journal.finish(outcome, capture)
+            except Exception:
+                outcome = "measurement-failed"
     return {"outcome": outcome, "commands_sent": commands,
             "connections_opened": int(wire is not None),
             "subscription_acknowledged": False, "provider_billing_verified": False}

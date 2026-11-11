@@ -1,9 +1,20 @@
-# R1 offline process supervision — development validated, Kali pending
+# R1 offline process supervision — accepted on Kali
 
 Date: 2026-11-11. This increment follows Kali acceptance of provider wire commit
 `a2fdf5802e4728e75b6b0afc5408a7a84488dd0f`. It implements the process supervision
 and local preservation part of the guarded launcher. It is deliberately an
 **offline synthetic rehearsal**, not a complete live launcher or activation gate.
+
+## Supervisor Kali acceptance
+
+The report `radar-r1-supervisor-offline-20261111T143934Z-1091449.json` for
+`1e8bed1aa3158db93ee0000c3f0af78733208236` passed review: 241 tests,
+zero failures/errors/skips; all 33 source hashes matched. Python 3.14.6 /
+SQLite 3.53.4 / websockets 17.4; 7.623608 seconds overall; the reaped worker
+completed in 0.314780 seconds with source preservation and local replay.
+Report SHA-256: `877bc3d819d59e567cb5682bd5d075a56c4276503080b33a486774fbfe26765f`.
+No live connection or funding acceptance is implied. The following records
+this completed increment; current work is in `R1-MEASUREMENT-20261111.md`.
 
 ## Accepted preceding evidence
 

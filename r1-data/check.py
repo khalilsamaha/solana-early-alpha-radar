@@ -26,7 +26,8 @@ SOURCES = ("capture.py", "check.py", "test_capture.py", "test_check.py", "README
            "handoff.py", "test_handoff.py",
            "backup_roundtrip.py", "test_backup_roundtrip.py",
            "provider_wire.py", "test_provider_wire.py", "requirements-wire.txt",
-           "supervisor.py", "supervisor_worker.py", "test_supervisor.py")
+           "supervisor.py", "supervisor_worker.py", "test_supervisor.py",
+           "measurement.py", "test_measurement.py")
 
 
 def block_internet():
@@ -116,7 +117,7 @@ def main(argv=None):
         after = {name: digest((ROOT / name).read_bytes()) for name in SOURCES}
         if before != after:
             raise CaptureError("source-changed")
-        report = {"schema_version": 1, "status": "offline-supervisor-passed-live-blocked",
+        report = {"schema_version": 1, "status": "offline-measurement-passed-live-blocked",
                   "python": platform.python_version(), "sqlite": sqlite3.sqlite_version,
                   "tests": tests, "source_sha256": after,
                   "elapsed_seconds": round(time.monotonic() - started, 6),
@@ -126,7 +127,7 @@ def main(argv=None):
                   "internet_socket_creation_and_dns_blocked": True,
                   "wire_validation": {"protocol_peer": "in-memory", "provider_connection_opened": False,
                                       "tls_handshake_tested": False, "coexistence_accepted": False},
-                  "remaining": ["Kali supervisor; historical configuration and executable pricing validation", "provider connection coexistence",
+                  "remaining": ["Kali measurement; historical configuration and executable pricing validation", "provider connection coexistence",
                                 "source ordering, initial state and finality validation",
                                 "gap recovery source", "billing and explicit pilot budget",
                                 "live-launch credential/budget controls and real provider TLS/session validation",
@@ -138,7 +139,7 @@ def main(argv=None):
             exclusive_file(prepared, (canonical(report) + "\n").encode())
             os.link(prepared, output, follow_symlinks=False)
         sync_dir(output.parent)
-        print("R1 offline checks including process supervision passed; live collection remains blocked. Report created.")
+        print("R1 offline checks including local measurement evidence passed; live collection remains blocked. Report created.")
         return 0
     except Exception:
         print("R1 offline check stopped; no acceptance is granted.", file=sys.stderr)

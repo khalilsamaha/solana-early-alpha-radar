@@ -45,6 +45,7 @@ def run(directory, parent_pid):
     from capture import Capture, canonical, digest, exclusive_file, strict_json, verify
     import handoff
     from transport import run_session
+    import measurement
 
     if (dict(os.environ) != s.ENVIRONMENT or not sys.flags.ignore_environment
             or not sys.flags.no_user_site or not sys.dont_write_bytecode):
@@ -80,8 +81,9 @@ def run(directory, parent_pid):
     wire = SyntheticWire()
     async def factory():
         return wire
-    with Capture(directory / "capture", s.LIMITS) as capture:
-        session = asyncio.run(run_session(capture, factory))
+    with measurement.Journal(directory / "session.jsonl") as journal:
+        with Capture(directory / "capture", s.LIMITS) as capture:
+            session = asyncio.run(run_session(capture, factory, journal=journal))
     capture_report = verify(directory / "capture")
     if (not wire.closed or capture_report["messages"] != 4
             or capture_report["raw_rows"] != 4 or capture_report["gaps"] != 0
@@ -95,6 +97,14 @@ def run(directory, parent_pid):
             or before != handoff.read_private(directory / "capture" / "ticks.db", 32 * 1024 * 1024)
             or s.source_pins() != manifest["source_sha256"]):
         raise RuntimeError("worker-preservation")
+    measured = measurement.replay(directory / "capture", directory / "session.jsonl")
+    journal_bytes = handoff.read_private(directory / "session.jsonl", measurement.MAX_BYTES)
+    exclusive_file(directory / "export" / "session.jsonl", journal_bytes)
+    exclusive_file(directory / "restore" / "session.jsonl", journal_bytes)
+    restored_measurement = measurement.replay(directory / "restore" / "restored",
+                                               directory / "restore" / "session.jsonl")
+    if measured != restored_measurement:
+        raise RuntimeError("worker-measurement-restore")
     receipt = {"schema_version": 1, "manifest_sha256": digest(raw), "resources": s.RESOURCES,
                "offline_guards": {"internet_and_dns_blocked": True,
                                   "child_process_creation_blocked": True,
@@ -102,7 +112,8 @@ def run(directory, parent_pid):
                                   "environment_allowlist": True},
                "session": session, "bundle_sha256": exported["bundle_sha256"],
                "bundle_bytes": exported["bundle_bytes"], "database_sha256": digest(before),
-               "source_preserved": True, "local_restore_replay_verified": True}
+               "source_preserved": True, "local_restore_replay_verified": True,
+               "measurement": measured, "measurement_restore_replayed": True}
     exclusive_file(directory / "worker-result.json", (canonical(receipt) + "\n").encode())
 
 

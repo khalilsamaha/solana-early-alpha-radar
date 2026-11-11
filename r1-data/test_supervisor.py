@@ -63,6 +63,8 @@ class SupervisorTests(unittest.TestCase):
         self.assertFalse(report["coexistence_accepted"])
         self.assertFalse(report["automatic_restart"])
         self.assertTrue(report["worker_receipt"]["source_preserved"])
+        self.assertTrue(report["worker_receipt"]["measurement_restore_replayed"])
+        self.assertEqual(report["worker_receipt"]["measurement"]["local_sends_completed"], 3)
         self.assertEqual(verify(run / "capture")["raw_rows"], 4)
         self.assertEqual((run / "capture/ticks.db").read_bytes(),
                          (run / "restore/restored/ticks.db").read_bytes())
@@ -140,6 +142,22 @@ class SupervisorTests(unittest.TestCase):
         (run / "manifest.json").write_bytes(raw + b" ")
         with self.assertRaises(CaptureError):
             s.validate_receipt(run, raw)
+
+    def test_measurement_copy_and_forged_projection_reject_supervisor_receipt(self):
+        run, _ = s.rehearse(self.owner)
+        manifest = (run / "manifest.json").read_bytes()
+        copied = run / "export/session.jsonl"
+        original = copied.read_bytes()
+        copied.write_bytes(original + b" ")
+        with self.assertRaises(CaptureError):
+            s.validate_receipt(run, manifest)
+        copied.write_bytes(original)
+        receipt = run / "worker-result.json"
+        changed = json.loads(receipt.read_bytes())
+        changed["measurement"]["provider_acknowledged_subscriptions"] = 1
+        receipt.write_text(canonical(changed))
+        with self.assertRaises(CaptureError):
+            s.validate_receipt(run, manifest)
 
     def test_receipt_symlink_oversize_and_false_flags_rejected(self):
         run, _ = s.rehearse(self.owner)
