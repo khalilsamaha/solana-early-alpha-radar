@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import platform
 import sqlite3
+import socket
 import sys
 import tempfile
 import time
@@ -23,7 +24,17 @@ SOURCES = ("capture.py", "check.py", "test_capture.py", "test_check.py", "README
            "deployment_probe.py", "test_deployment_probe.py",
            "ordering_probe.py", "test_ordering_probe.py",
            "handoff.py", "test_handoff.py",
-           "backup_roundtrip.py", "test_backup_roundtrip.py")
+           "backup_roundtrip.py", "test_backup_roundtrip.py",
+           "provider_wire.py", "test_provider_wire.py", "requirements-wire.txt")
+
+
+def block_internet():
+    def guard(event, args):
+        if (event == "socket.__new__" and args[1] in (socket.AF_INET, socket.AF_INET6)
+                or event in {"socket.getaddrinfo", "socket.gethostbyname", "socket.gethostbyaddr", "socket.getnameinfo"}
+                or event in {"socket.connect", "socket.sendto"} and args[0].family in (socket.AF_INET, socket.AF_INET6)):
+            raise CaptureError("offline-runner-network-forbidden")
+    sys.addaudithook(guard)
 
 
 class Parser(argparse.ArgumentParser):
@@ -80,6 +91,9 @@ def main(argv=None):
         output = Path(args.output)
         if output.exists() or output.is_symlink():
             raise CaptureError("output-exists")
+        block_internet()
+        from provider_wire import dependency
+        dependencies = dependency()
         before = {name: digest((ROOT / name).read_bytes()) for name in SOURCES}
         started = time.monotonic()
         tests = run_checks()
@@ -87,17 +101,21 @@ def main(argv=None):
         after = {name: digest((ROOT / name).read_bytes()) for name in SOURCES}
         if before != after:
             raise CaptureError("source-changed")
-        report = {"schema_version": 1, "status": "offline-backup-roundtrip-passed-live-blocked",
+        report = {"schema_version": 1, "status": "offline-provider-wire-passed-live-blocked",
                   "python": platform.python_version(), "sqlite": sqlite3.sqlite_version,
                   "tests": tests, "source_sha256": after,
                   "elapsed_seconds": round(time.monotonic() - started, 6),
                   "synthetic_only": True, "network_used": False, "credentials_loaded": False,
                   "paid_collection_enabled": False, "evidence": evidence,
-                  "remaining": ["Kali synthetic B2 round trip; historical configuration and executable pricing validation", "provider connection coexistence",
+                  "dependencies": dependencies,
+                  "internet_socket_creation_and_dns_blocked": True,
+                  "wire_validation": {"protocol_peer": "in-memory", "provider_connection_opened": False,
+                                      "tls_handshake_tested": False, "coexistence_accepted": False},
+                  "remaining": ["Kali provider wire; historical configuration and executable pricing validation", "provider connection coexistence",
                                 "source ordering, initial state and finality validation",
                                 "gap recovery source", "billing and explicit pilot budget",
-                                "real network adapter implementation and validation",
-                                "off-machine preservation and restore"]}
+                                "real provider TLS/session and safe launcher validation",
+                                "preservation coverage and retention for actual live captures"]}
         # Build in a private sibling then link exclusively: readers never see a
         # partial report and an existing path (including symlink) is not replaced.
         with tempfile.TemporaryDirectory(prefix=".r1-report-", dir=output.parent) as tmp:
@@ -105,7 +123,7 @@ def main(argv=None):
             exclusive_file(prepared, (canonical(report) + "\n").encode())
             os.link(prepared, output, follow_symlinks=False)
         sync_dir(output.parent)
-        print("R1 offline checks including synthetic backup round trip passed; live collection remains blocked. Report created.")
+        print("R1 offline checks including provider wire passed; live collection remains blocked. Report created.")
         return 0
     except Exception:
         print("R1 offline check stopped; no acceptance is granted.", file=sys.stderr)

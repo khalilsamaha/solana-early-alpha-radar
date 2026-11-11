@@ -1,6 +1,7 @@
 import contextlib
 import io
 import json
+import socket
 from pathlib import Path
 import tempfile
 import unittest
@@ -53,7 +54,11 @@ class RunnerTests(unittest.TestCase):
             code, _ = self.call(["--output", str(self.path)])
         self.assertEqual(code, 0)
         report = json.loads(self.path.read_text())
-        self.assertEqual(report["status"], "offline-backup-roundtrip-passed-live-blocked")
+        self.assertEqual(report["status"], "offline-provider-wire-passed-live-blocked")
+        self.assertEqual(report["dependencies"], {"websockets": "17.4"})
+        self.assertTrue(report["internet_socket_creation_and_dns_blocked"])
+        self.assertFalse(report["wire_validation"]["provider_connection_opened"])
+        self.assertFalse(report["wire_validation"]["tls_handshake_tested"])
         self.assertFalse(report["paid_collection_enabled"])
         self.assertFalse(report["credentials_loaded"])
         self.assertFalse(report["network_used"])
@@ -64,6 +69,14 @@ class RunnerTests(unittest.TestCase):
     def test_rehearsal_still_runs_without_any_network(self):
         with patch("socket.socket", side_effect=AssertionError("network forbidden")):
             self.assertTrue(check.rehearsal()["local_restore_replay_passed"])
+
+    def test_runner_blocks_dns_and_internet_sockets(self):
+        check.block_internet()
+        with self.assertRaises(check.CaptureError):
+            socket.getaddrinfo("unused.invalid", 443)
+        for family in (socket.AF_INET, socket.AF_INET6):
+            with self.assertRaises(check.CaptureError):
+                socket.socket(family, socket.SOCK_STREAM)
 
 
 if __name__ == "__main__":

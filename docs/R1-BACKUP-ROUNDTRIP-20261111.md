@@ -1,4 +1,4 @@
-# R1 synthetic B2 round trip — development tested, Kali pending
+# R1 synthetic B2 round trip — Kali accepted for the synthetic package
 
 Date: 2026-11-11. The handoff passed 198 Kali tests and its uploaded package
 restored independently with identical database bytes and gap records. See the
@@ -109,3 +109,31 @@ decision, then the fixed pilot measurement contract and owner funding decision.
 The original five-working-day engineering effort cap continues. Full R1 is
 open; no PR/CI consolidation, merge, deployment, trading or ML fitting follows
 automatically from a synthetic backup pass.
+
+## Kali acceptance — 2026-11-11
+
+Reviewed implementation `904a8055e2e8924573faa6556c4460de4cb0865b`, tree
+`b4fdb050caa79202576d3e0d75326b104093cea9`. The Kali runner passed all **210 tests**,
+zero failures/errors/skips, in 3.232717 seconds on Python 3.14.6 and SQLite 3.53.4.
+All 27 runner and three round-trip source hashes match reviewed code. The report
+records backend/upload/download completion and the configured B2 type.
+
+Uploaded `source.zip` and `downloaded.zip` are byte-identical to the previously
+accepted 21,328-byte package. The downloaded copy was independently restored
+with socket creation forbidden; the database hash is
+`83a22052b74b3db7067de8efb951759139ea5d9cd6614babc994d998e3555e5e`, and all four
+events and the restart gap agree with the report. No fresh B2 call was made
+by the developer. Host-reported transfer completion plus the matching downloaded
+artifact support this limited acceptance; no independent B2 service audit is claimed.
+
+| Uploaded artifact | SHA-256 |
+| --- | --- |
+| radar-r1-backup-offline-20261111T134127Z-962446.json | 19ff7b4e02dc958eb83120804c003fa77518239e98d9fa7784df7314a37149a2 |
+| report(5).json | 14973e828c6ca84de86124676484cd9c16364e9949041cd4b5e459575d4cdb1a |
+| source.zip and downloaded.zip | 461fb7ad53f77879bbc6cf5554002e5578b5a75fc40de418f7c8216b03ab0ff4 |
+
+The retained object is under `r1-rehearsal/` with leaf
+`handoff-1fb7ecd0f65048639f666ccd3c8e20c8-461fb7ad53f7.zip`. No delete is requested.
+Ongoing retention and backup coverage for future actual R1 captures remain
+unverified. Next: the [provider wire](R1-PROVIDER-WIRE-20261111.md), with live
+activation still blocked by connection coexistence and launch prerequisites.

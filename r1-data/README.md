@@ -6,23 +6,35 @@ probe is Kali-accepted at `d880134`; the event inspector is Kali-accepted at
 `b28c8ff`; the documented schema comparator is Kali-accepted at `5d64039`;
 native-SOL accounting is Kali-accepted at `27f812c`; deployment metadata is
 Kali-accepted at `7fe6493`; finalized block positions are Kali-accepted at
-`4d46229`; the capture handoff is Kali-accepted at `be8fcfe` with independent
-restore of the uploaded synthetic package. The current increment adds a bounded
-B2 upload/download check for that exact synthetic package. It has **no live WebSocket adapter,
-credential-file reader, trading operation, profitability evaluator or curve
-reconstruction**. It cannot activate paid data. The separate RPC, deployment and ordering probes make public reads; the explicit
-backup round-trip CLI invokes the existing privileged rclone for B2; the acceptance runner remains entirely offline.
+`4d46229`; the capture handoff is Kali-accepted at `be8fcfe` and the synthetic
+B2 round trip at `904a805`, both independently replayed from uploaded packages.
+The current increment implements a bounded provider WebSocket wire and offline
+protocol tests. It has **no live collector launcher, credential-file reader,
+trading operation, profitability evaluator or curve reconstruction**. Its factory
+opens a fixed provider connection only when explicitly invoked; no provider
+connection is opened by the acceptance runner. Public RPC/B2 CLIs remain separate.
 No change to the production scanner, frozen studies, E0 or CI is required.
 
 ## Kali acceptance
 
-From a pinned isolated checkout, run:
+From a pinned isolated checkout, install the exact portable dependency in a new
+virtual environment, then run the offline suite:
 
 ```sh
-python3 -E -s -B -W error::ResourceWarning r1-data/check.py --output /absolute/new/report.json
+python3 -m venv .venv
+.venv/bin/python -m pip --isolated --disable-pip-version-check install \
+  --no-deps --only-binary=:all: --require-hashes -r r1-data/requirements-wire.txt
 ```
 
-No third-party dependencies are needed. Linux/Python 3.11+ is required (flock,
+Dependency installation fetches one pinned wheel from PyPI's file service. It
+does not contact PumpPortal. Then:
+
+```sh
+.venv/bin/python -E -s -B -W error::ResourceWarning r1-data/check.py --output /absolute/new/report.json
+```
+
+The wire requires exactly websockets 17.4, with a hash-pinned portable wheel.
+Linux/Python 3.11+ and venv support are required (flock,
 private POSIX files and SQLite). The report must be a new path in an existing
 directory. The runner executes all `test_*.py` checks and then a synthetic
 capture/restart/budget-stop/export/restore/replay exercise. Tests use private
@@ -30,16 +42,44 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-backup-roundtrip-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-provider-wire-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
-Use `python3 -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
+Use `.venv/bin/python -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 210 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test, 181-test and 198-test Kali reports
+The current suite contains 227 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test, 181-test, 198-test and 210-test Kali reports
 remain accepted for their original pinned sources; they do not validate this addition.
 
-## Synthetic B2 round trip (current Kali step)
+## Provider wire (current Kali step — offline only)
+
+Upload the **227-test offline runner report**. It records the required dependency,
+30 source hashes, DNS/Internet-socket blocking and an in-memory protocol peer.
+The tests execute real WebSocket handshake/framing code with simulated byte
+transport. They do not dial a socket, conduct a TLS handshake, read a funded key,
+subscribe to a provider or test actual provider availability.
+
+The library fixes the PumpPortal WSS endpoint, validates TLS context settings,
+disables redirects/proxies/compression and suppresses connection logging. It
+allows only creation/migration and selected-token trade subscription operations.
+One factory makes one connection attempt, with no automatic retry. It bounds
+messages at 64 KiB and 64 fragments, limits completion after the first fragment
+to two seconds, and preserves a single receive task across polling timeouts.
+Abort/close stop receiving; disconnects remain gaps in the capture record.
+These controls are not a provider billing guarantee or machine-wide ownership lock.
+
+The connection decision is conservative: **one provider connection by default**.
+Do not start the new wire beside the existing scanner. Live activation requires
+either validated shared-connection integration or explicit provider confirmation
+permitting the exact coexistence arrangement, plus an accepted launcher, host
+TLS/session evidence, preservation coverage and the owner's numeric funding
+approval. No live CLI is supplied in this increment. See
+`docs/R1-PROVIDER-WIRE-20261111.md` for the dependency, tests and next decision.
+
+## Synthetic B2 round trip (Kali accepted)
+
+The uploaded 210-test result and downloaded package passed review and independent
+restore. Do not repeat the cloud round trip; the following documents that step.
 
 After the **210-test** offline runner passes, use the existing accepted handoff
 package and its top-level rehearsal report. No new rehearsal is required:

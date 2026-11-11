@@ -15,7 +15,7 @@ assessment by automatically adding more small historical probes.
 
 | Area | Evidence and limit | Decision |
 | --- | --- | --- |
-| Capture and local replay | Kali-accepted capture, persistent limits, restart gaps, local export/restore and injected transport tests | Implemented offline; no actual collector connection validated |
+| Capture and local replay | Kali-accepted capture/controller; new provider wire tested with in-memory protocol peer | Wire pending Kali; no actual provider session/TLS test or live launcher accepted |
 | Transaction identity/finality | Three original saved transactions pass the bounded public-RPC reconciliation | Provider-reported sample evidence; not independent consensus proof |
 | Schema | Accepted event inspection and pinned schema comparison | Supports the observed layouts; not every program version, token or transaction type |
 | Native-SOL accounting | Two observed creation-plus-buy transactions and one creation-only transaction pass their supported accounting paths | Internal sample consistency; not an executable counterfactual or profitable trade |
@@ -23,7 +23,7 @@ assessment by automatically adding more small historical probes.
 | Record positions | Cases 1,2,3 located at zero-based indices 22,45,89 in slots 468050019,468049941,468049828 | Sample block-list order established; no complete history or feed-order claim |
 | Early trade coverage | Two selected creation transactions also contain a buy | Subscribing after observing creation cannot be assumed to include that buy; no omission rate measured |
 | Recovery | No historical trade feed or complete gap-recovery path validated | Gaps must remain explicit; no silent continuation as complete data |
-| Preservation | Handoff accepted on Kali and uploaded synthetic package independently restored | Storage-provider round trip pending; no real-capture backup coverage claimed |
+| Preservation | Handoff and synthetic B2 round trip accepted on Kali; downloaded bytes independently restored | One synthetic package only; real-capture coverage and retention remain open |
 | Cost/connection coexistence | Documented paid feed and one-connection guidance; scanner already opens a separate connection | Numeric exposure approval and compliant connection design remain prerequisites |
 
 The block result is sufficient to stop investigating **these three** positions.
@@ -63,12 +63,12 @@ registered measurement contract prepared before activation.
 
 1. **Completed for the synthetic package:** Kali-validated handoff and independent
    restore in the development environment. Original checksum receipt retained.
-2. **Current — storage check:** perform a controlled upload/download of that
-   synthetic package through the selected backup destination, retain the transfer
-   receipt and replay against the original checksum. Existing scanner B2 backups
-   do not automatically cover R1 output directories. A local copy is insufficient.
-3. **Collector completion:** implement and validate the actual network adapter,
-   select a supported dependency, and resolve coexistence before any connection.
+2. **Completed for the synthetic package:** B2 upload/download reported by Kali,
+   downloaded bytes independently restored against the original checksum. Retain
+   the remote object and receipt. Future live capture coverage remains to implement.
+3. **Current — collector completion:** the provider wire is implemented with a
+   pinned dependency and offline protocol tests, pending Kali. Resolve coexistence
+   before any provider connection and complete a guarded launcher.
    Prove bounded receive memory, cancellation/abort, credential redaction,
    no reconnect across gaps, and no paid subscription after a terminal limit.
 4. **Pre-activation review:** combine Kali evidence, preservation receipt,
