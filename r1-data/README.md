@@ -4,11 +4,11 @@ The capture core is Kali-accepted at `f92e4d1`; the offline subscription control
 and source metadata probe are Kali-accepted at `55ddf7a`; the bounded public RPC
 probe is Kali-accepted at `d880134`; the event inspector is Kali-accepted at
 `b28c8ff`; the documented schema comparator is Kali-accepted at `5d64039`;
-native-SOL accounting is Kali-accepted at `27f812c`. The current increment adds
-a bounded public-RPC deployment-metadata probe. It has **no live WebSocket adapter,
+native-SOL accounting is Kali-accepted at `27f812c`; deployment metadata is
+Kali-accepted at `7fe6493`. The current increment adds a bounded finalized
+block-position probe for the same saved transactions. It has **no live WebSocket adapter,
 credential-file reader, trading operation, profitability evaluator or curve
-reconstruction**. It cannot activate paid data. Only the separate RPC probe and
-deployment probe CLIs open network connections; the acceptance runner remains entirely offline.
+reconstruction**. It cannot activate paid data. Only the separate RPC, deployment and ordering probe CLIs open network connections; the acceptance runner remains entirely offline.
 No change to the production scanner, frozen studies, E0 or CI is required.
 
 ## Kali acceptance
@@ -27,16 +27,60 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-deployment-probe-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-ordering-probe-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `python3 -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 167 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test and 152-test Kali reports
+The current suite contains 181 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test and 167-test Kali reports
 remain accepted for their original pinned sources; they do not validate this addition.
 
-## Bounded deployment metadata probe
+## Bounded finalized block positions
+
+After the offline runner passes, use the **original** saved RPC report/bundle:
+
+```sh
+python3 -E -s -B -W error::ResourceWarning r1-data/ordering_probe.py \
+  --rpc-report /absolute/existing/rpc-run/report.json \
+  --evidence /absolute/existing/rpc-run/evidence.json.gz \
+  --output-directory /absolute/new/ordering-run \
+  --read-public-rpc
+```
+
+At most five public mainnet reads: genesis, one `getBlock` per distinct saved
+slot (up to three), genesis again. Each block request uses finalized commitment,
+`transactionDetails: signatures`, transaction version 0 and `rewards: false`.
+No transaction bodies, outcomes, balances or prices are requested. A block's
+public signature list is retained to reproduce its zero-based transaction
+positions. The list includes signatures of other transactions in that block.
+Inputs pass the existing checksum/source/replay/schema/accounting checks first.
+One-MiB response and 8,192-signature bounds apply. The fixed endpoint, thirty-
+second network budget, five-second request limit, no retry/redirect/proxy rules
+remain in force. Only the new private output directory is written.
+
+Expected: `finalized-block-positions-reconciled-live-blocked`. The sample's
+primary signature must appear exactly once in its reported block. Record keys
+combine slot, block-list position and previously saved instruction indices.
+This is provider-reported record ordering, not wall-clock timing, feed arrival
+order, complete history, gap recovery or independent consensus verification.
+Unrequested full transaction/reward bodies are discarded and stop the probe.
+Unavailable blocks produce `block-ordering-unavailable`; a valid block missing
+a selected signature produces `selected-transaction-missing-from-reported-block`.
+Neither grants acceptance. Exit zero only means a diagnostic was retained.
+
+Upload the **181-test offline report**, plus this new directory's `report.json`
+and `evidence.json.gz`. If unavailable, upload once and do not automatically
+retry. Offline replay replaces `--read-public-rpc` with
+`--replay-evidence /existing/ordering-run/evidence.json.gz`, uses the same original
+RPC inputs and a different new output directory. It requires no network.
+See `docs/R1-BLOCK-ORDERING-20261111.md` for limits and the remaining R1 decision.
+
+## Bounded deployment metadata probe (Kali accepted)
+
+The saved five-read deployment result is accepted for metadata scope. No repeat
+public deployment probe is requested for the ordering increment. The following
+command documents that earlier step.
 
 After the offline runner passes, use the original saved RPC report/bundle:
 
@@ -88,8 +132,8 @@ files, not the deployment probe's output files. The replay repeats the exact
 request sequence and compares the binding to those source inputs. A copied or
 edited local bundle is not independently authenticated chain evidence.
 
-See `docs/R1-DEPLOYMENT-METADATA-20261111.md`. This is the next bounded source
-question, within the existing R1 effort cap; live collection remains blocked.
+See `docs/R1-DEPLOYMENT-METADATA-20261111.md` for the accepted Kali evidence.
+The existing R1 effort cap and live-collection block remain unchanged.
 
 ## Offline native-SOL accounting inspection
 

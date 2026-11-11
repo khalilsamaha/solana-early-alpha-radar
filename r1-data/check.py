@@ -20,7 +20,8 @@ SOURCES = ("capture.py", "check.py", "test_capture.py", "test_check.py", "README
            "rpc_probe.py", "test_rpc_probe.py", "event_inspect.py", "test_event_inspect.py", "pump_schema.json",
            "schema_compare.py", "test_schema_compare.py", "trade_profile_0_5_0.json",
            "accounting_inspect.py", "test_accounting_inspect.py",
-           "deployment_probe.py", "test_deployment_probe.py")
+           "deployment_probe.py", "test_deployment_probe.py",
+           "ordering_probe.py", "test_ordering_probe.py")
 
 
 class Parser(argparse.ArgumentParser):
@@ -84,13 +85,13 @@ def main(argv=None):
         after = {name: digest((ROOT / name).read_bytes()) for name in SOURCES}
         if before != after:
             raise CaptureError("source-changed")
-        report = {"schema_version": 1, "status": "offline-deployment-probe-passed-live-blocked",
+        report = {"schema_version": 1, "status": "offline-ordering-probe-passed-live-blocked",
                   "python": platform.python_version(), "sqlite": sqlite3.sqlite_version,
                   "tests": tests, "source_sha256": after,
                   "elapsed_seconds": round(time.monotonic() - started, 6),
                   "synthetic_only": True, "network_used": False, "credentials_loaded": False,
                   "paid_collection_enabled": False, "evidence": evidence,
-                  "remaining": ["Kali deployment-metadata probe; historical configuration and executable pricing validation", "provider connection coexistence",
+                  "remaining": ["Kali block-ordering probe; historical configuration and executable pricing validation", "provider connection coexistence",
                                 "source ordering, initial state and finality validation",
                                 "gap recovery source", "billing and explicit pilot budget",
                                 "real network adapter implementation and validation",
@@ -102,7 +103,7 @@ def main(argv=None):
             exclusive_file(prepared, (canonical(report) + "\n").encode())
             os.link(prepared, output, follow_symlinks=False)
         sync_dir(output.parent)
-        print("R1 offline checks including deployment metadata probing passed; live collection remains blocked. Report created.")
+        print("R1 offline checks including finalized block ordering passed; live collection remains blocked. Report created.")
         return 0
     except Exception:
         print("R1 offline check stopped; no acceptance is granted.", file=sys.stderr)

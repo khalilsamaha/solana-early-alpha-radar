@@ -1,10 +1,11 @@
-# R1 deployment metadata — development validated, Kali capture pending
+# R1 deployment metadata — Kali accepted for its limited scope
 
 Date: 2026-11-11. The 152-test native-SOL accounting increment is now accepted
 on Kali; see [its acceptance record](R1-NATIVE-ACCOUNTING-20261111.md). This
 increment addresses a remaining source question: do the currently reported
 deployment modification slots for Pump and Pump Fees precede the saved samples?
-No actual deployment snapshot has been captured by the developer in this step.
+The developer used mocked responses; the owner subsequently captured the public
+metadata on Kali. Acceptance details follow below.
 
 ## Why this is separate from accounting
 
@@ -120,14 +121,36 @@ The unchanged accounting inspector also reproduced the uploaded Kali report
 byte for byte, and original input bytes were preserved. No accepted inspector,
 capture, transport or public-RPC base client was changed.
 
-## Kali action and remaining R1 scope
+## Kali acceptance — 2026-11-11
 
-From the pinned development checkout, run `r1-data/check.py`; only after it
-passes, run `r1-data/deployment_probe.py --read-public-rpc` with the original
-saved RPC inputs. Upload the offline report plus the new probe's `report.json`
-and `evidence.json.gz`. No fresh transaction sample, wallet/API key or sudo is
-needed. An unavailable probe is useful evidence and must not be represented as
-a version pass. Kali offline/capture acceptance is pending.
+Accepted implementation: `7fe649340ec0ccfa133a625f9e21e5e733adbd81`, tree
+`8313c71100aec286efe65aa844e55819e6994c56`. The uploaded offline runner passed
+**167 tests**, zero failures/errors/skips, Python 3.14.6 and SQLite 3.53.4, in
+2.319477 seconds. All 21 runner and nine probe source hashes match the reviewed
+implementation. Five captured requests and their states match the bundle.
+Compressed/decoded checksums and original-input bindings match. Socket-forbidden
+offline replay reproduces the uploaded reconciliation exactly.
+
+Result: `deployment-metadata-predates-sample-live-blocked`. Pump reports last
+modification slot **458921440**, Pump Fees **456132171**; both strictly predate
+all three sample slots. Bootstrap/snapshot/recheck contexts are 468122597,
+468122601 and 468122604. Both upgrade authorities are present; program pointers,
+headers and allocated sizes are stable. Allocated ProgramData sizes are
+10,485,760 and 948,989 bytes respectively. Only their 49-byte prefixes were read.
+This does not verify executable content, historical fee configuration or prices.
+
+| Uploaded artifact | SHA-256 |
+| --- | --- |
+| radar-r1-deployment-offline-20261111T122523Z-794289.json | 3e7717bea50be197525cbed6fe196a8a4ce3e191cecdd27521982824d54632b8 |
+| report(1).json | adcfba93fe502ad0a7d393edfdfc18d65c651ab835ea9043339bd0cc83270e81 |
+| evidence.json(1).gz | 6168b7df0994d01de4ffa600df4d21d662a41a26c99db35484dda3b040366002 |
+| decoded evidence | f58f5dcb2168134aaeb13d9ee1bda432eb7554e6564b4cf167b25e0dc4483857 |
+
+## Remaining R1 scope
+
+No repeat deployment read is needed. The next bounded source increment is
+finalized block-position reconciliation for the same saved transactions; see
+[R1 block ordering](R1-BLOCK-ORDERING-20261111.md).
 
 After review, make the source-version applicability decision explicitly. The
 broader remaining requirements are historical configuration/executable pricing,
