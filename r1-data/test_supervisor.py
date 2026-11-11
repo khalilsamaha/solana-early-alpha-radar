@@ -51,7 +51,7 @@ class SupervisorTests(unittest.TestCase):
             return False
 
     def test_success_runs_real_child_and_preserves_bound_capture(self):
-        with patch.dict(os.environ, {"PUMPPORTAL_API_KEY": "SYNTHETIC-DO-NOT-INHERIT",
+        with patch.dict(os.environ, {"PUMPPORTAL_API_KEY": "SYNTHETIC-KEY",
                                      "HTTPS_PROXY": "SYNTHETIC-DO-NOT-INHERIT",
                                      "PYTHONPATH": "/missing/synthetic"}):
             run, report = s.rehearse(self.owner)
@@ -72,6 +72,7 @@ class SupervisorTests(unittest.TestCase):
             self.assertEqual(path.stat().st_mode & 0o777, 0o700 if path.is_dir() else 0o600)
             if path.is_file():
                 self.assertNotIn(b"SYNTHETIC-DO-NOT-INHERIT", path.read_bytes())
+                self.assertNotIn(b"SYNTHETIC-KEY", path.read_bytes())
 
     def test_owner_busy_cannot_create_run_and_lock_inode_survives(self):
         with s.owner_lock(self.owner):

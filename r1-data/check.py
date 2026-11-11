@@ -28,7 +28,14 @@ SOURCES = ("capture.py", "check.py", "test_capture.py", "test_check.py", "README
            "provider_wire.py", "test_provider_wire.py", "requirements-wire.txt",
            "supervisor.py", "supervisor_worker.py", "test_supervisor.py",
            "measurement.py", "test_measurement.py", "session_bundle.py", "test_session_bundle.py",
-           "session_backup.py", "test_session_backup.py")
+           "session_backup.py", "test_session_backup.py",
+           "shared_owner.py", "shared_session.py", "shared_discovery.py", "shared_rehearsal.py",
+           "shared_scanner_fixture.mjs", "check_shared.py", "test_shared_owner.py",
+           "test_shared_session.py", "test_shared_discovery.py",
+           "../scanner/src/adapters/pumpportal-events.js", "../scanner/src/adapters/pumpportal-shared.js",
+           "../scanner/src/adapters/pumpportal-source.js", "../scanner/src/adapters/pumpportal.js",
+           "../scanner/src/config.js", "../scanner/src/index.js", "../scanner/src/core/launch-registry.js",
+           "../scanner/src/core/stats-compact-manifest.json")
 
 
 def block_internet():
@@ -131,7 +138,7 @@ def main(argv=None):
         after = {name: digest((ROOT / name).read_bytes()) for name in SOURCES}
         if before != after:
             raise CaptureError("source-changed")
-        report = {"schema_version": 1, "status": "offline-session-backup-passed-live-blocked",
+        report = {"schema_version": 1, "status": "offline-shared-core-passed-host-ipc-pending",
                   "python": platform.python_version(), "sqlite": sqlite3.sqlite_version,
                   "tests": tests, "source_sha256": after,
                   "elapsed_seconds": round(time.monotonic() - started, 6),
@@ -141,7 +148,7 @@ def main(argv=None):
                   "internet_socket_creation_and_dns_blocked": True,
                   "wire_validation": {"protocol_peer": "in-memory", "provider_connection_opened": False,
                                       "tls_handshake_tested": False, "coexistence_accepted": False},
-                  "remaining": ["Kali complete-session backup; historical configuration and executable pricing validation", "provider connection coexistence",
+                  "remaining": ["Kali shared integration and real local IPC review", "production shared-connection rollout",
                                 "source ordering, initial state and finality validation",
                                 "gap recovery source", "billing and explicit pilot budget",
                                 "live-launch credential/budget controls and real provider TLS/session validation",
@@ -153,7 +160,7 @@ def main(argv=None):
             exclusive_file(prepared, (canonical(report) + "\n").encode())
             os.link(prepared, output, follow_symlinks=False)
         sync_dir(output.parent)
-        print("R1 offline checks including complete-session backup checks passed; live collection remains blocked. Report created.")
+        print("R1 offline core checks passed; real shared IPC and live collection remain blocked. Report created.")
         return 0
     except Exception:
         print("R1 offline check stopped; no acceptance is granted.", file=sys.stderr)

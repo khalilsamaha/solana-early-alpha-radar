@@ -1,4 +1,4 @@
-import {creationEvidence} from '../core/launch-registry.js';
+import {dispatchPumpPortalEvent} from './pumpportal-events.js';
 export function startPumpPortal(apiKey,onToken,onStatus=()=>{},health,onCreation=()=>{}) {
   if(!apiKey){onStatus('PumpPortal disabled: missing API key');return ()=>{};}
   let ws,timer,watchdog,stopped=false,retry=1000,lastMessageAt=0;
@@ -28,11 +28,7 @@ export function startPumpPortal(apiKey,onToken,onStatus=()=>{},health,onCreation
           return;
         }
         health?.success('pumpportal');
-        if(!row.mint||!['create','migration','migrate'].includes(row.txType))return;
-        const receivedAt=Date.now(),evidence=creationEvidence(row,receivedAt);
-        if(evidence){try{onCreation(evidence);}catch{onStatus('Launch registry write failed; discovery continues');}}
-        onToken({mint:row.mint,tokenName:row.name,symbol:row.symbol,creator:row.traderPublicKey||row.creator,
-          ...(row.txType==='create'?{launchAt:receivedAt}:{}),discoverySource:`pumpportal:${row.txType}`});
+        dispatchPumpPortalEvent(row,onToken,onStatus,onCreation);
       }catch{onStatus('PumpPortal message rejected');}
     });
     ws.addEventListener('close',()=>{if(stopped)return;health?.failure('pumpportal','Disconnected');onStatus('PumpPortal disconnected; reconnect scheduled');schedule();});

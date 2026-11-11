@@ -54,7 +54,7 @@ class RunnerTests(unittest.TestCase):
             code, _ = self.call(["--output", str(self.path)])
         self.assertEqual(code, 0)
         report = json.loads(self.path.read_text())
-        self.assertEqual(report["status"], "offline-session-backup-passed-live-blocked")
+        self.assertEqual(report["status"], "offline-shared-core-passed-host-ipc-pending")
         self.assertEqual(report["dependencies"], {"websockets": "17.4"})
         self.assertTrue(report["internet_socket_creation_and_dns_blocked"])
         self.assertFalse(report["wire_validation"]["provider_connection_opened"])

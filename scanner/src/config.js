@@ -14,6 +14,7 @@ export function readConfig(env = process.env) {
     return env[key] === 'true';
   };
   const c = {
+    pumpPortalSource: env.PUMPPORTAL_SOURCE || 'direct', pumpPortalSocket: env.PUMPPORTAL_SOCKET || '',
     pumpPortalApiKey: env.PUMPPORTAL_API_KEY || '', jupiterApiKey: env.JUPITER_API_KEY || '',
     heliusApiKey: env.HELIUS_API_KEY || '', telegramBotToken: env.TELEGRAM_BOT_TOKEN || '',
     telegramChatId: env.TELEGRAM_CHAT_ID || '', dashboardToken: env.DASHBOARD_TOKEN || '',
@@ -36,6 +37,11 @@ export function readConfig(env = process.env) {
     researchEnabled: bool('RESEARCH_ENABLED', true), researchNotifications: bool('RESEARCH_NOTIFICATIONS', false),
     dataDir: path.resolve(env.DATA_DIR || './data'),
   };
+  if(!['direct','shared'].includes(c.pumpPortalSource)||
+     (c.pumpPortalSource==='direct'&&c.pumpPortalSocket)||
+     (c.pumpPortalSource==='shared'&&(!path.isAbsolute(c.pumpPortalSocket)||
+       path.normalize(c.pumpPortalSocket)!==c.pumpPortalSocket||Buffer.byteLength(c.pumpPortalSocket)>100)))
+    throw new Error('Invalid PumpPortal source configuration');
   if(c.researchNotifications&&!c.researchEnabled)throw new Error('RESEARCH_NOTIFICATIONS requires RESEARCH_ENABLED=true');
   if (c.strongAlertScore < c.alertScore) throw new Error('STRONG_ALERT_SCORE must be >= ALERT_SCORE');
   if (!['127.0.0.1', '::1', 'localhost'].includes(c.dashboardHost) && c.dashboardToken.length < 24) throw new Error('Non-loopback hosting requires DASHBOARD_TOKEN of at least 24 characters');

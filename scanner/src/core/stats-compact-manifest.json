@@ -4,10 +4,10 @@
     "src/adapters/dexscreener.js": "387cd4d724edf989c02b6fd7d684b1b3c823d95476ac5a86fe883ab9b99d11fc",
     "src/adapters/helius.js": "dc9e31fe540a484296eb4b38911a64d835470e9cfd811dec13442eb06fd60ce4",
     "src/adapters/jupiter.js": "d27326fb73fbd408206a94e2d1a93e57e60417d1ccfdbc6bc19f223b0c56ed62",
-    "src/adapters/pumpportal.js": "9f2e86dcd3489711994be458489e4b3d3f584d210eaee32c094e9bfa74132aac",
+    "src/adapters/pumpportal.js": "34203c4366706d92da675b38f6d53bbe4efa60d69a9ad80cc025fdd6799996a0",
     "src/adapters/telegram.js": "83e7d3a2596fcf5a7c1bf1fe47718cd540dc50b1a304dbcb22755c7585c9e246",
     "src/benchmark.js": "7eaaa5ffe83447a6387494382b32d70b9654adf5949b242cb7f98ac2cb8e0dd2",
-    "src/config.js": "f83a32af773c87974a10973a3ecb713fdadbc063fabf4406b6dbc41cd89bc88a",
+    "src/config.js": "958a7becf1cd8720b2ce5a846b6403208c39f884c4d1a836a3531b205af3c773",
     "src/core/continuity.js": "3da1862cba96140b3ea2a17310824cd409f6224190ab868aab8a5f6c54b4607a",
     "src/core/decision.js": "4bdc0b713630ebd5771de0f6e3c7a134e320d63032c1b7c28d337f1cd0160fe6",
     "src/core/entry-context.js": "1b0bc6f6fbe8961eb16a6434cc46abb7c256b2e4dbcbf04dc197cce98388603a",
@@ -30,13 +30,17 @@
     "src/core/stats-memory.js": "0078f0b6b88366e154287ebcd29728fd81592abf10ec14e08bb702ec9a455252",
     "src/core/storage.js": "e401d1acd31a6cfa1e318950495a500eabe5a9e196a3344c7550f9a5a8a371a1",
     "src/demo.js": "e4d27fd7e5f3de64b0056ff4c55d94c436cea829829e56cd1deb771e79af0dfc",
-    "src/index.js": "068777bd023b39e0fba8e7454b75b36be304588e885d3ffbce1b6a674657dc0d"
+    "src/index.js": "bd28b1416fddaaae29e83eb67d4f5a9cd285958665bdd9bdf67a187a6dd694bb",
+    "src/adapters/pumpportal-events.js": "a3653ae4cfefd17411c71552307183ac065d05c9cc01ca8a89ed3de8c39155dd",
+    "src/adapters/pumpportal-shared.js": "64ac8032eccb8b2b37404c6801bcdcf96f70fad6670ac86b486d92dbde2bb260",
+    "src/adapters/pumpportal-source.js": "760c2b3dc088b53c2cb5366ba05ca5f243426125451934600f27be1b1b7f3d81"
   },
   "storeSha256": "4d9a0e965a62a66398f0971e6d1c76a68966e7b3e2cd5ec86b2b52f7af3048df",
   "compatibleProvenance": [
     "31981c19b6f58cb596c22ef3a7016ec1c7533554b0b640c9c7ea5a083c1be0e6",
     "364b960e728f82212454463f985b927d61a696cc0b438f047a688f469441a955",
     "c794dc1883cab815e52974a4a9eef0c02b53f4bc47348b72d8a16a8cabd39a02",
-    "6e826d8b7c4f3da3897dd37a1ea3a248ef3fb6f0506afc1dfe221d1ab828c31e"
+    "6e826d8b7c4f3da3897dd37a1ea3a248ef3fb6f0506afc1dfe221d1ab828c31e",
+    "b0058b0fb4eb5a3d13b6b3672aca4731ce2aefd981abc8a0a05b5a607a0dfc3f"
   ]
 }

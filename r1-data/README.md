@@ -11,17 +11,19 @@ B2 round trip at `904a805`, both independently replayed from uploaded packages.
 The provider wire is Kali-accepted at `a2fdf580` for its offline scope.
 The offline supervisor is Kali-accepted at `1e8bed1a` and local measurement at
 `ccf80858`. Complete-session handoff is Kali-accepted at `324a32e4` and its
-uploaded archive independently restored. The current increment adds one fixed-
-input B2 round trip for that exact complete synthetic session. It has **no live collector launcher, credential-file reader,
+uploaded archive independently restored. The complete-session B2 round trip is
+Kali-accepted at `58805ae6`, with independent downloaded-archive replay. The
+current increment implements shared ownership and scanner delivery offline,
+pending Kali. It has **no live collector launcher, credential-file reader,
 trading operation, profitability evaluator or curve reconstruction**. Its factory
 opens a fixed provider connection only when explicitly invoked; no provider
 connection is opened by the acceptance runner. Public RPC/B2 CLIs remain separate.
 No change to the production scanner, frozen studies, E0 or CI is required.
 
-## Kali acceptance
+## Shared integration (current Kali step)
 
-From a pinned isolated checkout, install the exact portable dependency in a new
-virtual environment, then run the offline suite:
+From the supplied pinned, independent checkout, create a virtual environment
+and install the exact portable websockets wheel:
 
 ```sh
 python3 -m venv .venv
@@ -29,34 +31,39 @@ python3 -m venv .venv
   --no-deps --only-binary=:all: --require-hashes -r r1-data/requirements-wire.txt
 ```
 
-Dependency installation fetches one pinned wheel from PyPI's file service. It
-does not contact PumpPortal. Then:
+Then run the combined suite and real private local Unix IPC rehearsal:
 
 ```sh
-.venv/bin/python -E -s -B -W error::ResourceWarning r1-data/check.py --output /absolute/new/report.json
+timeout --signal=TERM --kill-after=5s 180s \
+  .venv/bin/python -E -s -B -W error::ResourceWarning \
+  r1-data/check_shared.py --output-directory /absolute/new/shared-review
 ```
 
-The wire requires exactly websockets 17.4, with a hash-pinned portable wheel.
-Linux/Python 3.11+ and venv support are required (flock,
-private POSIX files and SQLite). The report must be a new path in an existing
-directory. The runner executes all `test_*.py` checks and then a synthetic
-capture/restart/budget-stop/export/restore/replay exercise. Tests use private
-temporary directories and remove them afterwards. No scanner database, existing
-capture, environment credential or wallet is read. Report contents include code
-hashes and runtime versions, not raw provider payloads or credentials.
+Linux, Python 3.11+, Node 24.10+ and venv are required. The output directory must
+not exist. Expected status: `offline-shared-integration-passed-live-blocked`,
+zero failed/errored/skipped tests and `real_local_socket_tested: true` for the
+shared IPC path. Upload its **report.json and session.zip**. Both the normal-stop
+and cleanup-failure scenarios must satisfy their respective expectations, and
+both capture/journal packages must replay. All data are synthetic. The existing
+scanner, databases, wallet, provider and B2 configuration are not accessed.
 
-Expected status: `offline-session-backup-passed-live-blocked`, zero failed/errored/skipped
-tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
-an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
-Use `.venv/bin/python -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
-for detailed local synthetic-test diagnostics if the runner stops.
+Development's explicit `--pipe-only` option produces the distinct
+`offline-shared-pipe-passed-host-ipc-pending` status; it cannot satisfy Kali IPC
+acceptance. Python socket creation is unavailable in the development environment.
+The older `check.py` now reports `offline-shared-core-passed-host-ipc-pending`;
+it does not substitute for the combined host run.
 
-The current suite contains 287 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test, 181-test, 198-test, 210-test, 227-test, 241-test, 259-test and 275-test Kali reports
-remain accepted for their original pinned sources; they do not validate this addition.
+The Python suite contains 314 tests and the scanner suite 226 tests. Earlier
+acceptances remain valid for their exact original source versions. No production
+rollout, funding, ML fitting or full-gate/PR/CI acceptance is implied by this
+increment. See `../docs/R1-SHARED-INTEGRATION-20261111.md` for the implementation,
+local clock definitions, bounds and remaining live prerequisites.
 
-## Complete-session B2 round trip (current Kali step)
+## Complete-session B2 round trip (Kali and independent replay accepted)
 
-First run the **287-test offline runner**, which pins 39 source files. No
+The following records the completed check at `58805ae6`; do not repeat it for
+the shared integration step. At that pinned version, run the **287-test offline
+runner**, which pins 39 source files. No
 `--session-artifacts` option is needed: reuse the exact **existing** accepted
 27,148-byte session and its original 275-test receipt. Then explicitly run:
 
@@ -105,8 +112,8 @@ checksum and compare both capture and measurement replay results.
 
 The outer ZIP contains exactly `capture.zip`, `session.jsonl` and `binding.json`.
 The original capture-only ZIP format and fixed B2 probe are unchanged. This
-complete bundle is not yet covered by the earlier cloud receipt or a live
-retention policy. The worker's per-file limit increases from 36 to 44 MiB to
+complete bundle is now covered by its own synthetic B2 receipt at `58805ae6`,
+but not a live retention policy. The worker's per-file limit increases from 36 to 44 MiB to
 fit the bounded combined archive; capture/journal and other process limits
 remain unchanged. See `docs/R1-SESSION-BUNDLE-20261111.md`.
 

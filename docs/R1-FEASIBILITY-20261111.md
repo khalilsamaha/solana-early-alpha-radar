@@ -16,7 +16,8 @@ Complete capture-plus-journal packaging is Kali-accepted and its uploaded
 archive independently replayed. Its fixed-input B2 round trip is Kali-accepted
 at `58805ae6`; the downloaded complete session independently replays exactly.
 See `docs/R1-SESSION-BACKUP-20261111.md`. The owner has selected one shared
-authenticated connection; implementation and validation are next, as specified in
+authenticated connection. Its combined offline integration is implemented, with
+Kali real IPC review pending; see `docs/R1-SHARED-INTEGRATION-20261111.md` and
 `docs/R1-LIVE-READINESS-20261111.md`. No live collector
 launcher is supplied and no paid subscription,
 wallet funding or study registration was performed by this work. The owner

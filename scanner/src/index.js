@@ -3,7 +3,7 @@ import {fileURLToPath} from 'node:url';
 import {config} from './config.js';
 import {Storage} from './core/storage.js';
 import {Radar} from './core/radar.js';
-import {startPumpPortal} from './adapters/pumpportal.js';
+import {startPumpPortalSource} from './adapters/pumpportal-source.js';
 import {startServer} from './server/server.js';
 const args=new Set(process.argv.slice(2));
 const storage=new Storage(config.dataDir),radar=new Radar(config,storage);
@@ -16,7 +16,7 @@ async function shutdown(code=0) {
 }
 radar.onFatal=()=>void shutdown(1);
 if(args.has('--dashboard-only'))radar.health.mode='dashboard';
-else {radar.startBackgroundLoops();stopPump=startPumpPortal(config.pumpPortalApiKey,c=>radar.addCandidate(c),msg=>radar.log(msg),radar.health,e=>{
+else {radar.startBackgroundLoops();stopPump=startPumpPortalSource(config,c=>radar.addCandidate(c),msg=>radar.log(msg),radar.health,e=>{
   storage.recordLaunch(e);
 });}
 if(!args.has('--scanner-only'))server=startServer(radar,config.dashboardPort,path.join(path.dirname(fileURLToPath(import.meta.url)),'../public'));

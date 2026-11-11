@@ -8,8 +8,14 @@ See `R1-SESSION-BACKUP-20261111.md` for exact evidence hashes and scope.
 **Decision: synthetic preservation is accepted; one shared authenticated
 connection is selected; live activation remains blocked on implementation and
 validation.**
-No further synthetic backup round trip is requested. This review changes only
-documentation, not executable sources, scanner configuration or accepted artifacts.
+No further synthetic backup round trip is requested. The original readiness review changed only documentation. The subsequent shared
+integration increment changes development sources, without changing the running
+scanner or previously accepted artifacts.
+
+Implementation update: the combined offline owner/scanner/research path is now
+implemented; Kali real local IPC review is pending. See
+`R1-SHARED-INTEGRATION-20261111.md`. The design requirements below remain the
+acceptance criteria; implementation does not imply rollout or live acceptance.
 
 ## Remaining acceptance boundaries
 
@@ -162,6 +168,7 @@ choice no longer adds a provider-response wait; implementation and host validati
 still prevent a firm live-start date. Full-gate Kali acceptance precedes PR/CI
 consolidation and the owner's merge decision.
 
-No new Kali command is needed for this documentation-only acceptance/readiness
-review. Preserve the existing evidence and remote object; do not repeat the B2
-upload, fund the wallet or restart the scanner for this step.
+The documentation-only decision needed no Kali rerun. The subsequent shared
+integration increment now has a combined Kali command, documented separately.
+Preserve existing evidence and the remote object; do not repeat B2, fund the
+wallet or restart the scanner for that offline check.
