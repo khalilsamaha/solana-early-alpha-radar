@@ -3,8 +3,8 @@
 Date: 2026-11-11. Baseline: main merge
 `c2da6dccdb23d81ef94501019fb868762d89db3f` (PR #83).
 
-Status: documentation review and the first offline capture-core increment are
-complete locally; source adequacy and Kali acceptance remain unverified. See
+Status: the first offline capture-core increment is accepted on Kali after review
+of the uploaded report; source adequacy remains unverified. See
 `r1-data/README.md`. No live transport is implemented and no paid subscription,
 wallet funding or study registration was performed by this work. The owner
 reports the original project wallet is ready; reuse the dedicated PumpPortal
@@ -118,3 +118,36 @@ tests locally on Python 3.12.14 with ResourceWarning treated as an error. The
 standalone runner also exercises capture, restart, a terminal message limit,
 export, local restore and replay. This is not Kali acceptance, off-machine
 preservation, feed-quality acceptance, deployment or full R1 gate closure.
+
+## Kali acceptance — offline core only, November 11
+
+Reviewed source commit: `f92e4d1a99ac326c7d2dfca54ca6f0e7ca66cadd`.
+Tree: `4502ab54a89d39c8d30ce216de445ff07490941e`.
+Uploaded evidence: `radar-r1-offline-20261111T071532Z-111267.json`.
+SHA-256 of the exact uploaded bytes:
+`72a92f114ed1141b746411fde16e4ce2a0bc2d516db10047ea1c7fc77a6461c5`.
+
+- All five reported source hashes match the published, locally reviewed files.
+- Python 3.14.6, SQLite 3.53.4: 44 tests, no failures/errors/skips.
+- Runner status `offline-core-passed-live-blocked`; elapsed 0.600567 seconds.
+  This is offline rehearsal duration, not a trading-latency benchmark.
+- Synthetic capture: four messages/four rows/654 raw bytes; one restart with a
+  gap after row two; terminal `message-limit` stop. The report records successful
+  local restore/replay and source preservation.
+- No network, credentials or paid collection were used by the acceptance runner.
+  Off-machine restore, real-source initial state and ledger order, subscription
+  installation, billing enforcement and profitability remain unverified.
+
+Acceptance is based on the uploaded runner report and matching source hashes;
+this review did not independently access Kali or its temporary raw fixture.
+The report's static `remaining` list still includes Kali review; this acceptance
+record resolves that item without modifying the original evidence.
+
+Host setup correction: `/home/redeye/apps/solana-early-alpha-radar` was not a
+usable Git checkout for the supplied fetch command. Validation used a new
+independent review repository fetching the exact commit. Future commands must
+not assume Git metadata exists in the running application directory.
+
+This acceptance does not close the full R1 gate, authorize funding or live
+collection, or clear PR/CI consolidation. Next: source feasibility and connection
+coexistence, followed by separately validated transport and preservation work.
