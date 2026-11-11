@@ -76,9 +76,11 @@ registered measurement contract prepared before activation.
    uploaded archive independently replayed. Its fixed-input B2 round trip is
    Kali-accepted at `58805ae6`, with independent replay of the downloaded complete
    session; see `R1-SESSION-BACKUP-20261111.md`. The selected connection design is in
-   `R1-LIVE-READINESS-20261111.md`. The shared integration is implemented offline,
-   pending Kali real IPC review; see `R1-SHARED-INTEGRATION-20261111.md`. Complete
-   that acceptance and the remaining live-launch controls before provider use.
+   `R1-LIVE-READINESS-20261111.md`. The shared integration is accepted offline on Kali at
+   `df6cbfa4`, including real Unix IPC; the normal archive independently replays.
+   See `R1-SHARED-INTEGRATION-20261111.md`. Next observe host process identity using
+   `../r1-host-review/README.md`, then finish startup/rollback, private credentials
+   and live supervision controls before provider use.
    Prove bounded receive memory, cancellation/abort, credential redaction,
    no reconnect across gaps, and no paid subscription after a terminal limit.
 4. **Pre-activation review:** combine Kali evidence, preservation receipt,

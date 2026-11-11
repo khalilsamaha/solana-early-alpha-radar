@@ -1,4 +1,4 @@
-# R1 shared connection integration — offline implementation, Kali pending
+# R1 shared connection integration — offline integration accepted on Kali
 
 Date: November 11, 2026. This implements the selected single-connection design
 as one combined offline increment. It continues the existing five-working-day
@@ -123,6 +123,38 @@ directory on failure; do not reinterpret a failure or a pipe-only result as host
 acceptance. A successful host report still needs independent source/hash and
 archive review. No source directory under the production application is used
 as a Git checkout, and no Docker restart is part of this command.
+
+## Kali acceptance — November 11
+
+Accepted implementation: `df6cbfa442943fd83f96ac9910103403cd8dbffc`.
+The supplied report passes **314 Python tests and 226 scanner tests**, with no
+failures, errors or skips. All 115 recorded source hashes match that implementation.
+The default real Unix IPC run completed both normal and deliberately failed
+cleanup scenarios on Python 3.14.6, SQLite 3.53.4, Node 24.19.0 and websockets 17.4.
+The full runner took 22.221897 seconds; this is not a provider latency measurement.
+
+The exact report is retained at `evidence/r1-shared-kali-20261111.json`, SHA-256
+`bcc873501e48da9d17f7410de47353d0f36b410a5ccc1d530a9f1ec42be847e9`.
+The uploaded normal session is 25,861 bytes, SHA-256
+`739bd43b91dc2257b2c155a51fc7e8f6e64545fe10239a064c20ddbe9398bc70`.
+It was independently restored in development; capture and measurement results
+match the report exactly. Originals were preserved. Its four research rows and
+five journal records retain one selected creation and one local research send.
+Normal cleanup unsubscribed and discovery continued before explicit owner shutdown.
+
+The deliberately failed cleanup correctly aborted upstream and preserved
+`transport-cleanup-failed`. Kali reports complete-session replay for that scenario;
+its separate ZIP was not supplied, so independent replay is claimed only for the
+uploaded normal session. Both scenarios used one synthetic upstream attempt and
+zero scanner upstream connections. No provider connection or paid activation occurred.
+
+This accepts the combined **offline integration**, not production rollout or the
+full R1 gate. The next dependency is the read-only
+[`r1-host-review`](../r1-host-review/README.md) observation of Docker process UID,
+namespace and container binding. Its 21 regression tests pass in development;
+the development host observation correctly reports Docker unavailable. Kali host
+observation remains pending. No accepted collector/scanner executable is changed
+by that separate reviewer. The existing five-working-day effort cap is unchanged.
 
 ## Remaining live prerequisites
 

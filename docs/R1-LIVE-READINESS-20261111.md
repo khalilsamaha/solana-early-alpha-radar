@@ -13,7 +13,8 @@ integration increment changes development sources, without changing the running
 scanner or previously accepted artifacts.
 
 Implementation update: the combined offline owner/scanner/research path is now
-implemented; Kali real local IPC review is pending. See
+implemented and accepted on Kali at `df6cbfa4`, including real local IPC. The next
+read-only host identity observation is in `../r1-host-review/README.md`. See
 `R1-SHARED-INTEGRATION-20261111.md`. The design requirements below remain the
 acceptance criteria; implementation does not imply rollout or live acceptance.
 
@@ -26,7 +27,7 @@ acceptance criteria; implementation does not imply rollout or live acceptance.
 | Local measurement | Selection and local send timing replayed | Freeze pilot measurement terms and distinguish unknown provider acknowledgement, external coverage, finality and billing |
 | Complete-session preservation | One synthetic source/upload/download/restore pair accepted | Coverage for real completed and interrupted sessions, independent restore and stated retention terms |
 | Source adequacy | Partial historical feasibility only | Establish whether missing initial events, historical state/configuration, ordering and recovery allow the proposed use; unresolved fields remain unknown |
-| Connection ownership | Single shared authenticated connection selected from owner guidance; current code still has separate socket owners | Implement and validate shared ownership, scanner dispatch and bounded research shutdown |
+| Connection ownership | Shared owner/scanner integration accepted offline on Kali at `df6cbfa4`; production remains on its existing source | Observe host UID/namespace, then validate ownership, startup, mount and rollback controls |
 | Credential and exposure control | Wire accepts an in-memory secret and redacts known variants | Private credential loading/delivery, owner-approved numeric exposure and no automatic top-ups |
 | Full R1 gate | Open | Remaining engineering and Kali acceptance before PR/CI consolidation; measurement pilot and source verdict remain distinct from software checks |
 
