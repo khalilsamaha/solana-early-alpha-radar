@@ -1,5 +1,10 @@
 # R1 offline creation-event inspection — Kali accepted, schema unresolved
 
+Follow-up: [documented newer TradeEvent comparison](R1-TRADE-SCHEMA-COMPARISON-20261111.md)
+matches both saved trade payloads exactly under a separate diagnostic profile.
+The historical results below remain correct for the unchanged default profile.
+Kali acceptance of the new comparator and economic/version acceptance remain open.
+
 Date: 2026-11-11. This is the fourth R1 feasibility increment, not a new study or
 gate. The previous RPC increment is accepted on Kali. This inspector's Kali
 acceptance is recorded below; trade-schema and reconstruction acceptance remain blocked.

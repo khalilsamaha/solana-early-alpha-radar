@@ -2,8 +2,9 @@
 
 The capture core is Kali-accepted at `f92e4d1`; the offline subscription controller
 and source metadata probe are Kali-accepted at `55ddf7a`; the bounded public RPC
-probe is Kali-accepted at `d880134`. This fourth increment adds an offline event
-inspector for the saved RPC evidence. It has **no live WebSocket adapter,
+probe is Kali-accepted at `d880134`; the event inspector is Kali-accepted at
+`b28c8ff`. The current increment compares the saved trade events with an extracted
+newer documentation layout. It has **no live WebSocket adapter,
 credential-file reader, trading operation, profitability evaluator or curve
 reconstruction**. It cannot activate paid data. Only the separate RPC CLI below
 opens a network connection; the acceptance runner remains entirely offline.
@@ -25,14 +26,52 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-event-inspector-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-schema-comparison-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `python3 -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 126 tests. Earlier 44-test, 72-test and 101-test Kali reports
+The current suite contains 137 tests. Earlier 44-test, 72-test, 101-test and 126-test Kali reports
 remain accepted for their original pinned sources; they do not validate this addition.
+
+## Offline trade-schema comparison
+
+Run after the acceptance runner, using the same saved RPC files:
+
+```sh
+python3 -E -s -B -W error::ResourceWarning r1-data/schema_compare.py \
+  --rpc-report /absolute/existing/rpc-run/report.json \
+  --evidence /absolute/existing/rpc-run/evidence.json.gz \
+  --output /absolute/new/schema-comparison.json
+```
+
+This separate diagnostic retains the accepted inspector and `pump_schema.json`
+unchanged. It first repeats that inspector's provenance, replay and transfer
+checks, then compares TradeEvent with the 36-field definition extracted from
+the documentation labeled `pump-rust-client` 0.5.0. The first 35 fields match the
+old profile exactly; the additional field is `quote_transfer_fee: u64`. The
+extracted profile is SHA-256 pinned. The upstream page uses a mutable `latest`
+URL, whose displayed version and reported source revision were recorded; no
+crate archive checksum or historical deployed program version was verified.
+
+All bytes must decode and re-encode exactly, and mint/user/direction/token/SOL/
+quote fields must match the retained native-SOL buy evidence. Missing or extra
+bytes and conflicting evidence remain unsupported. A nonzero extension is
+decoded literally, not treated as a validated fee model. The parent `buy_v2` and
+event-reported `buy` names remain separate observations; no alias is assumed.
+
+Expected diagnostic status: `offline-schema-comparison-complete-live-blocked`.
+For the accepted three-case bundle, cases 1 and 3 each have
+`exact-layout-and-transfer-match-diagnostic-only`, 390 consumed bytes, exact
+re-encoding and reported quote transfer fee zero. Case 2 has no trade in that
+transaction. Exit zero means a comparison report was written, not that all cases
+match or that reconstruction passed. Upload this report and the 137-test runner
+report. No new RPC request, sudo, wallet funding or scanner change is needed.
+
+See `docs/R1-TRADE-SCHEMA-COMPARISON-20261111.md` for source provenance and scope.
+Fee/reserve accounting, version applicability and full R1 remain open. This is
+within the existing five-working-day R1 cap, not a new gate or deadline extension.
 
 ## Offline event inspection of existing RPC evidence
 

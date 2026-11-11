@@ -1,0 +1,173 @@
+{
+  "profile": "pump-rust-client-0.5.0-trade-event-diagnostic",
+  "retrieved_date": "2026-11-11",
+  "source_url": "https://docs.rs/crate/pump-rust-client/latest/source/idls/pump.json",
+  "displayed_version": "0.5.0",
+  "release_date_reported": "2026-10-19",
+  "source_vcs_sha_reported": "462f90a16b1ce666fcb858d5e195f7f49f14b33a",
+  "source_vcs_url": "https://docs.rs/crate/pump-rust-client/latest/source/.cargo_vcs_info.json",
+  "archive_checksum_verified": false,
+  "deployed_program_version_verified": false,
+  "base_schema_sha256": "5f363ffd904f53f9330df55ad926e89bb21ec37719df0c9ede73cfb889e8571d",
+  "event": {
+    "name": "TradeEvent",
+    "docs": [
+      "ix_name: \"buy\" | \"sell\" | \"buy_exact_sol_in\""
+    ],
+    "type": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "mint",
+          "type": "pubkey"
+        },
+        {
+          "name": "sol_amount",
+          "type": "u64"
+        },
+        {
+          "name": "token_amount",
+          "type": "u64"
+        },
+        {
+          "name": "is_buy",
+          "type": "bool"
+        },
+        {
+          "name": "user",
+          "type": "pubkey"
+        },
+        {
+          "name": "timestamp",
+          "type": "i64"
+        },
+        {
+          "name": "virtual_sol_reserves",
+          "type": "u64"
+        },
+        {
+          "name": "virtual_token_reserves",
+          "type": "u64"
+        },
+        {
+          "name": "real_sol_reserves",
+          "type": "u64"
+        },
+        {
+          "name": "real_token_reserves",
+          "type": "u64"
+        },
+        {
+          "name": "fee_recipient",
+          "type": "pubkey"
+        },
+        {
+          "name": "fee_basis_points",
+          "type": "u64"
+        },
+        {
+          "name": "fee",
+          "type": "u64"
+        },
+        {
+          "name": "creator",
+          "type": "pubkey"
+        },
+        {
+          "name": "creator_fee_basis_points",
+          "type": "u64"
+        },
+        {
+          "name": "creator_fee",
+          "type": "u64"
+        },
+        {
+          "name": "track_volume",
+          "type": "bool"
+        },
+        {
+          "name": "total_unclaimed_tokens",
+          "type": "u64"
+        },
+        {
+          "name": "total_claimed_tokens",
+          "type": "u64"
+        },
+        {
+          "name": "current_sol_volume",
+          "type": "u64"
+        },
+        {
+          "name": "last_update_timestamp",
+          "type": "i64"
+        },
+        {
+          "name": "ix_name",
+          "type": "string"
+        },
+        {
+          "name": "mayhem_mode",
+          "type": "bool"
+        },
+        {
+          "name": "cashback_fee_basis_points",
+          "type": "u64"
+        },
+        {
+          "name": "cashback",
+          "type": "u64"
+        },
+        {
+          "name": "buyback_fee_basis_points",
+          "type": "u64"
+        },
+        {
+          "name": "buyback_fee",
+          "type": "u64"
+        },
+        {
+          "name": "shareholders",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "Shareholder"
+              }
+            }
+          }
+        },
+        {
+          "name": "quote_mint",
+          "type": "pubkey"
+        },
+        {
+          "name": "quote_amount",
+          "type": "u64"
+        },
+        {
+          "name": "virtual_quote_reserves",
+          "type": "u64"
+        },
+        {
+          "name": "real_quote_reserves",
+          "type": "u64"
+        },
+        {
+          "name": "holder_rewards_bps",
+          "type": "u64"
+        },
+        {
+          "name": "holder_rewards",
+          "type": "u64"
+        },
+        {
+          "name": "creator_fee_unclaimed",
+          "type": "u64"
+        },
+        {
+          "name": "quote_transfer_fee",
+          "type": "u64"
+        }
+      ]
+    }
+  }
+}
