@@ -3,7 +3,8 @@
 Base: accepted H1/early C1 main merge
 `bc9507f723ad9f131aef4bb230403cfb36c61ccb` (PR #82).
 The owner authorized the next bounded inventory after that consolidation.
-This increment awaits Kali evidence; no new trial or model is authorized.
+This bounded inventory passed Kali acceptance on November 11; see the acceptance
+record below. C1 study readiness remains blocked; no new trial or model is authorized.
 
 ## Scope and repository findings
 
@@ -118,3 +119,31 @@ scope/budget checkpoint and E0's independent blocked-state review remain unchang
 Development publication is for Kali acceptance only. Consolidate this complete
 inventory phase through PR/CI after host evidence is reviewed, following the
 existing local-validation-first workflow.
+
+## Accepted inventory and consolidation — November 11
+
+Kali accepted implementation commit `427119421fcaa21eed5d09193c42046d1c4f1b10`
+with Python 3.14.6: all 20 inventory tests passed in 0.704 seconds, all pinned
+source hashes matched, and source hygiene passed for 966 tracked files.
+The host report returned `inventory-complete-readiness-blocked`, zero errors,
+11 captures and 132 verified compressed chunks. Both original B0 decoded-index
+pins matched. The original/confirmation model and registration checks passed;
+all previously verified study capture identities remained unchanged.
+
+Evidence SHA-256 identities (private reports remain outside this repository):
+
+- Validation log: `9f294dba77f1fee166a667305101b4c7730ffa2b9b1087437016773de71a4191`.
+- Compressed report: `24189176580b5bb51be7508d8e33e22099812399441675c381423eabdd577137`.
+- Canonical report JSON: `39deaa7a0eb0a5c85ff67f13e47db54da6445c9ca3e2befe9324aed6cba62ba7`.
+
+Consolidation review also passed all 75 tests in the five existing research
+workflow suites locally, with pinned dependencies and ResourceWarning treated
+as an error. This documentation acceptance record does not change tested Python.
+PR CI and owner-authorized merge remain separate steps.
+
+This closes only the bounded metadata inventory. Historical confirmation
+registration identity was separately reconciled with its archived registration
+report. Original registration provenance, original reviewed-capture membership,
+complete future exclusions, preservation/restore evidence, numerical utility
+tolerances and an untouched-window/dependence contract remain unresolved.
+No capture outcome replay, new study, training or operational use is authorized.
