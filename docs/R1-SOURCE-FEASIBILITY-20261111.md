@@ -201,3 +201,62 @@ Development-branch publication is for Kali review only. There is no open PR for
 this branch; the current workflows trigger pushes on main, PRs, or manual
 dispatch. No PR, CI dispatch, merge, deployment or container restart accompanies
 this increment.
+
+## Third increment: Kali evidence accepted, 2026-11-11
+
+Reviewed the three uploaded artifacts against implementation commit
+`d880134cbd1ac184def442d78da7baf0b1a6f0fd`, tree
+`562b568de9f751c41556632602b60f2ef317c1e5`. This acceptance supersedes the
+Kali-pending status above for this narrow increment only.
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `radar-r1-rpc-offline-20261111T080728Z-226403.json` | `d1123fd68ac5b6d0222d98faf8fd2eca3f47478354886d5d40aeaa7f5276a0ca` |
+| RPC `report.json` | `dcaf55dece8e1e53455b291340912bb03aec32d0093ce803f0f8ed1ac9434e66` |
+| `evidence.json.gz` | `29ffa7dff87dc6d9ba29c81878d4540a943d4b9f8e993612d39cfba37a60e7ef` |
+| Decoded RPC evidence | `ede0a9787d9adb0fa1d5ad238a6b76e3705d3e6321560dfbc83a178b81248a46` |
+
+The Kali offline runner reports **101 tests, zero failures/errors/skips**, Python
+3.14.6 and SQLite 3.53.4, in 1.289095 seconds. Capture preservation and local
+restore/replay passed. All 11 source hashes exactly match the reviewed source;
+the RPC report's three source hashes also match. No implementation change is
+required by this evidence review.
+
+The host selected three distinct records, with zero rejected records. Their
+receipt ages at the selection cutoff were 122.114, 138.908 and 163.369 seconds,
+within the required window. Nine requests were received successfully; their
+individual reported durations sum to 2039 ms. That sum excludes deliberate
+spacing, Docker discovery, SQL reads and file writes, so it is not end-to-end
+runtime or deadline headroom.
+
+| Case | Finalized transaction slot | Mint initialization | Decimals | Account context slot |
+| --- | ---: | --- | ---: | ---: |
+| 1 | 468050019 | Token-2022 `initializeMint2` | 6 | 468050605 |
+| 2 | 468049941 | Token-2022 `initializeMint2` | 6 | 468050611 |
+| 3 | 468049828 | Token-2022 `initializeMint2` | 6 | 468050618 |
+
+All three version-0 transactions passed the implemented signature, successful
+finalized status, slot, mint membership and unique initialization checks. Each
+mint account matched its initialization program and decimals at a later context.
+Mainnet genesis matched before and after. Six decimals is observed for these
+three cases, not a general constant for future assets.
+
+Reviewer verification used the uploaded private bundle: both compressed and
+decoded hashes match the report, all nine request records match its accounting,
+and offline replay with socket creation forbidden reproduces the complete
+reconciliation exactly. The reviewer made no additional RPC request and did not
+connect directly to Kali. This verifies transfer and replay of this specific
+artifact; scheduled off-machine backup/restore for live capture remains open.
+
+Decision: accept the bounded public-RPC lookup/reconciliation increment on Kali.
+The tested endpoint returned the required narrow facts for these three sampled
+creations. Source completeness, archival coverage, capacity, Pump creator
+identity, historical curve state, fees, event ordering and profitability remain
+unestablished. Full R1 remains open; no paid activation, ML fitting, PR/CI
+consolidation, merge or deployment follows from this acceptance.
+
+Next engineering target: inspect the saved creation transactions offline for
+initial-purchase and curve-state evidence, and establish the required program
+schema/version basis before implementing a decoder. No fresh host lookup or
+repeat of this successful probe is needed for that inspection. Resolve the
+existing scanner/provider connection policy before any live paid adapter.
