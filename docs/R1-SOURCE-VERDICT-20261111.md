@@ -46,10 +46,12 @@ hard billing cutoff. The baseline scanner code opens an unauthenticated data
 socket and subscribes to creation/migration events; a second collector socket
 must not be assumed compliant merely because it uses a funded API key.
 
-Before any live collector test, resolve either a single shared connection design
-with separately approved scanner integration, or explicit provider confirmation
-that the intended coexistence is permitted. A separate key/host is not evidence
-of permission. No provider message has been sent by this work.
+On November 11 the owner supplied single-connection guidelines. One shared
+authenticated connection is selected; the coexistence clarification request is
+superseded. Before any live collector test, implement and validate shared ownership
+and scanner integration, then review rollout. The supplied IP-enforcement detail
+is not explicitly established by the reviewed official pages and is not treated
+as an authenticated support reply. No provider message has been sent by this work.
 
 A first pilot, if the remaining prerequisites pass, measures feed availability,
 selection denominators, creation-to-subscription delay, finality matching,
@@ -73,9 +75,9 @@ registered measurement contract prepared before activation.
    Complete capture/journal packaging is Kali-accepted at `324a32e4`, and the
    uploaded archive independently replayed. Its fixed-input B2 round trip is
    Kali-accepted at `58805ae6`, with independent replay of the downloaded complete
-   session; see `R1-SESSION-BACKUP-20261111.md`. The next readiness decision is in
-   `R1-LIVE-READINESS-20261111.md`. Resolve coexistence before any
-   provider connection and complete the remaining live-launch controls.
+   session; see `R1-SESSION-BACKUP-20261111.md`. The selected connection design is in
+   `R1-LIVE-READINESS-20261111.md`. Implement the selected shared connection
+   before any provider connection and complete the remaining live-launch controls.
    Prove bounded receive memory, cancellation/abort, credential redaction,
    no reconnect across gaps, and no paid subscription after a terminal limit.
 4. **Pre-activation review:** combine Kali evidence, preservation receipt,

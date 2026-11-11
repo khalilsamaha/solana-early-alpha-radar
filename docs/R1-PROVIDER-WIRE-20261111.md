@@ -98,34 +98,31 @@ with ResourceWarning treated as an error. It completed in 1.355153 seconds
 and pins 30 source files. A separate `pip download --require-hashes` verification
 also accepted the exact requirements file and wheel digest.
 
-## Connection-policy decision
+## Connection-policy decision — single shared socket selected
 
-**Default to one provider connection.** The existing scanner opens an
-unauthenticated creation/migration connection. Do not run this authenticated
-wire beside it merely because it has a different API key. The provider's
-[real-time documentation](https://pumpportal.fun/data-api/real-time/) states
-one connection at a time; its account/IP/key scope is not sufficiently explicit
-to approve coexistence. No provider connection or message was sent by this work.
+The owner supplied single-connection guidance on November 11. The project now
+selects **one authenticated upstream connection**, multiplexing free creation/
+migration and selected token trades. The earlier request for a two-socket
+coexistence clarification is superseded. Do not run this wire alongside the
+existing scanner's independent socket.
 
-Before live testing, either obtain explicit provider confirmation covering one
-existing unauthenticated scanner socket plus one authenticated collector socket
-on the same host/IP, or implement and validate one shared connection. A shared
-connection design must preserve scanner discovery when the pilot stops and
-must not silently fall back to a second socket. The current controller aborts
-its wire at terminal limits, so simply attaching the scanner to that same wire
-would interrupt discovery and is not an accepted integration.
+Official [real-time documentation](https://pumpportal.fun/data-api/real-time/)
+and [FAQ](https://pumpportal.fun/FAQ/) were rechecked. They support the selected
+multiplexing pattern. The supplied summary's IP-level enforcement claim is not
+explicit in those pages; it is not recorded as an independently verified support
+reply. No further clarification is needed to adopt the conservative single-socket
+design, and no provider message or connection was sent by this work.
 
-Suggested clarification to obtain through the owner's provider channel:
-“May one existing unauthenticated creation/migration WebSocket and one separate
-authenticated token-trade WebSocket run concurrently on the same host/IP?
-Does the one-connection restriction apply per IP, account or API key? If they
-must share one connection, what handoff is supported without overlap?”
+The existing controller aborts its wire on terminal limits. Simply sharing that
+wire would stop discovery. Replacing abort with a no-op would risk retaining
+paid subscriptions. The connection owner, research shutdown and local scanner
+interface must therefore be implemented and tested together, as specified in
+`R1-LIVE-READINESS-20261111.md`.
 
-Until resolved, continue offline engineering only. A same-key, different-key or
-different-host workaround is not evidence of compliance. Existing scanner
-operation remains unchanged. If the connection decision cannot be resolved
-within the original five-working-day effort cap, report the blocker and
-reassess instead of extending the phase automatically.
+The choice is accepted as an engineering constraint, not a live-launch approval.
+Existing scanner operation remains unchanged pending implementation, Kali
+validation and a reviewed rollout. The original five-working-day effort cap
+continues without extension.
 
 ## Kali acceptance and continuation
 
@@ -145,7 +142,7 @@ run `r1-data/check.py` with that interpreter. Upload its single report. Expected
 227 tests and `offline-provider-wire-passed-live-blocked`. No API key, sudo,
 funding, cloud round-trip repeat or production restart is needed.
 
-After Kali acceptance, complete the connection decision and guarded launcher,
+After Kali acceptance, implement the selected shared connection and guarded launcher,
 then actual host TLS/session validation under the accepted connection model.
 Live-capture preservation/retention and the fixed measurement contract must be
 ready before the owner's numeric funding decision. Full R1 remains open;

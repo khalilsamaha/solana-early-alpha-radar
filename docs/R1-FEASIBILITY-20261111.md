@@ -15,8 +15,8 @@ Local subscription timing and measurement evidence are Kali-accepted.
 Complete capture-plus-journal packaging is Kali-accepted and its uploaded
 archive independently replayed. Its fixed-input B2 round trip is Kali-accepted
 at `58805ae6`; the downloaded complete session independently replays exactly.
-See `docs/R1-SESSION-BACKUP-20261111.md`. The next unresolved dependency is
-the connection decision and live-readiness review in
+See `docs/R1-SESSION-BACKUP-20261111.md`. The owner has selected one shared
+authenticated connection; implementation and validation are next, as specified in
 `docs/R1-LIVE-READINESS-20261111.md`. No live collector
 launcher is supplied and no paid subscription,
 wallet funding or study registration was performed by this work. The owner
@@ -56,8 +56,10 @@ The scope of that constraint across keys/hosts is not established here.
 
 The baseline scanner adapter already opens an unauthenticated data connection
 and subscribes to new-token and migration events. It does not collect trades.
-Resolve compliant coexistence before connecting a separate pilot. Do not modify
-or restart the production scanner merely to accommodate this experiment.
+The owner selected one shared authenticated connection on November 11. Implement
+and validate the shared owner and scanner interface before a live pilot; the
+earlier request for a coexistence exception is superseded. Do not modify or
+restart the production scanner before a separately reviewed rollout.
 
 ## Work sequence and stop conditions
 
