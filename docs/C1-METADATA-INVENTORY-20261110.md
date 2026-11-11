@@ -35,7 +35,9 @@ needs no research virtual environment. It:
 - Exports counts and hashes of the known training/development token lists; no
   token identifiers, coefficients, source identifiers or private source paths.
 - Catalogs at most eight captures in each known study directory and the two exact
-  B0 captures already accepted for H1. B0 compressed index identities are pinned.
+  B0 captures already accepted for H1. B0 exact decompressed index bytes are
+  pinned, matching `history.load_capture` / `build.read`. Compressed file hashes
+  are reported separately; indexed chunk hashes still verify compressed bytes.
 - Reads capture indexes as metadata and hashes compressed chunks against their
   indexed hashes. It never decompresses or parses chunk payloads. Byte verification
   is not full replay, outcome coverage or proof of which captures were reviewed.
@@ -75,9 +77,19 @@ Use the separately supplied exact-commit Kali command; it creates an isolated
 source checkout and output directory. On first validation, run the 17 inventory
 tests and source hygiene check, then inventory these existing paths. For the
 path-only correction, verify unchanged Python file hashes and source hygiene;
-the accepted 17-test Kali result remains applicable. Upload the log and report.
+the accepted 17-test Kali result remains applicable to that documentation-only
+change. The subsequent index-hash correction changes Python and requires all
+20 inventory tests on Kali. Upload the log and report.
 If a source is missing or invalid, upload the partial report; do not substitute
 a new capture, reset registration, change permissions or rerun model evaluation.
+
+The second November 11 run reached both B0 indexes but reported
+`pinned-index-mismatch`: the first implementation compared historical decoded
+index pins to compressed gzip hashes. The correction keeps both accepted pins
+unchanged and compares them to SHA-256 of the exact bounded decompressed bytes,
+without JSON reserialization. Metadata identities now also report `decodedSha256`.
+Regression coverage uses the existing historical reader, distinguishes gzip
+header changes from decoded-byte changes, and retains compressed chunk checks.
 
 `inventory-complete-readiness-blocked` means every requested identity/byte check
 completed. `inventory-partial-readiness-blocked` means a requested input/check is

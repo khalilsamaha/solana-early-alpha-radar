@@ -16,6 +16,8 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 MIB = 1024 * 1024
 DAY = 86400000
+# history.load_capture -> build.read hashes the exact decompressed index bytes,
+# not the gzip transport or a canonical reserialization. Keep those accepted pins.
 CAPTURE_PINS = {
     'b0-live': 'af0eadf277dab988214db0211d1f33267c7f22b3c4a05688d5c621f0d552baff',
     'b0-backup': 'c849f63950f96a49bdf1868539332ddb9b58d0e60cbd3ec954931360bc49103b',
@@ -120,7 +122,7 @@ class Reader:
         value = json.loads(decoded, object_pairs_hook=pairs, parse_constant=constant)
         require(isinstance(value, dict), 'metadata-object')
         self.guard()
-        return value, identity
+        return value, {**identity, 'decodedSha256': hashlib.sha256(decoded).hexdigest()}
 
     def finish(self):
         for path, expected in self.identities.items():
@@ -200,7 +202,7 @@ def registrations(reader, original, confirmation, now):
 def catalog(reader, directory, source, now, pin=None):
     reader.track(directory, directory=True)
     index, info = reader.metadata(directory/'capture-index.json.gz', 65536)
-    require(pin is None or info['compressedSha256'] == pin, 'pinned-index-mismatch')
+    require(pin is None or info['decodedSha256'] == pin, 'pinned-index-mismatch')
     require(index.get('format') == 'quote-history-capture-1' and index.get('complete') is True
             and index.get('windowClock') == 'observer-detected-time'
             and isinstance(index.get('sourceIdentity'), str), 'capture-index')

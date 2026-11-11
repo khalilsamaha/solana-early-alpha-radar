@@ -57,8 +57,9 @@ class InventoryTests(unittest.TestCase):
             p=root/'captures/capture-one';p.mkdir(mode=0o700)
             self.capture(p, a, b);self.captures.append(p)
         for p in (self.live, self.backup):self.capture(p, self.reg['startAt'], self.reg['endAt'])
-        self.pins = patch.dict(m.CAPTURE_PINS, {'b0-live':self.sha(self.live/'capture-index.json.gz'),
-                                              'b0-backup':self.sha(self.backup/'capture-index.json.gz')})
+        self.pins = patch.dict(m.CAPTURE_PINS, {
+            role: hashlib.sha256(gzip.decompress((path/'capture-index.json.gz').read_bytes())).hexdigest()
+            for role, path in (('b0-live', self.live), ('b0-backup', self.backup))})
         self.pins.start();self.addCleanup(self.pins.stop)
 
     def sha(self, path):return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -154,6 +155,41 @@ class InventoryTests(unittest.TestCase):
         self.capture(self.live,self.reg['startAt']+1,self.reg['endAt'])
         r=self.run_inventory();self.assertIsNone(r['captures']['b0-live'])
         self.assertIn('pinned-index-mismatch',[e['code'] for e in r['errors']])
+
+    def test_b0_pin_matches_historical_reader_contract(self):
+        # Exercise the existing reader used by history.load_capture, independently
+        # of the new metadata reader and the fixture pin calculation.
+        path=self.live/'capture-index.json.gz'
+        code='import sys; sys.path.insert(0,sys.argv[1]); from pathlib import Path; from build import read; print(read(Path(sys.argv[2]))[1]["sha256"])'
+        result=subprocess.run([sys.executable,'-E','-s','-S','-B','-c',code,
+                               str(m.ROOT/'research-dataset'),str(path)],
+                              text=True,capture_output=True,check=True)
+        with patch.dict(m.CAPTURE_PINS, {'b0-live':result.stdout.strip()}):
+            r=self.run_inventory()
+        self.assertEqual(r['errors'],[])
+        item=r['captures']['b0-live']
+        self.assertEqual(item['decodedSha256'],result.stdout.strip())
+        self.assertEqual(item['compressedSha256'],self.sha(path))
+        self.assertNotEqual(item['decodedSha256'],item['compressedSha256'])
+
+    def test_b0_gzip_header_change_preserves_exact_decoded_identity(self):
+        path=self.live/'capture-index.json.gz'
+        raw=gzip.decompress(path.read_bytes());before=self.sha(path)
+        path.write_bytes(gzip.compress(raw,mtime=1))
+        r=self.run_inventory()
+        self.assertEqual(r['errors'],[])
+        self.assertNotEqual(before,r['captures']['b0-live']['compressedSha256'])
+        self.assertEqual(r['captures']['b0-live']['decodedSha256'],m.CAPTURE_PINS['b0-live'])
+        # Chunk identities remain compressed-byte identities.
+        (self.live/'part-00.json.gz').write_bytes(b'changed')
+        self.assertIn({'scope':'b0-live','code':'chunk-checksum'},self.run_inventory()['errors'])
+
+    def test_b0_equivalent_json_reserialization_does_not_satisfy_pin(self):
+        path=self.live/'capture-index.json.gz'
+        raw=gzip.decompress(path.read_bytes())
+        path.write_bytes(gzip.compress(raw+b'\n',mtime=0))
+        self.assertEqual(json.loads(raw),json.loads(gzip.decompress(path.read_bytes())))
+        self.assertIn({'scope':'b0-live','code':'pinned-index-mismatch'},self.run_inventory()['errors'])
 
     def test_symlink_parent_and_hardlink_are_rejected(self):
         alias=self.root/'alias';alias.symlink_to(self.old,target_is_directory=True)
