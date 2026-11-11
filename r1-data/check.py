@@ -15,7 +15,8 @@ from capture import (Capture, CaptureError, Limits, canonical, digest,
                      exclusive_file, export_capture, restore_capture, sync_dir, verify)
 
 ROOT = Path(__file__).resolve().parent
-SOURCES = ("capture.py", "check.py", "test_capture.py", "test_check.py", "README.md")
+SOURCES = ("capture.py", "check.py", "test_capture.py", "test_check.py", "README.md",
+           "transport.py", "test_transport.py", "source_probe.py", "test_source_probe.py")
 
 
 class Parser(argparse.ArgumentParser):
@@ -79,16 +80,16 @@ def main(argv=None):
         after = {name: digest((ROOT / name).read_bytes()) for name in SOURCES}
         if before != after:
             raise CaptureError("source-changed")
-        report = {"schema_version": 1, "status": "offline-core-passed-live-blocked",
+        report = {"schema_version": 1, "status": "offline-transport-passed-live-blocked",
                   "python": platform.python_version(), "sqlite": sqlite3.sqlite_version,
                   "tests": tests, "source_sha256": after,
                   "elapsed_seconds": round(time.monotonic() - started, 6),
                   "synthetic_only": True, "network_used": False, "credentials_loaded": False,
                   "paid_collection_enabled": False, "evidence": evidence,
-                  "remaining": ["Kali report review", "provider connection coexistence",
+                  "remaining": ["Kali transport and metadata-probe review", "provider connection coexistence",
                                 "source ordering, initial state and finality validation",
                                 "gap recovery source", "billing and explicit pilot budget",
-                                "live transport implementation and validation",
+                                "real network adapter implementation and validation",
                                 "off-machine preservation and restore"]}
         # Build in a private sibling then link exclusively: readers never see a
         # partial report and an existing path (including symlink) is not replaced.
@@ -97,7 +98,7 @@ def main(argv=None):
             exclusive_file(prepared, (canonical(report) + "\n").encode())
             os.link(prepared, output, follow_symlinks=False)
         sync_dir(output.parent)
-        print("R1 offline core passed; live collection remains blocked. Report created.")
+        print("R1 offline capture and transport checks passed; live collection remains blocked. Report created.")
         return 0
     except Exception:
         print("R1 offline check stopped; no acceptance is granted.", file=sys.stderr)

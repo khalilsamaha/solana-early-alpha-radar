@@ -1,7 +1,8 @@
-# R1 offline capture core
+# R1 offline capture, transport controller and source metadata probe
 
-This is the first implementation increment of the R1 feasibility work. It has
-**no live transport, credential-file reader, network client, trading operation,
+The capture core is Kali-accepted at `f92e4d1`. This second increment adds an
+offline-tested subscription controller and a read-only source metadata probe.
+It has **no real network adapter, credential-file reader, network client, trading operation,
 profitability evaluator or curve reconstruction**. It cannot activate paid data.
 No change to the production scanner, frozen studies, E0 or CI is required.
 
@@ -21,11 +22,56 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-core-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-transport-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `python3 -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
+
+The current suite contains 72 tests. The earlier 44-test report remains accepted
+for its original pinned source; it does not validate the added code.
+
+## Source metadata probe on Kali
+
+After offline checks, run the separate probe with the application project path:
+
+```sh
+sudo python3 -E -s -B -W error::ResourceWarning r1-data/source_probe.py \
+  --project "$HOME/apps/solana-early-alpha-radar" --output /absolute/new/source-report.json
+```
+
+The project folder need not contain Git metadata. The probe uses only local
+Docker socket inspection, filtered by the Compose working-directory and radar
+service labels, to locate `/app/data`. It does not load `.env`, inspect container
+environment values, restart containers or open a provider connection. Sudo is
+needed to read Docker's named volume; only the probe needs it. Under sudo, the
+private output is assigned back to the invoking user.
+
+The database is opened `mode=ro` / `query_only`. The read transaction is bounded
+to three seconds, 128 recent creation records and 4096 bytes per record using the
+existing receipt index; no fallback table scan is allowed. Docker discovery has
+two five-second command timeouts. The report exports non-null/absent field counts
+and timing only, not source payloads, signatures, wallet addresses or outcomes.
+Field presence is not field validity or chain verification. SQLite may use its
+normal WAL read coordination; the tool performs no row/schema changes.
+
+`creation-metadata-observed` means some existing creation metadata was read.
+`creation-metadata-insufficient` and `source-metadata-unavailable` remain explicit
+non-passes. All three states retain `source_complete: false` and
+`live_activation_allowed: false`. Upload the source report even if unavailable;
+do not substitute a guessed database path. `--database` exists for explicit
+verified paths and synthetic tests, not automatic discovery fallback.
+
+## Transport controller boundary
+
+`transport.run_session` accepts an injected asynchronous wire. It opens at most
+one session, serializes and rate-limits the four permitted subscription methods,
+expires watches even during silence, unsubscribes on migration, stops on gaps,
+and aborts before bounded cleanup when a capture limit is reached. It never
+reconnects or treats a control message as proof of subscription acknowledgement.
+Tests use only synthetic in-memory wires. There is no live launcher and no
+WebSocket dependency to install for this increment. Real TLS/handshake/buffering,
+provider compatibility, credentials and billing have not been exercised.
 
 ## Contracts
 
@@ -72,13 +118,18 @@ for detailed local synthetic-test diagnostics if the runner stops.
 
 ## Remaining before paid activation
 
-Review Kali evidence; resolve the existing scanner/PumpPortal connection policy;
-establish required source fields, early-event capture, ordering, finality and a
-recovery source; implement and validate the isolated live transport; agree the
+Review the new Kali evidence; resolve the existing scanner/PumpPortal connection policy;
+establish a viable verification path for required source fields, early-event
+capture, ordering, finality and recovery; implement and validate the network adapter; agree the
 explicit deposit and fee exposure; demonstrate off-machine preservation/restore.
 Reuse the existing dedicated PumpPortal-linked wallet if suitable. Do not fund it
 for this offline acceptance. A separate devnet rehearsal wallet is not the
 provider-linked data wallet.
+
+The paid pilot is intended to measure source quality, not to assume it is already
+proven. Its limited discovery purpose and explicit budget require approval before
+activation. Full evidence quality and reconstruction acceptance are prerequisites
+for a confirmation study, not claims made by the metadata probe.
 
 Development branch publication is allowed for Kali review. PR/CI consolidation
 waits for the complete agreed gate and applicable Kali acceptance.
