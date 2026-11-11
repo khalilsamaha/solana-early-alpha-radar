@@ -6,9 +6,12 @@ probe is Kali-accepted at `d880134`; the event inspector is Kali-accepted at
 `b28c8ff`; the documented schema comparator is Kali-accepted at `5d64039`;
 native-SOL accounting is Kali-accepted at `27f812c`; deployment metadata is
 Kali-accepted at `7fe6493`; finalized block positions are Kali-accepted at
-`4d46229`. The current increment adds an offline capture export/restore handoff. It has **no live WebSocket adapter,
+`4d46229`; the capture handoff is Kali-accepted at `be8fcfe` with independent
+restore of the uploaded synthetic package. The current increment adds a bounded
+B2 upload/download check for that exact synthetic package. It has **no live WebSocket adapter,
 credential-file reader, trading operation, profitability evaluator or curve
-reconstruction**. It cannot activate paid data. Only the separate RPC, deployment and ordering probe CLIs open network connections; the acceptance runner remains entirely offline.
+reconstruction**. It cannot activate paid data. The separate RPC, deployment and ordering probes make public reads; the explicit
+backup round-trip CLI invokes the existing privileged rclone for B2; the acceptance runner remains entirely offline.
 No change to the production scanner, frozen studies, E0 or CI is required.
 
 ## Kali acceptance
@@ -27,16 +30,59 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-handoff-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-backup-roundtrip-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `python3 -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 198 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test and 181-test Kali reports
+The current suite contains 210 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test, 181-test and 198-test Kali reports
 remain accepted for their original pinned sources; they do not validate this addition.
 
-## Offline capture handoff (current Kali step)
+## Synthetic B2 round trip (current Kali step)
+
+After the **210-test** offline runner passes, use the existing accepted handoff
+package and its top-level rehearsal report. No new rehearsal is required:
+
+```sh
+sudo -v
+python3 -E -s -B -W error::ResourceWarning r1-data/backup_roundtrip.py \
+  --bundle /absolute/existing/handoff-run/export/capture.zip \
+  --handoff-report /absolute/existing/handoff-run/report.json \
+  --output-directory /absolute/new/backup-roundtrip \
+  --round-trip-b2
+```
+
+This command uploads the **specific accepted 21,328-byte synthetic package** and
+reads it back under a new random object name in the existing bucket's separate
+`r1-rehearsal/` prefix. The fixed expected package and report digests prevent
+substitution of real production data. It first performs a local restore, then
+checks `radar-b2` is configured as B2. It invokes at most three subprocesses:
+backend metadata, one upload and one download. No cloud list/sync/delete,
+retention change, scanner restart or new paid feed is performed. Ordinary B2
+storage/API accounting can still apply; this does not claim zero billing.
+
+Python stays under the current user. `sudo -v` lets the existing rclone process
+read `/etc/solana-radar/rclone.conf`; Python never reads or prints that config.
+Upload bytes travel on stdin and download bytes on stdout, so privileged rclone
+receives no user-controlled local file path. Each invocation has a root-owned
+40-second timeout plus a two-second forced-kill window. Raw errors are discarded;
+failed or uncertain uploads are not retried or deleted. Keep any resulting object.
+
+Expected: `synthetic-backup-roundtrip-passed-live-blocked`, with both
+`remote_download_verified` and `downloaded_capture_replayed` true. Upload the
+210-test offline report, new `report.json` and `downloaded.zip` when present.
+`synthetic-backup-roundtrip-unavailable` is a retained diagnostic, not a pass;
+exit zero only means that report was created. Do not automatically rerun or
+change endpoints if unavailable. This checks one synthetic round trip, not
+ongoing retention, scheduled backup coverage or production R1 protection.
+See `docs/R1-BACKUP-ROUNDTRIP-20261111.md`.
+
+## Offline capture handoff (Kali accepted)
+
+The original handoff and its independent restore are accepted for synthetic
+portability. The following documents that earlier operation; do not regenerate
+the package for the fixed-input B2 check.
 
 ```sh
 python3 -E -s -B -W error::ResourceWarning r1-data/handoff.py rehearse \

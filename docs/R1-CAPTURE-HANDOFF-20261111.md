@@ -1,4 +1,4 @@
-# R1 capture handoff — offline implementation, Kali pending
+# R1 capture handoff — Kali accepted and independently restored
 
 Date: 2026-11-11. This is the next independent engineering increment after
 the [partial source-feasibility verdict](R1-SOURCE-VERDICT-20261111.md).
@@ -95,3 +95,31 @@ or evidence of a storage-provider round trip.
 This is a development-branch increment, not full R1 closure. No PR, CI release,
 main merge, production restart, paid activation, signing or ML fit is authorized
 by a successful handoff. The original five-working-day effort cap continues.
+
+## Kali acceptance and independent restore — 2026-11-11
+
+Implementation `be8fcfe09a0b865629591bebe95427ee219fc743`, tree
+`9b5e4ec5fd762c5d7822d0cb42d1aa98b3faf63b`. All **198 tests** passed on Kali,
+zero failures/errors/skips, Python 3.14.6 and SQLite 3.53.4, in 2.723781 seconds.
+All 25 runner source hashes and both handoff source hashes match reviewed code.
+Both uploaded reports identify the same 21,328-byte package and capture state.
+
+The uploaded package was copied into a new private temporary location and
+restored in the development environment with socket creation forbidden. Its
+expected hash matched; its restored database bytes matched the ZIP member;
+semantic replay matched both Kali reports. Four messages, four rows, one restart
+and one explicit gap were preserved. The database SHA-256 is
+`83a22052b74b3db7067de8efb951759139ea5d9cd6614babc994d998e3555e5e`.
+
+| Uploaded artifact | SHA-256 |
+| --- | --- |
+| radar-r1-handoff-offline-20261111T132727Z-930958.json | 03d9c57b63760b840966d71fb85c047632bb5fd94c3baa687c645709e6db829c |
+| report(3).json — rehearsal | 68d7ef0a660bfb3e0a38400c7dd44c83f6512e87fb9877c4675defe66ba0528e |
+| report(4).json — export | 6646c6c37d68b9093e2436a4f4d1ba9cf7ba56c095875287e6b11abc6eb56117 |
+| capture.zip | 461fb7ad53f77879bbc6cf5554002e5578b5a75fc40de418f7c8216b03ab0ff4 |
+
+This establishes independent-environment portability of the synthetic package.
+It does not establish a B2 upload/download, storage retention or backup coverage
+of an actual R1 live capture. Original evidence flags remain unchanged; this
+acceptance record adds the independently observed restore result. The next
+increment is the scoped [synthetic B2 round trip](R1-BACKUP-ROUNDTRIP-20261111.md).

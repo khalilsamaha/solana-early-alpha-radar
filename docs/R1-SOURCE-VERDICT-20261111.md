@@ -23,7 +23,7 @@ assessment by automatically adding more small historical probes.
 | Record positions | Cases 1,2,3 located at zero-based indices 22,45,89 in slots 468050019,468049941,468049828 | Sample block-list order established; no complete history or feed-order claim |
 | Early trade coverage | Two selected creation transactions also contain a buy | Subscribing after observing creation cannot be assumed to include that buy; no omission rate measured |
 | Recovery | No historical trade feed or complete gap-recovery path validated | Gaps must remain explicit; no silent continuation as complete data |
-| Preservation | Local capture restore already passed; portable handoff now implemented separately | Independent-host and storage-provider round trips still pending |
+| Preservation | Handoff accepted on Kali and uploaded synthetic package independently restored | Storage-provider round trip pending; no real-capture backup coverage claimed |
 | Cost/connection coexistence | Documented paid feed and one-connection guidance; scanner already opens a separate connection | Numeric exposure approval and compliant connection design remain prerequisites |
 
 The block result is sufficient to stop investigating **these three** positions.
@@ -61,10 +61,9 @@ registered measurement contract prepared before activation.
 
 ## Sequence to follow
 
-1. **Current:** Kali-validate the capture handoff and submit its synthetic package
-   for independent-host replay. Keep the original checksum receipt separate from
-   the transferred package. This verifies portability without funded traffic.
-2. **Preservation completion:** perform a controlled upload/download of that
+1. **Completed for the synthetic package:** Kali-validated handoff and independent
+   restore in the development environment. Original checksum receipt retained.
+2. **Current — storage check:** perform a controlled upload/download of that
    synthetic package through the selected backup destination, retain the transfer
    receipt and replay against the original checksum. Existing scanner B2 backups
    do not automatically cover R1 output directories. A local copy is insufficient.
