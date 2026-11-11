@@ -1,8 +1,9 @@
 # R1 capture, transport controller and source feasibility probes
 
 The capture core is Kali-accepted at `f92e4d1`; the offline subscription controller
-and source metadata probe are Kali-accepted at `55ddf7a`. This third increment
-adds a bounded public RPC reconciliation probe. It has **no live WebSocket adapter,
+and source metadata probe are Kali-accepted at `55ddf7a`; the bounded public RPC
+probe is Kali-accepted at `d880134`. This fourth increment adds an offline event
+inspector for the saved RPC evidence. It has **no live WebSocket adapter,
 credential-file reader, trading operation, profitability evaluator or curve
 reconstruction**. It cannot activate paid data. Only the separate RPC CLI below
 opens a network connection; the acceptance runner remains entirely offline.
@@ -24,14 +25,66 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-rpc-probe-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-event-inspector-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `python3 -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 101 tests. Earlier 44-test and 72-test Kali reports
+The current suite contains 126 tests. Earlier 44-test, 72-test and 101-test Kali reports
 remain accepted for their original pinned sources; they do not validate this addition.
+
+## Offline event inspection of existing RPC evidence
+
+This increment needs no new RPC call, sudo, wallet, API key or container action.
+Use the existing successful RPC `report.json` and its `evidence.json.gz`:
+
+```sh
+python3 -E -s -B -W error::ResourceWarning r1-data/event_inspect.py \
+  --rpc-report /absolute/existing/rpc-run/report.json \
+  --evidence /absolute/existing/rpc-run/evidence.json.gz \
+  --output /absolute/new/event-report.json
+```
+
+The inspector checks compressed and decoded hashes, source pins, RPC replay and
+request accounting before inspecting the transactions. Input caps are 128 KiB
+for the RPC report, 16 MiB for compressed evidence and 32 MiB after decompression.
+Symlink inputs and output replacement are refused. Output is private and atomic;
+inputs are preserved. No raw mint, wallet, metadata name/URI or signature is exported.
+
+`pump_schema.json` is a minimal mechanical extraction of CreateEvent, TradeEvent,
+Shareholder and create_v2/buy_v2 account definitions from the official Pump IDL at
+commit `639b87fb45c3adeffa6f7c4a1bf0cb85e392bf22`. Its hash is pinned in the
+inspector. Every event byte must be consumed; trailing bytes, including zeroes,
+are a schema mismatch. This pins a documentation schema, **not** the deployed
+program binary/version. Parent instruction arguments are not decoded or certified.
+
+Supported event provenance is a direct Pump create_v2/buy_v2 parent (fixed program
+and account layout), followed by a Pump self-CPI with the Anchor event tag,
+matching event discriminator, stack height and parent event-authority account.
+Each Pump parent must have exactly one supported event. CPI wrappers, non-native
+quote remaining accounts, other instruction versions and unknown events stay
+unsupported. Log copies are not counted as additional events. These checks are
+consistency checks on retained provider evidence, not cryptographic authentication.
+
+Creation fields are exported only after exact decoding and mint/curve/user/token
+program agreement with parent accounts. MintTo totals are reported separately
+from the creation event's supply. For supported buy parents, parsed token/SOL
+transfers can be inspected independently of unsupported trade-event tails; these
+transfers exclude fees/rent and do not establish total acquisition cost. A case
+with no trade event describes that transaction only, not all activity after creation.
+
+Expected diagnostic status is `offline-event-inspection-complete-live-blocked`.
+It means inspection completed, **not** that every event decoded or reconstruction
+passed. Inspect each case. The accepted three-case RPC bundle currently yields
+three exact creation events and two trade events with eight unconsumed bytes each;
+the latter are explicitly `schema-mismatch`, without exported partial trade values.
+One Mayhem case has two MintTo operations totaling twice its event-reported supply.
+Do not normalize that difference away or infer fees from unmatched event bytes.
+
+Upload the offline runner report and the new event report. Keep the original
+RPC artifacts unchanged. No rerun of the public RPC probe is required. Schema
+resolution and economic reconstruction remain open even after Kali inspector acceptance.
 
 ## Public RPC feasibility probe on Kali
 

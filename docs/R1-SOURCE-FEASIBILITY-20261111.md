@@ -260,3 +260,11 @@ initial-purchase and curve-state evidence, and establish the required program
 schema/version basis before implementing a decoder. No fresh host lookup or
 repeat of this successful probe is needed for that inspection. Resolve the
 existing scanner/provider connection policy before any live paid adapter.
+
+The next implementation is now prepared: see
+[R1-EVENT-SCHEMA-20261111.md](R1-EVENT-SCHEMA-20261111.md).
+Offline inspection finds three exact creation events but two trade-event payloads
+with eight bytes unconsumed by the pinned official IDL. The new inspector keeps
+those trade events unsupported and preserves separate parsed transfer evidence.
+Development validation passes 126 tests; Kali acceptance of this fourth increment
+is pending. Full R1 and economic reconstruction remain blocked.
