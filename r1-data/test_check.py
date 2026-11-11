@@ -53,7 +53,7 @@ class RunnerTests(unittest.TestCase):
             code, _ = self.call(["--output", str(self.path)])
         self.assertEqual(code, 0)
         report = json.loads(self.path.read_text())
-        self.assertEqual(report["status"], "offline-accounting-inspector-passed-live-blocked")
+        self.assertEqual(report["status"], "offline-deployment-probe-passed-live-blocked")
         self.assertFalse(report["paid_collection_enabled"])
         self.assertFalse(report["credentials_loaded"])
         self.assertFalse(report["network_used"])

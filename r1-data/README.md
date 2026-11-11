@@ -3,12 +3,12 @@
 The capture core is Kali-accepted at `f92e4d1`; the offline subscription controller
 and source metadata probe are Kali-accepted at `55ddf7a`; the bounded public RPC
 probe is Kali-accepted at `d880134`; the event inspector is Kali-accepted at
-`b28c8ff`; the documented schema comparator is Kali-accepted at `5d64039`.
-The current increment inspects native-SOL cashflows, fee arithmetic and reported
-reserve changes in the saved transactions. It has **no live WebSocket adapter,
+`b28c8ff`; the documented schema comparator is Kali-accepted at `5d64039`;
+native-SOL accounting is Kali-accepted at `27f812c`. The current increment adds
+a bounded public-RPC deployment-metadata probe. It has **no live WebSocket adapter,
 credential-file reader, trading operation, profitability evaluator or curve
-reconstruction**. It cannot activate paid data. Only the separate RPC CLI below
-opens a network connection; the acceptance runner remains entirely offline.
+reconstruction**. It cannot activate paid data. Only the separate RPC probe and
+deployment probe CLIs open network connections; the acceptance runner remains entirely offline.
 No change to the production scanner, frozen studies, E0 or CI is required.
 
 ## Kali acceptance
@@ -27,14 +27,69 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-accounting-inspector-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-deployment-probe-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `python3 -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 152 tests. Earlier 44-test, 72-test, 101-test, 126-test and 137-test Kali reports
+The current suite contains 167 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test and 152-test Kali reports
 remain accepted for their original pinned sources; they do not validate this addition.
+
+## Bounded deployment metadata probe
+
+After the offline runner passes, use the original saved RPC report/bundle:
+
+```sh
+python3 -E -s -B -W error::ResourceWarning r1-data/deployment_probe.py \
+  --rpc-report /absolute/existing/rpc-run/report.json \
+  --evidence /absolute/existing/rpc-run/evidence.json.gz \
+  --output-directory /absolute/new/deployment-run \
+  --read-public-rpc
+```
+
+This makes at most five requests to the fixed public mainnet endpoint: genesis,
+Pump/Pump Fees program pointers, both programs and their ProgramData headers in
+one batch, a second batch of those four accounts, and genesis again. Each account
+request uses finalized commitment, a nondecreasing minimum context at least as
+recent as every saved transaction, and a 49-byte slice. The preserved HTTP client
+has five-second per-request deadlines within a thirty-second network budget,
+one-MiB response caps, disabled redirects/proxy inheritance and no retry/fallback.
+No sudo, Docker/database access, wallet/API key, fee configuration fetch,
+simulation or transaction submission is used. This is a public read, not a paid
+PumpPortal subscription. The existing scanner connection is untouched.
+
+Before any network call, the original inputs must still pass checksum, RPC
+replay, schema and accounting checks. Only one to three accepted transaction
+slots are used. Program account owner/executable/size/tag and ProgramData
+owner/size/tag/option/ELF prefix must match the supported loader-v3 layout.
+Pointers, headers and allocated sizes must be stable across the two snapshots.
+
+`deployment-metadata-predates-sample-live-blocked` means both reported last
+modification slots are strictly earlier than every saved transaction, with the
+metadata rechecks completed. `historical-deployment-window-unresolved` means at
+least one modification is at or after a sample: current metadata cannot bind
+that sample to the current deployment. Same-slot changes remain unresolved.
+`deployment-metadata-unavailable` covers unavailable, inconsistent or unsupported
+responses. Upload the result even if unavailable; do not automatically rerun it.
+
+None of these states verifies executable bytecode, SDK/source equivalence,
+historical fee configuration, ProgramData PDA derivation or the full dependency
+chain. A header hash is not a bytecode hash. `minContextSlot` is a lower bound on
+the current read, not a request to retrieve historical state.
+
+The new private output directory contains `report.json` and `evidence.json.gz`.
+Upload both plus the 167-test offline report. The raw snapshot contains public
+program headers only, including public upgrade-authority addresses, and can be
+replayed without new network calls. For offline replay, replace
+`--read-public-rpc` with `--replay-evidence /existing/deployment-run/evidence.json.gz`
+and use a different new output directory. Source inputs stay the original RPC
+files, not the deployment probe's output files. The replay repeats the exact
+request sequence and compares the binding to those source inputs. A copied or
+edited local bundle is not independently authenticated chain evidence.
+
+See `docs/R1-DEPLOYMENT-METADATA-20261111.md`. This is the next bounded source
+question, within the existing R1 effort cap; live collection remains blocked.
 
 ## Offline native-SOL accounting inspection
 
@@ -74,7 +129,7 @@ For the saved three-case bundle, cases 1 and 3 have
 `creation-only-accounting-consistent`. All three have zero net-balance residuals;
 both trades pass 16 arithmetic/identity checks. Exit zero means a diagnostic was
 written; mismatches/unsupported cases remain explicit, not acceptance. Upload
-this report and the new 152-test runner report. No sudo, fresh RPC request,
+this report and the runner report from the same pinned checkout. No sudo, fresh RPC request,
 funding, scanner change, ML fit or deployment is part of this check.
 
 See `docs/R1-NATIVE-ACCOUNTING-20261111.md` for findings and remaining limits.

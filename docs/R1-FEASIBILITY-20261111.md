@@ -3,8 +3,11 @@
 Date: 2026-11-11. Baseline: main merge
 `c2da6dccdb23d81ef94501019fb868762d89db3f` (PR #83).
 
-Status: the first offline capture-core increment is accepted on Kali after review
-of the uploaded report; source adequacy remains unverified. See
+Status update, 2026-11-11: capture core, offline transport, metadata/RPC probes,
+event inspection, schema comparison and native-SOL accounting are accepted on
+Kali for their pinned scopes. Full source adequacy remains unverified. The next
+bounded check is Pump/Pump Fees deployment metadata; see
+`docs/R1-DEPLOYMENT-METADATA-20261111.md` and
 `r1-data/README.md`. No live transport is implemented and no paid subscription,
 wallet funding or study registration was performed by this work. The owner
 reports the original project wallet is ready; reuse the dedicated PumpPortal

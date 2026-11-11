@@ -1,4 +1,4 @@
-# R1 native-SOL accounting — development validated, Kali pending
+# R1 native-SOL accounting — Kali accepted
 
 Date: 2026-11-11. Continuation of the existing R1 source-feasibility gate, within
 the unchanged five-working-day build/validation limit. The preceding 137-test
@@ -152,3 +152,28 @@ profitability evaluation do not start from this three-transaction sample.
 Development-branch upload only. Full-gate Kali validation and the agreed owner
 decision precede PR/CI consolidation or merge. No funding, real transaction,
 scanner restart, deployment or production modification belongs to this increment.
+
+## Kali acceptance, 2026-11-11
+
+Reviewed commit `27f812c86de58acf0df2b33407b42814e5774474`, tree
+`ce5571a97110935850c1323068a30489382a8faf`. Uploaded reports:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| radar-r1-accounting-offline-20261111T113732Z-689209.json | 1346dd8c5b0f4f2bee63d421d7672bcca722eedd05280f5e8cc2268e62aaf648 |
+| radar-r1-accounting-20261111T113732Z-689209.json | f495fe0798940504502b14f120cf901fde4306ba9d82bd42ab6f9f9fd7704217 |
+
+Kali reports 152 tests, zero errors/failures/skips, Python 3.14.6, SQLite 3.53.4
+and 2.198184 seconds elapsed. Local capture restoration/replay and preservation
+passed. All 19 runner and eight inspector source hashes match the reviewed code.
+Independent replay against the saved original RPC bundle with socket creation
+forbidden produced a byte-identical accounting report. Both buys pass the 16
+narrow checks; every account delta reconciles with zero residual in all three
+transactions. The additional creator-vault transfer remains unclassified.
+
+Accept this accounting increment on Kali, retaining all historical-version,
+configuration, pricing, reconstruction, profitability and live-collection
+limitations. Full R1 is not closed and PR/CI consolidation is not cleared.
+Next: [bounded deployment metadata inspection](R1-DEPLOYMENT-METADATA-20261111.md)
+for Pump and Pump Fees, to compare current last-modified slots with these saved
+transaction slots. No funding, wallet action or scanner change is implied.
