@@ -13,7 +13,8 @@ The uploaded 27,148-byte `session.zip`, SHA-256
 `f055648fdd804d29c1dfb25087c32314667b27fddb3adbf48db27e6617eb023d`,
 was independently restored. Database, journal, inner archive and all measurement
 results match the Kali receipt. This accepts the transferred synthetic complete
-session; its B2 round trip is next, documented in `R1-SESSION-BACKUP-20261111.md`.
+session. Its subsequent B2 round trip is Kali-accepted at `58805ae6`, with
+independent downloaded-archive replay; see `R1-SESSION-BACKUP-20261111.md`.
 The following records the completed handoff increment.
 
 ## Accepted measurement evidence

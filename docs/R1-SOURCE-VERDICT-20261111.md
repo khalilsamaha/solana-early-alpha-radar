@@ -72,7 +72,9 @@ registered measurement contract prepared before activation.
    `1e8bed1a`. Local send/selection timing evidence is Kali-accepted at `ccf80858`.
    Complete capture/journal packaging is Kali-accepted at `324a32e4`, and the
    uploaded archive independently replayed. Its fixed-input B2 round trip is
-   now implemented offline, pending Kali; see `R1-SESSION-BACKUP-20261111.md`. Resolve coexistence before any
+   Kali-accepted at `58805ae6`, with independent replay of the downloaded complete
+   session; see `R1-SESSION-BACKUP-20261111.md`. The next readiness decision is in
+   `R1-LIVE-READINESS-20261111.md`. Resolve coexistence before any
    provider connection and complete the remaining live-launch controls.
    Prove bounded receive memory, cancellation/abort, credential redaction,
    no reconnect across gaps, and no paid subscription after a terminal limit.

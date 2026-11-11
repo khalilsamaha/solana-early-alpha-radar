@@ -13,9 +13,11 @@ package. Its fixed-input B2 round trip is now Kali-accepted. A bounded provider
 wire and offline process supervisor are Kali-accepted for their pinned scopes.
 Local subscription timing and measurement evidence are Kali-accepted.
 Complete capture-plus-journal packaging is Kali-accepted and its uploaded
-archive independently replayed. Its fixed-input B2 round trip is implemented
-offline, pending Kali; see `docs/R1-SESSION-BACKUP-20261111.md`
-and `r1-data/README.md`. No live collector
+archive independently replayed. Its fixed-input B2 round trip is Kali-accepted
+at `58805ae6`; the downloaded complete session independently replays exactly.
+See `docs/R1-SESSION-BACKUP-20261111.md`. The next unresolved dependency is
+the connection decision and live-readiness review in
+`docs/R1-LIVE-READINESS-20261111.md`. No live collector
 launcher is supplied and no paid subscription,
 wallet funding or study registration was performed by this work. The owner
 reports the original project wallet is ready; reuse the dedicated PumpPortal
