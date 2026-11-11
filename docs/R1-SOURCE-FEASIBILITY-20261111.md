@@ -140,3 +140,64 @@ provider-policy question; another API key alone is not evidence of permission.
 
 Acceptance is based on uploaded runner evidence and exact matching source hashes;
 the reviewer did not independently connect to Kali or replay its private database.
+
+## Third increment: bounded public RPC probe — Kali pending
+
+Implemented `r1-data/rpc_probe.py` to answer the narrow missing-slot and
+mint-initialization/decimals question. Existing Helius quota and credential access
+have not been established. This increment instead uses the credential-free public
+mainnet endpoint currently documented by Solana, `https://api.mainnet.solana.com`.
+Public access is a feasibility path, not a production-capacity commitment.
+
+The host probe reads up to three distinct creation identities from the existing
+registry and issues at most nine read-only RPC calls within a 30-second network
+budget. Read age is two minutes to 24 hours. No wallet/API key is loaded, no paid
+stream is opened, and no simulation, signing or transaction submission occurs.
+Redirects, proxies, retries and fallback providers are disabled. An endpoint
+failure remains unavailable evidence, with no automatic spending escalation.
+
+Required facts are finalized successful status, transaction signature/slot
+agreement, mint membership, unique parsed standard SPL initialization, and matching
+mint account program/decimals/initialized state at a sufficiently recent finalized
+context. Mainnet genesis is checked before and after. The probe deliberately makes
+no Pump creator identity, curve reconstruction, fee-version, event-order or
+profitability claim. A latest finalized mint account is not a historical curve
+snapshot. Matching provider responses are not independent cryptographic proof.
+
+The private evidence bundle preserves selected source identities and successful
+public responses. Errors are sanitized; failed provider bodies are discarded.
+The summary includes code hashes, request counts, selected-case results and
+compressed/decoded evidence hashes. The saved bundle is read back, checked and
+replayed offline before reporting a replay pass. Unexpected failure preserves
+actual request accounting and cannot produce a source pass. Local retention is
+not acceptance of off-machine preservation.
+
+Development validation: **101 tests**, zero failures/errors/skips, plus the
+standalone capture/restart/limit/export/restore rehearsal passed on Python 3.12.14,
+SQLite 3.53.1, with ResourceWarning treated as an error. The acceptance runner
+completed in 0.566061 seconds using only synthetic fixtures. Its 11 source hashes
+cover the two new RPC files. This duration is an offline test measurement, not a
+public-RPC timing claim. The previously accepted capture, transport and metadata
+probe implementations are unchanged. No live RPC request was made during this
+development validation. Kali validation and actual source feasibility are pending.
+
+Next host action: run the pinned offline runner, then the separate CLI with
+`--read-public-rpc`. Upload the offline report and RPC `report.json`; retain
+`evidence.json.gz` locally. A partial/unavailable report must be reviewed before
+retrying or adding providers. A three-case pass only closes this narrow lookup
+question; it does not close R1 or enable paid collection. Provider coexistence,
+early-event recovery, complete ordering/initial-state evidence, the live adapter,
+preservation and the explicit pilot budget remain open. No ML fitting is needed
+for this increment, and no confirmation study is being started.
+
+Primary protocol references used for this increment:
+
+- https://solana.com/docs/references/clusters
+- https://solana.com/docs/rpc/http/gettransaction
+- https://solana.com/docs/rpc/http/getaccountinfo
+- https://solana.com/docs/tokens/basics/create-mint
+
+Development-branch publication is for Kali review only. There is no open PR for
+this branch; the current workflows trigger pushes on main, PRs, or manual
+dispatch. No PR, CI dispatch, merge, deployment or container restart accompanies
+this increment.

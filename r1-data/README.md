@@ -1,9 +1,11 @@
-# R1 offline capture, transport controller and source metadata probe
+# R1 capture, transport controller and source feasibility probes
 
-The capture core is Kali-accepted at `f92e4d1`. This second increment adds an
-offline-tested subscription controller and a read-only source metadata probe.
-It has **no real network adapter, credential-file reader, network client, trading operation,
-profitability evaluator or curve reconstruction**. It cannot activate paid data.
+The capture core is Kali-accepted at `f92e4d1`; the offline subscription controller
+and source metadata probe are Kali-accepted at `55ddf7a`. This third increment
+adds a bounded public RPC reconciliation probe. It has **no live WebSocket adapter,
+credential-file reader, trading operation, profitability evaluator or curve
+reconstruction**. It cannot activate paid data. Only the separate RPC CLI below
+opens a network connection; the acceptance runner remains entirely offline.
 No change to the production scanner, frozen studies, E0 or CI is required.
 
 ## Kali acceptance
@@ -22,14 +24,62 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-transport-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-rpc-probe-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `python3 -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 72 tests. The earlier 44-test report remains accepted
-for its original pinned source; it does not validate the added code.
+The current suite contains 101 tests. Earlier 44-test and 72-test Kali reports
+remain accepted for their original pinned sources; they do not validate this addition.
+
+## Public RPC feasibility probe on Kali
+
+After the offline runner passes, run the separate read-only probe from the same
+pinned checkout, using a **new output directory**:
+
+```sh
+sudo python3 -E -s -B -W error::ResourceWarning r1-data/rpc_probe.py \
+  --project "$HOME/apps/solana-early-alpha-radar" \
+  --output-directory /absolute/new/rpc-run --read-public-rpc
+```
+
+This command makes public network requests. It reads no wallet, API key or
+environment credential and uses only `https://api.mainnet.solana.com` with proxies,
+redirects, retries and endpoint fallbacks disabled. It never signs, simulates or
+sends a transaction. Sudo enables local Docker/volume reads; output ownership is
+returned to the invoking user. There is no container restart or scanner change.
+
+The indexed SQLite read selects up to three distinct valid creation signatures
+and mints aged two minutes to 24 hours, examining at most 32 rows of at most
+4096 bytes under a three-second read deadline. The existing local Docker discovery
+has two five-second command timeouts. The network phase has a 30-second budget,
+five-second wall-clock timeout per call, one-MiB response cap and at least 0.5 seconds
+between calls. It makes at most nine read-only RPC calls: mainnet genesis before,
+one signature-status batch, up to three transaction/account pairs, genesis after.
+Any transport/envelope failure stops further network traffic. Public capacity,
+retention and access are not guaranteed; 403/429 is unavailable evidence, not token
+failure and not a reason to retry or switch to paid access automatically.
+
+Reconciliation requires finalized successful status, matching transaction signature
+and slot, parsed mint membership, exactly one standard SPL Token/Token-2022 mint
+initialization, and matching decimals/owner/initialized state in a finalized mint
+account at or beyond that slot. Decimals are read from evidence. Provider responses
+are not independent cryptographic proof or verified Pump creator identity. Current
+account state does not reconstruct historical curve state or intra-slot order.
+
+Upload `report.json`. Keep the private `evidence.json.gz` alongside it locally.
+The report pins compressed and decoded evidence hashes; successful reconciliation
+processing is replayed from the saved bundle without network access. The summary
+omits mint/signature/wallet identities. The private bundle retains public-chain
+responses and selected source identities; off-machine preservation remains open.
+
+`rpc-facts-reconciled-live-blocked` means every selected case passed these narrow
+checks. Inspect the selected count: one to three cases cannot establish general
+coverage or capacity. `rpc-feasibility-incomplete`, `probe-unavailable` and
+`no-eligible-creation-records` are non-passes; upload the summary without rerunning.
+Exit zero means a diagnostic report was created, **not** source acceptance. Only
+`check.py` is the offline pass/fail runner. Full R1 and paid activation remain blocked.
 
 ## Source metadata probe on Kali
 
