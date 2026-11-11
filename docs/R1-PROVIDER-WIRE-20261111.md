@@ -1,4 +1,4 @@
-# R1 provider wire — implemented and tested offline, Kali pending
+# R1 provider wire — offline scope accepted on Kali
 
 Date: 2026-11-11. The synthetic B2 round trip at `904a805` is accepted on Kali
 and its downloaded package has been independently restored. This increment
@@ -127,7 +127,17 @@ operation remains unchanged. If the connection decision cannot be resolved
 within the original five-working-day effort cap, report the blocker and
 reassess instead of extending the phase automatically.
 
-## Kali action and continuation
+## Kali acceptance and continuation
+
+The uploaded 227-test report for `a2fdf580` passed review on 2026-11-11.
+All 30 source hashes matched. Python 3.14.6 / SQLite 3.53.4 / websockets 17.4;
+3.492902 seconds; zero failures/errors/skips. Report SHA-256:
+`843e1a65b370a23b0eacd5ed26d2955538adf859390796e60f2d9a338ab5023b`.
+This accepts the offline scope only. The next increment is documented in
+`R1-SUPERVISOR-20261111.md`; do not repeat this earlier wire-only check.
+
+The following records the completed wire-only action:
+
 
 Fetch the new pinned commit/tree into an independent review directory, create
 its virtual environment, install the exact wheel with `--require-hashes`, then

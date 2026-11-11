@@ -8,8 +8,9 @@ native-SOL accounting is Kali-accepted at `27f812c`; deployment metadata is
 Kali-accepted at `7fe6493`; finalized block positions are Kali-accepted at
 `4d46229`; the capture handoff is Kali-accepted at `be8fcfe` and the synthetic
 B2 round trip at `904a805`, both independently replayed from uploaded packages.
-The current increment implements a bounded provider WebSocket wire and offline
-protocol tests. It has **no live collector launcher, credential-file reader,
+The provider wire is Kali-accepted at `a2fdf580` for its offline scope.
+The current increment adds offline process supervision and integrated local
+preservation, with real subprocess failure tests. It has **no live collector launcher, credential-file reader,
 trading operation, profitability evaluator or curve reconstruction**. Its factory
 opens a fixed provider connection only when explicitly invoked; no provider
 connection is opened by the acceptance runner. Public RPC/B2 CLIs remain separate.
@@ -42,18 +43,39 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-provider-wire-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-supervisor-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `.venv/bin/python -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 227 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test, 181-test, 198-test and 210-test Kali reports
+The current suite contains 241 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test, 181-test, 198-test, 210-test and 227-test Kali reports
 remain accepted for their original pinned sources; they do not validate this addition.
 
-## Provider wire (current Kali step — offline only)
+## Process supervision (current Kali step — offline only)
 
-Upload the **227-test offline runner report**. It records the required dependency,
+Upload the **241-test offline runner report**. It pins 33 source files and adds
+`supervision`, including a reaped worker and a source-preserving capture/export/
+restore receipt. The supervisor starts one fixed synthetic worker with a minimal
+environment, Linux resource caps, a child wall alarm, parent-death termination,
+a parent wall deadline and bounded TERM/KILL cleanup. Child output is discarded.
+It has no live mode, credential input or arbitrary-command CLI. A private owner
+folder lock coordinates cooperating runs in that same folder only; it does not
+coordinate the production scanner or authorize provider coexistence.
+
+Failures retain any run artifacts and cannot report acceptance. An unclean
+capture is not automatically repaired or resumed. The check runner removes its
+own temporary synthetic artifacts and records that removal explicitly. The
+standalone `supervisor.py --owner-directory /existing/private/directory --rehearse`
+interface retains a new run directory, but **no separate rehearsal is needed**
+for this Kali step. The single check report suffices.
+
+See `docs/R1-SUPERVISOR-20261111.md` for the tested limits, evidence acceptance,
+remaining live-launch work and unchanged five-working-day effort cap.
+
+## Provider wire (offline scope accepted on Kali)
+
+The accepted **227-test offline runner report** records the required dependency,
 30 source hashes, DNS/Internet-socket blocking and an in-memory protocol peer.
 The tests execute real WebSocket handshake/framing code with simulated byte
 transport. They do not dial a socket, conduct a TLS handshake, read a funded key,

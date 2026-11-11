@@ -25,7 +25,8 @@ SOURCES = ("capture.py", "check.py", "test_capture.py", "test_check.py", "README
            "ordering_probe.py", "test_ordering_probe.py",
            "handoff.py", "test_handoff.py",
            "backup_roundtrip.py", "test_backup_roundtrip.py",
-           "provider_wire.py", "test_provider_wire.py", "requirements-wire.txt")
+           "provider_wire.py", "test_provider_wire.py", "requirements-wire.txt",
+           "supervisor.py", "supervisor_worker.py", "test_supervisor.py")
 
 
 def block_internet():
@@ -70,6 +71,19 @@ def rehearsal():
                 "source_preserved": True, "off_machine_restore_verified": False}
 
 
+def supervision_rehearsal():
+    from supervisor import rehearse
+    with tempfile.TemporaryDirectory(prefix="radar-r1-supervisor-") as tmp:
+        _, report = rehearse(tmp)
+        if report["status"] != "offline-supervisor-passed-live-blocked":
+            raise CaptureError("supervision-rehearsal-failed")
+        # The runner removes its synthetic temporary artifacts; the standalone
+        # supervisor CLI instead retains the private run directory.
+        report["raw_artifacts_retained"] = False
+        report["artifacts_scope"] = "temporary-offline-acceptance-fixture"
+        return report
+
+
 def run_checks():
     suite = unittest.defaultTestLoader.discover(str(ROOT), pattern="test_*.py")
     # Test traces contain only synthetic fixtures, but never export tracebacks
@@ -98,23 +112,24 @@ def main(argv=None):
         started = time.monotonic()
         tests = run_checks()
         evidence = rehearsal()
+        supervision = supervision_rehearsal()
         after = {name: digest((ROOT / name).read_bytes()) for name in SOURCES}
         if before != after:
             raise CaptureError("source-changed")
-        report = {"schema_version": 1, "status": "offline-provider-wire-passed-live-blocked",
+        report = {"schema_version": 1, "status": "offline-supervisor-passed-live-blocked",
                   "python": platform.python_version(), "sqlite": sqlite3.sqlite_version,
                   "tests": tests, "source_sha256": after,
                   "elapsed_seconds": round(time.monotonic() - started, 6),
                   "synthetic_only": True, "network_used": False, "credentials_loaded": False,
                   "paid_collection_enabled": False, "evidence": evidence,
-                  "dependencies": dependencies,
+                  "dependencies": dependencies, "supervision": supervision,
                   "internet_socket_creation_and_dns_blocked": True,
                   "wire_validation": {"protocol_peer": "in-memory", "provider_connection_opened": False,
                                       "tls_handshake_tested": False, "coexistence_accepted": False},
-                  "remaining": ["Kali provider wire; historical configuration and executable pricing validation", "provider connection coexistence",
+                  "remaining": ["Kali supervisor; historical configuration and executable pricing validation", "provider connection coexistence",
                                 "source ordering, initial state and finality validation",
                                 "gap recovery source", "billing and explicit pilot budget",
-                                "real provider TLS/session and safe launcher validation",
+                                "live-launch credential/budget controls and real provider TLS/session validation",
                                 "preservation coverage and retention for actual live captures"]}
         # Build in a private sibling then link exclusively: readers never see a
         # partial report and an existing path (including symlink) is not replaced.
@@ -123,7 +138,7 @@ def main(argv=None):
             exclusive_file(prepared, (canonical(report) + "\n").encode())
             os.link(prepared, output, follow_symlinks=False)
         sync_dir(output.parent)
-        print("R1 offline checks including provider wire passed; live collection remains blocked. Report created.")
+        print("R1 offline checks including process supervision passed; live collection remains blocked. Report created.")
         return 0
     except Exception:
         print("R1 offline check stopped; no acceptance is granted.", file=sys.stderr)
