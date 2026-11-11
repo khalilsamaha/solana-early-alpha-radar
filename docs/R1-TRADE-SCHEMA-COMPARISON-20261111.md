@@ -1,4 +1,4 @@
-# R1 documented TradeEvent comparison — development validated, Kali pending
+# R1 documented TradeEvent comparison — Kali accepted
 
 Date: 2026-11-11. This continues the existing R1 source-feasibility work within
 its five-working-day build/validation cap. It does not open a new gate or extend
@@ -139,3 +139,27 @@ funding/billing requirements remain unchanged. Development-branch upload only;
 full-gate Kali acceptance and the agreed owner decision precede PR/CI
 consolidation and merge. No funding, transaction, scanner restart or deployment
 is part of this increment.
+
+## Kali acceptance, 2026-11-11
+
+Reviewed development commit `5d640392012cf3e5ee118f405b76751e1301d86a`, tree
+`f1835173a636e4111a6d8d813bd3014c6043e092`. Uploaded evidence:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| radar-r1-schema-offline-20261111T085934Z-342484.json | c11ec927d73f502dae5066c67885b548345d9fee6e8f5428209722ade100e43e |
+| radar-r1-schema-comparison-20261111T085934Z-342484.json | 4691cb703df8bd7c6058144db1f747326593f0555ba323b8e23ae9f8578a3c38 |
+
+The Kali runner reports 137 tests, zero errors/failures/skips, Python 3.14.6,
+SQLite 3.53.4 and 1.562522 seconds elapsed. Local capture restore/replay and input
+preservation passed. All 17 runner source hashes and seven comparator source
+hashes match the reviewed implementation. The reviewer independently replayed
+the original saved RPC inputs with socket creation forbidden; the complete
+comparison report is byte-identical to the uploaded Kali report.
+
+Both 390-byte trade layouts and re-encodings match; case 2 remains scoped to no
+trade in that transaction. All historical-version, fee-model, reconstruction,
+profitability and live-collection non-acceptance flags are retained. Accept this
+offline comparator increment on Kali; this does not close full R1 or authorize
+PR/CI consolidation, funding or deployment. Next: the separate bounded native
+accounting inspection in [R1-NATIVE-ACCOUNTING-20261111.md](R1-NATIVE-ACCOUNTING-20261111.md).

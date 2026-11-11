@@ -3,8 +3,9 @@
 The capture core is Kali-accepted at `f92e4d1`; the offline subscription controller
 and source metadata probe are Kali-accepted at `55ddf7a`; the bounded public RPC
 probe is Kali-accepted at `d880134`; the event inspector is Kali-accepted at
-`b28c8ff`. The current increment compares the saved trade events with an extracted
-newer documentation layout. It has **no live WebSocket adapter,
+`b28c8ff`; the documented schema comparator is Kali-accepted at `5d64039`.
+The current increment inspects native-SOL cashflows, fee arithmetic and reported
+reserve changes in the saved transactions. It has **no live WebSocket adapter,
 credential-file reader, trading operation, profitability evaluator or curve
 reconstruction**. It cannot activate paid data. Only the separate RPC CLI below
 opens a network connection; the acceptance runner remains entirely offline.
@@ -26,14 +27,57 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-schema-comparison-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-accounting-inspector-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `python3 -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 137 tests. Earlier 44-test, 72-test, 101-test and 126-test Kali reports
+The current suite contains 152 tests. Earlier 44-test, 72-test, 101-test, 126-test and 137-test Kali reports
 remain accepted for their original pinned sources; they do not validate this addition.
+
+## Offline native-SOL accounting inspection
+
+Run after the acceptance runner against the same saved RPC report/bundle:
+
+```sh
+python3 -E -s -B -W error::ResourceWarning r1-data/accounting_inspect.py \
+  --rpc-report /absolute/existing/rpc-run/report.json \
+  --evidence /absolute/existing/rpc-run/evidence.json.gz \
+  --output /absolute/new/accounting-report.json
+```
+
+This first replays the accepted strict inspector and schema comparator. It
+supports one creation and at most one direct native-SOL buy_v2 in a transaction,
+with no cashback, holder rewards, shareholder split, retained creator fee or
+quote transfer fee. Other modes remain unsupported. It checks exact buy argument
+length, event order, distinct payment roles, fee-recipient identity, reported
+fee-rate arithmetic, creator/protocol/buyback transfers, instruction cost cap
+and creation-to-trade reserve arithmetic. The 36-field profile remains diagnostic;
+neither a historical program binary nor fee configuration has been authenticated.
+
+Every parsed System transfer/createAccount is counted once, with the network
+fee charged to the first account. Expected net changes are compared with every
+pre/post lamport balance. Unknown System instructions, missing balances, duplicate
+keys/groups, noninteger amounts and unaccounted net changes cannot pass. Matching
+net balances do not prove that every internal program operation was observed.
+
+The reported creator fee must match one unambiguous transfer; additional vault
+transfers are shown separately with unknown purpose. Account creation outflows,
+trade-plus-reported-fees, full buy-parent outflows, network fees and the whole
+transaction's wallet debit remain distinct. No rent-exemption or recoverability
+claim is made. A combined create-and-buy debit is not a repeat-trade cost model.
+
+Expected report status: `offline-accounting-inspection-complete-live-blocked`.
+For the saved three-case bundle, cases 1 and 3 have
+`observed-accounting-consistent-live-blocked`; case 2 has
+`creation-only-accounting-consistent`. All three have zero net-balance residuals;
+both trades pass 16 arithmetic/identity checks. Exit zero means a diagnostic was
+written; mismatches/unsupported cases remain explicit, not acceptance. Upload
+this report and the new 152-test runner report. No sudo, fresh RPC request,
+funding, scanner change, ML fit or deployment is part of this check.
+
+See `docs/R1-NATIVE-ACCOUNTING-20261111.md` for findings and remaining limits.
 
 ## Offline trade-schema comparison
 
@@ -66,8 +110,8 @@ For the accepted three-case bundle, cases 1 and 3 each have
 `exact-layout-and-transfer-match-diagnostic-only`, 390 consumed bytes, exact
 re-encoding and reported quote transfer fee zero. Case 2 has no trade in that
 transaction. Exit zero means a comparison report was written, not that all cases
-match or that reconstruction passed. Upload this report and the 137-test runner
-report. No new RPC request, sudo, wallet funding or scanner change is needed.
+match or that reconstruction passed. Pair this report with the acceptance runner
+report from the same pinned checkout. No new RPC request, sudo, wallet funding or scanner change is needed.
 
 See `docs/R1-TRADE-SCHEMA-COMPARISON-20261111.md` for source provenance and scope.
 Fee/reserve accounting, version applicability and full R1 remain open. This is
