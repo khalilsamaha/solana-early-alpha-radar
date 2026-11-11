@@ -63,12 +63,19 @@ Known paths, preserved from the accepted procedures:
 
 - `/home/redeye/solana-radar-forward-experiment-20261022`
 - `/home/redeye/solana-radar-availability-study-20261029`
-- `/home/redeye/apps/solana-early-alpha-radar/radar-history-20261108T165920Z-4144732`
-- `/home/redeye/apps/solana-early-alpha-radar/radar-history-20261108T165935Z-4145895`
+- `/home/redeye/apps/solana-early-alpha-radar/radar-history-20261108T165920Z-4144732/capture`
+- `/home/redeye/apps/solana-early-alpha-radar/radar-history-20261108T165935Z-4145895/capture`
+
+Pass the `capture` subdirectories, not their enclosing report directories. The
+November 8 capture log records these exact paths. The first November 11 C1 run
+passed all 17 tests but could not find the two B0 indexes because its command
+omitted this suffix; correct the input paths without replacing any evidence.
 
 Use the separately supplied exact-commit Kali command; it creates an isolated
-source checkout and output directory. Run the 17 inventory tests and source
-hygiene check, then inventory these existing paths. Upload the log and report.
+source checkout and output directory. On first validation, run the 17 inventory
+tests and source hygiene check, then inventory these existing paths. For the
+path-only correction, verify unchanged Python file hashes and source hygiene;
+the accepted 17-test Kali result remains applicable. Upload the log and report.
 If a source is missing or invalid, upload the partial report; do not substitute
 a new capture, reset registration, change permissions or rerun model evaluation.
 
