@@ -266,5 +266,8 @@ The next implementation is now prepared: see
 Offline inspection finds three exact creation events but two trade-event payloads
 with eight bytes unconsumed by the pinned official IDL. The new inspector keeps
 those trade events unsupported and preserves separate parsed transfer evidence.
-Development validation passes 126 tests; Kali acceptance of this fourth increment
-is pending. Full R1 and economic reconstruction remain blocked.
+Development validation passes 126 tests. The uploaded Kali reports now confirm
+126 passing tests, exact source hashes and byte-identical independent replay of
+the inspection report; see the acceptance record in that document. This fourth
+implementation increment is accepted on Kali. The trade-schema mismatch, full R1
+and economic reconstruction remain blocked.

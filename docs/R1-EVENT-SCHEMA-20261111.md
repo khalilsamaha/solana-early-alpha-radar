@@ -1,8 +1,8 @@
-# R1 offline creation-event inspection — Kali pending
+# R1 offline creation-event inspection — Kali accepted, schema unresolved
 
 Date: 2026-11-11. This is the fourth R1 feasibility increment, not a new study or
-gate. The previous RPC increment is accepted on Kali. This code is development
-validated; its own Kali acceptance remains pending.
+gate. The previous RPC increment is accepted on Kali. This inspector's Kali
+acceptance is recorded below; trade-schema and reconstruction acceptance remain blocked.
 
 ## Result and engineering decision
 
@@ -114,3 +114,34 @@ extended by this increment. Provider connection coexistence, live-adapter
 validation, preservation and explicit funding/billing approval remain separate
 open requirements. No paid activation, ML fitting, PR/CI consolidation, merge,
 deployment or restart is authorized by these findings.
+
+## Kali acceptance, 2026-11-11
+
+Reviewed implementation commit `b28c8ff56a7b19e9380eb44d1ba7701b2d63da43`,
+tree `06d62e0648ff94e49452bb9c6956685c39cbaa80`, using the uploaded reports:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `radar-r1-events-offline-20261111T082948Z-276328.json` | `2abbeb13370b84280ed9db2dc0916e1951cd7b5bfdd0787742b6632337de4811` |
+| `radar-r1-events-20261111T082948Z-276328.json` | `496b50fea61c0928d9cda8e6a846740f91d08c27a8115900378df3de5db943d6` |
+
+The Kali runner reports 126 tests, zero failures/errors/skips, Python 3.14.6,
+SQLite 3.53.4 and 0.935409 seconds elapsed. Capture source preservation and local
+restore/replay passed. All 14 runner source hashes and all five inspector source
+hashes match the reviewed code. Both reports declare no network or credential
+use and no paid collection.
+
+The reviewer reran the inspector against the previously uploaded RPC report and
+bundle with socket creation forbidden. The resulting report is byte-for-byte
+identical to Kali's new report, including its complete SHA-256. All three exact
+CreateEvent decodes, both eight-byte TradeEvent mismatches, separate purchase
+transfers and the Mayhem MintTo/event-supply difference are reproduced. The
+inspector retains reconstruction, fee-model, deployed-version and profitability
+non-acceptance. No partial trade values have been promoted to accepted evidence.
+
+Decision: accept this offline inspector increment on Kali. No implementation
+change or additional host rerun is needed for this acceptance. This does not
+resolve the IDL mismatch or close R1. The next engineering task is authoritative
+trade-layout/version reconciliation using the retained payloads, before any
+economic decoder change. No fresh RPC request, provider message, wallet action,
+ML fit, PR/CI consolidation, merge or deployment was performed in this review.
