@@ -1,8 +1,20 @@
-# R1 local measurement evidence — implemented offline, Kali pending
+# R1 local measurement evidence — accepted on Kali
 
 Date: 2026-11-11. This is collector instrumentation and replay preparation
 within the existing R1 phase. It does not start another gate, reset the five-
 working-day effort cap, authorize a provider connection or establish a study.
+
+## Measurement Kali acceptance
+
+The report for `ccf8085860deb3fc0a508f540e5ff41cf447c921` passed review:
+259 tests, zero failures/errors/skips, all 35 source hashes matched. Python
+3.14.6 / SQLite 3.53.4 / websockets 17.4; 9.625006 seconds overall. Capture and
+measurement replay succeeded with the expected three sends and one selected
+creation. Report SHA-256:
+`81a3135241cf1f3f39d37155193f04659e098d4af581cfd2cfb78e5c7855be2c`.
+This is offline-scope acceptance; no raw fixture was retained in that run.
+Current complete-session packaging work is in `R1-SESSION-BUNDLE-20261111.md`.
+The following records the completed measurement increment.
 
 ## Preceding supervisor acceptance
 

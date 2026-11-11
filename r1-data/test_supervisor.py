@@ -159,6 +159,14 @@ class SupervisorTests(unittest.TestCase):
         with self.assertRaises(CaptureError):
             s.validate_receipt(run, manifest)
 
+    def test_modified_complete_session_bundle_rejects_receipt(self):
+        run, _ = s.rehearse(self.owner)
+        manifest = (run / "manifest.json").read_bytes()
+        paired = run / "session-export/session.zip"
+        paired.write_bytes(paired.read_bytes() + b"trailer")
+        with self.assertRaises(CaptureError):
+            s.validate_receipt(run, manifest)
+
     def test_receipt_symlink_oversize_and_false_flags_rejected(self):
         run, _ = s.rehearse(self.owner)
         raw = (run / "manifest.json").read_bytes()
@@ -200,7 +208,7 @@ sys.path.insert(0,{str(s.ROOT)!r})
 from supervisor_worker import bootstrap
 bootstrap(os.getppid())
 expected=[(resource.RLIMIT_CORE,0),(resource.RLIMIT_AS,268435456),
-          (resource.RLIMIT_CPU,5),(resource.RLIMIT_FSIZE,37748736),(resource.RLIMIT_NOFILE,32)]
+          (resource.RLIMIT_CPU,5),(resource.RLIMIT_FSIZE,46137344),(resource.RLIMIT_NOFILE,32)]
 assert all(resource.getrlimit(k)==(v,v) for k,v in expected)
 assert 0 < signal.getitimer(signal.ITIMER_REAL)[0] <= 10
 for call in [lambda: socket.socket(socket.AF_INET),lambda:socket.socket(socket.AF_INET6),

@@ -9,8 +9,9 @@ Kali-accepted at `7fe6493`; finalized block positions are Kali-accepted at
 `4d46229`; the capture handoff is Kali-accepted at `be8fcfe` and the synthetic
 B2 round trip at `904a805`, both independently replayed from uploaded packages.
 The provider wire is Kali-accepted at `a2fdf580` for its offline scope.
-The offline supervisor is Kali-accepted at `1e8bed1a`. The current increment
-adds durable local subscription measurement and replay alongside the capture. It has **no live collector launcher, credential-file reader,
+The offline supervisor is Kali-accepted at `1e8bed1a` and local measurement at
+`ccf80858`. The current increment packages the complete capture and journal
+together for checksum-bound transfer and independent replay. It has **no live collector launcher, credential-file reader,
 trading operation, profitability evaluator or curve reconstruction**. Its factory
 opens a fixed provider connection only when explicitly invoked; no provider
 connection is opened by the acceptance runner. Public RPC/B2 CLIs remain separate.
@@ -43,18 +44,43 @@ temporary directories and remove them afterwards. No scanner database, existing
 capture, environment credential or wallet is read. Report contents include code
 hashes and runtime versions, not raw provider payloads or credentials.
 
-Expected status: `offline-measurement-passed-live-blocked`, zero failed/errored/skipped
+Expected status: `offline-session-bundle-passed-live-blocked`, zero failed/errored/skipped
 tests, `local_restore_replay_passed: true`. This is not acceptance of feed quality,
 an off-machine backup, reconstruction, billing, profitability or the full R1 gate.
 Use `.venv/bin/python -E -s -B -W error::ResourceWarning -m unittest discover -s r1-data -v`
 for detailed local synthetic-test diagnostics if the runner stops.
 
-The current suite contains 259 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test, 181-test, 198-test, 210-test, 227-test and 241-test Kali reports
+The current suite contains 275 tests. Earlier 44-test, 72-test, 101-test, 126-test, 137-test, 152-test, 167-test, 181-test, 198-test, 210-test, 227-test, 241-test and 259-test Kali reports
 remain accepted for their original pinned sources; they do not validate this addition.
 
-## Local measurement evidence (current Kali step — offline only)
+## Complete-session handoff (current Kali step — offline only)
 
-Upload the **259-test offline runner report**, which pins 35 source files.
+Run `check.py` with its usual new `--output` path and additionally
+`--session-artifacts /absolute/new/directory`. This retains a fixed synthetic
+capture/journal run and writes `session.zip` at that directory's root. Existing
+artifact directories are refused. Without this option the runner still removes
+its own temporary synthetic fixtures.
+
+Upload **two files**: the **275-test offline report** (37 source hashes) and the
+new directory's **session.zip**. The report includes
+`supervision.worker_receipt.session_bundle_sha256`, `session_bundle_bytes`
+and `complete_session_replayed: true`. Keep the retained directory on Kali.
+Independent review will restore the uploaded archive using the report's trusted
+checksum and compare both capture and measurement replay results.
+
+The outer ZIP contains exactly `capture.zip`, `session.jsonl` and `binding.json`.
+The original capture-only ZIP format and fixed B2 probe are unchanged. This
+complete bundle is not yet covered by the earlier cloud receipt or a live
+retention policy. The worker's per-file limit increases from 36 to 44 MiB to
+fit the bounded combined archive; capture/journal and other process limits
+remain unchanged. See `docs/R1-SESSION-BUNDLE-20261111.md`.
+
+No key, funding, provider connection, sudo, cloud repeat or scanner restart is
+needed. The generated transferable artifact contains synthetic data only.
+
+## Local measurement evidence (offline scope accepted on Kali)
+
+The accepted **259-test offline runner report** pins 35 source files.
 The supervised worker now records an exclusive, bounded `session.jsonl` sidecar:
 selected-creation receive timestamps, durable send intents, local completions,
 abandoned commands and terminal state. Replay binds it to verified capture rows.

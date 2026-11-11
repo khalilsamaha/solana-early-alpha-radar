@@ -11,8 +11,10 @@ source adequacy; see `docs/R1-SOURCE-VERDICT-20261111.md`. The export/restore ha
 is accepted on Kali and independently replayed from its uploaded synthetic
 package. Its fixed-input B2 round trip is now Kali-accepted. A bounded provider
 wire and offline process supervisor are Kali-accepted for their pinned scopes.
-Local subscription timing and measurement evidence are now development-tested,
-pending Kali; see `docs/R1-MEASUREMENT-20261111.md` and `r1-data/README.md`. No live collector
+Local subscription timing and measurement evidence are Kali-accepted.
+Complete capture-plus-journal packaging is now development-tested, pending Kali
+and independent uploaded-archive replay; see `docs/R1-SESSION-BUNDLE-20261111.md`
+and `r1-data/README.md`. No live collector
 launcher is supplied and no paid subscription,
 wallet funding or study registration was performed by this work. The owner
 reports the original project wallet is ready; reuse the dedicated PumpPortal

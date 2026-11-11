@@ -27,7 +27,7 @@ SOURCES = ("capture.py", "check.py", "test_capture.py", "test_check.py", "README
            "backup_roundtrip.py", "test_backup_roundtrip.py",
            "provider_wire.py", "test_provider_wire.py", "requirements-wire.txt",
            "supervisor.py", "supervisor_worker.py", "test_supervisor.py",
-           "measurement.py", "test_measurement.py")
+           "measurement.py", "test_measurement.py", "session_bundle.py", "test_session_bundle.py")
 
 
 def block_internet():
@@ -72,17 +72,29 @@ def rehearsal():
                 "source_preserved": True, "off_machine_restore_verified": False}
 
 
-def supervision_rehearsal():
+def supervision_rehearsal(retained_directory=None):
     from supervisor import rehearse
-    with tempfile.TemporaryDirectory(prefix="radar-r1-supervisor-") as tmp:
-        _, report = rehearse(tmp)
+    from handoff import path_without_links, read_private
+    from session_bundle import MAX_PACKAGE
+    def run(owner, retained):
+        run_path, report = rehearse(owner)
         if report["status"] != "offline-supervisor-passed-live-blocked":
             raise CaptureError("supervision-rehearsal-failed")
-        # The runner removes its synthetic temporary artifacts; the standalone
-        # supervisor CLI instead retains the private run directory.
-        report["raw_artifacts_retained"] = False
-        report["artifacts_scope"] = "temporary-offline-acceptance-fixture"
+        if retained:
+            raw = read_private(run_path / "session-export" / "session.zip", MAX_PACKAGE)
+            if digest(raw) != report["worker_receipt"]["session_bundle_sha256"]:
+                raise CaptureError("retained-session-checksum")
+            exclusive_file(owner / "session.zip", raw)
+        report["raw_artifacts_retained"] = retained
+        report["artifacts_scope"] = ("retained-offline-acceptance-fixture" if retained else
+                                     "temporary-offline-acceptance-fixture")
         return report
+    if retained_directory is not None:
+        owner = path_without_links(retained_directory)
+        owner.mkdir(mode=0o700)  # never overwrite or reuse a prior run
+        return run(owner, True)
+    with tempfile.TemporaryDirectory(prefix="radar-r1-supervisor-") as tmp:
+        return run(Path(tmp), False)
 
 
 def run_checks():
@@ -102,6 +114,7 @@ def main(argv=None):
             raise CaptureError("python-version")
         parser = Parser(description="R1 offline acceptance only; no live collection is available.")
         parser.add_argument("--output", required=True)
+        parser.add_argument("--session-artifacts")
         args = parser.parse_args(argv)
         output = Path(args.output)
         if output.exists() or output.is_symlink():
@@ -113,11 +126,11 @@ def main(argv=None):
         started = time.monotonic()
         tests = run_checks()
         evidence = rehearsal()
-        supervision = supervision_rehearsal()
+        supervision = supervision_rehearsal(args.session_artifacts)
         after = {name: digest((ROOT / name).read_bytes()) for name in SOURCES}
         if before != after:
             raise CaptureError("source-changed")
-        report = {"schema_version": 1, "status": "offline-measurement-passed-live-blocked",
+        report = {"schema_version": 1, "status": "offline-session-bundle-passed-live-blocked",
                   "python": platform.python_version(), "sqlite": sqlite3.sqlite_version,
                   "tests": tests, "source_sha256": after,
                   "elapsed_seconds": round(time.monotonic() - started, 6),
@@ -127,7 +140,7 @@ def main(argv=None):
                   "internet_socket_creation_and_dns_blocked": True,
                   "wire_validation": {"protocol_peer": "in-memory", "provider_connection_opened": False,
                                       "tls_handshake_tested": False, "coexistence_accepted": False},
-                  "remaining": ["Kali measurement; historical configuration and executable pricing validation", "provider connection coexistence",
+                  "remaining": ["Kali complete-session handoff; historical configuration and executable pricing validation", "provider connection coexistence",
                                 "source ordering, initial state and finality validation",
                                 "gap recovery source", "billing and explicit pilot budget",
                                 "live-launch credential/budget controls and real provider TLS/session validation",
@@ -139,7 +152,7 @@ def main(argv=None):
             exclusive_file(prepared, (canonical(report) + "\n").encode())
             os.link(prepared, output, follow_symlinks=False)
         sync_dir(output.parent)
-        print("R1 offline checks including local measurement evidence passed; live collection remains blocked. Report created.")
+        print("R1 offline checks including complete-session handoff passed; live collection remains blocked. Report created.")
         return 0
     except Exception:
         print("R1 offline check stopped; no acceptance is granted.", file=sys.stderr)

@@ -18,7 +18,7 @@ def bootstrap(parent_pid):
         raise RuntimeError("worker-parent")
     os.umask(0o077)
     limits = ((resource.RLIMIT_CORE, 0), (resource.RLIMIT_AS, 256 * 1024 * 1024),
-              (resource.RLIMIT_CPU, 5), (resource.RLIMIT_FSIZE, 36 * 1024 * 1024),
+              (resource.RLIMIT_CPU, 5), (resource.RLIMIT_FSIZE, 44 * 1024 * 1024),
               (resource.RLIMIT_NOFILE, 32))
     for key, value in limits:
         resource.setrlimit(key, (value, value))
@@ -46,6 +46,7 @@ def run(directory, parent_pid):
     import handoff
     from transport import run_session
     import measurement
+    import session_bundle
 
     if (dict(os.environ) != s.ENVIRONMENT or not sys.flags.ignore_environment
             or not sys.flags.no_user_site or not sys.dont_write_bytecode):
@@ -105,6 +106,12 @@ def run(directory, parent_pid):
                                                directory / "restore" / "session.jsonl")
     if measured != restored_measurement:
         raise RuntimeError("worker-measurement-restore")
+    paired = session_bundle.export_session(directory / "capture", directory / "session.jsonl",
+                                            directory / "session-export")
+    paired_restored = session_bundle.restore_session(directory / "session-export" / "session.zip",
+                                                      paired["bundle_sha256"], directory / "session-restore")
+    if paired_restored["measurement"] != measured or paired_restored["capture"] != capture_report:
+        raise RuntimeError("worker-session-restore")
     receipt = {"schema_version": 1, "manifest_sha256": digest(raw), "resources": s.RESOURCES,
                "offline_guards": {"internet_and_dns_blocked": True,
                                   "child_process_creation_blocked": True,
@@ -113,7 +120,9 @@ def run(directory, parent_pid):
                "session": session, "bundle_sha256": exported["bundle_sha256"],
                "bundle_bytes": exported["bundle_bytes"], "database_sha256": digest(before),
                "source_preserved": True, "local_restore_replay_verified": True,
-               "measurement": measured, "measurement_restore_replayed": True}
+               "measurement": measured, "measurement_restore_replayed": True,
+               "session_bundle_sha256": paired["bundle_sha256"],
+               "session_bundle_bytes": paired["bundle_bytes"], "complete_session_replayed": True}
     exclusive_file(directory / "worker-result.json", (canonical(receipt) + "\n").encode())
 
 

@@ -32,6 +32,12 @@ Uploaded `radar-r1-wire-offline-20261111T142405Z-1056782.json`:
 
 This accepts the wire's stated offline scope, not the full R1 gate.
 
+## Later complete-session resource revision
+
+The complete-session increment raises only the per-file ceiling from the
+36 MiB documented below to 44 MiB, to fit the combined bounded capture/journal
+archive. Other limits remain unchanged. See `R1-SESSION-BUNDLE-20261111.md`.
+
 ## Implemented behavior
 
 `supervisor.py` takes an existing private owner directory and creates a new
