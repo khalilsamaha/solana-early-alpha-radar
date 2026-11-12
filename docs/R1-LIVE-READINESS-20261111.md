@@ -13,8 +13,10 @@ integration increment changes development sources, without changing the running
 scanner or previously accepted artifacts.
 
 Implementation update: the combined offline owner/scanner/research path is now
-implemented and accepted on Kali at `df6cbfa4`, including real local IPC. The next
-read-only host identity observation is in `../r1-host-review/README.md`. See
+implemented and accepted on Kali at `df6cbfa4`, including real local IPC. Host identity
+is accepted at `35b89c5e`: UID/GID 1000, same user namespace, no findings. The next
+isolated Docker boundary rehearsal and production handoff plan are in
+`../r1-container-review/README.md`. See
 `R1-SHARED-INTEGRATION-20261111.md`. The design requirements below remain the
 acceptance criteria; implementation does not imply rollout or live acceptance.
 
@@ -27,7 +29,7 @@ acceptance criteria; implementation does not imply rollout or live acceptance.
 | Local measurement | Selection and local send timing replayed | Freeze pilot measurement terms and distinguish unknown provider acknowledgement, external coverage, finality and billing |
 | Complete-session preservation | One synthetic source/upload/download/restore pair accepted | Coverage for real completed and interrupted sessions, independent restore and stated retention terms |
 | Source adequacy | Partial historical feasibility only | Establish whether missing initial events, historical state/configuration, ordering and recovery allow the proposed use; unresolved fields remain unknown |
-| Connection ownership | Shared owner/scanner integration accepted offline on Kali at `df6cbfa4`; production remains on its existing source | Observe host UID/namespace, then validate ownership, startup, mount and rollback controls |
+| Connection ownership | Shared owner/scanner integration accepted offline on Kali at `df6cbfa4`; production remains on its existing source | Host UID/namespace accepted at `35b89c5e`; validate the isolated container socket boundary, then actual startup and rollback controls |
 | Credential and exposure control | Wire accepts an in-memory secret and redacts known variants | Private credential loading/delivery, owner-approved numeric exposure and no automatic top-ups |
 | Full R1 gate | Open | Remaining engineering and Kali acceptance before PR/CI consolidation; measurement pilot and source verdict remain distinct from software checks |
 
@@ -173,3 +175,17 @@ The documentation-only decision needed no Kali rerun. The subsequent shared
 integration increment now has a combined Kali command, documented separately.
 Preserve existing evidence and the remote object; do not repeat B2, fund the
 wallet or restart the scanner for that offline check.
+
+## Container-boundary development evidence
+
+The separate rehearsal passes 314 core Python checks, 20 container-control
+checks and 226 scanner checks. Both development pipe scenarios export/restore
+exactly. Docker and real container mounts cannot be tested in this development
+environment; no Docker acceptance is inferred. The Kali runner requires the
+real isolated boundary and refuses a fallback. Its status must remain live-blocked.
+
+Exact development report: `evidence/r1-container-development-20261111.json`,
+SHA-256 `248c7b9dbe479f630153599292d8fb2893477067360706ddf211aa8200c37461`.
+This receipt binds 123 source files; actual production rollout/rollback, live
+credentials/supervision, registration, numeric exposure and real-session retention
+remain open. The accepted host identity report does not close those requirements.

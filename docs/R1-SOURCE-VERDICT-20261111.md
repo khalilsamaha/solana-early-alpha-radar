@@ -78,9 +78,11 @@ registered measurement contract prepared before activation.
    session; see `R1-SESSION-BACKUP-20261111.md`. The selected connection design is in
    `R1-LIVE-READINESS-20261111.md`. The shared integration is accepted offline on Kali at
    `df6cbfa4`, including real Unix IPC; the normal archive independently replays.
-   See `R1-SHARED-INTEGRATION-20261111.md`. Next observe host process identity using
-   `../r1-host-review/README.md`, then finish startup/rollback, private credentials
-   and live supervision controls before provider use.
+   See `R1-SHARED-INTEGRATION-20261111.md`. Host process identity is accepted
+   at `35b89c5e` with matching UID/namespace and no findings. Next validate the
+   isolated Docker socket boundary (`../r1-container-review/README.md`), then
+   finish actual startup/rollback, private credentials and live supervision
+   controls before provider use.
    Prove bounded receive memory, cancellation/abort, credential redaction,
    no reconnect across gaps, and no paid subscription after a terminal limit.
 4. **Pre-activation review:** combine Kali evidence, preservation receipt,

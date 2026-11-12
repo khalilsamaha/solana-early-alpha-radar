@@ -45,13 +45,13 @@ async def until(predicate):
             await asyncio.sleep(0.002)
 
 
-async def exercise(directory, *, transport="unix", fail_cleanup=False):
-    if transport not in {"unix", "pipe"}:
+async def exercise(directory, *, transport="unix", fail_cleanup=False, launcher=None):
+    if transport not in {"unix", "pipe"} or launcher is not None and transport != "unix":
         raise CaptureError("shared-rehearsal-transport")
     directory = Path(directory)
     directory.mkdir(mode=0o700)
     node = shutil.which("node")
-    if node is None:
+    if node is None and launcher is None:
         raise CaptureError("shared-node-required")
     wire = SyntheticWire(fail_cleanup)
     attempts = 0
@@ -73,9 +73,12 @@ async def exercise(directory, *, transport="unix", fail_cleanup=False):
             await server.start()
             args.append(str(server.path))
             progress = server.progress
-        child = await asyncio.create_subprocess_exec(*args, stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
-            env=ENV, cwd=directory, limit=8192, start_new_session=True)
+        if launcher is None:
+            child = await asyncio.create_subprocess_exec(*args, stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+                env=ENV, cwd=directory, limit=8192, start_new_session=True)
+        else:
+            child = await launcher.start(server.path, directory)
         if await asyncio.wait_for(child.stdout.readline(), 5) != b"ready\n":
             raise CaptureError("shared-scanner-start")
         if server:
@@ -149,8 +152,6 @@ async def exercise(directory, *, transport="unix", fail_cleanup=False):
         if delivery:
             delivery.cancel()
             await asyncio.gather(delivery, return_exceptions=True)
-        if ipc_temp:
-            ipc_temp.cleanup()
         if child and child.returncode is None:
             child.kill()
             await child.wait()
@@ -161,3 +162,7 @@ async def exercise(directory, *, transport="unix", fail_cleanup=False):
                 await asyncio.wait_for(asyncio.shield(worker), 2)
             except Exception:
                 pass
+        if launcher is not None:
+            await launcher.cleanup()
+        if ipc_temp:
+            ipc_temp.cleanup()

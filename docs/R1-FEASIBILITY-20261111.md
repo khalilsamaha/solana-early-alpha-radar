@@ -18,7 +18,8 @@ at `58805ae6`; the downloaded complete session independently replays exactly.
 See `docs/R1-SESSION-BACKUP-20261111.md`. The owner has selected one shared
 authenticated connection. Its combined offline integration is Kali-accepted at `df6cbfa4`, including real
 Unix IPC and independent replay of the normal session. Read-only production host
-identity observation is next (`r1-host-review/README.md`); see `docs/R1-SHARED-INTEGRATION-20261111.md` and
+identity is accepted at `35b89c5e` (same UID/namespace, no findings). The isolated
+Docker boundary rehearsal is next (`r1-container-review/README.md`); see `docs/R1-SHARED-INTEGRATION-20261111.md` and
 `docs/R1-LIVE-READINESS-20261111.md`. No live collector
 launcher is supplied and no paid subscription,
 wallet funding or study registration was performed by this work. The owner
