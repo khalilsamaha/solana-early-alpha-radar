@@ -20,7 +20,8 @@ credential-delivery and supervised-worker boundary is accepted on Kali at `bf2d9
 The durable handoff coordinator is accepted on Kali at `c0143106`.
 The combined isolated service integration is accepted on Kali at `a0003221`.
 The draft measurement evaluator is accepted on Kali at `268c03ad`; its terms
-remain unapproved. Next: interrupted evidence preservation (`../r1-preservation/README.md`).
+remain unapproved. Interrupted evidence preservation is accepted on Kali at
+`f2db8ff9`; combined offline admission/finalization is next (`../r1-orchestration/README.md`).
 The production handoff plan remains in `../r1-container-review/README.md`. See
 `R1-SHARED-INTEGRATION-20261111.md`. The design requirements below remain the
 acceptance criteria; implementation does not imply rollout or live acceptance.
@@ -373,5 +374,58 @@ Development archive bindings:
 - Interrupted (59,401 bytes): `09816f4397c146eab75a4b273cc4c7f6f2c15303559b78a00675460d2d29c045`.
 - SQLite rollback (68,316 bytes): `7d19df5e006a37b695e587421981c7e5f091e5a31799cdbf21fb45da5ed198aa`.
 
-Kali acceptance of this preservation scope is next. No remote upload or retention
-claim is added by these local results.
+Kali acceptance of this preservation scope is recorded below. No remote upload
+or retention claim is added by these local results.
+
+
+## November 12 preservation acceptance and combined offline orchestration
+
+Kali accepted `f2db8ff9073a628748dc6f0c82cdfaf1a03205c7`: 314 core checks,
+18 preservation checks, all 153 source hashes and all three independently
+verified/restored archives. Member bytes and reported classifications match
+exactly. All native fixture processes were reaped. Elapsed: 26.176248 seconds.
+Exact report: `evidence/r1-preservation-kali-20261112.json`, SHA-256
+`7901f7b538178678d17b8a2fdd9827c34d4336a751c760c9c713e62099b0b882`.
+
+Archive hashes (complete, interrupted, SQLite rollback respectively):
+`0c8306f26ab724f325eb987caee5a27a07e8ec19ac1ffcf00904cad4e8f9f5dc`,
+`0c91250f889a94a9b091a677fe51b210de1db4dfecd9fa6a04c9a5e4ec080827`,
+`02a657c993d868b6889d9c094db9e0fdb5505aac92f0be0b9cddd136d9044c4c`.
+Sizes: 63,853 / 59,413 / 68,328 bytes. Complete evidence replays; interrupted
+evidence remains quarantined. This does not establish remote retention coverage.
+
+The next `r1-orchestration` increment combines the exact draft contract, one-use
+offline admission, actual synthetic broker/scanner handoff, observed cleanup,
+durable finalization intent, preservation and independent restore. Completion
+is written last. Failed preservation/restore/publication never silently retries
+or rearms admission. Read-only reconciliation checks bindings without creating
+files or executing an adapter. Cleanup observations retain generated identities
+when cleanup is uncertain.
+
+Default Kali mode exercises normal cleanup, failed unsubscribe and an interrupted
+shared-shutdown operation with eight disposable containers; development pipe mode
+explicitly leaves Docker/Unix pending. The production scanner remains read-only,
+and all provider traffic is synthetic. Numeric exposure, actual production
+rollout, remote finalization/retention and provider validation remain open.
+Full R1 remains open; no CI consolidation, live authority or effort-cap reset.
+
+Development validation passes 314 core tests, 13 orchestration tests and all
+three complete end-to-end scenarios in 62.807167 seconds. All 157 source hashes
+match. Independent review verifies each archive/restore, lifecycle replay and
+admission/cleanup/finalization-intent digest. Normal and failed-unsubscribe runs
+have complete replayable evidence; interrupted shutdown remains quarantined
+and requires reconciliation, with no direct restoration. Admission reuse is
+refused for every case. Development uses pipes and simulated restart policies;
+actual combined Docker/Unix acceptance remains pending on Kali.
+
+Exact report: `evidence/r1-orchestration-development-20261112.json`, SHA-256
+`426cbb2db57a8d1d57f01bb1e6c751a6237f7fbe683b4ebff130396fedd4e506`.
+Archive bindings:
+
+- Normal (63,832 bytes): `bcb59df1454cfcaeaccc4922ac420bb2d877dd06d0698d2c5e7a015e055ad761`.
+- Cleanup failure (63,851 bytes): `5e2e120b78a40507f20982445a6c264e2311742ccdfd6ba917b83ba26277b405`.
+- Shutdown interruption (62,319 bytes): `eb677e289d880ac8b790bed0721b7a86358570e8a5a17698880ba57d3c3a5970`.
+
+Kali must validate this combined scope with eight removed disposable containers.
+Remote finalization and retention, production authorization, numeric exposure
+and live provider behavior remain unvalidated.
