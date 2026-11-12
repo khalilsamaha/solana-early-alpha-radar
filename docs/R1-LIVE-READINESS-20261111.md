@@ -21,7 +21,9 @@ The durable handoff coordinator is accepted on Kali at `c0143106`.
 The combined isolated service integration is accepted on Kali at `a0003221`.
 The draft measurement evaluator is accepted on Kali at `268c03ad`; its terms
 remain unapproved. Interrupted evidence preservation is accepted on Kali at
-`f2db8ff9`; combined offline admission/finalization is next (`../r1-orchestration/README.md`).
+`f2db8ff9`; combined offline admission/finalization is accepted on Kali at
+`d9c59de0`. Receipt-complete portable handoff is the current offline increment
+(`../r1-delivery/README.md`), with remote delivery/retention still pending.
 The production handoff plan remains in `../r1-container-review/README.md`. See
 `R1-SHARED-INTEGRATION-20261111.md`. The design requirements below remain the
 acceptance criteria; implementation does not imply rollout or live acceptance.
@@ -429,3 +431,72 @@ Archive bindings:
 Kali must validate this combined scope with eight removed disposable containers.
 Remote finalization and retention, production authorization, numeric exposure
 and live provider behavior remain unvalidated.
+
+
+## November 12 orchestration acceptance and portable receipt-complete delivery
+
+Kali accepted `d9c59de02b675714f9ea4cf40de9005ed0e8c145`: **314 core + 13
+orchestration tests**, no failures/errors/skips, all **157 source hashes**, and
+all **eight disposable containers removed**. Elapsed: **35.800935 seconds**.
+All three uploaded archives independently verify and restore byte for byte.
+Admission, cleanup, finalization intent, preservation and restore report digests
+match the completion receipts. Consumed admission reuse is refused in every case.
+The shutdown interruption retains its unconfirmed operation and requires manual
+reconciliation. The cleanup-failure archive is complete evidence of a failure,
+not a successful measurement verdict.
+
+Exact report: `evidence/r1-orchestration-kali-20261112.json`, SHA-256
+`13c52426c6f7b21d1bf1925f49b2100a8d0920dc320d377e745232a63af4abab`.
+
+| Archive | Bytes | SHA-256 |
+| --- | ---: | --- |
+| Normal | 63,853 | `ead860155ae07c8cb2b7fba43a3f7f193c99e61896851f8fe828de9ba2a0e8a5` |
+| Cleanup failure | 63,875 | `fbd57c2e04c1a9a84d72836d7c489cccef475d972ea84c8d18b95d34c3653276` |
+| Shutdown interruption | 62,343 | `784c0a600dc2f4776711fc92f1a0e833062fe84892cd9986027fe655e69b355c` |
+
+The current `r1-delivery` increment closes the portable evidence gap: admission,
+cleanup, finalization intent, completion, both preservation/restore reports and
+the inner archive travel together. Verification replays disposable evidence and
+checks all receipt bindings. Restoring this package never resumes a service.
+The current-source hashes are integrity checks, not signatures or independent
+attestation of event provenance.
+
+The one-attempt transfer protocol is tested with an explicitly local mirror.
+A durable intent and frozen package precede transport. Only an exact download,
+independent receipt/evidence restore and final receipt publication can complete
+it. Failed/uncertain attempts retain their local package and cannot automatically
+retry. Interrupted source evidence remains quarantined after successful transfer.
+
+This checker invokes no Docker and uses synthetic pipe fixtures. It neither
+replaces the accepted eight-container result above nor claims remote storage.
+A fixed-destination bounded B2 adapter, receipt-complete off-machine validation,
+ongoing retention and production startup/rollback remain pending. The previous
+fixed-input session B2 round trip is not repeated. No real credentials, provider
+connections, wallet action, ML, CI or main-branch changes are authorized by this
+increment. The full R1 gate and the existing total five-working-day effort cap
+remain unchanged; no new elapsed-effort estimate is asserted.
+
+
+Development acceptance for this increment: **314 core + 13 orchestration + 23
+delivery tests (350 total)**, no failures/errors/skips in the complete check;
+all **162 source hashes** stable. Three new synthetic pipe fixtures export,
+independently restore and complete the local-mirror protocol. Consumed transfer
+controls refuse reuse. Elapsed: **98.802 seconds**. Exact report:
+`evidence/r1-delivery-development-20261112.json`, SHA-256
+`0fd08fc426cc6cc523e9340230ac29f4dab2e083568ec953428af3101ab1b537`.
+
+Two preliminary standalone test invocations stopped in existing synthetic
+fixture cleanup (31.399 and 9.966 seconds); neither earned acceptance. A separate
+three-scenario lifecycle diagnostic, the subsequent 23-test delivery suite and
+the final complete 350-test check passed. No lifecycle deadlines, resource limits
+or cleanup checks were relaxed. The earlier cleanup failures are retained as a
+development execution limitation, not proof of a resolved runtime cause. Kali
+acceptance is still required for the new increment.
+
+Development package bindings:
+
+| Package | Bytes | SHA-256 |
+| --- | ---: | --- |
+| cleanup-failure | 125,602 | `ea578511dfcd91514d732ac93e68a87030565a1f806be8cfbf307560e077bea1` |
+| normal | 125,528 | `9d64b70e0022157a954a18879dd63841e68636b386c2c90d0c5a3dce3d0d0b9c` |
+| shutdown-interruption | 119,838 | `3f59cd5b5a0baa350616c99f24ad084ff0b794661eb17c3a172399e57aed354f` |

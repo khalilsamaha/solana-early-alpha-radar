@@ -84,10 +84,11 @@ registered measurement contract prepared before activation.
    and the supervised shared-worker boundary are accepted on Kali at `bf2d9fcf`.
    The durable service lifecycle is accepted on Kali at `c0143106`. The combined isolated broker/scanner/Docker sequence is accepted on Kali at
    `a0003221`. The draft measurement evaluator is accepted on Kali at `268c03ad`, without
-   approval of its terms or exposure. Interrupted evidence preservation is accepted on Kali at `f2db8ff9`. Next
-   validate combined offline admission/handoff/finalization
-   (`../r1-orchestration/README.md`), then finish production startup/rollback,
-   live retention and registration/exposure controls before provider use.
+   approval of its terms or exposure. Interrupted evidence preservation is accepted on Kali at `f2db8ff9`. Combined offline admission/handoff/finalization is accepted on Kali at
+   `d9c59de0` (327 tests, 157 sources, eight removed disposable containers). Next
+   validate receipt-complete portable handoff and one-attempt local transfer
+   (`../r1-delivery/README.md`), then implement/validate the fixed remote adapter,
+   retention, production startup/rollback and registration/exposure controls before provider use.
    Prove bounded receive memory, cancellation/abort, credential redaction,
    no reconnect across gaps, and no paid subscription after a terminal limit.
 4. **Pre-activation review:** combine Kali evidence, preservation receipt,
