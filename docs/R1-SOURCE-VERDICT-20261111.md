@@ -80,10 +80,11 @@ registered measurement contract prepared before activation.
    `df6cbfa4`, including real Unix IPC; the normal archive independently replays.
    See `R1-SHARED-INTEGRATION-20261111.md`. Host process identity is accepted
    at `35b89c5e` with matching UID/namespace and no findings. The isolated Docker socket boundary
-   is accepted at `747f44ed`, with all three disposable containers removed. Next
-   validate private credential delivery and the supervised shared-worker boundary
-   (`../r1-runtime/README.md`), then finish live integration, actual startup/rollback
-   and the remaining registration/exposure controls before provider use.
+   is accepted at `747f44ed`, with all three disposable containers removed. Private credential delivery
+   and the supervised shared-worker boundary are accepted on Kali at `bf2d9fcf`.
+   Next validate the durable service lifecycle (`../r1-service/README.md`), then
+   connect it to actual service adapters and finish startup/rollback plus the
+   remaining registration/exposure controls before provider use.
    Prove bounded receive memory, cancellation/abort, credential redaction,
    no reconnect across gaps, and no paid subscription after a terminal limit.
 4. **Pre-activation review:** combine Kali evidence, preservation receipt,

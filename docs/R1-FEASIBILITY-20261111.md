@@ -20,8 +20,9 @@ authenticated connection. Its combined offline integration is Kali-accepted at `
 Unix IPC and independent replay of the normal session. Read-only production host
 identity is accepted at `35b89c5e` (same UID/namespace, no findings). The isolated
 Docker boundary is accepted at `747f44ed`, with three disposable containers removed.
-Credential delivery and supervised shared-worker validation is next
-(`r1-runtime/README.md`); see `docs/R1-SHARED-INTEGRATION-20261111.md` and
+Credential delivery and the supervised shared-worker boundary are accepted at
+`bf2d9fcf`. The durable service handoff coordinator is next
+(`r1-service/README.md`); see `docs/R1-SHARED-INTEGRATION-20261111.md` and
 `docs/R1-LIVE-READINESS-20261111.md`. No live collector
 launcher is supplied and no paid subscription,
 wallet funding or study registration was performed by this work. The owner
