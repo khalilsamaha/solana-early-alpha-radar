@@ -83,8 +83,9 @@ registered measurement contract prepared before activation.
    is accepted at `747f44ed`, with all three disposable containers removed. Private credential delivery
    and the supervised shared-worker boundary are accepted on Kali at `bf2d9fcf`.
    The durable service lifecycle is accepted on Kali at `c0143106`. The combined isolated broker/scanner/Docker sequence is accepted on Kali at
-   `a0003221`. Next validate the draft measurement contract/evaluator
-   (`../r1-registration/README.md`), then finish production startup/rollback,
+   `a0003221`. The draft measurement evaluator is accepted on Kali at `268c03ad`, without
+   approval of its terms or exposure. Next validate interrupted evidence preservation
+   (`../r1-preservation/README.md`), then finish production startup/rollback,
    live retention and registration/exposure controls before provider use.
    Prove bounded receive memory, cancellation/abort, credential redaction,
    no reconnect across gaps, and no paid subscription after a terminal limit.

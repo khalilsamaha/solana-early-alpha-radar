@@ -19,7 +19,8 @@ is accepted at `747f44ed`, with all three disposable containers removed. The
 credential-delivery and supervised-worker boundary is accepted on Kali at `bf2d9fcf`.
 The durable handoff coordinator is accepted on Kali at `c0143106`.
 The combined isolated service integration is accepted on Kali at `a0003221`.
-The next draft measurement contract/evaluator is in `../r1-registration/README.md`.
+The draft measurement evaluator is accepted on Kali at `268c03ad`; its terms
+remain unapproved. Next: interrupted evidence preservation (`../r1-preservation/README.md`).
 The production handoff plan remains in `../r1-container-review/README.md`. See
 `R1-SHARED-INTEGRATION-20261111.md`. The design requirements below remain the
 acceptance criteria; implementation does not imply rollout or live acceptance.
@@ -330,5 +331,47 @@ Both newly uploaded Kali archives were also replayed against that draft:
 normal is insufficient; deliberate cleanup failure is fail, as expected. This
 retrospective analysis is recorded in
 `evidence/r1-contract-kali-retrospective-20261112.json`; it explicitly does not
-prove precollection registration. Kali acceptance of the evaluator itself is
-next. No additional Docker or synthetic B2 rehearsal is requested.
+prove precollection registration. Kali acceptance of the evaluator itself is recorded below.
+No additional Docker or synthetic B2 rehearsal is requested.
+
+
+## November 12 contract acceptance and interrupted evidence preservation
+
+Kali accepted `268c03ad259174a07df2090916cfd1988d54f282`: 314 core tests,
+18 contract tests, 147 matching source hashes, and the exact frozen contract
+`c9468e251bd2ed9a6d51c19e907b5421b022eec5a93960ad3ae6726b81575202`.
+Both reported evaluator results independently recompute exactly. Full runner:
+19.501578 seconds. Exact report is `evidence/r1-contract-kali-20261112.json`,
+SHA-256 `9a951ba30fc79f6e5369bed9bfad85d965b0eabb7c9f5deb3018283d95296275`;
+the exact uploaded contract is `evidence/r1-contract-kali-draft-20261112.json`.
+This validates the evaluator, not owner approval of thresholds, spending or live use.
+
+The next `r1-preservation` increment adds a fixed, bounded local evidence archive
+for both complete and interrupted captures. It acquires existing registry/capture
+locks, snapshots exact private bytes, and performs classification on disposable
+copies. Pending lifecycle intents, incomplete journals and real SQLite rollback
+files remain quarantined, never repaired into a completed session. A native
+SIGKILL fixture and a SIGKILL during an uncommitted transaction exercise those
+paths. Restore verifies exact member hashes and the independently recomputed
+classification. No production paths, Docker or B2 operations are invoked.
+
+This is a local primitive, not installed production finalization or ongoing
+remote retention. Production admission/reconciliation, remote preservation,
+numeric exposure and live-provider validation remain open. Full R1 remains open;
+there is no CI consolidation, ML fitting or five-working-day effort-cap reset.
+
+Development validation passes 314 core and 18 preservation tests, plus complete,
+SIGKILL-interrupted and SQLite-transaction-interrupted archive/restore scenarios,
+in 13.307075 seconds. All 153 source hashes are stable. Each archive was also
+independently verified/restored and all member bytes compared exactly. The complete
+archive replays; both interrupted archives remain quarantined. Every fixture
+process was reaped. Exact report: `evidence/r1-preservation-development-20261112.json`,
+SHA-256 `b0d9153d76501a5431beb6d975cdcff195c5de0d0436d29e217550a6653eeae7`.
+Development archive bindings:
+
+- Complete (63,832 bytes): `10251f88b3593d4450d29ccb6771dad792cfb6d2f867d33845c4ac1ff1e70771`.
+- Interrupted (59,401 bytes): `09816f4397c146eab75a4b273cc4c7f6f2c15303559b78a00675460d2d29c045`.
+- SQLite rollback (68,316 bytes): `7d19df5e006a37b695e587421981c7e5f091e5a31799cdbf21fb45da5ed198aa`.
+
+Kali acceptance of this preservation scope is next. No remote upload or retention
+claim is added by these local results.
