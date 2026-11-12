@@ -14,9 +14,10 @@ scanner or previously accepted artifacts.
 
 Implementation update: the combined offline owner/scanner/research path is now
 implemented and accepted on Kali at `df6cbfa4`, including real local IPC. Host identity
-is accepted at `35b89c5e`: UID/GID 1000, same user namespace, no findings. The next
-isolated Docker boundary rehearsal and production handoff plan are in
-`../r1-container-review/README.md`. See
+is accepted at `35b89c5e`: UID/GID 1000, same user namespace, no findings. The isolated Docker boundary
+is accepted at `747f44ed`, with all three disposable containers removed. The next
+credential-delivery and supervised-worker increment is in `../r1-runtime/README.md`.
+The production handoff plan remains in `../r1-container-review/README.md`. See
 `R1-SHARED-INTEGRATION-20261111.md`. The design requirements below remain the
 acceptance criteria; implementation does not imply rollout or live acceptance.
 
@@ -29,8 +30,8 @@ acceptance criteria; implementation does not imply rollout or live acceptance.
 | Local measurement | Selection and local send timing replayed | Freeze pilot measurement terms and distinguish unknown provider acknowledgement, external coverage, finality and billing |
 | Complete-session preservation | One synthetic source/upload/download/restore pair accepted | Coverage for real completed and interrupted sessions, independent restore and stated retention terms |
 | Source adequacy | Partial historical feasibility only | Establish whether missing initial events, historical state/configuration, ordering and recovery allow the proposed use; unresolved fields remain unknown |
-| Connection ownership | Shared owner/scanner integration accepted offline on Kali at `df6cbfa4`; production remains on its existing source | Host UID/namespace accepted at `35b89c5e`; validate the isolated container socket boundary, then actual startup and rollback controls |
-| Credential and exposure control | Wire accepts an in-memory secret and redacts known variants | Private credential loading/delivery, owner-approved numeric exposure and no automatic top-ups |
+| Connection ownership | Shared owner/scanner integration accepted offline on Kali at `df6cbfa4`; production remains on its existing source | Host UID/namespace and isolated container socket boundary accepted at `35b89c5e` / `747f44ed`; actual production startup and rollback remain open |
+| Credential and exposure control | Wire accepts an in-memory secret and redacts known variants | Private-file/sealed-descriptor implementation and shared-worker supervision now implemented offline; Kali acceptance, live integration and owner-approved numeric exposure remain open |
 | Full R1 gate | Open | Remaining engineering and Kali acceptance before PR/CI consolidation; measurement pilot and source verdict remain distinct from software checks |
 
 The report does not prove actual provider performance, complete early-trade
@@ -189,3 +190,29 @@ SHA-256 `248c7b9dbe479f630153599292d8fb2893477067360706ddf211aa8200c37461`.
 This receipt binds 123 source files; actual production rollout/rollback, live
 credentials/supervision, registration, numeric exposure and real-session retention
 remain open. The accepted host identity report does not close those requirements.
+
+## November 12 acceptance and runtime increment
+
+Kali accepted the isolated Docker boundary at `747f44edfdfbdd8aae62344c368b2189675027dc`:
+314 core checks, 20 boundary checks, 226 scanner checks and 123 matching source hashes.
+Normal cleanup preserved discovery; deliberately failed cleanup aborted upstream;
+missing-endpoint startup refused direct fallback. All three disposable containers
+were removed. The full runner took 26.190661 seconds. Report retained in
+`evidence/r1-container-kali-20261112.json`, SHA-256
+`8107fe3cc7495a184ab49ad314d2c6245f7389c3e7a16607a74f9c248263d4c5`.
+The uploaded normal package independently replays exactly; the failure package was
+not uploaded and independent replay is not claimed for it.
+
+The new runtime boundary passes 314 core and 23 credential/supervision checks in
+development, including parent-death and signal/deadline cleanup, immutable secret
+handoff, one-attempt refusal and shared capture/journal replay. Four real child
+process scenarios completed in the combined 15.764792-second runner. The unchanged
+scanner regression evidence remains the 226 Kali checks at `747f44ed`; it is not
+represented as a new scanner run. Exact development report:
+`evidence/r1-runtime-development-20261112.json`, SHA-256
+`57af55a3bf71afd0d3f50c4a4a7ecfbf47fdaceadc12f475ed17c26b6d4e4054`. It binds 121 source files.
+
+Kali runtime validation is next. This remains an offline worker and has no live
+mode. It cannot close live TLS/subscription behavior, funded exposure, actual
+production handoff/recovery/rollback, measurement registration or real-session
+preservation/retention. Full R1 remains open; no new timeline or effort-cap reset.
