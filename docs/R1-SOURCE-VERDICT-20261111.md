@@ -82,9 +82,10 @@ registered measurement contract prepared before activation.
    at `35b89c5e` with matching UID/namespace and no findings. The isolated Docker socket boundary
    is accepted at `747f44ed`, with all three disposable containers removed. Private credential delivery
    and the supervised shared-worker boundary are accepted on Kali at `bf2d9fcf`.
-   Next validate the durable service lifecycle (`../r1-service/README.md`), then
-   connect it to actual service adapters and finish startup/rollback plus the
-   remaining registration/exposure controls before provider use.
+   The durable service lifecycle is accepted on Kali at `c0143106`. Next validate
+   the combined isolated broker/scanner/Docker sequence (`../r1-service/INTEGRATED.md`),
+   then finish production startup/rollback and the remaining registration/exposure
+   controls before provider use.
    Prove bounded receive memory, cancellation/abort, credential redaction,
    no reconnect across gaps, and no paid subscription after a terminal limit.
 4. **Pre-activation review:** combine Kali evidence, preservation receipt,

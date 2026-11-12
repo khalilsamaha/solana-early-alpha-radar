@@ -17,7 +17,8 @@ implemented and accepted on Kali at `df6cbfa4`, including real local IPC. Host i
 is accepted at `35b89c5e`: UID/GID 1000, same user namespace, no findings. The isolated Docker boundary
 is accepted at `747f44ed`, with all three disposable containers removed. The
 credential-delivery and supervised-worker boundary is accepted on Kali at `bf2d9fcf`.
-The next durable handoff coordinator is in `../r1-service/README.md`.
+The durable handoff coordinator is accepted on Kali at `c0143106`.
+The combined isolated service integration is next: `../r1-service/INTEGRATED.md`.
 The production handoff plan remains in `../r1-container-review/README.md`. See
 `R1-SHARED-INTEGRATION-20261111.md`. The design requirements below remain the
 acceptance criteria; implementation does not imply rollout or live acceptance.
@@ -246,8 +247,40 @@ endpoint setup, network ownership and restart policies are simulated. This is
 not actual scanner/provider handoff or production rollback. The accepted shared
 wire, credential and Docker results remain separate evidence.
 
-Kali lifecycle validation is next, followed by connecting the durable sequence
-to the actual broker/consumer/service manager and validating isolated startup
-and rollback. Measurement registration, numeric exposure approval and actual
+Kali lifecycle validation is accepted at `c0143106`; the combined isolated
+broker/scanner/Docker integration is implemented and awaits Kali validation. Measurement registration, numeric exposure approval and actual
 live-session preservation/retention remain open. Full R1 remains open; the
 five-working-day engineering cap has not been restarted.
+
+
+## November 12 lifecycle acceptance and service integration
+
+The uploaded `c0143106` report passes 314 core tests, 21 lifecycle tests,
+127 matching source hashes and 18 native-process scenarios. All 18 supplied
+journals independently replay exactly, including the 16 interrupted-operation
+cases. All fixture processes were reaped and maximum simultaneous owners was
+one. Full runner: 22.48334 seconds. Exact report SHA-256:
+`65027ccc0232dcdcb36fc122e7d8d0a955a193de852f3976f4d6ae1f5d0160fb`;
+exact journals SHA-256:
+`bb00c3ad04e988104ecbd402869448b250f20500b9952aef242a8a69a8f7ba59`.
+Both exact files are retained as `evidence/r1-lifecycle-kali*-20261112.json`.
+
+The new `r1-service/check_integrated.py` joins the coordinator to the actual
+broker, sealed synthetic credential, capture/journal thread and scanner adapters.
+Default Kali mode uses real Unix IPC and disposable Docker restart-policy
+changes; an explicit development pipe mode reports those boundaries pending.
+The production scanner is observed read-only. No real provider, wallet, key,
+paid feed or trading path is activated. See `../r1-service/INTEGRATED.md`.
+Both normal and failed-cleanup session packages are now requested for independent
+replay. Full R1, production rollout, provider validation and numeric exposure
+approval remain open; no PR/CI consolidation or effort-cap reset.
+
+Development validation passes 314 core, 21 lifecycle and 16 integration tests,
+plus both complete process scenarios in 9.93231 seconds. All 142 source hashes
+remain stable. Both session archives and both journals independently replay.
+The development report explicitly leaves Docker, real Unix IPC and actual
+restart policies pending; it cannot substitute for Kali acceptance. Exact report:
+`evidence/r1-service-integration-development-20261112.json`, SHA-256
+`79c16299ce5ec2ee524d0b094d997997d57eda0729395ec24e8f8653e42edbcc`.
+Exact journals: `evidence/r1-service-integration-development-journals-20261112.json`,
+SHA-256 `2d49d28286a1a0ffd7b3907216a0a14ba86f7d6b0f28ce5ad62c2c8ae4170319`.

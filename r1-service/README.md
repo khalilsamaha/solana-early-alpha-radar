@@ -10,7 +10,7 @@ The failure package was not uploaded; only Kali's reported replay covers it.
 
 This increment implements persistent sequencing and restart refusal for the service
 handoff. The coordinator currently accepts only the explicit offline receipt
-schema. It has no live deployment CLI, Docker management adapter, real credential
+schema. It has no live deployment CLI, production Docker management adapter, real credential
 input, provider connection, trading endpoint or automatic production rollback.
 It does not claim that live-service integration is complete.
 
@@ -81,10 +81,11 @@ their accepted, pinned evidence remains valid.
 
 ## Next integration boundary
 
-The next implementation must connect this ordering to the reviewed actual broker,
-consumer and service manager, with persistent admission and operator stop/recovery.
-It must test actual startup and rollback in an isolated service environment before
-any production change. Then finish measurement registration, numeric exposure
+Kali has accepted this coordinator at `c0143106c1a3c3643bdc07907ba4659bcdfe8476`.
+The next isolated integration is implemented in [INTEGRATED.md](INTEGRATED.md):
+it connects this ordering to the actual broker and scanner, with ownership-scoped
+Docker operations on disposable containers. Kali acceptance of that combined
+path remains required before any production handoff is considered. Then finish measurement registration, numeric exposure
 approval and live-session preservation/retention. The earlier spending figures
 remain unapproved proposals. No live feed, ML fitting or trading is enabled.
 Full-gate Kali validation still precedes PR/CI consolidation and merge. The existing
