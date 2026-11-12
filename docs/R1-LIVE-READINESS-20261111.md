@@ -18,7 +18,8 @@ is accepted at `35b89c5e`: UID/GID 1000, same user namespace, no findings. The i
 is accepted at `747f44ed`, with all three disposable containers removed. The
 credential-delivery and supervised-worker boundary is accepted on Kali at `bf2d9fcf`.
 The durable handoff coordinator is accepted on Kali at `c0143106`.
-The combined isolated service integration is next: `../r1-service/INTEGRATED.md`.
+The combined isolated service integration is accepted on Kali at `a0003221`.
+The next draft measurement contract/evaluator is in `../r1-registration/README.md`.
 The production handoff plan remains in `../r1-container-review/README.md`. See
 `R1-SHARED-INTEGRATION-20261111.md`. The design requirements below remain the
 acceptance criteria; implementation does not imply rollout or live acceptance.
@@ -248,7 +249,7 @@ not actual scanner/provider handoff or production rollback. The accepted shared
 wire, credential and Docker results remain separate evidence.
 
 Kali lifecycle validation is accepted at `c0143106`; the combined isolated
-broker/scanner/Docker integration is implemented and awaits Kali validation. Measurement registration, numeric exposure approval and actual
+broker/scanner/Docker integration is accepted on Kali at `a0003221`. Measurement registration, numeric exposure approval and actual
 live-session preservation/retention remain open. Full R1 remains open; the
 five-working-day engineering cap has not been restarted.
 
@@ -284,3 +285,50 @@ restart policies pending; it cannot substitute for Kali acceptance. Exact report
 `79c16299ce5ec2ee524d0b094d997997d57eda0729395ec24e8f8653e42edbcc`.
 Exact journals: `evidence/r1-service-integration-development-journals-20261112.json`,
 SHA-256 `2d49d28286a1a0ffd7b3907216a0a14ba86f7d6b0f28ce5ad62c2c8ae4170319`.
+
+
+## November 12 isolated integration acceptance and measurement contract
+
+Kali accepted `a0003221ac794ee0741a1908f23c2a0524dd65cc` with 351 tests
+(314 core, 21 lifecycle, 16 integration), all 142 matching source hashes,
+real Unix IPC and actual disposable-container restart-policy changes. Both
+scenarios completed with maximum one synthetic owner, broker/consumer reaping
+and all six owned containers removed. Elapsed: 36.87488 seconds.
+
+Both supplied journals and both session archives independently replay exactly.
+Exact evidence hashes:
+
+- Report: `82f36ee62342da558faba8e96f198c234e7832391f9d4b4ae9b257ca8e35b787`.
+- Journals: `d5abe121b83a5e9a1b7ca9003f16e06edf1dc20c52db36b76ffa6fd91191ad79`.
+- Normal session (25,861 bytes): `1bb637b5ef4eeb0ad59d8af57e44b975aa8b9c5e3efacd62ab209a0cfa1dcc12`.
+- Cleanup-failure session (25,879 bytes): `71429d38181dd1841e6fcfb093940e7ebfaf2c6c506f4ddd5b0be5866711e249`.
+
+The exact report and journals are retained as
+`evidence/r1-service-integration-kali-20261112.json` and
+`evidence/r1-service-integration-kali-journals-20261112.json`.
+This closes the isolated integration increment, not production/provider rollout.
+
+The next `r1-registration` increment freezes a source-bound **unapproved draft**,
+replays complete sessions and evaluates local quality separately from unknown
+provider/source adequacy. Preliminary local criteria: 24 selected creations,
+maximum one-second local send return, zero recorded gaps/abandoned/unresolved
+sends or selected creations without a completed local send. These are engineering
+criteria, not statistical power, source completeness or profitability claims.
+The normal small synthetic fixture remains insufficient; failed cleanup fails.
+A local pass cannot clear the measurement gate while remote evidence is unknown.
+Numeric exposure, owner approval, production handoff and live retention remain
+open. No activation, CI consolidation, ML fitting or effort-cap reset occurs.
+
+Development validation passes 314 core and 18 contract tests, with both complete
+synthetic replay scenarios, in 8.308514 seconds. All 147 source hashes match.
+Exact development report: `evidence/r1-contract-development-20261112.json`,
+SHA-256 `949523625d409096bd0747b3a369995ebf5b80f876f7e7459dcb05c8d27cb012`.
+Frozen draft: `evidence/r1-contract-development-draft-20261112.json`, SHA-256
+`c9468e251bd2ed9a6d51c19e907b5421b022eec5a93960ad3ae6726b81575202`.
+
+Both newly uploaded Kali archives were also replayed against that draft:
+normal is insufficient; deliberate cleanup failure is fail, as expected. This
+retrospective analysis is recorded in
+`evidence/r1-contract-kali-retrospective-20261112.json`; it explicitly does not
+prove precollection registration. Kali acceptance of the evaluator itself is
+next. No additional Docker or synthetic B2 rehearsal is requested.
