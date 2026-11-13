@@ -82,6 +82,17 @@ def assess(data):
         elif not container or container.get('removed') is not True:raise c.CaptureError('envelope-container')
     base={k:v for k,v in data.items() if k in preserve.CAPS}
     assessment=preserve.classify(base,request['contract_sha256'])
+    state=assessment['lifecycle_state']
+    if state is not None:
+        known=state['known']
+        expected_roles=['direct','consumer']+(['direct'] if state['complete'] else [])
+        if ([a.get('role') for a in actors]!=expected_roles
+                or actors[0].get('identity')!=known.get('direct_id')
+                or actors[1].get('identity')!=known.get('consumer_id')
+                or state['complete'] and actors[2].get('identity')!=known.get('new_direct_id')
+                or cleanup.get('direct_restore_calls')!=int(state['complete'])
+                or cleanup.get('transport')!=('pipe' if request['development'] else 'unix')):
+            raise c.CaptureError('envelope-actor-generation-binding')
     reasons=list(assessment['reasons'])
     if request.get('interrupt') is not None:
         fault=row(data.get('fault-ready.json',b'{}\n'))

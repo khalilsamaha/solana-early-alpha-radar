@@ -106,6 +106,10 @@ class CombinedEvidenceTests(unittest.TestCase):
     def test_rehashed_different_manifest_request_rejected(self):
         data=dict(self.contents);r=e.row(data['worker-manifest.json']);r['request_sha256']='0'*64;data['worker-manifest.json']=c.raw(r)
         with self.assertRaises(c.CaptureError):e.assess(data)
+    def test_rehashed_foreign_actor_receipt_is_rejected(self):
+        data=dict(self.contents);r=e.row(data['cleanup.json']);r['actors'][0]['identity']='f'*32
+        data['cleanup.json']=c.raw(r)
+        with self.assertRaises(c.CaptureError):e.assess(data)
     def test_claimed_active_actor_cannot_be_preserved(self):
         data=dict(self.contents);r=e.row(data['cleanup.json']);r['actors'][0]['process_reaped']=False;data['cleanup.json']=c.raw(r)
         with self.assertRaises(c.CaptureError):e.assess(data)

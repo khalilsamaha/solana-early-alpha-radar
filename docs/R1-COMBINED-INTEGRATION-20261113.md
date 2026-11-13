@@ -13,7 +13,7 @@ No legacy runtime implementation or accepted source fingerprint changes.
 
 ## Development validation
 
-Final batch: **25 tests, zero failures/errors/skips**, **169 source fingerprints**,
+Final batch: **26 tests, zero failures/errors/skips**, **169 source fingerprints**,
 no matched resource/async diagnostic and three retained native process/Node
 scenarios. Normal retirement delivers a second creation afterward. Cleanup failure
 retains its failed outcome. Shutdown interruption reaches its request-bound fault
@@ -25,15 +25,15 @@ separately checked with a pure model. No 24–48-hour soak is claimed.
 
 | Retained case | Envelope bytes | Classification | Direct restorations |
 | --- | ---: | --- | ---: |
-| normal | 131642 | complete-replayed-evidence | 1 |
-| cleanup-failure | 131811 | complete-replayed-evidence, failed research outcome | 1 |
-| shutdown-interruption | 119786 | quarantined-incomplete-evidence | 0 |
+| normal | 131659 | complete-replayed-evidence | 1 |
+| cleanup-failure | 131819 | complete-replayed-evidence, failed research outcome | 1 |
+| shutdown-interruption | 119794 | quarantined-incomplete-evidence | 0 |
 
 Early development runs found a wrong assumption about contract.freeze's return
 object, then an unclosed pipe StreamWriter caught by the diagnostic gate. Both
 were corrected; failed outputs remain retained. No deadline or gate was relaxed.
 The first complete batch passed 23 tests; request/fault bindings and actual profile
-probes were added before the final 25-test batch. Final source-linked results
+probes were added before a 25-test batch. Final review then added exact cleanup-actor to lifecycle-generation binding and its regression; the final 26-test batch passed. Final source-linked results
 supersede earlier development results for this candidate only.
 
 ## Required Kali boundary
