@@ -534,3 +534,29 @@ Kali acceptance of this increment is pending. The only CLI is offline; actual
 remote invocation and retained-object reconciliation remain separate work. This
 is not a claim of retention, production startup/rollback, provider readiness or
 full R1 acceptance, and does not reset the existing engineering cap.
+
+## Remote boundary Kali acceptance; retained evidence reader — November 13
+
+Accepted `report(20261113-035156).json` and `validation(7).log` against published
+`e16763bf65f3ad2a12fe32eb3263a2ff66de5127` (tree
+`8f395e00d6b546ddac17894faa9e685cb8e3ac3e`). All 18 named tests passed on Python
+3.14.6, zero failures/errors/skips; log duration 18.539 seconds. All 166 source
+hashes and the three fixed package identities/classifications match. Report hash:
+`2922285be3fdad68848acf4ec90fff37f530a867573fbc2d66d20e7f1e385d46`.
+The filename timestamp is an attachment label, not independent host attestation.
+This is mocked-command acceptance, not a B2 transfer or fresh host observation.
+
+The additive `r1-remote-review/` reader checks local retained transfer completion
+without any remote request, source journal write, lock creation, retry or service
+resume. It independently replays the fixed downloaded package and compares both
+restored trees, all receipt bindings and the three-command completion history.
+Missing, partial, conflicting or modified evidence remains unresolved. Matching
+records validate local integrity only, not remote origin or current retention.
+Shutdown quarantine remains explicit. Previously accepted modules are unchanged.
+
+Development validation: 18 prior adapter cases and 17 reconciliation cases pass,
+including lock-exit failure revoking verification. The initial 34-case run passed;
+review then added that failure guard and its regression before final acceptance.
+Kali validation is pending. Actual B2 invocation remains a subsequent scoped step;
+this increment does not authorize production rollout, provider activation, new
+funding, retention claims, CI consolidation or a new engineering effort cap.
