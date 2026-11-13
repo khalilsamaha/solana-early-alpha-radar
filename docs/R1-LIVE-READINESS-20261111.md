@@ -560,3 +560,19 @@ review then added that failure guard and its regression before final acceptance.
 Kali validation is pending. Actual B2 invocation remains a subsequent scoped step;
 this increment does not authorize production rollout, provider activation, new
 funding, retention claims, CI consolidation or a new engineering effort cap.
+
+## November 13 retained-reader acceptance and bounded B2 handoff
+
+Kali accepted 04209213b38fdc29a37e0b830bc10cc09ed3f294: all 35 tests in 53.953
+seconds, zero failures/errors/skips, all 170 source hashes and all three fixed
+package identities/classes match. Exact report hash:
+`3f2e41dcfa37b759cd69304f7e1ca85a525dd4662da852414e4f63930ce1909e`.
+This remains offline evidence; no actual B2 or fresh production observation is
+claimed. No additional offline implementation is needed for the one fixed normal-
+package remote check. The operator script pins that already accepted source and
+both accepted input reports. It performs one durable attempt and exports its
+retained evidence without retry/deletion. Its local smoke check mocks all remote
+commands. Actual host execution and independent returned-byte review are pending.
+See R1-STATUS-20261113.md for the current agenda and critical path. Collector and
+preservation prerequisites are not reconstruction/study acceptance; November 19
+is a target at risk, with no confirmation window started or effort-cap reset.
