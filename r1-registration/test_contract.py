@@ -41,6 +41,20 @@ class ContractTests(unittest.TestCase):
         self.assertFalse(r['live_launch_authorized']);self.assertFalse(r['full_gate_accepted'])
         self.assertTrue(all(v is None for v in r['provider_evidence'].values()))
 
+    def test_unsubscribe_completions_do_not_inflate_selected_subscription_fraction(self):
+        row=metrics();row['send_intents']=48;row['local_sends_completed']=48
+        r=self.evaluate(row)
+        self.assertEqual(r['local_quality_verdict'],'pass')
+        self.assertEqual(r['local_completion_fraction'],{'numerator':24,'denominator':24})
+        self.assertEqual(r['local_receive_to_send_return_ns']['count'],24)
+        self.assertFalse(r['full_gate_accepted'])
+
+    def test_failed_unsubscribe_is_counted_without_fabricating_a_missing_subscription(self):
+        row=metrics();row['send_intents']=25;row['send_intents_without_completion_or_abandonment']=1
+        r=self.evaluate(row)
+        self.assertIn('send_intents_without_completion_or_abandonment',r['local_failures'])
+        self.assertEqual(r['local_completion_fraction'],{'numerator':24,'denominator':24})
+
     def test_small_and_empty_samples_are_insufficient_without_dividing_by_zero(self):
         for n in (0,1,23):
             r=self.evaluate(metrics(n));self.assertEqual(r['local_quality_verdict'],'insufficient')

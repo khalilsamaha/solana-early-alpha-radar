@@ -95,8 +95,8 @@ def assess(measured,actual_limits,registered):
     selected=measured['selected_creations'];completed=measured['local_sends_completed']
     delay=measured['creation_receive_to_local_send_return_ns']
     if (not isinstance(delay,dict) or set(delay)!={'count','min','max','sum'}
-            or type(delay['count']) is not int or delay['count']!=completed
-            or selected!=completed+measured['selected_without_completed_subscription_send']
+            or type(delay['count']) is not int or not 0<=delay['count']<=completed
+            or selected!=delay['count']+measured['selected_without_completed_subscription_send']
             or measured['send_intents']!=completed+measured['send_intents_abandoned']+measured['send_intents_without_completion_or_abandonment']
             or selected>measured['unique_creation_mints_observed']
             or measured['unique_creation_mints_observed']>measured['creation_records_observed']
@@ -104,10 +104,10 @@ def assess(measured,actual_limits,registered):
             or measured['raw_rows']>measured['messages_counted']):
         raise CaptureError('contract-denominator')
     if (type(delay['sum']) is not int or delay['sum']<0
-            or not completed and delay!={'count':0,'min':None,'max':None,'sum':0}
-            or completed and (type(delay['min']) is not int or type(delay['max']) is not int
+            or not delay['count'] and delay!={'count':0,'min':None,'max':None,'sum':0}
+            or delay['count'] and (type(delay['min']) is not int or type(delay['max']) is not int
                 or not 0<=delay['min']<=delay['max']
-                or not delay['min']*completed<=delay['sum']<=delay['max']*completed)):
+                or not delay['min']*delay['count']<=delay['sum']<=delay['max']*delay['count'])):
         raise CaptureError('contract-latency')
     Limits(**actual_limits).validate()
     criteria=registered['local_criteria']; failures=[];insufficient=[]
@@ -116,13 +116,13 @@ def assess(measured,actual_limits,registered):
         ('send_intents_without_completion_or_abandonment','maximum_unresolved_sends'),
         ('selected_without_completed_subscription_send','maximum_selected_without_completed_send')):
         if measured[key]>criteria[limit]: failures.append(key)
-    if completed and delay['max']>criteria['maximum_local_send_return_ns']:
+    if delay['count'] and delay['max']>criteria['maximum_local_send_return_ns']:
         failures.append('local-send-return-latency')
     if selected<criteria['minimum_selected_creations']: insufficient.append('selected-sample-too-small')
     if actual_limits!=registered['limits']: insufficient.append('capture-limits-differ-from-contract')
     local='fail' if failures else 'insufficient' if insufficient else 'pass'
     return {'local_quality_verdict':local,'local_failures':failures,'local_insufficient':insufficient,
-        'local_completion_fraction':{'numerator':completed,'denominator':selected},
+        'local_completion_fraction':{'numerator':delay['count'],'denominator':selected},
         'observed_creation_records':measured['creation_records_observed'],
         'observed_unique_creation_mints':measured['unique_creation_mints_observed'],
         'local_receive_to_send_return_ns':delay,
