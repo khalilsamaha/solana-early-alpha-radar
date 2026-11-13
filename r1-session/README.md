@@ -23,9 +23,11 @@ is therefore offered to capture instead of being lost before research attaches.
 This does not prove provider history or initial-event completeness. Bounded wire
 and channel queues can still overflow; that remains a failure, never a reconnect.
 
-An idle receive wakes at the capture's monotonic deadline, before the ordinary
-50 ms poll would notice expiry. No deadline is extended or transport failure
-converted to success. The independent lease/watchdog remains conservative under
+Receive polling uses a non-cancelling wait on one retained receive task, bounded
+by 50 ms and both remaining capture clocks. Capture expiry needs no artificial
+receive exception and no cancelled shield. A receive TimeoutError is retained
+as a transport failure; it is never mistaken for a poll timeout. No deadline is
+extended. The independent lease/watchdog remains conservative under
 delayed scheduling. Operator stop, failed sends, failed cleanup and upstream errors
 stop the session, preserving their actual journal outcome.
 
@@ -116,7 +118,16 @@ its status cannot pass Kali IPC acceptance.
 Upload **acceptance.zip**. It contains report.json, validation.log and all eight
 archives. Preserve the full output, including on failure; then supply report.json
 and validation.log if no acceptance bundle was completed. The checker rejects
-failures, errors, skips and captured resource/unraisable diagnostics.
+failures, errors, skips and captured resource/unraisable/async diagnostics,
+including Python 3.14's `exception in shielded future`. The log covers both unit
+tests and retained scenarios, including worker-thread stderr and archive restore.
+Failed batches retain their log and failed report without granting acceptance.
+
+The earlier uploaded batch at `e8b4df8f6add1ec3b0f6ca8781a8e689e84c9c07`
+reported 157 passing tests but emitted two such diagnostics. Its source hashes,
+eight archives, receipt bindings and isolated restores matched on independent
+review; its clean acceptance was rejected. Retain it unchanged as historical
+evidence and use the corrected source for one replacement consolidated batch.
 
 Expected Kali status: `candidate-session-offline-passed-live-blocked`.
 Development status: `candidate-session-development-passed-unix-pending`.

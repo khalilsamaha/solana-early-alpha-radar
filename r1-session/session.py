@@ -10,7 +10,6 @@ import os
 from pathlib import Path
 import shutil
 import threading
-import time
 import sys
 
 ROOT = Path(__file__).resolve().parent
@@ -65,19 +64,10 @@ class PreparedOwner(Owner):
 
 
 class ReadyLease:
-    def __init__(self, lease, owner, capture_deadline_ns):
+    def __init__(self, lease, owner):
         self.lease, self.owner = lease, owner
-        self.capture_deadline_ns = capture_deadline_ns
 
     async def remote(self, operation, *args):
-        if operation == 'recv':
-            # Wake the capture at its own monotonic deadline rather than waiting
-            # for the next 50 ms polling tick or the later owner lease timer.
-            # No deadline extension and no conversion of a transport failure.
-            remaining = (self.capture_deadline_ns - time.monotonic_ns()) / 1e9
-            if remaining <= 0:
-                raise TimeoutError
-            return await asyncio.wait_for(self.lease.remote(operation, *args), remaining)
         result = await self.lease.remote(operation, *args)
         # shared_session writes Journal.start before its first heartbeat. Open
         # the read gate on the owner loop only after that heartbeat succeeds.
@@ -127,7 +117,6 @@ async def run(control, ipc, factory, limits=Limits(), *, stop=None):
         try:
             with Journal(control / 'session.jsonl') as journal:
                 with Capture(control / 'capture', limits) as capture:
-                    box['capture_deadline_ns'] = capture.mono_start + limits.seconds * 1_000_000_000
                     loop.call_soon_threadsafe(capture_ready.set)
                     lease = lease_input.result(timeout=10)
                     box['research'] = asyncio.run(shared_session.run(capture, lease, journal))
@@ -153,7 +142,7 @@ async def run(control, ipc, factory, limits=Limits(), *, stop=None):
                 await asyncio.sleep(0.005)
         await owner.start()
         lease = owner.attach(limits.seconds)
-        lease_input.set_result(ReadyLease(lease, owner, box['capture_deadline_ns']))
+        lease_input.set_result(ReadyLease(lease, owner))
         async with asyncio.timeout(limits.seconds + 3):
             while not done.is_set():
                 if stop is not None and stop.is_set():

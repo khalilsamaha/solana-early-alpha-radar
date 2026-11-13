@@ -45,10 +45,16 @@ async def run(capture, lease, journal):
                     subscribed.pop(mint, None)
             if pending is None:
                 pending = asyncio.create_task(lease.remote("recv"))
-            try:
-                raw = await asyncio.wait_for(asyncio.shield(pending), 0.05)
-            except TimeoutError:
+            # Wait without cancelling a shield on every polling timeout. The
+            # capture owns expiry; a recv TimeoutError is a transport failure.
+            remaining_wall = capture.state["deadline_ns"] - capture.wall()
+            remaining_mono = (capture.state["deadline_ns"] - capture.wall_start
+                              - (capture.monotonic() - capture.mono_start))
+            timeout = max(0, min(0.05, remaining_wall / 1e9, remaining_mono / 1e9))
+            ready, _ = await asyncio.wait({pending}, timeout=timeout)
+            if not ready:
                 continue
+            raw = pending.result()
             pending = None
             stamp = journal.stamp()
             decision = capture.receive(raw)

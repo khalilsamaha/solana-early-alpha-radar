@@ -12,6 +12,42 @@ from shared_rehearsal import exercise
 
 
 class SharedSessionTests(unittest.TestCase):
+    def test_delayed_receive_error_is_consumed_once_and_retained_as_failure(self):
+        # Let several polls expire before recv raises. TimeoutError from recv is
+        # not a polling timeout, and its task must have no orphaned callbacks.
+        with tempfile.TemporaryDirectory(prefix='r1-recv-failure-') as t:
+            directory = Path(t)
+            async def scenario():
+                diagnostics = []
+                loop = asyncio.get_running_loop()
+                loop.set_exception_handler(lambda _, context: diagnostics.append(context))
+                class Lease:
+                    receives = 0
+                    finished = False
+                    async def remote(self, operation, *args):
+                        if operation == 'recv':
+                            self.receives += 1
+                            await asyncio.sleep(0.16)
+                            raise TimeoutError('synthetic receive failure')
+                        if operation == 'finish':
+                            self.finished = True
+                            return {'outcome': 'unsubscribed', 'reason': 'research-stop'}
+                        if operation != 'heartbeat':
+                            raise AssertionError(operation)
+                lease = Lease()
+                with Journal(directory/'journal') as journal:
+                    with Capture(directory/'capture', Limits(seconds=1)) as capture:
+                        result = await run(capture, lease, journal)
+                await asyncio.sleep(0)
+                self.assertEqual(result['outcome'], 'transport-failed')
+                self.assertEqual(lease.receives, 1)
+                self.assertTrue(lease.finished)
+                self.assertEqual(diagnostics, [])
+            asyncio.run(scenario())
+            measured = replay(directory/'capture', directory/'journal')
+            self.assertEqual(measured['session_outcome'], 'transport-failed')
+            self.assertEqual(measured['local_sends_completed'], 0)
+
     def test_last_allowed_creation_cannot_start_a_paid_watch(self):
         with tempfile.TemporaryDirectory(prefix="r1-last-frame-") as t:
             directory = Path(t)
