@@ -500,3 +500,37 @@ Development package bindings:
 | cleanup-failure | 125,602 | `ea578511dfcd91514d732ac93e68a87030565a1f806be8cfbf307560e077bea1` |
 | normal | 125,528 | `9d64b70e0022157a954a18879dd63841e68636b386c2c90d0c5a3dce3d0d0b9c` |
 | shutdown-interruption | 119,838 | `3f59cd5b5a0baa350616c99f24ad084ff0b794661eb17c3a172399e57aed354f` |
+
+## Portable delivery Kali acceptance and next remote boundary — November 12
+
+Accepted the uploaded report from the 17:49:18Z-labelled attachment at
+`ff16b287adaeb916947ddf5164612f1a0137b3ad`, tree
+`13f1ab4920ab441a17fd6a1625722e8d99c86f86`: 314 core + 13 orchestration + 23
+delivery tests, zero failures/errors/skips, all 162 source hashes matching.
+Python 3.14.6, websockets 17.4; elapsed 89.64491 seconds. The attachment label
+is not an independently attested host observation timestamp. Report SHA-256:
+`f6ca0fcaadd391a4579e8b34eabd6e9259745940c1290d1f6156202efd00179f`.
+All three supplied packages independently restored exactly against their
+reported checksums and restored-report objects. Normal and cleanup-failure are
+complete evidence; the latter records the intended failure, not measurement
+success. Shutdown interruption remains quarantined and requires reconciliation.
+No actual B2 operation, production observation or live activation is established.
+
+The next implementation is isolated in `r1-remote/`; accepted package/source
+bindings in `r1-delivery/` and all prior modules remain byte-identical. It adds
+only a fixed synthetic-package B2 adapter and finalization protocol plus an
+offline checker. The new cap is 128 KiB for the accepted 119856–125620-byte
+packages; it does not change the older 64 KiB transfer profile. Durable intent
+precedes credential access. Exact download and receipt/evidence restore precede
+completion; failure preserves uncertainty and consumes the attempt.
+
+Development: 18 new tests passed, including all three preserved package classes,
+backend ambiguity, scope refusal, corrupt downloads, upload interruption, failed
+restore/completion publication, no retry, bounded bidirectional subprocess I/O,
+overflow, deadline and nonzero exit. Initial invocation used a relative alias to
+the upload directory and was rejected before tests; private byte-identical copies
+at absolute paths then passed. No input or permission gate was relaxed.
+Kali acceptance of this increment is pending. The only CLI is offline; actual
+remote invocation and retained-object reconciliation remain separate work. This
+is not a claim of retention, production startup/rollback, provider readiness or
+full R1 acceptance, and does not reset the existing engineering cap.
