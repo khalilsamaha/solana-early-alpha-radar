@@ -7,13 +7,15 @@ import subprocess
 import sys
 import time
 import runtime as r
+import capture_session as session
 
 
 def main():
     directory,sha,parent,mode=sys.argv[1:];parent=int(parent)
-    r.m.check(mode in ('complete','ignore-alarm','dns','process','socket','tainted-output','output-flood'),'runtime-fixture-mode')
+    r.m.check(mode in {'complete','ignore-alarm','dns','process','socket','tainted-output','output-flood'}|session.MODES,'runtime-fixture-mode')
     manifest=r.m.inspect(directory,sha)
     row=r.bootstrap(parent,manifest)
+    evidence=session.run(manifest,mode) if mode in session.MODES else None
     if mode=='ignore-alarm':
         signal.setitimer(signal.ITIMER_REAL,0)
         signal.signal(signal.SIGTERM,signal.SIG_IGN)
@@ -32,9 +34,11 @@ def main():
     if mode=='output-flood':
         while True:os.write(1,b'x'*4096)
     r.m.check(os.getppid()==parent,'runtime-parent-changed')
-    print(json.dumps({'schema':1,'kind':'synthetic-runtime-terminal','manifest_sha256':sha,
+    terminal={'schema':1,'kind':'synthetic-runtime-terminal','manifest_sha256':sha,
                       'profile':row,'mode':mode,'guard_blocked':blocked,'source_sha256':r.pins(),
-                      'production_modified':False,'provider_connection_opened':False},sort_keys=True,separators=(',',':')))
+                      'production_modified':False,'provider_connection_opened':False}
+    if evidence is not None:terminal['session_evidence']=evidence
+    print(json.dumps(terminal,sort_keys=True,separators=(',',':')))
 
 
 if __name__=='__main__':

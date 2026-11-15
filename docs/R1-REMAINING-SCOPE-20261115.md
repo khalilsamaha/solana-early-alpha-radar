@@ -3,11 +3,13 @@
 ## Decision
 
 Native and prepared offline handoff acceptance is complete. Full production/source
-readiness is not. The additive manifest-bound resource supervision probe now passes
-26 local tests, including historical recovery, but is not the real owner/scanner
-executor; publication remains pending. The next implementation dependency is the real owner/scanner deployment
-and supervised runtime, followed by preservation integration. Another isolated
-handoff rehearsal would not close those requirements.
+readiness is not. Manifest-bound resource supervision is published at `d7077b5`.
+The next local capture/session integration passes 39 tests with actual databases,
+journals and independent replay under configured limits. Upstream/discovery peers
+remain in-process fixtures; this increment awaits publication and is not the real
+owner/scanner executor. Actual production identity/configuration and scanner/Unix
+runtime integration remain the next dependencies, followed by preservation.
+Another unchanged isolated handoff rehearsal would not close those requirements.
 
 The total five-working-day engineering cap remains in force. Repository records
 repeatedly identify the consumed/remaining effort as unknown; neither commit dates,

@@ -8,7 +8,7 @@ import time
 import unittest
 from unittest.mock import patch
 import runtime as r
-import supervisor as v
+import manifest_supervisor as v
 m=r.m;p=r.preparation;s=p.s
 
 

@@ -7,9 +7,10 @@ import subprocess
 import sys
 import time
 import runtime as r
+import capture_session as session
 m=r.m;p=r.preparation
 ENV={'PATH':'/usr/bin:/bin','LANG':'C.UTF-8','LC_ALL':'C.UTF-8'}
-MODES={'complete','ignore-alarm','dns','process','socket','tainted-output','output-flood'}
+MODES={'complete','ignore-alarm','dns','process','socket','tainted-output','output-flood'}|session.MODES
 CLAIM='supervision-claim.json'
 RESULT='supervision-result.json'
 SUCCESS='synthetic-worker-complete-live-blocked'
@@ -21,10 +22,14 @@ def stamp():
 
 
 def terminal_row(claim):
-    return {'schema':1,'kind':'synthetic-runtime-terminal','manifest_sha256':claim['manifest_sha256'],
+    row={'schema':1,'kind':'synthetic-runtime-terminal','manifest_sha256':claim['manifest_sha256'],
             'profile':claim['profile'],'mode':claim['mode'],
             'guard_blocked':claim['mode'] in ('dns','process','socket'),
             'source_sha256':claim['source_sha256'],'production_modified':False,'provider_connection_opened':False}
+    if claim['mode'] in session.MODES:
+        manifest=m.inspect(claim['manifest_directory'],claim['manifest_sha256'])
+        row['session_evidence']=session.expected_terminal(manifest,claim['mode'])
+    return row
 
 
 def collect(process,seconds):
@@ -60,6 +65,7 @@ def run(manifest_directory,sha,*,mode='complete'):
     m.check(mode in MODES,'runtime-mode')
     manifest_directory=m.absolute(str(manifest_directory))
     manifest=m.inspect(manifest_directory,sha);profile=r.profile(manifest)
+    if mode in session.MODES:session.limits(manifest)
     registry=manifest['config']['registry_path'];m.check(registry is not None,'runtime-registry-missing')
     prepared=p.inspect(registry,sha)
     m.check(prepared['outcome']=='preparation-complete-live-blocked','runtime-preparation-required')
@@ -75,6 +81,16 @@ def run(manifest_directory,sha,*,mode='complete'):
                'profile':profile,'mode':mode,'source_sha256':r.pins(),'created_utc':stamp(),
                'activation_authorized':False,'automatic_resume_allowed':False}
         claim_bytes=p.write_at(fd,CLAIM,claim)
+        if mode in session.MODES:
+            # Retained preparation is historical; reobserve exact paths once
+            # before the actual capture worker, and durably retain this gate.
+            preparation_claim=m.parse(p.read_at(fd,p.CLAIM))
+            gate=p.s.observe(manifest_directory,sha,preparation_claim['paths'])
+            p.validate_observation(gate,manifest,preparation_claim)
+            m.check(gate['capacity_sample_sufficient'] and all(
+                p.s.identity(gate['before'][role])==p.s.identity(prepared['observation']['after'][role])
+                for role in p.s.ROLES),'runtime-session-storage')
+            p.write_at(fd,'supervision-storage.json',gate)
         outcome='worker-start-failed';terminal=None;code=None
         try:
             p.same_directory(registry,fd)
@@ -86,6 +102,7 @@ def run(manifest_directory,sha,*,mode='complete'):
             raw,outcome=collect(process,profile['wall_seconds'])
             if raw is not None:
                 candidate=m.parse(raw)
+                if mode in session.MODES:session.expected_terminal(manifest,mode,replay=True)
                 m.check(raw==m.raw(terminal_row(claim)),'runtime-terminal-binding')
                 terminal=candidate;outcome=SUCCESS
         except Exception:
@@ -131,7 +148,7 @@ def validate_result(row,claim,claim_bytes):
         m.check(row['outcome']!='worker-start-failed' and row['worker_reaped'] is True
                 and type(row['returncode']) is int,'runtime-reaping')
     if row['outcome']==SUCCESS:
-        m.check(claim['mode'] in ('complete','dns','process','socket') and row['returncode']==0
+        m.check(claim['mode'] in {'complete','dns','process','socket'}|session.MODES and row['returncode']==0
                 and m.raw(row['terminal'])==m.raw(terminal_row(claim)),'runtime-success-binding')
     else:m.check(row['terminal'] is None,'runtime-failed-terminal')
 

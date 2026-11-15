@@ -1,5 +1,10 @@
 # Manifest-bound supervision candidate — 15 November 2026
 
+**Subsequent disposition:** the approved package is published at
+`d7077b50f55ac657ba7e0b4271b5e3774e988e16`, with the exact tested tree.
+[Capture/session integration](R1-CAPTURE-SUPERVISION-20261115.md) is the next
+local candidate. The publication request below records the earlier stage.
+
 ## Change and validation
 
 An additive `r1-supervision` package connects completed durable preparation and

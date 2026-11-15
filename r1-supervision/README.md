@@ -3,7 +3,8 @@
 This connects a completed durable preparation to a fixed synthetic worker with
 resource limits derived from the exact deployment manifest. It is not a live
 owner launcher. There is no credential argument, provider mode, arbitrary command
-or production service action. Existing accepted runtime sources are unchanged.
+or production service action. Existing capture/session, deployment and native
+handoff runtime sources are unchanged.
 
 The profile requires explicit service/setup/shutdown, address-space, CPU and
 descriptor limits, plus complete capacity inputs. Core files are disabled. The
@@ -26,12 +27,54 @@ Failure or interrupted publication consumes the attempt; no automatic retry.
 Retained timestamps identify the attempted run and terminal receipt. Claim and
 result bind the same private registry inode, source map and preparation receipt.
 
-`supervisor.inspect(registry, manifest_sha256)` replays retained evidence only,
+`manifest_supervisor.inspect(registry, manifest_sha256)` replays retained evidence only,
 without worker queries, signals, fresh capacity samples or writes. Missing terminal
 evidence reports `supervision-unresolved`, with worker count/reaping unknown; it
 cannot determine current process state. A valid result found after a lost return
 is historical evidence, not proof the caller saw it or of power-loss durability.
 Torn, copied, changed-source, inconsistent and authority-changing records refuse.
+
+## Capture/session integration
+
+The parent module is now `manifest_supervisor.py`. Its old name, `supervisor.py`,
+collided with the existing capture library's supervisor import. No compatibility
+shim is provided: it would reintroduce that ambiguity. The expanded source map
+binds all capture/session dependencies and refuses earlier source-map receipts.
+Inspect older receipts with their exact recorded source revision.
+
+`session-normal`, `session-cleanup-failure` and `session-operator-stop` execute the
+existing separated-session library in the bounded child. They use an in-memory
+upstream and an in-process discovery peer, never the production Node scanner or
+Unix endpoint. Real artifacts are written beneath the manifest capture directory:
+`supervised-session` contains a closed SQLite capture, measurement journal and
+admission/retirement/shutdown receipts. Research duration, service duration and raw
+byte limit come from the manifest. The synthetic fixture has a four-message cap
+and modulus one; it is not a pilot configuration. Memory must be at least 256 MiB
+and the descriptor limit at least 32. These are fixture admission minima, not
+evidence of adequate production resources.
+
+Before spawn the parent retains one new storage observation, bound to preparation
+paths, filesystem identities and attempt time. Insufficient space or failed gate
+publication consumes the claim without starting capture. The child never resumes
+an existing capture directory. The per-file kernel bound still applies; terminal
+validation additionally checks database, journal and receipt byte budgets. Each
+artifact read is capped at 256 KiB for this fixture.
+
+Child and parent independently verify the closed capture and replay the journal
+before success. Historical inspection checks the same bound artifact bytes and
+receipts without invoking replay helpers that could recreate a missing lock.
+It therefore makes no new current-process, filesystem-lock or semantic-replay
+observation. Normal retirement records unsubscribe and discovery continuation;
+cleanup failure and operator STOP record upstream abort and no continuation.
+Successful validation of an adverse case is not a claim of clean unsubscribe.
+All retain one synthetic upstream attempt and one research attachment.
+
+The capture harness bounds its event waits using manifest timings, while the
+parent enforces one aggregate wall budget. Existing internal library timeouts are
+unchanged; this is not a complete production phase-deadline implementation. No
+live credential, remote delivery, retention enforcement or production admission
+is added. Child stderr is discarded rather than retained; a clean parent test
+log does not establish a comprehensive child-diagnostics scan.
 
 The probe supports completion, attempted DNS/socket/process operations, suppressed
 child alarm, ignored TERM, invalid terminal output and excess output. It uses no

@@ -13,7 +13,8 @@ import preparation as preparation
 
 
 def pins():
-    return {**preparation.pins(),**{str(p.relative_to(ROOT.parent)):m.digest(p.read_bytes())
+    import capture_session
+    return {**capture_session.c.pins(),**preparation.pins(),**{str(p.relative_to(ROOT.parent)):m.digest(p.read_bytes())
             for p in sorted(ROOT.iterdir()) if p.suffix in ('.py','.md')}}
 
 
