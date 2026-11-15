@@ -1,5 +1,10 @@
 # Prepared handoff integration — 15 November 2026
 
+**Subsequent disposition:** published at `85b07532d3917c435a9978d657a595f62da0890c`;
+[the supplied native batch is accepted](R1-PREPARED-KALI-ACCEPTANCE-20261115.md).
+The publication/test instructions below record the earlier review stage and do
+not request another run.
+
 ## Reviewable publication scope
 
 This package includes the locally completed deployment storage and durable

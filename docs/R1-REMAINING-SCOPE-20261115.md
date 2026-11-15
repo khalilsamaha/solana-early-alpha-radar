@@ -2,8 +2,10 @@
 
 ## Decision
 
-Native offline handoff acceptance is complete. Full production/source readiness
-is not. The next implementation dependency is the real owner/scanner deployment
+Native and prepared offline handoff acceptance is complete. Full production/source
+readiness is not. The additive manifest-bound resource supervision probe now passes
+26 local tests, including historical recovery, but is not the real owner/scanner
+executor; publication remains pending. The next implementation dependency is the real owner/scanner deployment
 and supervised runtime, followed by preservation integration. Another isolated
 handoff rehearsal would not close those requirements.
 
