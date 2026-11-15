@@ -1,5 +1,9 @@
 # Native supervised scanner acceptance package — 15 November 2026
 
+**Subsequent disposition:** [the supplied Kali batch is accepted](R1-NATIVE-SUPERVISION-KALI-ACCEPTANCE-20261115.md)
+at source `cd28cb085948caea0cd785f2c20bd5cd6b49534b`. The instructions below record
+the completed native test and do not request another run.
+
 ## Publication and authority
 
 The previously approved separate-scanner package is published at
