@@ -3,13 +3,14 @@
 ## Decision
 
 Native and prepared offline handoff acceptance is complete. Full production/source
-readiness is not. Manifest-bound resource supervision is published at `d7077b5`.
-The next local capture/session integration passes 39 tests with actual databases,
-journals and independent replay under configured limits. Upstream/discovery peers
-remain in-process fixtures; this increment awaits publication and is not the real
-owner/scanner executor. Actual production identity/configuration and scanner/Unix
-runtime integration remain the next dependencies, followed by preservation.
-Another unchanged isolated handoff rehearsal would not close those requirements.
+readiness is not. Manifest-bound capture/session supervision is published at
+`c4e45f2`. The next local increment connects the actual Node scanner-adapter fixture
+over a pipe and passes 51 tests, with independent capture/journal replay and both
+child outcomes required for success. It awaits publication. The upstream remains
+synthetic; scanner image verification and kernel-resource application remain false.
+Native Unix/container integration, scanner resource/parent-death controls and actual
+production identity/configuration remain open, followed by preservation. Repeating
+an unchanged isolated handoff rehearsal would not close those requirements.
 
 The total five-working-day engineering cap remains in force. Repository records
 repeatedly identify the consumed/remaining effort as unknown; neither commit dates,

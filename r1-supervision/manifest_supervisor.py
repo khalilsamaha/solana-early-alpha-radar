@@ -8,6 +8,7 @@ import sys
 import time
 import runtime as r
 import capture_session as session
+import scanner_peer
 m=r.m;p=r.preparation
 ENV={'PATH':'/usr/bin:/bin','LANG':'C.UTF-8','LC_ALL':'C.UTF-8'}
 MODES={'complete','ignore-alarm','dns','process','socket','tainted-output','output-flood'}|session.MODES
@@ -65,11 +66,11 @@ def run(manifest_directory,sha,*,mode='complete'):
     m.check(mode in MODES,'runtime-mode')
     manifest_directory=m.absolute(str(manifest_directory))
     manifest=m.inspect(manifest_directory,sha);profile=r.profile(manifest)
-    if mode in session.MODES:session.limits(manifest)
+    if mode in session.MODES:session.validate_mode(manifest,mode)
     registry=manifest['config']['registry_path'];m.check(registry is not None,'runtime-registry-missing')
     prepared=p.inspect(registry,sha)
     m.check(prepared['outcome']=='preparation-complete-live-blocked','runtime-preparation-required')
-    fd=p.s.open_directory(registry);process=None;started=time.monotonic()
+    fd=p.s.open_directory(registry);process=None;scanner=None;started=time.monotonic()
     try:
         p.same_directory(registry,fd)
         try:os.stat(RESULT,dir_fd=fd,follow_symlinks=False)
@@ -92,31 +93,47 @@ def run(manifest_directory,sha,*,mode='complete'):
                 for role in p.s.ROLES),'runtime-session-storage')
             p.write_at(fd,'supervision-storage.json',gate)
         outcome='worker-start-failed';terminal=None;code=None
+        scanner_receipt=None
         try:
             p.same_directory(registry,fd)
             m.check(m.inspect(manifest_directory,sha)==manifest and p.inspect(registry,sha)==prepared
                     and r.pins()==claim['source_sha256'],'runtime-input-changed')
-            process=subprocess.Popen([sys.executable,'-E','-s','-B',str(r.ROOT/'worker.py'),
-                str(manifest_directory),sha,str(os.getpid()),mode],stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,env=ENV,start_new_session=True)
-            raw,outcome=collect(process,profile['wall_seconds'])
+            deadline=time.monotonic()+profile['wall_seconds']
+            if mode in session.SCANNER_MODES:
+                scanner=scanner_peer.Scanner();scanner.start(deadline,profile['setup_seconds'])
+                p.same_directory(registry,fd)
+                m.check(m.inspect(manifest_directory,sha)==manifest and p.inspect(registry,sha)==prepared
+                        and r.pins()==claim['source_sha256'],'runtime-input-changed-after-scanner')
+            command=[sys.executable,'-E','-s','-B',str(r.ROOT/'worker.py'),
+                str(manifest_directory),sha,str(os.getpid()),mode]
+            if scanner is not None:command.append(str(scanner.write_fd))
+            process=subprocess.Popen(command,stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,env=ENV,start_new_session=True,
+                pass_fds=() if scanner is None else (scanner.write_fd,))
+            if scanner is not None:scanner.writer_passed()
+            raw,outcome=collect(process,max(.001,deadline-time.monotonic()))
             if raw is not None:
                 candidate=m.parse(raw)
                 if mode in session.MODES:session.expected_terminal(manifest,mode,replay=True)
                 m.check(raw==m.raw(terminal_row(claim)),'runtime-terminal-binding')
+                if scanner is not None:scanner.finish(deadline,mode,collect)
                 terminal=candidate;outcome=SUCCESS
         except Exception:
             outcome='worker-failed' if process is not None else 'worker-start-failed';terminal=None
         finally:
-            if process is not None:
-                try:reap(process);code=process.returncode
-                finally:process.stdout.close()
+            try:
+                if process is not None:
+                    try:reap(process);code=process.returncode
+                    finally:process.stdout.close()
+            finally:
+                if scanner is not None:
+                    scanner.close(reap);scanner_receipt=scanner.snapshot()
         p.same_directory(registry,fd)
         m.check(p.read_at(fd,CLAIM)==claim_bytes and r.pins()==claim['source_sha256']
                 and m.inspect(manifest_directory,sha)==manifest and p.inspect(registry,sha)==prepared,'runtime-final-binding')
         result={'schema':1,'claim_sha256':m.digest(claim_bytes),'outcome':outcome,'terminal':terminal,
                 'workers_started':int(process is not None),'worker_reaped':process is not None and code is not None,
-                'returncode':code,'elapsed_seconds':time.monotonic()-started,'finished_utc':stamp(),
+                'returncode':code,'scanner':scanner_receipt,'elapsed_seconds':time.monotonic()-started,'finished_utc':stamp(),
                 'activation_authorized':False,'automatic_resume_allowed':False,
                 'production_modified':False,'provider_connection_opened':False}
         validate_result(result,claim,claim_bytes)
@@ -131,7 +148,7 @@ def utc(value):
 
 
 def validate_result(row,claim,claim_bytes):
-    keys={'schema','claim_sha256','outcome','terminal','workers_started','worker_reaped','returncode',
+    keys={'schema','claim_sha256','outcome','terminal','workers_started','worker_reaped','returncode','scanner',
           'elapsed_seconds','finished_utc','activation_authorized','automatic_resume_allowed',
           'production_modified','provider_connection_opened'}
     m.check(type(row) is dict and set(row)==keys and type(row['schema']) is int and row['schema']==1
@@ -151,6 +168,11 @@ def validate_result(row,claim,claim_bytes):
         m.check(claim['mode'] in {'complete','dns','process','socket'}|session.MODES and row['returncode']==0
                 and m.raw(row['terminal'])==m.raw(terminal_row(claim)),'runtime-success-binding')
     else:m.check(row['terminal'] is None,'runtime-failed-terminal')
+    if claim['mode'] in session.SCANNER_MODES:
+        if row['scanner'] is None:
+            m.check(row['workers_started']==0 and row['outcome']=='worker-start-failed','scanner-receipt-required')
+        else:scanner_peer.validate(row['scanner'],claim['mode'],complete=row['outcome']==SUCCESS)
+    else:m.check(row['scanner'] is None,'unexpected-scanner-receipt')
 
 
 def inspect(registry,sha):

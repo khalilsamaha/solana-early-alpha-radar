@@ -1,5 +1,9 @@
 # Capture/session supervision integration — 15 November 2026
 
+**Subsequent disposition:** published at `c4e45f2cad2a7805b355b3e291193ecaa3ac5855`
+with the exact tested tree. [Scanner consumer supervision](R1-SCANNER-SUPERVISION-20261115.md)
+is the next local candidate. Earlier publication-pending text below is historical.
+
 ## Published base and new behavior
 
 The approved 11-file resource-supervision package was published on

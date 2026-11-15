@@ -11,11 +11,14 @@ import capture_session as session
 
 
 def main():
-    directory,sha,parent,mode=sys.argv[1:];parent=int(parent)
+    directory,sha,parent,mode,*extra=sys.argv[1:];parent=int(parent)
+    r.m.check(len(extra)<=1,'runtime-fixture-arguments')
+    pipe_fd=int(extra[0]) if extra else -1
     r.m.check(mode in {'complete','ignore-alarm','dns','process','socket','tainted-output','output-flood'}|session.MODES,'runtime-fixture-mode')
     manifest=r.m.inspect(directory,sha)
     row=r.bootstrap(parent,manifest)
-    evidence=session.run(manifest,mode) if mode in session.MODES else None
+    if mode not in session.MODES:r.m.check(pipe_fd==-1,'unexpected-scanner-pipe')
+    evidence=session.run(manifest,mode,pipe_fd) if mode in session.MODES else None
     if mode=='ignore-alarm':
         signal.setitimer(signal.ITIMER_REAL,0)
         signal.signal(signal.SIGTERM,signal.SIG_IGN)

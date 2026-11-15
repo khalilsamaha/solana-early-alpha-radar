@@ -76,6 +76,43 @@ live credential, remote delivery, retention enforcement or production admission
 is added. Child stderr is discarded rather than retained; a clean parent test
 log does not establish a comprehensive child-diagnostics scan.
 
+## Separate scanner consumer
+
+`session-scanner-normal` and `session-scanner-cleanup-failure` replace the
+in-process discovery peer with the existing fixed Node scanner-adapter fixture
+(`r1-data/shared_scanner_fixture.mjs`) over an inherited pipe. They still use an
+in-memory upstream. No production scanner loops, Docker commands, Unix socket,
+credential or provider are involved. The exact adapter sources are pinned.
+
+The parent consumes the claim and storage gate before starting Node. It verifies
+readiness, rechecks inputs, then starts the capture worker with only the pipe's
+write descriptor. It closes its own descriptor copies. Both subprocesses share
+one parent wall deadline; startup uses the setup bound, and cleanup retains the
+existing bounded TERM/KILL/reaping rules. Node also has its existing fixed
+12-second fixture timer. This mode requires research at most three seconds,
+service at most five seconds and an aggregate wall budget at most twelve seconds.
+These are fixture limits, not proposed production/pilot limits.
+
+The manifest kernel limits apply to the Python capture child only. The Node
+fixture has no verified image, kernel-resource profile or independently tested
+parent-death containment. Its receipt explicitly records `image_verified=false`
+and `manifest_kernel_limits_applied=false`. Do not promote development pipe tests
+to container, host-wide ownership, memory adequacy or live-provider evidence.
+
+After normal research retirement, a synthetic creation is sent and the worker
+waits for the delivery counter. The actual Node adapter must report creation,
+migration and the later creation, with one terminal discovery gap. Cleanup failure
+must report only creation and migration. Both exact scanner output and capture/
+journal replay must pass before the parent records success. An absent or malformed
+scanner result cannot be replaced by exit code zero or a cleanup receipt.
+
+The retained supervisor result now includes a scanner receipt, or null when no
+scanner mode was selected. It records start/reaping/exit and the validated result.
+Lost readiness, failed capture spawn, lost scanner confirmation and uncertain
+reaping remain failed or unresolved. Read-only recovery never starts a scanner;
+an absent supervisor terminal leaves both process histories unconfirmed. Existing
+published source receipts must still be inspected with their exact source revision.
+
 The probe supports completion, attempted DNS/socket/process operations, suppressed
 child alarm, ignored TERM, invalid terminal output and excess output. It uses no
 real credential or provider. Output collection is capped at 32 KiB.
