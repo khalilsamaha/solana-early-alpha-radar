@@ -125,5 +125,55 @@ owner/scanner integration, secret provisioning and phase-specific shutdown still
 require work. Do not treat the probe as the production executor. The receipts are
 locally bound evidence, not signed attestations against a hostile file owner.
 
-Run `python3 -B -W error::ResourceWarning -m unittest discover -s r1-supervision -v`.
-No new standalone Kali command; combine the completed runtime integration later.
+## Native Unix and accepted image integration
+
+`session-native-normal` and `session-native-cleanup-failure` start the owned
+capture child first. It binds a private Unix socket and retains inode/device/owner
+metadata. The parent then rechecks the attempt, manifest and preparation, records
+a durable exact name/token intent, and creates only a new disposable consumer of
+the accepted image `sha256:8c6e3458333f587cb1a5110dbfdc2d6c98f2bdcc6892eb589ee08cf8b9b66140`.
+There is no production target, direct scanner stop/start, provider, pull or build.
+
+The accepted native adapter verifies network none, read-only root and mount,
+UID/GID 1000, no capabilities, no-new-privileges, no restart, memory/swap 128 MiB,
+one CPU and 32 PIDs. This is the fixed accepted fixture profile, not a profile
+derived from the Python memory limit or evidence of production adequacy. The
+image verifies its own recorded scanner source manifest before readiness.
+
+Before admitting the upstream fixture, a verified Unix-server subclass checks
+SO_PEERCRED and `/proc` process identity against the parent's retained consumer
+identity. For the image path, the peer's parent must be the inspected container
+init PID. It retains the identity/endpoint hashes, peer PID, UID/GID and start ticks.
+The older stopped receipt's exact-base-class flag remains false for this subclass;
+the additional `native_peer` proof records the independently checked kernel peer.
+Historical recovery validates retained evidence without fresh `/proc` or Docker
+queries. Native container identity, result, disposal and client reaping must agree.
+
+Every attempted consumer is disposed through its exact scoped adapter; the
+disposal snapshot is retained even if cleanup raises. Uncertain cleanup cannot
+publish a supervisor success. The native mode has research at most three seconds,
+service at most five and an aggregate Python worker budget at most thirty seconds.
+Docker transitions retain their own existing bounded commands and read deadlines;
+the aggregate deadline is checked between them, not an interruptible transaction
+deadline for the Docker daemon. Parent loss leaves a retained exact intent and
+the fixed consumer timer, not proof of container removal or production containment.
+
+`native_development=True` is an explicit local Node/real-Unix test path. It verifies
+the peer's exact local process generation and reports no container or image
+verification. The default native path never falls back to it. This workspace
+rejects AF_UNIX socket creation and has no Docker; native Unix tests must run on
+Kali. Pipe tests and metadata tests are not relabelled as native acceptance.
+
+Run `bash scripts/r1-native-supervision-kali.sh` from a clean pinned checkout named
+`source` in a fresh review directory. It runs ten native/admission tests plus four
+retained cases: normal, cleanup failure, lost scanner confirmation and space
+rejection before start. A complete batch creates/removes three disposable scanner
+containers; the last case starts no actor. `results/acceptance.zip` is retained on
+pass or failure. Keep all directories and do not retry an attempt. No unchanged
+image/control/handoff standalone batch is requested.
+
+For development without Unix access, run `check_native_supervision.py --development`
+with a fresh `--output-directory`. That explicitly selects 55 pipe/core/metadata
+tests and four pipe cases, marks the six Unix tests unrun and leaves native
+acceptance pending. On a Linux host permitting Unix sockets, the complete unit
+suite remains `python3 -B -W error::ResourceWarning -m unittest discover -s r1-supervision -v`.

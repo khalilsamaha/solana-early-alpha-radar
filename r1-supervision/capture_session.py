@@ -16,20 +16,27 @@ import measurement
 from provider_wire import Wire,secret_variants
 from shared_discovery import deliver
 m=r.m;p=r.preparation
-SCANNER_MODES={'session-scanner-normal','session-scanner-cleanup-failure'}
+PIPE_MODES={'session-scanner-normal','session-scanner-cleanup-failure'}
+NATIVE_MODES={'session-native-normal','session-native-cleanup-failure'}
+SCANNER_MODES=PIPE_MODES|NATIVE_MODES
 MODES={'session-normal','session-cleanup-failure','session-operator-stop'}|SCANNER_MODES
 FILES=('admission.json','research-retired.json','stopped.json','session.jsonl','capture/ticks.db')
 
 
 def kind(mode):
-    return mode.replace('session-scanner-','session-')
+    return mode.replace('session-scanner-','session-').replace('session-native-','session-')
 
 
 def validate_mode(manifest,mode):
     limits(manifest)
-    if mode in SCANNER_MODES:
+    if mode in PIPE_MODES:
         m.check(manifest['policy']['research_seconds']<=3 and manifest['policy']['service_seconds']<=5
                 and r.profile(manifest)['wall_seconds']<=12,'scanner-fixture-duration')
+    if mode in NATIVE_MODES:
+        import native_scanner as native
+        m.check(manifest['config']['scanner_image']==native.n.c.IMAGE,'native-manifest-image')
+        m.check(manifest['policy']['research_seconds']<=3 and manifest['policy']['service_seconds']<=5
+                and r.profile(manifest)['wall_seconds']<=30,'native-fixture-duration')
 
 
 def limits(manifest):
@@ -110,18 +117,22 @@ def expected_terminal(manifest,mode,*,replay=False):
                 finally:os.close(other)
             else:current=p.read_at(fd,name)
             m.check(current==data[name],'session-evidence-changed')
-        return {'kind':'manifest-supervised-capture-fixture','mode':mode,
+        result={'kind':'manifest-supervised-capture-fixture','mode':mode,
                 'storage_gate_sha256':m.digest(gate_bytes),
                 'artifact_sha256':{name:m.digest(value) for name,value in data.items()},
                 'research_cleanup':expected_cleanup,'discovery_continued_after_retirement':retired['discovery_continues'],
                 'capture_thread_joined':True,'local_upstream_closed':True,
                 'synthetic_upstream_attempts':1,'research_attachments':1,
-                'transport':'pipe' if mode in SCANNER_MODES else 'in-process-fixture','peer_uid_verified':False,
+                'transport':'unix' if mode in NATIVE_MODES else 'pipe' if mode in PIPE_MODES else 'in-process-fixture','peer_uid_verified':False,
                 'provider_connection_opened':False,'real_credential_used':False,'activation_authorized':False}
+        if mode in NATIVE_MODES:
+            import native_scanner as native
+            result['native_peer']=native.evidence(manifest,attempt['native_development'])
+        return result
     finally:os.close(fd)
 
 
-async def exercise(manifest,mode,pipe_fd=-1):
+async def exercise(manifest,mode,pipe_fd=-1,native_development=False):
     selected=kind(mode).removeprefix('session-')
     class ScannerUpstream(fixtures.Peer):
         async def send(self,command):
@@ -157,7 +168,16 @@ async def exercise(manifest,mode,pipe_fd=-1):
         nonlocal attempts
         attempts+=1;peer.frames.put_nowait(peer.event('create'))
         return Wire(peer,secret_variants(fixtures.SECRET))
-    original=s.Server;s.Server=PipeServer if mode in SCANNER_MODES else fixtures.TestServer
+    original=s.Server
+    if mode in NATIVE_MODES:
+        import native_scanner as native
+        base=native.server_class(original,manifest,native_development)
+        class TrackedUnixServer(base):
+            async def start(self):
+                nonlocal discovery_progress
+                discovery_progress=self.progress;await super().start()
+        s.Server=TrackedUnixServer
+    else:s.Server=PipeServer if mode in PIPE_MODES else fixtures.TestServer
     task=asyncio.create_task(s.run(directory(manifest),Path(manifest['config']['registry_path']),factory,limits(manifest),
         shutdown=shutdown,research_done=retired,endpoint_ready=bound,peer_ready=peer_ready,upstream_ready=started,
         admitted=admitted,service_seconds=manifest['policy']['service_seconds']))
@@ -174,7 +194,7 @@ async def exercise(manifest,mode,pipe_fd=-1):
         await wait_event(started,manifest['policy']['setup_seconds'])
         if mode=='session-operator-stop':shutdown.set()
         await wait_event(retired,manifest['policy']['research_seconds']+manifest['policy']['shutdown_seconds'])
-        if mode=='session-scanner-normal':
+        if mode in ('session-scanner-normal','session-native-normal'):
             event=c.strict_json(peer.event('create',10));event['mint']='1'*31+'3'
             peer.frames.put_nowait(c.canonical(event).encode())
             # Wait for delivery itself, not a timing rehearsal or arbitrary sleep.
@@ -190,13 +210,13 @@ async def exercise(manifest,mode,pipe_fd=-1):
         s.Server=original
 
 
-def run(manifest,mode,pipe_fd=-1):
+def run(manifest,mode,pipe_fd=-1,native_development=False):
     m.check(mode in MODES,'session-mode')
     validate_mode(manifest,mode)
-    if mode in SCANNER_MODES:
+    if mode in PIPE_MODES:
         m.check(type(pipe_fd) is int and pipe_fd>=3 and stat.S_ISFIFO(os.fstat(pipe_fd).st_mode),'scanner-pipe-required')
     else:m.check(pipe_fd==-1,'unexpected-scanner-pipe')
     # The parent claim has already consumed the attempt; session.run exclusively
     # creates its control directory. It never reopens an interrupted capture.
-    asyncio.run(exercise(manifest,mode,pipe_fd))
+    asyncio.run(exercise(manifest,mode,pipe_fd,native_development))
     return expected_terminal(manifest,mode,replay=True)

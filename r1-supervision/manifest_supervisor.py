@@ -9,6 +9,7 @@ import time
 import runtime as r
 import capture_session as session
 import scanner_peer
+import native_scanner
 m=r.m;p=r.preparation
 ENV={'PATH':'/usr/bin:/bin','LANG':'C.UTF-8','LC_ALL':'C.UTF-8'}
 MODES={'complete','ignore-alarm','dns','process','socket','tainted-output','output-flood'}|session.MODES
@@ -62,8 +63,9 @@ def reap(process):
         except subprocess.TimeoutExpired:raise ValueError('runtime-reap-unconfirmed') from None
 
 
-def run(manifest_directory,sha,*,mode='complete'):
+def run(manifest_directory,sha,*,mode='complete',native_development=False):
     m.check(mode in MODES,'runtime-mode')
+    m.check(type(native_development) is bool and (mode in session.NATIVE_MODES or not native_development),'runtime-native-development')
     manifest_directory=m.absolute(str(manifest_directory))
     manifest=m.inspect(manifest_directory,sha);profile=r.profile(manifest)
     if mode in session.MODES:session.validate_mode(manifest,mode)
@@ -79,7 +81,7 @@ def run(manifest_directory,sha,*,mode='complete'):
         claim={'schema':1,'kind':'synthetic-manifest-runtime-attempt','registry':registry,
                'registry_identity':p.s.metadata(fd),'manifest_directory':str(manifest_directory),
                'manifest_sha256':sha,'preparation_sha256':m.digest(m.raw(prepared)),
-               'profile':profile,'mode':mode,'source_sha256':r.pins(),'created_utc':stamp(),
+               'profile':profile,'mode':mode,'native_development':native_development,'source_sha256':r.pins(),'created_utc':stamp(),
                'activation_authorized':False,'automatic_resume_allowed':False}
         claim_bytes=p.write_at(fd,CLAIM,claim)
         if mode in session.MODES:
@@ -99,7 +101,7 @@ def run(manifest_directory,sha,*,mode='complete'):
             m.check(m.inspect(manifest_directory,sha)==manifest and p.inspect(registry,sha)==prepared
                     and r.pins()==claim['source_sha256'],'runtime-input-changed')
             deadline=time.monotonic()+profile['wall_seconds']
-            if mode in session.SCANNER_MODES:
+            if mode in session.PIPE_MODES:
                 scanner=scanner_peer.Scanner();scanner.start(deadline,profile['setup_seconds'])
                 p.same_directory(registry,fd)
                 m.check(m.inspect(manifest_directory,sha)==manifest and p.inspect(registry,sha)==prepared
@@ -111,6 +113,9 @@ def run(manifest_directory,sha,*,mode='complete'):
                 stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,env=ENV,start_new_session=True,
                 pass_fds=() if scanner is None else (scanner.write_fd,))
             if scanner is not None:scanner.writer_passed()
+            if mode in session.NATIVE_MODES:
+                scanner=native_scanner.Scanner(manifest,native_development)
+                scanner.start(process,deadline)
             raw,outcome=collect(process,max(.001,deadline-time.monotonic()))
             if raw is not None:
                 candidate=m.parse(raw)
@@ -127,7 +132,11 @@ def run(manifest_directory,sha,*,mode='complete'):
                     finally:process.stdout.close()
             finally:
                 if scanner is not None:
-                    scanner.close(reap);scanner_receipt=scanner.snapshot()
+                    try:scanner.close(reap)
+                    finally:
+                        scanner_receipt=scanner.snapshot()
+                        if mode in session.NATIVE_MODES:
+                            p.write_at(fd,'native-scanner-disposal.json',scanner_receipt)
         p.same_directory(registry,fd)
         m.check(p.read_at(fd,CLAIM)==claim_bytes and r.pins()==claim['source_sha256']
                 and m.inspect(manifest_directory,sha)==manifest and p.inspect(registry,sha)==prepared,'runtime-final-binding')
@@ -171,6 +180,11 @@ def validate_result(row,claim,claim_bytes):
     if claim['mode'] in session.SCANNER_MODES:
         if row['scanner'] is None:
             m.check(row['workers_started']==0 and row['outcome']=='worker-start-failed','scanner-receipt-required')
+        elif claim['mode'] in session.NATIVE_MODES:
+            m.check(row['scanner']['development'] is claim['native_development'],'native-receipt-development')
+            native_scanner.validate(row['scanner'],claim['mode'],complete=row['outcome']==SUCCESS,registry=claim['registry'])
+            _,disposal=native_scanner.read(claim['registry'],'native-scanner-disposal.json')
+            m.check(disposal==m.raw(row['scanner']),'native-disposal-binding')
         else:scanner_peer.validate(row['scanner'],claim['mode'],complete=row['outcome']==SUCCESS)
     else:m.check(row['scanner'] is None,'unexpected-scanner-receipt')
 
@@ -185,7 +199,7 @@ def inspect(registry,sha):
     try:
         claim_bytes=p.read_at(fd,CLAIM);claim=m.parse(claim_bytes)
         keys={'schema','kind','registry','registry_identity','manifest_directory','manifest_sha256',
-              'preparation_sha256','profile','mode','source_sha256','created_utc',
+              'preparation_sha256','profile','mode','native_development','source_sha256','created_utc',
               'activation_authorized','automatic_resume_allowed'}
         m.check(type(claim) is dict and set(claim)==keys and m.raw(claim)==claim_bytes
                 and type(claim['schema']) is int and claim['schema']==1
@@ -193,6 +207,8 @@ def inspect(registry,sha):
         m.check(claim['registry']==registry and claim['registry_identity']==p.s.metadata(fd),'runtime-registry-binding')
         m.check(claim['manifest_sha256']==sha and claim['source_sha256']==r.pins(),'runtime-source-binding')
         m.check(claim['activation_authorized'] is False and claim['automatic_resume_allowed'] is False,'runtime-claim-authority')
+        m.check(type(claim['native_development']) is bool and (claim['mode'] in session.NATIVE_MODES
+                or not claim['native_development']),'runtime-native-development')
         utc(claim['created_utc'])
         manifest=m.inspect(claim['manifest_directory'],sha);prepared=p.inspect(registry,sha)
         m.check(manifest['config']['registry_path']==registry and m.raw(claim['profile'])==m.raw(r.profile(manifest))

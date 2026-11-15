@@ -16,9 +16,15 @@ def main():
     pipe_fd=int(extra[0]) if extra else -1
     r.m.check(mode in {'complete','ignore-alarm','dns','process','socket','tainted-output','output-flood'}|session.MODES,'runtime-fixture-mode')
     manifest=r.m.inspect(directory,sha)
+    native_development=False
+    if mode in session.NATIVE_MODES:
+        import native_scanner
+        claim,_=native_scanner.read(manifest['config']['registry_path'],'supervision-claim.json')
+        native_development=claim['native_development']
+        r.m.check(type(native_development) is bool,'native-development-flag')
     row=r.bootstrap(parent,manifest)
     if mode not in session.MODES:r.m.check(pipe_fd==-1,'unexpected-scanner-pipe')
-    evidence=session.run(manifest,mode,pipe_fd) if mode in session.MODES else None
+    evidence=session.run(manifest,mode,pipe_fd,native_development) if mode in session.MODES else None
     if mode=='ignore-alarm':
         signal.setitimer(signal.ITIMER_REAL,0)
         signal.signal(signal.SIGTERM,signal.SIG_IGN)

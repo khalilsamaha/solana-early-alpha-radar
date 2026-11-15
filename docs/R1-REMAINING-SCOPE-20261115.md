@@ -3,14 +3,15 @@
 ## Decision
 
 Native and prepared offline handoff acceptance is complete. Full production/source
-readiness is not. Manifest-bound capture/session supervision is published at
-`c4e45f2`. The next local increment connects the actual Node scanner-adapter fixture
-over a pipe and passes 51 tests, with independent capture/journal replay and both
-child outcomes required for success. It awaits publication. The upstream remains
-synthetic; scanner image verification and kernel-resource application remain false.
-Native Unix/container integration, scanner resource/parent-death controls and actual
-production identity/configuration remain open, followed by preservation. Repeating
-an unchanged isolated handoff rehearsal would not close those requirements.
+readiness is not. The separate Node scanner pipe integration is published at
+`a175782`. Its native Unix/image integration is now implemented for one bounded
+Kali batch. The workspace denies Unix sockets and lacks Docker, so 55 selected
+pipe/core/metadata tests pass but the six Unix tests and native container cases
+remain pending. This is not production acceptance. The next human intervention
+is the pinned native-supervision Kali test; future R1 branch publication is
+standing-authorized. Actual production configuration/sole ownership, live
+credentials, containment/phase shutdown and preservation remain open. No unchanged
+standalone handoff rehearsal is needed.
 
 The total five-working-day engineering cap remains in force. Repository records
 repeatedly identify the consumed/remaining effort as unknown; neither commit dates,

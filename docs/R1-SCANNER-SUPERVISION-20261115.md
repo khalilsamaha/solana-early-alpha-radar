@@ -1,5 +1,10 @@
 # Scanner consumer supervision — 15 November 2026
 
+**Subsequent disposition:** published at `a175782c94f6b4ae4699c6817ac837ee88534269`
+with the exact tested tree. The owner authorized future R1 branch publications.
+[Native supervision](R1-NATIVE-SUPERVISION-20261115.md) is the next acceptance boundary;
+the earlier publication request below is historical.
+
 ## Published base and change
 
 The approved capture/session package is published on
