@@ -1,6 +1,36 @@
 # R1 combined retained-original/shared-session acceptance
 
-## Current disposition
+## Supplied Kali acceptance — complete for this boundary
+
+Accepted source `790e80536a28c11347fc2ba47d6d8871aea36def`, observed 16 November
+2026, 17:06:42.259190–17:08:05.155913 UTC (18:06:42–18:08:05 CET).
+Archive SHA-256: `21013fdaee8a2a25218f6ee5ef4e67c331145d257e55de03a814e8bc9bfeab50`.
+Report SHA-256: `5fee5f52f166e151722dffac7bdda282f4400bdca86fba463672e2542256f181`.
+All 231 producer fingerprints match that published source; all 210 indexed members
+match their byte counts/hashes. Twelve host tests pass with no failures/errors/skips.
+Seven control journals independently replay to the reported states. Five nested
+session archives independently verify and match their restore assessments; native
+peer/container/process bindings, credential receipt hashes and shared completion
+bindings reconcile. Seven originals and five native consumers have twelve unique
+owned identities with removal and client-reaping evidence.
+
+Normal and cleanup-failure have eight control records and confirmed same-original
+restoration; cleanup-failure preserves a failed research assessment. Lost shared
+confirmation has four records and no restoration. Lost restore response has five
+records and pending `start_original`: its later disposal observation shows running,
+while its journal remains unresolved. Changed capture also has pending start but
+no dispatched start; its altered evidence is quarantined, with original journal
+bytes retained. Invalid credential and insufficient space each retain four control
+records and no shared capture. No ambiguous case was promoted to completion.
+
+This is supplied historical host evidence, not reviewer access to Kali or a fresh
+RPC/provider observation. **Do not repeat this accepted batch unchanged.** The
+instructions below are historical. Full scanner startup, live owner/runtime,
+production ownership and remote preservation remain separate production gaps.
+
+Next: [full application startup, storage/statistics, HTTP and shutdown](R1-SCANNER-RUNTIME-20261116.md).
+
+## Historical pre-run disposition
 
 The retained gate is published as `1a82d892b324ce37d50f6394176e0f47db1bc9fd`.
 The owner explicitly authorized this and subsequent R1 research-branch publication
@@ -47,7 +77,7 @@ Capture snapshots require existing locks and stable reads; unavailable snapshots
 are explicitly identified and originals retained. Local export/restore proves no
 remote preservation, retention, provider acknowledgment or billing cutoff.
 
-## One required Kali check
+## Historical Kali command — accepted, do not repeat unchanged
 
 Run `bash scripts/r1-combined-control-kali.sh` once from the pinned published
 checkout named `source`, inside a new private review directory. It accepts no

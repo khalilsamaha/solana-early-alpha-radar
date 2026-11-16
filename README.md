@@ -1,5 +1,10 @@
 # Solana Early Alpha Radar
 
+**R1 research branch — 16 November 2026:** the combined native handoff batch is
+[accepted](docs/R1-COMBINED-ACCEPTANCE-20261116.md). The next bounded Kali check covers
+[full scanner application startup in a new offline image](docs/R1-SCANNER-RUNTIME-20261116.md).
+Production activation remains blocked. E0 remains separate with holds preserved.
+
 **Current working agenda — 8 November 2026:** [independent review, priorities,
 dated checkpoints and acceptance gates](docs/PROJECT-AGENDA-20261108.md).
 PR #79 is merged as `e62e2f2`, with all 12 post-merge checks passed. The agenda

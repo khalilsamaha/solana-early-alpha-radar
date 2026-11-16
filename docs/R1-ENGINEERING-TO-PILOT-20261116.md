@@ -1,6 +1,22 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Current: combined native acceptance is ready
+## Current: combined acceptance received; full application check prepared
+
+The combined native batch at `790e80536a28c11347fc2ba47d6d8871aea36def` is accepted
+at its supplied 18:06:42–18:08:05 CET observation: 231 source pins, seven control
+replays, five nested session archives and twelve owned cleanup receipts reconcile.
+Do not repeat it unchanged. Full application startup exposed two source issues:
+shared health incorrectly required an upstream key, and endpoint validation came
+after storage/background startup. Both are corrected, with statistics manifest
+compatibility preserved. **232 scanner and 30 image/runtime tests pass.**
+
+One new `scripts/r1-scanner-runtime-kali.sh` invocation is needed for the new image
+and actual application entry point, storage/statistics/HTTP/shutdown boundary.
+Docker is unavailable here and a local Unix listener attempt was denied; no native
+acceptance is claimed. See [the scope, bounds and remaining gaps](R1-SCANNER-RUNTIME-20261116.md).
+All subsequent sections preserve earlier engineering history.
+
+## Previous: combined native acceptance was ready
 
 The retained gate is published at `1a82d89`. Continued authorized engineering now
 connects owned original-container binding, native scanner/supervisor shutdown,

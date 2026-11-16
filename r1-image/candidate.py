@@ -19,7 +19,7 @@ def sources():
     names=git('ls-files','-z').decode().split('\0')
     selected=[n for n in names if n=='scanner/package.json' or n.startswith(('scanner/src/','scanner/public/','scanner/scripts/'))]
     check(selected and 'scanner/src/index.js' in selected,'scanner-source-missing')
-    selected+=['r1-image/verify.mjs','r1-image/probe.mjs']
+    selected+=['r1-image/verify.mjs','r1-image/probe.mjs','r1-image/runtime-probe.mjs']
     return sorted(selected)
 
 def source_bytes(names):

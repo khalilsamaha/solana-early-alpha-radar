@@ -4,8 +4,12 @@ import {config} from './config.js';
 import {Storage} from './core/storage.js';
 import {Radar} from './core/radar.js';
 import {startPumpPortalSource} from './adapters/pumpportal-source.js';
+import {validateSharedEndpoint} from './adapters/pumpportal-shared.js';
 import {startServer} from './server/server.js';
 const args=new Set(process.argv.slice(2));
+// Refuse an unusable shared endpoint before storage writes or background work.
+// The connection adapter rechecks it immediately before connecting as well.
+if(!args.has('--dashboard-only')&&config.pumpPortalSource==='shared')validateSharedEndpoint(config.pumpPortalSocket);
 const storage=new Storage(config.dataDir),radar=new Radar(config,storage);
 let stopPump=()=>{},server,stopping=false;
 async function shutdown(code=0) {

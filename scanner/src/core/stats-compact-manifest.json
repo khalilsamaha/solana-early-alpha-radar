@@ -14,7 +14,7 @@
     "src/core/exit.js": "eaecb3b053ce912f11d8d40075a51a05889b41f8a2c79f24e02fced2a0ccecad",
     "src/core/fast-shadow.js": "08b9ff6eb7715309e93d308c79cf83ec6d607c2570e9b78c506dc90949629e05",
     "src/core/feed-evidence.js": "446bba20c7a81c9997e75f406eef519697187f1d9660253182b4150f40ab7971",
-    "src/core/health.js": "ee8af1dda5adbc7e8c19c6214b638a4f0933541f388685c643a57696d4a66f9c",
+    "src/core/health.js": "8cd50a32b24aefdd583f02ccf217b0716a310682ab84396d13759bc423be400d",
     "src/core/http.js": "aea3d0db6d1ab3ab36a7c19b18f1b0e21d1342796f6fa9ec27ff7b79e355396d",
     "src/core/launch-registry.js": "2419f77f8ff284363e7a6f5b1378ee441e2ffed89af415e54a3b1b749957c75b",
     "src/core/metadata-provenance.js": "127633056363a1ee7ca853be4a716c0ab4f892acaad89bc469bd75b99eebd702",
@@ -30,9 +30,9 @@
     "src/core/stats-memory.js": "0078f0b6b88366e154287ebcd29728fd81592abf10ec14e08bb702ec9a455252",
     "src/core/storage.js": "e401d1acd31a6cfa1e318950495a500eabe5a9e196a3344c7550f9a5a8a371a1",
     "src/demo.js": "e4d27fd7e5f3de64b0056ff4c55d94c436cea829829e56cd1deb771e79af0dfc",
-    "src/index.js": "bd28b1416fddaaae29e83eb67d4f5a9cd285958665bdd9bdf67a187a6dd694bb",
+    "src/index.js": "f785624dc3ddd7985c58fc0438f32bc16ebb7c5b6a68331485cc1c174021d6cd",
     "src/adapters/pumpportal-events.js": "a3653ae4cfefd17411c71552307183ac065d05c9cc01ca8a89ed3de8c39155dd",
-    "src/adapters/pumpportal-shared.js": "64ac8032eccb8b2b37404c6801bcdcf96f70fad6670ac86b486d92dbde2bb260",
+    "src/adapters/pumpportal-shared.js": "76ef4b6158450c6f6c52ed8b35571d372f72837e27c619d7782160bbd3cd6be9",
     "src/adapters/pumpportal-source.js": "760c2b3dc088b53c2cb5366ba05ca5f243426125451934600f27be1b1b7f3d81"
   },
   "storeSha256": "4d9a0e965a62a66398f0971e6d1c76a68966e7b3e2cd5ec86b2b52f7af3048df",
@@ -41,6 +41,7 @@
     "364b960e728f82212454463f985b927d61a696cc0b438f047a688f469441a955",
     "c794dc1883cab815e52974a4a9eef0c02b53f4bc47348b72d8a16a8cabd39a02",
     "6e826d8b7c4f3da3897dd37a1ea3a248ef3fb6f0506afc1dfe221d1ab828c31e",
-    "b0058b0fb4eb5a3d13b6b3672aca4731ce2aefd981abc8a0a05b5a607a0dfc3f"
+    "b0058b0fb4eb5a3d13b6b3672aca4731ce2aefd981abc8a0a05b5a607a0dfc3f",
+    "86ad1258abf101c20935f76585e5c64a9a48c7d46b96b522ce3a5a2d66a99cb3"
   ]
 }

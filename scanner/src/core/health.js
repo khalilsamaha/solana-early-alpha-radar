@@ -2,7 +2,7 @@ export class Health {
   constructor(config,clock=Date.now) {
     this.clock=clock;this.startedAt=clock();this.lastLoopAt=0;this.lastMarketAt=0;this.mode='starting';
     this.providers=Object.fromEntries(['dex','jupiter','helius','pumpportal'].map(name=>[name,{
-      enabled:name==='dex'||Boolean(config[`${name==='pumpportal'?'pumpPortal':name}ApiKey`]),lastSuccessAt:null,lastErrorAt:null,failures:0,requests:0
+      enabled:name==='dex'||(name==='pumpportal'&&config.pumpPortalSource==='shared')||Boolean(config[`${name==='pumpportal'?'pumpPortal':name}ApiKey`]),lastSuccessAt:null,lastErrorAt:null,failures:0,requests:0
     }]));
   }
   success(name,latencyMs=0) { const p=this.providers[name]; if(!p)return;Object.assign(p,{lastSuccessAt:this.clock(),failures:0,lastError:null,latencyMs,requests:p.requests+1}); }

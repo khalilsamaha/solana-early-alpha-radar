@@ -46,7 +46,7 @@ export function consumeSharedDiscovery(stream,onToken,onStatus=()=>{},health,onC
   return ()=>{if(stopped)return;stopped=true;clearInterval(watchdog);buffer=Buffer.alloc(0);stream.destroy();};
 }
 
-export function connectSharedDiscovery(socketPath,onToken,onStatus=()=>{},health,onCreation=()=>{}) {
+export function validateSharedEndpoint(socketPath) {
   // A same-UID, private Unix endpoint only. Never parse a URL or fall back to TCP.
   if(typeof socketPath!=='string'||!path.isAbsolute(socketPath)||socketPath!==path.normalize(socketPath)||
      Buffer.byteLength(socketPath)>100)throw Error('Invalid shared discovery endpoint');
@@ -59,6 +59,10 @@ export function connectSharedDiscovery(socketPath,onToken,onStatus=()=>{},health
   if(!parent.isDirectory()||parent.uid!==process.getuid()||(parent.mode&0o077)||
      !socket.isSocket()||socket.uid!==process.getuid()||(socket.mode&0o077))
     throw Error('Unsafe shared discovery endpoint');
+}
+
+export function connectSharedDiscovery(socketPath,onToken,onStatus=()=>{},health,onCreation=()=>{}) {
+  validateSharedEndpoint(socketPath);
   const stream=net.createConnection({path:socketPath});
   stream.setTimeout(3000,()=>stream.destroy());
   stream.once('connect',()=>stream.setTimeout(0));

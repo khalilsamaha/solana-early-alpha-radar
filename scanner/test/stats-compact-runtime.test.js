@@ -23,14 +23,15 @@ test('background refresh runs without stats requests and graceful restart reuses
  assert.equal(x.successes,1);assert.equal((await x.get()).alerts,1);await x.close();
  const y=service(t,database);await y.get();assert.ok(y.cache.reconciliation.reusedRows>=1);assert.equal(y.cache.reconciliation.readRows,0);
 });
-test('reviewed benchmark provenance is adopted without discarding rows or private cache identity',async t=>{
+for(const provenanceIndex of [0,-1])test(`reviewed provenance ${provenanceIndex} is adopted without discarding rows or private cache identity`,async t=>{
  const {s,database}=fixture(t);s.append('alerts',{id:'one',at:1,candidate:{mint:'a'}});
  const lease=acquireCompactLease(database),before=fs.statSync(lease.cache),p=cacheProvenance();
- const store=new CompactStore({source:database,cache:lease.cache,compact:compactSummaryRow,provenance:p.compatibleProvenance[0]});
+ const previous=p.compatibleProvenance.at(provenanceIndex);
+ const store=new CompactStore({source:database,cache:lease.cache,compact:compactSummaryRow,provenance:previous});
  while(store.step().phase!=='validation-required'){}
  store.validateAndSummarize(()=>({}));store.put('test-preserved',true);store.close();lease.release();
  const x=service(t,database);await x.get();assert.equal(x.cache.reconciliation.readRows,0);assert.equal(x.cache.reconciliation.reusedRows,1);
- const db=new DatabaseSync(lease.cache,{readOnly:true});try{assert.equal(JSON.parse(db.prepare("SELECT value FROM meta WHERE key='test-preserved'").get().value),true);assert.equal(JSON.parse(db.prepare("SELECT value FROM meta WHERE key='previousProvenance'").get().value),p.compatibleProvenance[0]);}finally{db.close();}
+ const db=new DatabaseSync(lease.cache,{readOnly:true});try{assert.equal(JSON.parse(db.prepare("SELECT value FROM meta WHERE key='test-preserved'").get().value),true);assert.equal(JSON.parse(db.prepare("SELECT value FROM meta WHERE key='previousProvenance'").get().value),previous);}finally{db.close();}
  assert.equal(fs.statSync(lease.cache).ino,before.ino);
 });
 test('unknown cache provenance is refused and retained',async t=>{

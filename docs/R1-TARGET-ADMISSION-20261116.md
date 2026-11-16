@@ -2,8 +2,9 @@
 
 **Subsequent integration:** the accepted target binding below remains valid at its
 recorded source/time. A combined owned-original/native-session/credential/preservation
-check is ready; see [the required changed-boundary Kali test](R1-COMBINED-ACCEPTANCE-20261116.md).
-No unchanged target-binding rerun is requested.
+check is now [accepted at its supplied observation](R1-COMBINED-ACCEPTANCE-20261116.md).
+The next boundary is [full scanner application startup in a new image](R1-SCANNER-RUNTIME-20261116.md).
+No unchanged target-binding or combined-batch rerun is requested.
 
 ## Current: target binding accepted; finite-session restoration integrated
 
