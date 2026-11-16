@@ -109,17 +109,29 @@ class Owner:
         self.next_send = 0.0
 
     async def start(self):
-        if self.attempted:
+        if self.attempted or self.closed:
             raise CaptureError("shared-reconnect-forbidden")
         self.attempted = True
         try:
             self.wire = await asyncio.wait_for(self.factory(), 5)
+            # STOP or peer loss may arrive while the connection is opening.
+            # abort() cannot close a wire which has not yet been returned.
+            if self.closed:
+                self.wire.abort()
+                raise CaptureError("shared-stopped-during-connect")
             async with self.lock:
                 await self._send({"method": "subscribeNewToken"})
                 await self._send({"method": "subscribeMigration"})
             self.reader = asyncio.create_task(self._read())
         except BaseException:
             self.abort("start-failed")
+            # Cancellation after the factory returned must close that connection
+            # even if an earlier abort already marked this owner closed.
+            if self.wire is not None:
+                try:
+                    self.wire.abort()
+                except Exception:
+                    self.reason = "abort-failed"
             raise CaptureError("shared-start-failed") from None
 
     def attach(self, seconds):

@@ -1,5 +1,14 @@
 # Read-only production-context intake
 
+**November 16:** the original context check has passed. The next host command is
+`scripts/r1-production-readiness-kali.sh`, which gathers missing deployment inputs
+without rerunning tests. Unlike the original intake below, it reads Docker
+environment values in local memory and exports only fixed-value comparisons,
+variable names and an aggregate configuration fingerprint. It also records the
+named data volume, Compose locations, all-container census and storage samples.
+No production mutation or provider connection occurs. See [scope and remaining
+delivery](../docs/R1-ENGINEERING-TO-PILOT-20261116.md).
+
 Native isolated supervision is accepted; its fixture identities cannot identify
 or authorize the current production scanner. This collector supplies the next
 bounded factual input for designing the production adapter. It has no mutation,

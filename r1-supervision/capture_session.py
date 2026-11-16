@@ -168,19 +168,20 @@ async def exercise(manifest,mode,pipe_fd=-1,native_development=False):
         nonlocal attempts
         attempts+=1;peer.frames.put_nowait(peer.event('create'))
         return Wire(peer,secret_variants(fixtures.SECRET))
-    original=s.Server
     if mode in NATIVE_MODES:
         import native_scanner as native
-        base=native.server_class(original,manifest,native_development)
+        base=native.server_class(s.Server,manifest,native_development)
         class TrackedUnixServer(base):
             async def start(self):
                 nonlocal discovery_progress
                 discovery_progress=self.progress;await super().start()
-        s.Server=TrackedUnixServer
-    else:s.Server=PipeServer if mode in PIPE_MODES else fixtures.TestServer
+        server_factory=TrackedUnixServer
+    else:server_factory=PipeServer if mode in PIPE_MODES else fixtures.TestServer
     task=asyncio.create_task(s.run(directory(manifest),Path(manifest['config']['registry_path']),factory,limits(manifest),
         shutdown=shutdown,research_done=retired,endpoint_ready=bound,peer_ready=peer_ready,upstream_ready=started,
-        admitted=admitted,service_seconds=manifest['policy']['service_seconds']))
+        admitted=admitted,service_seconds=manifest['policy']['service_seconds'],
+        setup_seconds=manifest['policy']['setup_seconds'],shutdown_seconds=manifest['policy']['shutdown_seconds'],
+        server_factory=server_factory))
     async def wait_event(event,seconds):
         waiter=asyncio.create_task(event.wait())
         try:
@@ -207,7 +208,6 @@ async def exercise(manifest,mode,pipe_fd=-1,native_development=False):
         shutdown.set()
         if not task.done():
             task.cancel();await asyncio.gather(task,return_exceptions=True)
-        s.Server=original
 
 
 def run(manifest,mode,pipe_fd=-1,native_development=False):

@@ -1,5 +1,11 @@
 # Combined R1 integration candidate — offline executable only
 
+**November 16:** the reusable separated session now has interruptible bounded
+startup and configurable setup/shutdown budgets. `session_evidence.py` provides
+local export/restore for arbitrary separated-session evidence, including failed
+and interrupted runs. This does not turn the combined fixture launcher into a
+production launcher. See [current work and remaining delivery](../docs/R1-ENGINEERING-TO-PILOT-20261116.md).
+
 This package connects a separated research/discovery session, a consumed global
 **configured registry**, isolated service handoff/rollback, a finite candidate
 resource profile, complete/interrupted evidence, and injected transfer validation.

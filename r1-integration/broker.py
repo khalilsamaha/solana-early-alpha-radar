@@ -70,10 +70,11 @@ def run(directory,ipc,parent,fd,scenario,pipe_fd):
         shutdown,retired,bound,peer_ready,started,admitted=(asyncio.Event() for _ in range(6))
         loop=asyncio.get_running_loop();reader=asyncio.StreamReader(limit=128)
         input_transport,_=await loop.connect_read_pipe(lambda:asyncio.StreamReaderProtocol(reader),sys.stdin.buffer)
-        if pipe_fd>=3:s.Server=PipeServer
         task=asyncio.create_task(s.run(directory/'control',ipc,factory,Limits(messages=4,seconds=5,sample_modulus=1),
             shutdown=shutdown,research_done=retired,endpoint_ready=bound,peer_ready=peer_ready,upstream_ready=started,
-            admitted=admitted,service_seconds=15))
+            admitted=admitted,service_seconds=15,setup_seconds=manifest['resources']['setup_seconds'],
+            shutdown_seconds=manifest['resources']['shutdown_seconds'],
+            server_factory=PipeServer if pipe_fd>=3 else None))
         def reply(name,**values):print(c.canonical({'event':name,**values}),flush=True)
         async def wait_event(event,seconds):
             waiter=asyncio.create_task(event.wait())

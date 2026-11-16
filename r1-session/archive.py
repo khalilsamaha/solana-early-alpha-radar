@@ -100,6 +100,15 @@ def validate(contents, restored):
             or any(stopped[k] is not False for k in ('provider_acknowledgement_verified', 'billing_cutoff_verified',
                                                    'live_launch_authorized', 'production_handoff_verified'))):
         raise CaptureError('session-archive-stopped-binding')
+    return validate_research(stopped, restored, records)
+
+
+def validate_research(stopped, restored, records):
+    """Reconcile actual owner commands with replayed capture/journal evidence.
+
+    The caller validates its own admission/terminal schema first. This shared
+    semantic check has no fixture-origin requirement or activation authority.
+    """
     research, owner = stopped['research'], stopped['owner']
     measured = restored['measurement']
     if (not isinstance(owner, dict) or not isinstance(research, dict)

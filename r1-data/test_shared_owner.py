@@ -31,6 +31,35 @@ class FakeWire:
 
 
 class SharedOwnerTests(unittest.IsolatedAsyncioTestCase):
+    async def test_stopped_owner_cannot_attempt_a_connection(self):
+        calls = []
+        async def factory():
+            calls.append(True)
+            return FakeWire()
+        owner = Owner(factory)
+        owner.abort('operator-stop')
+        with self.assertRaises(CaptureError):
+            await owner.start()
+        self.assertEqual(calls, [])
+
+    async def test_stop_during_connection_aborts_late_wire_without_subscription(self):
+        connecting, release = asyncio.Event(), asyncio.Event()
+        wire = FakeWire()
+        async def factory():
+            connecting.set()
+            await release.wait()
+            return wire
+        owner = Owner(factory)
+        task = asyncio.create_task(owner.start())
+        await connecting.wait()
+        owner.abort('operator-stop')
+        release.set()
+        with self.assertRaises(CaptureError):
+            await task
+        self.assertTrue(wire.aborted)
+        self.assertEqual(wire.sent, [])
+        await owner.close()
+
     async def asyncSetUp(self):
         self.wire = FakeWire()
         self.opens = 0

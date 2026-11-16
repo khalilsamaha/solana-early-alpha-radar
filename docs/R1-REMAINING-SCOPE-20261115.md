@@ -1,5 +1,11 @@
 # R1 remaining scope reconciliation — 15 November 2026
 
+**November 16 update:** the supplied production context is accepted. See the
+[current corrective engineering and remaining delivery](R1-ENGINEERING-TO-PILOT-20261116.md).
+The earlier context-test request below is historical. Startup cancellation and
+variable-session local preservation have advanced; production deployment,
+finite live-worker integration and remote retention are still open.
+
 ## Decision
 
 Native and prepared offline handoff acceptance is complete. Full production/source

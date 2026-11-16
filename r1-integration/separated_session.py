@@ -75,7 +75,8 @@ def read_retirement(control):
 
 
 async def run(control, ipc, factory, limits=Limits(), *, shutdown, research_done,
-              endpoint_ready, peer_ready, upstream_ready, admitted, service_seconds):
+              endpoint_ready, peer_ready, upstream_ready, admitted, service_seconds,
+              setup_seconds=15, shutdown_seconds=3, server_factory=None):
     """One consumed directory, one peer, one upstream, one capture, no restart.
 
     Cancellation/failure shuts down upstream and waits at most three seconds for
@@ -86,6 +87,10 @@ async def run(control, ipc, factory, limits=Limits(), *, shutdown, research_done
     validate_limits(limits)
     if type(service_seconds) is not int or not limits.seconds <= service_seconds <= 172800:
         raise CaptureError("integration-service-duration")
+    if any(type(v) is not int or not 1 <= v <= 30 for v in (setup_seconds, shutdown_seconds)):
+        raise CaptureError('session-phase-budget')
+    if shutdown.is_set():
+        raise CaptureError('session-stopped-before-setup')
     control, ipc = map(path_without_links, (control, ipc))
     private_directory(control.parent)
     private_directory(ipc)
@@ -109,6 +114,8 @@ async def run(control, ipc, factory, limits=Limits(), *, shutdown, research_done
                  'automatic_resume_allowed': False}
 
     async def reviewed_factory():
+        if shutdown.is_set() or owner.closed:
+            raise CaptureError('session-stopped-before-connect')
         wire = await factory()
         if type(wire) is not Wire:
             raise CaptureError('session-reviewed-wire-required')
@@ -119,7 +126,7 @@ async def run(control, ipc, factory, limits=Limits(), *, shutdown, research_done
             with Journal(control / 'session.jsonl') as journal:
                 with Capture(control / 'capture', limits) as capture:
                     loop.call_soon_threadsafe(capture_ready.set)
-                    lease = lease_input.result(timeout=10)
+                    lease = lease_input.result(timeout=setup_seconds + shutdown_seconds)
                     box['research'] = asyncio.run(shared_session.run(capture, lease, journal))
         except BaseException:
             box['failed'] = True  # never retain exception text or credentials
@@ -129,27 +136,48 @@ async def run(control, ipc, factory, limits=Limits(), *, shutdown, research_done
     try:
         exclusive_file(control / 'admission.json', json_bytes(admission))
         owner = PreparedOwner(reviewed_factory)
-        server = Server(owner, ipc)
-        await server.start()
-        endpoint_ready.set()
-        await asyncio.wait_for(server.connected.wait(), 5)
-        peer_ready.set()
-        await asyncio.wait_for(admitted.wait(), 5)
-        service_deadline=loop.time()+service_seconds
-        if owner.closed:
-            raise CaptureError('session-peer-ended-before-start')
-        worker = threading.Thread(target=capture_worker, name='r1-capture', daemon=True)
-        worker.start()
-        async with asyncio.timeout(3):
+        server = (server_factory or Server)(owner, ipc)
+
+        async def setup():
+            nonlocal worker
+            await server.start()
+            endpoint_ready.set()
+            await server.connected.wait()
+            peer_ready.set()
+            await admitted.wait()
+            if owner.closed or shutdown.is_set():
+                raise CaptureError('session-peer-ended-before-start')
+            worker = threading.Thread(target=capture_worker, name='r1-capture', daemon=True)
+            worker.start()
             while not capture_ready.is_set():
                 if done.is_set():
                     raise CaptureError('session-capture-start-failed')
                 await asyncio.sleep(0.005)
-        await owner.start()
-        lease = owner.attach(limits.seconds)
-        lease_input.set_result(ReadyLease(lease, owner))
-        upstream_ready.set()
-        async with asyncio.timeout(limits.seconds + 3):
+            await owner.start()
+            if shutdown.is_set():
+                raise CaptureError('session-stopped-during-setup')
+            lease = owner.attach(limits.seconds)
+            lease_input.set_result(ReadyLease(lease, owner))
+            upstream_ready.set()
+
+        # One deadline covers endpoint, peer, admission, capture and connection.
+        # STOP interrupts every startup wait, including an in-flight factory.
+        setup_task = asyncio.create_task(setup())
+        stop_task = asyncio.create_task(shutdown.wait())
+        try:
+            completed, _ = await asyncio.wait((setup_task, stop_task), timeout=setup_seconds,
+                                             return_when=asyncio.FIRST_COMPLETED)
+            if shutdown.is_set():
+                raise CaptureError('session-stopped-during-setup')
+            if setup_task not in completed:
+                raise CaptureError('session-setup-deadline')
+            await setup_task
+        finally:
+            for task in (setup_task, stop_task):
+                if not task.done(): task.cancel()
+            await asyncio.gather(setup_task, stop_task, return_exceptions=True)
+        service_deadline=loop.time()+service_seconds
+        async with asyncio.timeout(limits.seconds + shutdown_seconds):
             while not done.is_set():
                 if shutdown.is_set():
                     owner.abort('operator-stop')
@@ -200,7 +228,7 @@ async def run(control, ipc, factory, limits=Limits(), *, shutdown, research_done
             if server is not None and not resources_closed:
                 await server.close()
             if worker is not None:
-                async with asyncio.timeout(3):
+                async with asyncio.timeout(shutdown_seconds):
                     while worker.is_alive():
                         await asyncio.sleep(0.01)
                 worker.join(timeout=0)
