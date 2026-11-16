@@ -4,6 +4,7 @@ Library integration only: no production mutation entry point or activation grant
 The host entry point performs the target-binding inspection read-only.
 """
 from pathlib import Path
+import re
 import sys
 import production_control as control
 c=control.c
@@ -71,6 +72,39 @@ class BoundDocker(control.Docker):
         self.admission.update(started_utc=started,finished_utc=c.now())
         super().__init__(cli,self.admission['target'],bounded)
 
+    @property
+    def configuration_sha256(self):return self.admission['readiness_configuration_sha256']
+
+
+class IsolatedBoundDocker(control.Docker):
+    """Bind only a newly owned, exact isolated control fixture; no readiness claim.
+
+    This is the native combined check's adapter. Its immutable configuration is
+    observed directly and is never presented as production readiness evidence.
+    """
+    def __init__(self,cli,cid,token,bounded):
+        c.check(isinstance(cid,str) and re.fullmatch('[a-f0-9]{64}',cid),'fixture-exact-id')
+        started=c.now()
+        def isolated():
+            row=c.parse(bounded(list(cli)+['inspect','--type','container','--format',c.FORMAT,cid],seconds=4))
+            c.isolated(row,token)
+            c.check(row['id']==cid and row['running'] and row['pid']>0 and row['restart']=='unless-stopped',
+                    'fixture-running-original')
+            return row
+        first=isolated()
+        target=control.project(bounded(list(cli)+['inspect','--type','container','--format',control.FORMAT,cid],seconds=4,cap=262144))
+        c.check(isolated()==first and all(target[k]==first[k] for k in
+                ('id','image','pid','started','finished','running','exit_code','restart')),'fixture-binding-drift')
+        self.admission={'schema':1,'kind':'retained-isolated-fixture-binding','target':target,
+            'isolated':first,'started_utc':started,'finished_utc':c.now(),
+            'configuration_binding_sha256':target['config_sha256'],
+            'production_readiness_observed':False,'activation_authorized':False,
+            'automatic_resume_allowed':False,'global_owner_exclusivity_verified':False}
+        super().__init__(cli,target,bounded)
+
+    @property
+    def configuration_sha256(self):return self.admission['configuration_binding_sha256']
+
 
 class Prepared:
     """Gate the actual retained controller using the configured stable registry.
@@ -80,7 +114,7 @@ class Prepared:
     Shared-owner restoration is deliberately NOT part of this direct-only scope.
     """
     def __init__(self,backend,directory,manifest_sha256,paths):
-        c.check(type(backend) is BoundDocker,'admission-bound-backend-required')
+        c.check(type(backend) in (BoundDocker,IsolatedBoundDocker),'admission-bound-backend-required')
         self.backend=backend;self.directory=Path(directory).absolute();self.sha=manifest_sha256
         self.paths=dict(paths);self.claim=None;self.gates=0
         plan=m.inspect(self.directory,self.sha)
@@ -90,7 +124,7 @@ class Prepared:
         plan=m.inspect(self.directory,self.sha);config=plan['config']
         c.check(config['registry_path']==str(self.registry) and
                 config['scanner_image']==self.backend.target['image'] and
-                config['scanner_config_sha256']==self.backend.admission['readiness_configuration_sha256'] and
+                config['scanner_config_sha256']==self.backend.configuration_sha256 and
                 config['rollback_config_sha256']==self.backend.target['config_sha256'],
                 'admission-manifest-target')
         result=prep.inspect(self.registry,self.sha)

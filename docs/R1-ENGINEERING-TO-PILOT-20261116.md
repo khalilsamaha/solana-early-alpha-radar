@@ -1,5 +1,16 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
+## Current: combined native acceptance is ready
+
+The retained gate is published at `1a82d89`. Continued authorized engineering now
+connects owned original-container binding, native scanner/supervisor shutdown,
+sealed synthetic credential handoff and capture export/independent restore in one
+changed-boundary batch. **132 local tests pass**; Docker remains unavailable here.
+One Kali invocation of `scripts/r1-combined-control-kali.sh` is now needed. See
+[the exact cases, limits, evidence and remaining production gaps](R1-COMBINED-ACCEPTANCE-20261116.md).
+This supersedes the earlier statement that no new host script was yet ready.
+Do not repeat old readiness, binding or standalone retained-control checks.
+
 ## Latest: target binding accepted; finite-session restoration gate integrated
 
 The supplied 12:01:22 CET exact-target binding is accepted at `332797e0`:

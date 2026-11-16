@@ -6,10 +6,12 @@ import selectors
 import subprocess
 import sys
 import time
+import uuid
 import runtime as r
 import capture_session as session
 import scanner_peer
 import native_scanner
+import credential
 m=r.m;p=r.preparation
 ENV={'PATH':'/usr/bin:/bin','LANG':'C.UTF-8','LC_ALL':'C.UTF-8'}
 MODES={'complete','ignore-alarm','dns','process','socket','tainted-output','output-flood'}|session.MODES
@@ -30,7 +32,13 @@ def terminal_row(claim):
             'source_sha256':claim['source_sha256'],'production_modified':False,'provider_connection_opened':False}
     if claim['mode'] in session.MODES:
         manifest=m.inspect(claim['manifest_directory'],claim['manifest_sha256'])
+        consumed,consumed_bytes=native_scanner.read(claim['registry'],'worker-credential.json')
+        m.check(consumed=={'schema':1,'kind':'synthetic-credential-consumption',
+                'claim_sha256':m.digest(m.raw(claim)),'status':'consumed-and-closed','real_credential_used':False},
+                'runtime-credential-consumption')
         row['session_evidence']=session.expected_terminal(manifest,claim['mode'])
+        row.update(credential_handoff='sealed-synthetic-fd',credential_descriptor_closed=True)
+        row['credential_receipt_sha256']=m.digest(consumed_bytes)
     return row
 
 
@@ -81,7 +89,9 @@ def run(manifest_directory,sha,*,mode='complete',native_development=False):
         claim={'schema':1,'kind':'synthetic-manifest-runtime-attempt','registry':registry,
                'registry_identity':p.s.metadata(fd),'manifest_directory':str(manifest_directory),
                'manifest_sha256':sha,'preparation_sha256':m.digest(m.raw(prepared)),
-               'profile':profile,'mode':mode,'native_development':native_development,'source_sha256':r.pins(),'created_utc':stamp(),
+               'profile':profile,'mode':mode,'native_development':native_development,
+               'credential_handoff':'sealed-synthetic-fd' if mode in session.MODES else None,
+               'source_sha256':r.pins(),'created_utc':stamp(),
                'activation_authorized':False,'automatic_resume_allowed':False}
         claim_bytes=p.write_at(fd,CLAIM,claim)
         if mode in session.MODES:
@@ -108,10 +118,18 @@ def run(manifest_directory,sha,*,mode='complete',native_development=False):
                         and r.pins()==claim['source_sha256'],'runtime-input-changed-after-scanner')
             command=[sys.executable,'-E','-s','-B',str(r.ROOT/'worker.py'),
                 str(manifest_directory),sha,str(os.getpid()),mode]
-            if scanner is not None:command.append(str(scanner.write_fd))
-            process=subprocess.Popen(command,stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,env=ENV,start_new_session=True,
-                pass_fds=() if scanner is None else (scanner.write_fd,))
+            secret_fd=None
+            try:
+                descriptors=() if scanner is None else (scanner.write_fd,)
+                if mode in session.MODES:
+                    secret_fd=credential.sealed(('R1-SYNTHETIC-'+uuid.uuid4().hex).encode())
+                    command.extend([str(scanner.write_fd if scanner is not None else -1),str(secret_fd)])
+                    descriptors+= (secret_fd,)
+                process=subprocess.Popen(command,stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,env=ENV,start_new_session=True,
+                    pass_fds=descriptors)
+            finally:
+                if secret_fd is not None:os.close(secret_fd)
             if scanner is not None:scanner.writer_passed()
             if mode in session.NATIVE_MODES:
                 scanner=native_scanner.Scanner(manifest,native_development)
@@ -199,7 +217,7 @@ def inspect(registry,sha):
     try:
         claim_bytes=p.read_at(fd,CLAIM);claim=m.parse(claim_bytes)
         keys={'schema','kind','registry','registry_identity','manifest_directory','manifest_sha256',
-              'preparation_sha256','profile','mode','native_development','source_sha256','created_utc',
+               'preparation_sha256','profile','mode','native_development','credential_handoff','source_sha256','created_utc',
               'activation_authorized','automatic_resume_allowed'}
         m.check(type(claim) is dict and set(claim)==keys and m.raw(claim)==claim_bytes
                 and type(claim['schema']) is int and claim['schema']==1
@@ -209,6 +227,8 @@ def inspect(registry,sha):
         m.check(claim['activation_authorized'] is False and claim['automatic_resume_allowed'] is False,'runtime-claim-authority')
         m.check(type(claim['native_development']) is bool and (claim['mode'] in session.NATIVE_MODES
                 or not claim['native_development']),'runtime-native-development')
+        m.check(claim['credential_handoff']==('sealed-synthetic-fd' if claim['mode'] in session.MODES else None),
+                'runtime-credential-binding')
         utc(claim['created_utc'])
         manifest=m.inspect(claim['manifest_directory'],sha);prepared=p.inspect(registry,sha)
         m.check(manifest['config']['registry_path']==registry and m.raw(claim['profile'])==m.raw(r.profile(manifest))

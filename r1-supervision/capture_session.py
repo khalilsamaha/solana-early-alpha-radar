@@ -132,7 +132,7 @@ def expected_terminal(manifest,mode,*,replay=False):
     finally:os.close(fd)
 
 
-async def exercise(manifest,mode,pipe_fd=-1,native_development=False):
+async def exercise(manifest,mode,pipe_fd=-1,native_development=False,*,secret=fixtures.SECRET):
     selected=kind(mode).removeprefix('session-')
     class ScannerUpstream(fixtures.Peer):
         async def send(self,command):
@@ -140,7 +140,7 @@ async def exercise(manifest,mode,pipe_fd=-1,native_development=False):
             if row['method']=='subscribeTokenTrade':
                 for event in ('buy','sell','migration'):self.frames.put_nowait(self.event(event))
             if row['method']=='unsubscribeTokenTrade' and selected=='cleanup-failure':
-                raise RuntimeError(fixtures.SECRET)
+                raise RuntimeError(secret)
     peer=(ScannerUpstream if mode in SCANNER_MODES else fixtures.Peer)(selected,4)
     discovery_progress=None
     class PipeServer(fixtures.TestServer):
@@ -167,7 +167,7 @@ async def exercise(manifest,mode,pipe_fd=-1,native_development=False):
     async def factory():
         nonlocal attempts
         attempts+=1;peer.frames.put_nowait(peer.event('create'))
-        return Wire(peer,secret_variants(fixtures.SECRET))
+        return Wire(peer,tuple(set(secret_variants(fixtures.SECRET))|set(secret_variants(secret))))
     if mode in NATIVE_MODES:
         import native_scanner as native
         base=native.server_class(s.Server,manifest,native_development)
@@ -210,7 +210,7 @@ async def exercise(manifest,mode,pipe_fd=-1,native_development=False):
             task.cancel();await asyncio.gather(task,return_exceptions=True)
 
 
-def run(manifest,mode,pipe_fd=-1,native_development=False):
+def run(manifest,mode,pipe_fd=-1,native_development=False,*,secret=fixtures.SECRET):
     m.check(mode in MODES,'session-mode')
     validate_mode(manifest,mode)
     if mode in PIPE_MODES:
@@ -218,5 +218,5 @@ def run(manifest,mode,pipe_fd=-1,native_development=False):
     else:m.check(pipe_fd==-1,'unexpected-scanner-pipe')
     # The parent claim has already consumed the attempt; session.run exclusively
     # creates its control directory. It never reopens an interrupted capture.
-    asyncio.run(exercise(manifest,mode,pipe_fd,native_development))
+    asyncio.run(exercise(manifest,mode,pipe_fd,native_development,secret=secret))
     return expected_terminal(manifest,mode,replay=True)

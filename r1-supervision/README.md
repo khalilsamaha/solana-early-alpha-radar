@@ -1,5 +1,20 @@
 # Manifest-bound resource supervision candidate
 
+## Current credential integration
+
+Session modes now receive a generated synthetic credential through the existing
+sealed anonymous descriptor implementation. Only the worker inherits it, consumes
+and closes it before capture, and records a claim-bound consumption/refusal receipt.
+The parent closes its descriptor after spawn, including spawn failure. Success and
+historical verification require the consumption receipt. No real credential file,
+provider/network mode or production permission is added. Inspect older evidence
+with its original source revision; the receipt schema/source map has changed.
+
+The [combined native acceptance](../docs/R1-COMBINED-ACCEPTANCE-20261116.md) now
+connects this mechanism to retained-original shutdown/restoration and local evidence
+export/restore. Earlier references below to no credential handoff describe the
+previous fixture version; there is still no user-supplied credential input.
+
 This connects a completed durable preparation to a fixed synthetic worker with
 resource limits derived from the exact deployment manifest. It is not a live
 owner launcher. There is no credential argument, provider mode, arbitrary command

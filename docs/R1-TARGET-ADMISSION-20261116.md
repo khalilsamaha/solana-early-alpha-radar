@@ -1,5 +1,10 @@
 # R1.B target/preparation integration and retained-control acceptance
 
+**Subsequent integration:** the accepted target binding below remains valid at its
+recorded source/time. A combined owned-original/native-session/credential/preservation
+check is ready; see [the required changed-boundary Kali test](R1-COMBINED-ACCEPTANCE-20261116.md).
+No unchanged target-binding rerun is requested.
+
 ## Current: target binding accepted; finite-session restoration integrated
 
 The supplied target-binding observation ran 16 November 2026,

@@ -1,5 +1,10 @@
 # Retained-container control adapter — R1.B
 
+The next host boundary is the [combined native acceptance batch](../docs/R1-COMBINED-ACCEPTANCE-20261116.md),
+including the retained gate, sealed synthetic credential handoff, shared scanner
+peer and independent capture restore. It uses only owned disposable actors;
+previous standalone host checks remain accepted and need no unchanged rerun.
+
 This adds an actual Docker command adapter for disable-restart, stop,
 start-the-original-container and restore-restart-policy. It retains the exact
 container ID rather than reconstructing it from partial Compose metadata. No
