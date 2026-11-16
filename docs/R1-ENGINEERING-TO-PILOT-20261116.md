@@ -1,6 +1,20 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Current: combined acceptance received; full application check prepared
+## Latest: application attempt failed; missing configuration evidence narrowed
+
+The supplied 18:45:41–18:45:46 CET application attempt at `6270ada` verifies the new
+image, 72 source pins, eleven indexed members and cleanup of both owned containers.
+SQLite independently contains three candidates and two launches. Normal-case
+closure failed; created/running configuration hashes differ, while the old checker
+discarded its result and final observation on failure. The other two native cases
+were not run. This does not pass full application acceptance.
+
+The checker now preserves those observations and redacted field differences while
+retaining the strict configuration gate. One **existing-image, single-container**
+diagnostic is needed; no rebuild or unchanged full-batch repeat. See
+[the reviewed failure, exact scope and command](R1-SCANNER-RUNTIME-20261116.md).
+
+## Previous: combined acceptance received; full application check prepared
 
 The combined native batch at `790e80536a28c11347fc2ba47d6d8871aea36def` is accepted
 at its supplied 18:06:42–18:08:05 CET observation: 231 source pins, seven control

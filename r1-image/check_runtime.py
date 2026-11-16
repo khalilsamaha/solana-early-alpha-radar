@@ -23,6 +23,10 @@ import command_io
 
 CASES=('normal','sequence-gap','missing-endpoint')
 LABEL='org.solana-radar.r1-full-scanner-review'
+DIAGNOSTIC_IMAGE='sha256:55d2f2369e0a03835441a02ad9a65568a9288c3753aa276a89ff252c62eeac7f'
+DIAGNOSTIC_REVISION='6270ada51ae04e1e0efbc6895286a327f764ee5c'
+DIAGNOSTIC_TREE='be15ea96816aaae67339cfe94539d6eca52a090a'
+DIAGNOSTIC_MANIFEST='bf330643bec5835413fbe85231f5bad876ecaf18a0b4c5e5618dcdddf8d7f694'
 
 
 def run(command,**kwargs):return command_io.bounded(command,env=image.host.ENV,**kwargs)
@@ -32,7 +36,44 @@ def pins():
     return {**image.pins(),
         **{name:c.digest((c.REPO/name).read_bytes()) for name in
            ('r1-production-control/production_control.py','r1-production-control/command_io.py',
-            'r1-control/control.py','scripts/r1-scanner-runtime-kali.sh')}}
+            'r1-control/control.py','scripts/r1-scanner-runtime-kali.sh','scripts/r1-scanner-runtime-diagnostic-kali.sh')}}
+
+
+def configuration_fields(raw):
+    """Diagnose owned fixture drift without exporting environment/command values."""
+    row=pc.c.parse(raw);fields={}
+    def visit(value,path):
+        if type(value) is dict and value:
+            for key,item in sorted(value.items()):visit(item,path+'/'+key.replace('~','~0').replace('/','~1'))
+        elif type(value) is list and value:
+            for index,item in enumerate(value):visit(item,path+'/'+str(index))
+        else:
+            item={'sha256':c.digest(c.raw(value)),'type':type(value).__name__}
+            # Scalar engine flags and empty defaults are useful diagnostics.
+            # Arbitrary strings (including argv, environment and paths) stay hashed.
+            if value is None or type(value) in (bool,int,float) or value==[] or value=={}:item['value']=value
+            elif type(value) is str and value in ('','none','private','rprivate','runc','no','SIGTERM','/app','1000:1000'):
+                item['value']=value
+            fields[path]=item
+    for key in ('config','host','mounts'):visit(row[key],'/'+key)
+    c.check(len(c.raw(fields))<=65536,'runtime-configuration-bound')
+    return fields
+
+
+def configuration_changes(before,after):
+    return {key:{'before':before.get(key),'after':after.get(key)} for key in sorted(set(before)|set(after))
+            if before.get(key)!=after.get(key)}
+
+
+def diagnostic_candidate(destination):
+    expected=c.stage(destination)
+    # Reconstruct only the already verified image identity. The full manifest
+    # hash must still match; changed packaged bytes cannot use this shortcut.
+    expected['manifest'].update(source_revision=DIAGNOSTIC_REVISION,source_tree=DIAGNOSTIC_TREE)
+    raw=c.raw(expected['manifest']);c.check(c.digest(raw)==DIAGNOSTIC_MANIFEST,'runtime-diagnostic-source-drift')
+    expected['manifest_sha256']=DIAGNOSTIC_MANIFEST
+    (destination/'app/manifest.json').write_bytes(raw)
+    return expected
 
 
 def command(case):return ['--disable-warning=ExperimentalWarning','/app/runtime-probe.mjs',case]
@@ -117,9 +158,13 @@ def case(out,cli,image_id,expected,name,report):
     def attach():
         try:outputs.append(run(cli+['start','--attach',cid],seconds=50,cap=65536))
         except BaseException as exc:errors.append(type(exc).__name__)
-    def observe(selector):
+    def observe(selector,phase=None):
         raw=run(cli+['inspect','--type','container','--format',pc.FORMAT,selector],seconds=4,cap=262144)
-        return isolation(raw,token,image_id,ipc,data,name)
+        target=isolation(raw,token,image_id,ipc,data,name)
+        if phase:
+            fields=configuration_fields(raw);receipt[phase+'_configuration']=fields
+            if phase!='before':receipt[phase+'_changes_from_created']=configuration_changes(receipt.get('before_configuration',{}),fields)
+        return target
     try:
         if name!='missing-endpoint':
             server=socket.socket(socket.AF_UNIX);server.settimeout(10)
@@ -136,27 +181,28 @@ def case(out,cli,image_id,expected,name,report):
             '--mount',f'type=bind,src={data},dst=/r1-data',image_id,*command(name)]
         attempted=True;cid=run(cli+args).decode().strip()
         c.check(re.fullmatch('[a-f0-9]{64}',cid),'runtime-create-unconfirmed');receipt['id']=cid
-        receipt['before']=observe(cid);c.check(not receipt['before']['running'],'runtime-prestart')
+        receipt['before']=observe(cid,'before');c.check(not receipt['before']['running'],'runtime-prestart')
         pc.c.write_new(root/'start-intent.json',c.raw({'schema':1,'id':cid,'target':receipt['before'],'created_utc':image.now()}))
         client=threading.Thread(target=attach);client.start()
         if broker:
             c.check(accepted.wait(10) and len(peer)==1 and not errors,'runtime-peer-unavailable')
-            running=observe(cid);validate_peer(peer[0],running)
+            running=observe(cid,'running');validate_peer(peer[0],running)
             receipt.update(running=running,peer=peer[0]);admitted.set()
         client.join(timeout=51);c.check(not client.is_alive() and len(outputs)==1 and not errors,'runtime-client-unconfirmed')
         receipt['attach_client_completed']=True
         if broker:broker.join(timeout=16);c.check(not broker.is_alive() and not errors,'runtime-broker-unconfirmed')
         result=pc.c.parse(outputs[0]);verify_result(result,expected,name)
-        after=observe(cid)
-        c.check(not after['running'] and after['pid']==0 and after['exit_code']==0 and
-                after['config_sha256']==receipt['before']['config_sha256'],'runtime-exit-unconfirmed')
+        receipt['result']=result
+        after=observe(cid,'after');receipt['after']=after
+        c.check(not after['running'] and after['pid']==0 and after['exit_code']==0,'runtime-exit-unconfirmed')
+        c.check(after['config_sha256']==receipt['before']['config_sha256'],'runtime-configuration-changed')
         receipt.update(result=result,after=after,finished_utc=image.now())
     finally:
         abort.set();admitted.set()
         if server:server.close()
         try:
             if attempted:
-                current=observe(cid or cname)
+                current=observe(cid or cname,'disposal');receipt['disposal_observation']=current
                 c.check(cid is None or current['id']==cid,'runtime-cleanup-identity');receipt['id']=current['id']
                 ack=run(cli+['rm','--force',current['id']],seconds=8).decode().strip()
                 c.check(ack==current['id'],'runtime-cleanup-unconfirmed');receipt['removed']=True
@@ -180,11 +226,13 @@ def case(out,cli,image_id,expected,name,report):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output-directory',required=True)
+    parser.add_argument('--diagnose-existing-image',action='store_true')
     args=parser.parse_args();os.umask(0o077);out=Path(args.output_directory).absolute()
     c.check(not out.exists() and all(not p.is_symlink() for p in (out,*out.parents)),'runtime-output')
     out.mkdir(mode=0o700);log=io.StringIO();stage='source'
     report={'schema':1,'status':'scanner-runtime-failed-live-blocked','started_utc':image.now(),
-        'cases':[],'production_modified':False,'provider_connection_opened':False,'activation_authorized':False}
+        'cases':[],'production_modified':False,'provider_connection_opened':False,'activation_authorized':False,
+        'diagnostic_only':args.diagnose_existing_image}
     try:
         report['source_sha256']=pins();c.check(not c.git('status','--porcelain').strip(),'dirty-source')
         stage='tests'
@@ -192,22 +240,28 @@ def main():
         result=unittest.TextTestRunner(stream=log,verbosity=2).run(unittest.defaultTestLoader.loadTestsFromModule(test_runtime))
         report['tests']={'run':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped)}
         c.check(result.wasSuccessful() and result.testsRun and not result.skipped,'runtime-tests')
-        node=shutil.which('node');c.check(node is not None,'runtime-node-unavailable')
-        node_log=run([node,'--test','--test-reporter=tap',str(c.REPO/'scanner/test/shared-startup.test.js'),
-            str(c.REPO/'scanner/test/pumpportal-shared.test.js')],seconds=30,cap=262144).decode()
-        log.write(node_log)
-        counts={key:int(re.search(r'^# '+key+r' (\d+)$',node_log,re.M).group(1)) for key in ('tests','fail','cancelled','skipped')}
-        c.check(counts['tests']>0 and not any(counts[k] for k in ('fail','cancelled','skipped')),'runtime-node-tests')
-        report['node_tests']=counts
-        stage='context';expected=c.stage(out/'context');report['candidate']=expected
+        if not args.diagnose_existing_image:
+            node=shutil.which('node');c.check(node is not None,'runtime-node-unavailable')
+            node_log=run([node,'--test','--test-reporter=tap',str(c.REPO/'scanner/test/shared-startup.test.js'),
+                str(c.REPO/'scanner/test/pumpportal-shared.test.js')],seconds=30,cap=262144).decode()
+            log.write(node_log)
+            counts={key:int(re.search(r'^# '+key+r' (\d+)$',node_log,re.M).group(1)) for key in ('tests','fail','cancelled','skipped')}
+            c.check(counts['tests']>0 and not any(counts[k] for k in ('fail','cancelled','skipped')),'runtime-node-tests')
+            report['node_tests']=counts
+        stage='context';expected=(diagnostic_candidate if args.diagnose_existing_image else c.stage)(out/'context');report['candidate']=expected
         c.check(os.getuid()==os.geteuid()==os.getgid()==os.getegid()==1000,'runtime-uid')
         image.host.trusted_local_docker();config=out/'empty-docker-config';config.mkdir(mode=0o700)
         cli=[image.host.DOCKER,'--config',str(config),'--host','unix://'+image.host.SOCKET]
-        c.check(run(cli+['image','inspect','--format','{{.Id}}',c.BASE]).decode().strip()==c.BASE,'runtime-base-unavailable')
-        pc.c.write_new(out/'build-intent.json',c.raw({'candidate':expected,'created_utc':image.now(),'retry_allowed':False}))
-        stage='build';image.bounded(cli+['build','--network=none','--pull=false','--no-cache','--iidfile',str(out/'image.id'),str(out/'context')],
-            seconds=120,record=out/'build.log',local_build=True)
-        image_id=(out/'image.id').read_text().strip();c.check(re.fullmatch('sha256:[a-f0-9]{64}',image_id),'runtime-image-unconfirmed')
+        if args.diagnose_existing_image:
+            image_id=DIAGNOSTIC_IMAGE
+            c.check(run(cli+['image','inspect','--format','{{.Id}}',image_id]).decode().strip()==image_id,'runtime-diagnostic-image-unavailable')
+            pc.c.write_new(out/'image.id',(image_id+'\n').encode())
+        else:
+            c.check(run(cli+['image','inspect','--format','{{.Id}}',c.BASE]).decode().strip()==c.BASE,'runtime-base-unavailable')
+            pc.c.write_new(out/'build-intent.json',c.raw({'candidate':expected,'created_utc':image.now(),'retry_allowed':False}))
+            stage='build';image.bounded(cli+['build','--network=none','--pull=false','--no-cache','--iidfile',str(out/'image.id'),str(out/'context')],
+                seconds=120,record=out/'build.log',local_build=True)
+            image_id=(out/'image.id').read_text().strip();c.check(re.fullmatch('sha256:[a-f0-9]{64}',image_id),'runtime-image-unconfirmed')
         report['image_id']=image_id
         stage='image-configuration'
         image_format='{"id":{{json .Id}},"user":{{json .Config.User}},"entrypoint":{{json .Config.Entrypoint}},"cmd":{{json .Config.Cmd}},"workdir":{{json .Config.WorkingDir}}}'
@@ -215,15 +269,19 @@ def main():
         c.check(image_config=={'id':image_id,'user':'1000:1000','entrypoint':pc.c.ENTRY,
             'cmd':['/app/verify.mjs'],'workdir':'/app'},'runtime-image-config')
         report['image_config']=image_config
-        stage='verify-image';image.run_case(cli,image_id,expected,'verify',report['cases'])
-        for name in CASES:stage=name;case(out,cli,image_id,expected,name,report)
+        if not args.diagnose_existing_image:
+            stage='verify-image';image.run_case(cli,image_id,expected,'verify',report['cases'])
+        for name in (('normal',) if args.diagnose_existing_image else CASES):stage=name;case(out,cli,image_id,expected,name,report)
         c.check(pins()==report['source_sha256'] and not c.git('status','--porcelain').strip(),'runtime-source-changed')
-        report['status']='scanner-runtime-offline-passed-live-blocked'
-        pc.c.write_new(out/'deployment-candidate.json',c.raw({'schema':1,'image_id':image_id,
-            'source_revision':expected['manifest']['source_revision'],'source_tree':expected['manifest']['source_tree'],
-            'manifest_sha256':expected['manifest_sha256'],'tested_scope':'full-scanner-startup-shared-ipc-storage-shutdown-offline',
-            'default_command':'verify-only','production_configuration_approved':False,'activation_authorized':False,
-            'provider_connection_opened':False,'production_data_used':False}))
+        if args.diagnose_existing_image:
+            report['status']='scanner-runtime-diagnostic-recorded-live-blocked'
+        else:
+            report['status']='scanner-runtime-offline-passed-live-blocked'
+            pc.c.write_new(out/'deployment-candidate.json',c.raw({'schema':1,'image_id':image_id,
+                'source_revision':expected['manifest']['source_revision'],'source_tree':expected['manifest']['source_tree'],
+                'manifest_sha256':expected['manifest_sha256'],'tested_scope':'full-scanner-startup-shared-ipc-storage-shutdown-offline',
+                'default_command':'verify-only','production_configuration_approved':False,'activation_authorized':False,
+                'provider_connection_opened':False,'production_data_used':False}))
     except BaseException as exc:
         report.update(failure_stage=stage,failure_type=type(exc).__name__,
             failure_code=str(exc) if type(exc) is ValueError and re.fullmatch('[a-z-]+',str(exc)) else 'operation-unconfirmed')
@@ -241,7 +299,7 @@ def main():
                     if name.endswith('/data/radar.sqlite'):
                         disposal=out/name.split('/')[0]/'disposal.json'
                         if not disposal.is_file():continue
-                        closed=pc.c.parse(pc.c.read(disposal,65536))
+                        closed=pc.c.parse(pc.c.read(disposal,2*1024**2))
                         if not closed.get('removed') or not closed.get('threads_joined'):continue
                     c.check(not path.is_symlink() and path.stat().st_size<=2*1024**2,'runtime-archive-bound')
                     raw=path.read_bytes();c.check(len(raw)<=2*1024**2,'runtime-archive-bound')
@@ -249,7 +307,7 @@ def main():
                     archive.writestr(name,raw)
             archive.writestr('members.json',c.raw({'schema':1,'members':members}))
     print(report['status']);print(out/'acceptance.zip')
-    return 0 if report['status']=='scanner-runtime-offline-passed-live-blocked' else 1
+    return 0 if report['status'] in ('scanner-runtime-offline-passed-live-blocked','scanner-runtime-diagnostic-recorded-live-blocked') else 1
 
 
 if __name__=='__main__':raise SystemExit(main())

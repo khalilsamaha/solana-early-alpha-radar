@@ -1,5 +1,69 @@
 # R1 full scanner runtime check — 16 November 2026
 
+## Current: supplied failure reviewed; narrow diagnostic required
+
+The supplied attempt at `6270ada51ae04e1e0efbc6895286a327f764ee5c` ran
+16 November, 17:45:41.191689–17:45:46.106080 UTC (**18:45:41–18:45:46 CET**).
+Archive SHA-256: `5e7fbc76602cbb6900d01092d3d98ea638801d70a326c02f655d5889e162b963`.
+Report SHA-256: `cb174d7a8f6bd18765e761cdede8dcd2cd266a9bc85d39fbdf36f73008455279`.
+All 72 source fingerprints and eleven indexed members match. The full staged
+candidate/manifest/Dockerfile reconcile with that revision. Eight Python and
+eighteen Node tests pass. Image-byte verification succeeded for all sixty packaged
+files in image
+`sha256:55d2f2369e0a03835441a02ad9a65568a9288c3753aa276a89ff252c62eeac7f`,
+manifest `bf330643bec5835413fbe85231f5bad876ecaf18a0b4c5e5618dcdddf8d7f694`.
+
+The normal application failed `runtime-exit-unconfirmed`. Its created and running
+configuration fingerprints differ (`1d364d95…` versus `1d64f0ff…`). The existing
+check combined stopped state, exit code and configuration equality, and only
+retained the application result/final state after that check succeeded. Therefore
+the archive cannot establish which final condition failed or identify the changed
+configuration fields. Do not assume the difference is benign Docker metadata.
+Reaching that check implies the producer accepted its application result, but the
+missing raw result prevents independent acceptance of health/statistics/shutdown.
+
+Both newly owned containers have distinct identities and removal receipts; the
+application attach client completed and threads joined. Its kernel peer UID/GID,
+PID and parent match the recorded running container. Independent immutable SQLite
+review returns integrity `ok`, three candidates, two launches and the expected
+covering index. Those persisted rows do not establish full runtime closure. The
+sequence-gap and missing-endpoint native cases were **not run**. This is supplied
+historical evidence, not reviewer host access or a current production observation.
+
+The checker now retains validated application results, final state and disposal
+observations before evaluating closure. Bounded field-level fingerprints and
+created-to-running/final differences preserve scalar flags and empty defaults;
+arbitrary environment, command and path strings remain hashed. Exit uncertainty
+and configuration drift have distinct failure codes. The exact configuration
+equality gate remains intact: a changed fingerprint still fails. Twelve focused
+tests pass, including modeled drift with preserved diagnostics, redaction,
+existing-image source matching and refusal to create a deployment candidate from
+a diagnostic-only run.
+
+**Run only `scripts/r1-scanner-runtime-diagnostic-kali.sh` once**, from the newly
+published pinned checkout named `source` in a fresh private review directory.
+Do not rerun the original full build/check command below. This uses the fixed
+already verified image above, creates at most one owned normal-case container,
+and collects the missing field differences. It runs the changed twelve-test
+checker suite; it does not repeat the unchanged eighteen Node tests, inert verifier,
+other native scenarios or earlier combined handoff batch. There is no image build,
+pull, source overlay, production service action or provider connection.
+
+The historical image identity is reconstructed only if its full manifest hash
+still matches the exact packaged bytes; checker-source pins remain distinct from
+the image's recorded source revision. Missing/changed image or source fails without
+a download or substitute. The same 50-second attach, bounded socket/inspect/cleanup,
+private fixture storage and network-none isolation apply. This is one diagnostic
+collection for a known missing observation, not a timing rehearsal or automatic
+retry. Configuration drift may correctly return exit 1 again; return
+**`results/acceptance.zip` regardless**. Preserve both review directories and IPC
+paths. Do not prune the image or repair old evidence.
+
+A diagnostic result never creates a deployment candidate or claims full runtime
+acceptance. Review the actual changed fields and final state before deciding any
+normalization or further changed-boundary test. Production and E0 remain unchanged.
+The original full-batch instructions below are historical pending that review.
+
 ## Accepted input and changed boundary
 
 The combined original/shared-session batch at `790e80536a28c11347fc2ba47d6d8871aea36def`
@@ -36,7 +100,7 @@ could not start its listener (`PermissionError`); it provides no application or
 container acceptance. Docker is unavailable here. Native image execution remains
 unverified until the supplied Kali result is reviewed.
 
-## One bounded Kali invocation
+## Original full-batch invocation — do not repeat unchanged
 
 Run `bash scripts/r1-scanner-runtime-kali.sh` once from the published pinned checkout
 named `source`, in a new private review directory. It first runs eight runtime

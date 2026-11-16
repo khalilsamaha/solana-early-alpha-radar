@@ -80,7 +80,7 @@ class RuntimeTests(unittest.TestCase):
             with self.assertRaises(ValueError):runtime.validate_peer(changed,target)
         with self.assertRaises(ValueError):runtime.validate_peer(peer,{'running':False,'pid':0})
 
-    def exercise(self,name,*,foreign=False,lost_create=False):
+    def exercise(self,name,*,foreign=False,lost_create=False,drift=False):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);ipc=root/'ipc';ipc.mkdir(mode=0o700);calls=[];receipts=[];state={};sent=threading.Event();started=threading.Event()
             class Conn:
@@ -111,6 +111,7 @@ class RuntimeTests(unittest.TestCase):
                 if action=='start':
                     self.assertTrue((root/name/'start-intent.json').exists())
                     state['row'].update(running=True,pid=100)
+                    if drift:state['row']['config']['AttachStdout']=True
                     started.set()
                     if name!='missing-endpoint':
                         if not sent.wait(3):raise ValueError('model-not-admitted')
@@ -129,7 +130,7 @@ class RuntimeTests(unittest.TestCase):
             with patch.object(runtime,'run',side_effect=command),patch.object(runtime.socket,'socket',return_value=Server()),\
                  patch.object(runtime.tempfile,'mkdtemp',return_value=str(ipc)),\
                  patch.object(runtime,'proc_identity',return_value={'pid':123,'ppid':100,'start_ticks':999}):
-                if foreign or lost_create:
+                if foreign or lost_create or drift:
                     with self.assertRaises(ValueError):runtime.case(root,[],c.BASE,expected(),name,{'cases':receipts})
                 else:runtime.case(root,[],c.BASE,expected(),name,{'cases':receipts})
             return calls,receipts
@@ -149,6 +150,57 @@ class RuntimeTests(unittest.TestCase):
         calls,receipts=self.exercise('missing-endpoint',lost_create=True)
         self.assertNotIn('start',calls);self.assertEqual(calls,['create','inspect','rm'])
         self.assertTrue(receipts[0]['removed']);self.assertFalse(receipts[0]['attach_client_completed'])
+
+    def test_configuration_drift_stays_failed_but_preserves_result_and_final_observation(self):
+        calls,receipts=self.exercise('normal',drift=True);r=receipts[0]
+        self.assertTrue(r['removed']);self.assertTrue(r['threads_joined'])
+        runtime.verify_result(r['result'],expected(),'normal')
+        self.assertFalse(r['after']['running']);self.assertEqual(r['after']['exit_code'],0)
+        self.assertNotEqual(r['before']['config_sha256'],r['after']['config_sha256'])
+        changes=r['after_changes_from_created'];self.assertEqual(set(changes),{'/config/AttachStdout'})
+        self.assertIsNone(changes['/config/AttachStdout']['before'])
+        self.assertEqual(changes['/config/AttachStdout']['after']['value'],True)
+        self.assertEqual(r['disposal_observation'],r['after'])
+
+    def test_configuration_diagnostics_hash_environment_commands_and_paths(self):
+        raw=row('token',Path('/tmp/private-ipc'),Path('/tmp/private-data'),'normal')
+        raw['config']['Env']=['PRIVATE_VALUE=secret-fixture-sentinel'];raw['config']['Cmd']=['secret-argument-sentinel']
+        fields=runtime.configuration_fields(c.raw(raw));encoded=c.raw(fields)
+        self.assertNotIn(b'secret-fixture-sentinel',encoded);self.assertNotIn(b'secret-argument-sentinel',encoded)
+        self.assertNotIn(b'/tmp/private',encoded)
+        self.assertEqual(fields['/host/Memory']['value'],512*1024**2)
+        self.assertEqual(fields['/config/Env/0']['sha256'],c.digest(c.raw(raw['config']['Env'][0])))
+
+    def test_diagnostic_candidate_requires_exact_previously_verified_packaged_bytes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            destination=Path(tmp)/'context';staged=c.stage(destination,clean=False)
+            with patch.object(c,'stage',return_value=copy.deepcopy(staged)):
+                result=runtime.diagnostic_candidate(destination)
+            self.assertEqual(result['manifest_sha256'],runtime.DIAGNOSTIC_MANIFEST)
+            self.assertEqual(result['manifest']['source_revision'],runtime.DIAGNOSTIC_REVISION)
+            changed=copy.deepcopy(staged);changed['manifest']['files']['runtime-probe.mjs']='0'*64
+            with patch.object(c,'stage',return_value=changed),self.assertRaisesRegex(ValueError,'runtime-diagnostic-source-drift'):
+                runtime.diagnostic_candidate(destination)
+
+    def test_diagnostic_runs_only_normal_on_existing_image_without_build_or_candidate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out=Path(tmp)/'results';suite=unittest.TestSuite([unittest.FunctionTestCase(lambda:None)])
+            image_config={'id':runtime.DIAGNOSTIC_IMAGE,'user':'1000:1000','entrypoint':pc.c.ENTRY,'cmd':['/app/verify.mjs'],'workdir':'/app'}
+            with patch.object(runtime.sys,'argv',['check_runtime.py','--output-directory',str(out),'--diagnose-existing-image']),\
+                 patch.object(runtime,'pins',return_value={}),patch.object(c,'git',return_value=b''),\
+                 patch.object(runtime.unittest.defaultTestLoader,'loadTestsFromModule',return_value=suite),\
+                 patch.object(runtime,'diagnostic_candidate',return_value=expected()),\
+                 patch.object(runtime.image.host,'trusted_local_docker'),\
+                 patch.object(runtime,'run',side_effect=[(runtime.DIAGNOSTIC_IMAGE+'\n').encode(),c.raw(image_config)]) as command,\
+                 patch.object(runtime.image,'bounded') as build,patch.object(runtime.image,'run_case') as verifier,\
+                 patch.object(runtime,'case') as app,patch.object(runtime.sys,'stdout',io.StringIO()):
+                self.assertEqual(runtime.main(),0)
+            build.assert_not_called();verifier.assert_not_called();self.assertEqual(command.call_count,2)
+            self.assertEqual(app.call_count,1);self.assertEqual(app.call_args.args[4],'normal')
+            self.assertEqual(app.call_args.args[2],runtime.DIAGNOSTIC_IMAGE)
+            report=json.loads((out/'report.json').read_bytes());self.assertTrue(report['diagnostic_only'])
+            self.assertEqual(report['status'],'scanner-runtime-diagnostic-recorded-live-blocked')
+            self.assertFalse((out/'deployment-candidate.json').exists());self.assertFalse((out/'build-intent.json').exists())
 
     def test_failed_preparation_still_exports_indexed_evidence_without_host_actions(self):
         with tempfile.TemporaryDirectory() as tmp:
