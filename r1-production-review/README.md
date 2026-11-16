@@ -1,5 +1,26 @@
 # Read-only production-context intake
 
+**Current:** the November 16 10:01:36 CET readiness report at `8eb329e1` completed
+every stage, with fourteen matching source fingerprints. That observation is
+accepted; no unchanged rerun is requested. It identifies nineteen running
+containers but gives no workload attribution for the eighteen other containers.
+
+`ownership.py` and `scripts/r1-production-ownership-kali.sh` collect that specific
+missing input. They anchor to the accepted report digest, locate only prior
+private readiness artifacts, and read fixed names/images/Compose labels/network
+and running/PID metadata for exact currently enumerated IDs in groups of eight.
+They read no command/environment values and invoke no container exec or mutation.
+Two censuses surround the inventory; changed mid-pass membership or failed input
+produces unavailable evidence, not a retry. At most 64 IDs, eight inspect calls
+and two census calls are allowed. Each Docker call retains the four-second,
+16 KiB bound and child cleanup. A nineteen-container pass uses five calls.
+
+The output is `production-ownership.zip`. Success still says review-pending:
+metadata alone cannot classify a workload's connections or prove global ownership.
+Host processes, other daemons/machines and provider usage are outside scope.
+Neither this inventory nor the prior readiness observation authorizes rollout.
+See the [current scope and evidence record](../docs/R1-ENGINEERING-TO-PILOT-20261116.md).
+
 **Current R1.A optional-field repair:** the supplied November 16 09:47:20 CET
 report identified `docker-template-field-unavailable-StopSignal` at
 `configuration-before`; later observations were not-run. The template now indexes

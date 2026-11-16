@@ -4,6 +4,23 @@ This library prepares immutable inputs for the next production integration. It
 does not launch a service, query Docker, read credentials, observe storage or
 open a provider. It does not relax the accepted offline coordinators.
 
+`observed_target.py` adds the concrete evidence binding needed before production
+handoff. `bind(report_bytes, expected_report_digest, expected_producer_pins)`
+requires externally retained evidence anchors and a coherent completed readiness
+report. It copies only the reviewed target/configuration projection, exact
+process generations, original Compose/volume metadata and ownership-review IDs.
+It never converts the projection digest into a full rollback configuration.
+`compare(...)` requires a distinct later report and rejects target or census drift.
+Producer revisions may differ only through separately supplied reviewed pin maps.
+Report integrity is not authenticity against a writer able to replace both bytes
+and the external anchors. A later timestamp is not proof of current host state.
+
+Both APIs are pure read-only evidence operations; neither reads the host nor
+dispatches a command. They do not automatically classify other containers,
+prove global exclusivity, grant activation or release any hold. Wiring this
+component into the actual production handoff remains part of R1.B. The accepted
+historical readiness artifact stays at its original producer revision.
+
 `build(config, policy)` takes strictly named inputs. Unknown values are null and
 remain named blockers. Configuration binds the image digest, scanner and rollback
 configuration hashes, owner source hash, stable registry/socket, capture path,

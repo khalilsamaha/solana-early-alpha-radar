@@ -1,6 +1,88 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Current R1.A/B disposition: omitted Docker field identified and repaired
+## Current R1.A/B disposition: readiness accepted; ownership review remains
+
+The supplied readiness observation at `8eb329e1` ran November 16,
+09:01:36.080334–09:01:36.904135 UTC (10:01:36 CET). Archive SHA-256:
+`8ba2d8b49c24ea4dc9318542f686be656473bc3313efb51ff59db793171f39c3`.
+The separately uploaded JSON is byte-identical to its ZIP member; report SHA-256:
+`5a6c1064aa4cfc43a18a2f589e88e7476de8636306a343af41c801483303df90`.
+All fourteen producer fingerprints match the published source. All fourteen
+collection stages completed, the metadata digest recomputes, and nested target,
+process and configuration bindings agree. The optional-field repair therefore
+has supplied-host acceptance. Do not repeat that unchanged readiness check.
+
+The report observes the existing scanner running/healthy at that time, the
+original Compose project/location and named data volume, direct-default source,
+no shared socket setting, and metadata-only absence of `/app/.env`. The proposed
+home filesystem was readable/writable and reported 212,566,417,408 available
+bytes; this is a historical sample, not reservation or approved retention.
+Existing data-volume host capacity was unavailable and remains unknown. The
+configured stop timeout was 35 seconds; the effective stop signal remains
+unconfirmed. No current health, balance, capacity or direct reviewer host-access
+claim is made.
+
+The all-container census contains **19** running containers, only one of them
+project-labelled. The other **18** identities have no names/images/Compose
+workload attribution in the readiness report. Their relationship to the planned
+single-owner deployment has not been reviewed. R1.A's observation subtask is
+accepted, but ownership review remains open; R1.A as a whole is not marked
+complete. Unavailable existing-volume capacity and unconfirmed stop behavior are
+retained constraints, not reasons to change permissions or rehearse again.
+
+### R1.B engineering advanced against the accepted input
+
+`r1-deployment/observed_target.py` now validates and binds the exact historical
+report digest, independently retained producer pins, complete stage ledger,
+configuration projection, container/image/start identity, process generations,
+Compose locations and named data volume. Its read-only comparison rejects stale
+or overlapping observations, configuration/process/volume/Compose drift, and
+changes in the ownership-review census. Different producer versions require
+separately reviewed pins; old evidence is not relabelled. Neither a matching
+projection nor its digest is a complete rollback configuration, freshness-now
+proof, global ownership proof or activation authority. The binding accepted the
+actual supplied report locally. No fresh host observation was performed here.
+
+This is a production admission guard component, not a production controller.
+It still needs wiring into the complete handoff/worker/preservation candidate;
+R1.B remains partial. Existing accepted synthetic controllers remain unchanged.
+Local validation passed **51 deployment tests and 59 production-review tests**,
+plus shell syntax and source hygiene. No full-phase PR, CI, merge or rollout is
+claimed. Source-only development publication remains authorized.
+
+### One new bounded ownership input, not another readiness run
+
+`scripts/r1-production-ownership-kali.sh <accepted-report-sha256>` locates only
+prior private `radar-r1-readiness-*/results/report.json` artifacts under HOME,
+with at most 64 matching candidates and 64 KiB per file. It requires the exact
+accepted report digest above; it does not recreate missing evidence. It then
+checks the local Docker path, takes a running-container census, and requests
+names, image IDs/references, Compose project/service labels, network mode and
+running/PID metadata for those exact IDs in batches of eight. A final census and
+source check detect changes during collection. No inspection by a mutable name,
+container exec, environment/command values, mounted contents, provider/RPC call
+or mutation is used.
+
+For the observed 19 containers this requires **five** Docker requests; the hard
+64-container limit permits at most ten. Each has the existing four-second command
+deadline, 16 KiB output ceiling and bounded child cleanup. Per-command bounds are
+not a guarantee on all filesystem operation time. Changed membership since the
+historical baseline is retained for review; change during the inventory makes the
+result unavailable, with no automatic retry. Workloads are not automatically
+classified as safe from their names/images. Host processes, other daemons/machines
+and provider account usage remain outside this collector. It cannot close global
+ownership by proving absence.
+
+Run it once at the newly published pinned source and return
+`results/production-ownership.zip`, including on exit 1. Review files and a
+temporary empty Docker client directory are the only writes. No sudo, permission
+change, restart, deletion of old reports or repeat is requested. The next decision
+is to classify the newly identified workloads and define the exact ownership
+scope for the handoff; it is not automatic activation. Any further host request
+must name a specific remaining dependency. R1.C combined acceptance, R1.D rollout
+terms, live collection and E0 remain separate. E0 holds are preserved.
+
+## Previous optional-field repair and its host request
 
 The next supplied Kali report at `b4f0d7e1` ran November 16,
 08:47:20.374329–08:47:20.449588 UTC (09:47:20 CET). Its archive SHA-256 is
