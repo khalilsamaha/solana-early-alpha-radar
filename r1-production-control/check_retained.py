@@ -13,10 +13,36 @@ import unittest
 import uuid
 import zipfile
 import production_control as p
+import command_io
 c = p.c
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(p.ROOT/'r1-image'))
 import check_image as image
+# Never emit arbitrary exception text, raw diagnostics or frame locals.
+SAFE_CODES = {'adapter-target','adapter-action','command-ack','target-drift','restart-unconfirmed',
+              'stop-unconfirmed','start-unconfirmed','projection-bound','projection-fields',
+              'engine-state-unavailable','configuration-fields','restart-policy','stop-signal',
+              'stop-timeout-required','target-fields','target-identity','target-name','target-policy',
+              'target-state','target-time','journal-changed','clock-regressed','short-write',
+              'command-timeout','command-output-limit','command-diagnostic-limit','command-failed',
+              'deliberate-lost-response','cleanup-identity','cleanup-ack','fixture-memory',
+              'ready-timeout','ready-output','actor-ready','create-identity','create-state','target',
+              'drift-ack','source-change','dirty-source','tests','uid','image-unavailable'}
+
+
+def diagnostic(exc):
+    if isinstance(exc, ValueError) and len(exc.args)==1 and type(exc.args[0]) is str and exc.args[0] in SAFE_CODES:
+        return exc.args[0]
+    for cls, code in ((PermissionError,'permission-denied'),(FileNotFoundError,'path-unavailable'),
+                      (KeyError,'required-field-unavailable'),(UnicodeError,'encoding-invalid')):
+        if isinstance(exc,cls):return code
+    return 'operation-unavailable'
+
+
+def run(command, **kwargs):
+    return command_io.bounded(command,env=image.host.ENV,**kwargs)
+
+
 CASES = ('normal', 'lost-stop', 'lost-start', 'configuration-drift')
 
 
@@ -29,7 +55,7 @@ def pins():
 
 
 def fixture(cli, selector, token, *, changed=False):
-    row = c.parse(image.bounded(cli+['inspect','--type','container','--format',c.FORMAT,selector],seconds=4))
+    row = c.parse(run(cli+['inspect','--type','container','--format',c.FORMAT,selector],seconds=4))
     # Only this known resource change is allowed for disposal in the drift case.
     c.check(row['memory'] == (96 if changed else 128)*1024**2, 'fixture-memory')
     c.isolated({**row, 'memory':128*1024**2}, token)
@@ -38,10 +64,16 @@ def fixture(cli, selector, token, *, changed=False):
 
 class Backend(p.Docker):
     def __init__(self, cli, target, lost):
-        super().__init__(cli,target,image.bounded)
-        self.lost=lost;self.reached=False;self.calls=[]
+        super().__init__(cli,target,run)
+        self.lost=lost;self.reached=False;self.calls=[];self.phase='not-started'
+        self.command_events=[];self.last_observation=None
+        self.bounded=lambda args,**kw:run(args,events=self.command_events,**kw)
+    def observe(self,cid):
+        self.phase='inspect'
+        self.last_observation=super().observe(cid)
+        return self.last_observation
     def mutate(self, action, cid):
-        self.calls.append(action)
+        self.calls.append(action);self.phase='dispatch-'+action
         result=super().mutate(action,cid)
         if action == self.lost:
             self.reached=True
@@ -55,6 +87,7 @@ def case(out, cli, name, report):
     receipt={'case':name,'token':token,'started_utc':c.now(),'removed':False,'client_reaped':False}
     report['cases'].append(receipt)
     cid=None;attempted=False;process=None;changed=False;backend=None
+    phase='create'
     try:
         args=['create','--name',cname,'--label',c.LABEL+'='+token,'--pull=never','--network=none',
               '--restart=unless-stopped','--read-only','--init','--user=1000:1000','--cap-drop=ALL',
@@ -62,9 +95,10 @@ def case(out, cli, name, report):
               '--cpus=1','--pids-limit=32','--log-driver=none','--no-healthcheck',
               '--stop-timeout=2','--stop-signal=SIGTERM',
               '--env','R1_CONTROL_TEST_VALUE=nonsecret-fixture',c.IMAGE,*c.CMD]
-        attempted=True;cid=image.bounded(cli+args).decode().strip()
+        attempted=True;cid=run(cli+args).decode().strip()
         c.check(re.fullmatch('[a-f0-9]{64}',cid),'create-identity')
         row=fixture(cli,cid,token);c.check(row['id']==cid and not row['running'],'create-state')
+        phase='attach-ready'
         process=subprocess.Popen(cli+['start','--attach',cid],stdin=subprocess.DEVNULL,
                                  stdout=subprocess.PIPE,stderr=subprocess.STDOUT,
                                  env=image.host.ENV,start_new_session=True)
@@ -76,24 +110,27 @@ def case(out, cli, name, report):
                 value=os.read(process.stdout.fileno(),1);c.check(value and len(ready)<128,'ready-output');ready.extend(value)
         c.check(bytes(ready)==b'r1-control-ready\n','actor-ready')
         fixture(cli,cid,token)
-        target=p.project(image.bounded(cli+['inspect','--type','container','--format',p.FORMAT,cid],seconds=4,cap=262144))
+        phase='target-projection'
+        target=p.project(run(cli+['inspect','--type','container','--format',p.FORMAT,cid],seconds=4,cap=262144))
         c.check(target['id']==cid and target['image']==c.IMAGE and target['running'],'target')
         backend=Backend(cli,target,{'lost-stop':'stop','lost-start':'start_original'}.get(name))
         drift_refused=False
+        phase='control'
         with p.Control(registry,target,c.digest(c.raw(pins())),backend) as control:
             try:
                 control.step('disable_restart');control.step('stop')
                 if name=='configuration-drift':
                     # Deliberate test-only resource drift, on the exact owned stopped fixture.
                     fixture(cli,cid,token)
-                    ack=image.bounded(cli+['update','--memory=96m',cid]).decode().strip()
+                    ack=run(cli+['update','--memory=96m',cid]).decode().strip()
                     changed=True;c.check(ack==cid,'drift-ack')
                     fixture(cli,cid,token,changed=True)
                 control.step('start_original');control.step('restore_restart')
             except ValueError as exc:
-                if name=='configuration-drift':
-                    c.check(changed and exc.args==('target-drift',),'unexpected-drift-failure');drift_refused=True
-                else:c.check(backend.reached and name in ('lost-stop','lost-start'),'unexpected-failure')
+                if name=='configuration-drift' and changed and exc.args==('target-drift',):
+                    drift_refused=True
+                elif not (backend.reached and name in ('lost-stop','lost-start') and exc.args==('deliberate-lost-response',)):
+                    raise
         before={f.name:f.read_bytes() for f in registry.iterdir()}
         state=p.inspect(registry)
         c.check(before=={f.name:f.read_bytes() for f in registry.iterdir()},'recovery-write')
@@ -108,14 +145,24 @@ def case(out, cli, name, report):
                     not state['original_restored'],'uncertainty-lost')
         receipt.update(target=target,recovery=state,commands=backend.calls,
                        fault_reached=backend.reached or drift_refused,finished_utc=c.now())
+    except BaseException as exc:
+        receipt['failure']={'phase':phase,'adapter_phase':backend.phase if backend else None,'code':diagnostic(exc)}
+        raise
     finally:
+        if backend:
+            receipt['commands_attempted']=list(backend.calls)
+            receipt['last_observation']=backend.last_observation
+            receipt['command_observations']=list(backend.command_events)
         try:
             if attempted:
                 row=fixture(cli,cid or cname,token,changed=changed)
                 c.check(cid is None or row['id']==cid,'cleanup-identity')
                 receipt['id']=row['id']
-                ack=image.bounded(cli+['rm','--force',row['id']]).decode().strip()
+                ack=run(cli+['rm','--force',row['id']]).decode().strip()
                 c.check(ack==row['id'],'cleanup-ack');receipt['removed']=True
+        except BaseException as exc:
+            receipt['cleanup_failure']={'code':diagnostic(exc)}
+            raise
         finally:
             if process:
                 try:
@@ -150,12 +197,12 @@ def main():
         c.check(os.getuid()==os.geteuid()==os.getgid()==os.getegid()==1000,'uid')
         config=out/'empty-docker-config';config.mkdir(mode=0o700)
         cli=[image.host.DOCKER,'--config',str(config),'--host','unix://'+image.host.SOCKET]
-        c.check(image.bounded(cli+['image','inspect','--format','{{.Id}}',c.IMAGE]).decode().strip()==c.IMAGE,'image-unavailable')
+        c.check(run(cli+['image','inspect','--format','{{.Id}}',c.IMAGE]).decode().strip()==c.IMAGE,'image-unavailable')
         for name in CASES:stage=name;case(out,cli,name,report)
         stage='final';c.check(pins()==report['source_sha256'] and not image.c.git('status','--porcelain').strip(),'source-change')
         report['status']='retained-control-offline-passed-live-blocked'
     except BaseException as exc:
-        report.update(failure_stage=stage,failure_type=type(exc).__name__)
+        report.update(failure_stage=stage,failure_type=type(exc).__name__,failure_code=diagnostic(exc))
     finally:
         report['finished_utc']=c.now();(out/'report.json').write_bytes(c.raw(report));(out/'validation.log').write_text(log.getvalue())
         with zipfile.ZipFile(out/'acceptance.zip','x',compression=zipfile.ZIP_STORED) as archive:

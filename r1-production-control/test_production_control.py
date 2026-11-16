@@ -142,7 +142,7 @@ class Tests(unittest.TestCase):
         def run(args,**kw):calls.append((args,kw));return (target()['id']+'\n').encode()
         adapter=p.Docker(['/fixture/docker'],target(),run)
         for action in p.ACTIONS:self.assertEqual(adapter.mutate(action,target()['id']),target()['id'])
-        self.assertEqual(calls[1],(['/fixture/docker','stop','--time','35',target()['id']],{'seconds':40,'cap':256}))
+        self.assertEqual(calls[1],(['/fixture/docker','stop','--timeout','35',target()['id']],{'seconds':40,'cap':256}))
         self.assertEqual(calls[2][0],['/fixture/docker','start',target()['id']])
         with self.assertRaises(ValueError):adapter.mutate('stop','e'*64)
         with self.assertRaises(ValueError):adapter.mutate('rm',target()['id'])

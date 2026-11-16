@@ -1,5 +1,46 @@
 # R1.A inventory acceptance and R1.B retained-container adapter
 
+## Supplied native failure and diagnostic/CLI repair
+
+The first retained-control host run on `f0f778af` was 16 November 2026,
+10:44:48.646270–10:44:50.636398 UTC (11:44:48–11:44:50 CET).
+Report SHA-256: `81736bddaf9cdcb16dcac24e2758aac53c415ace05c2d70c85d2eac034fc6d0b`.
+All 11 source fingerprints match. The standalone JSON and archived report agree;
+the supplied 21-test log reports no errors/failures/skips. Independent journal
+replay confirms three records: disable-restart intent/confirmation, then pending
+stop intent. No stop confirmation or restoration exists. The report records the
+single owned fixture removed and attached client reaped. The other three cases
+were not run. This is a failed native check, not acceptance or an E0 observation.
+
+The runner replaced the original error with `unexpected-failure` and exported
+only ValueError. The precise cause of this host failure cannot be established
+from those artifacts. Code review found a concrete compatibility risk: deprecated
+`--time` plus merged stderr/stdout can contaminate the exact ID acknowledgment.
+A local disposable subprocess reproduces that failure mechanism with a CLI-style
+warning and ID; this is not evidence that Kali emitted that warning.
+
+Repair: use `--timeout`; drain stdout and stderr separately within the unchanged
+per-command time/output budget (stderr independently capped at 4 KiB); accept an
+ack only from stdout with zero exit and unchanged independent postconditions.
+Stderr presence is recorded as a boolean, never its raw content. Kill/reap client
+groups on output/deadline failure, including an exited parent whose child retains
+a pipe. A timed-out client still cannot establish whether Docker acted.
+
+Preserve the actual constant error category, control/adapter phase, attempted
+commands, per-command completion/diagnostic-presence markers and last successfully
+validated sanitized projection. Failed cleanup has a separate error category.
+Unknown exception text is never exported. No retries, weaker acknowledgment,
+weaker postconditions or inferred confirmation are added. The existing failed
+journal remains pending even though disposal removed its test container.
+
+All **29** targeted tests pass, including stderr separation, warning-contaminated
+legacy acknowledgment reproduction, nonzero exit with plausible stdout, separate
+output limits, deadlines/client-group cleanup, secret redaction, and original
+failure preservation through cleanup. Native Docker remains unavailable here.
+One changed-code invocation of the same isolated four-case Kali batch is required;
+retain the previous evidence and use a fresh attempt directory. The previously
+stated native success remains unclaimed.
+
 ## Accepted supplied inventory
 
 The supplied report ran on 16 November 2026 from 10:23:54.176867 to

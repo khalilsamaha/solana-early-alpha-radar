@@ -44,6 +44,18 @@ no compare-and-swap transaction across inspect/update/start: an external control
 can race these checks. Production admission must exclude competing controllers;
 this adapter alone does not establish that condition.
 
+## CLI diagnostics repair after first native failure
+
+The first supplied host run passed 21 unit tests but stopped with a pending stop
+intent in its first case. It did not pass native acceptance. See the dated evidence
+record for exact timestamps and limits. The adapter now uses `--timeout`; command
+stdout/stderr are separately bounded and drained. Only stdout can acknowledge the
+operation. Zero exit and exact ID plus independent postconditions remain required;
+a warning never becomes part of the ID. Only stderr presence and constant failure
+categories are reported, along with phase and last valid sanitized projection.
+No raw diagnostic or environment value is retained. Client termination does not
+prove that a Docker mutation was cancelled. Pending operations remain pending.
+
 ## Native changed-boundary check
 
 Run `scripts/r1-retained-control-kali.sh` from a clean pinned checkout named

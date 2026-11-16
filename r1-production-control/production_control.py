@@ -164,7 +164,7 @@ class Docker:
     def mutate(self, action, cid):
         c.check(cid == self.target['id'] and action in ACTIONS, 'adapter-action')
         commands = {'disable_restart': ['update', '--restart=no', cid],
-                    'stop': ['stop', '--time', str(self.target['stop_seconds']), cid],
+                    'stop': ['stop', '--timeout', str(self.target['stop_seconds']), cid],
                     'start_original': ['start', cid],
                     'restore_restart': ['update', '--restart=unless-stopped', cid]}
         seconds = self.target['stop_seconds']+5 if action == 'stop' else 10
