@@ -12,6 +12,7 @@ import stat
 import tempfile
 import zipfile
 import intake as i
+import readiness_diagnostics as diagnostics
 
 FORMAT = ('{"id":{{json .Id}},"image":{{json .Image}},"started":{{json .State.StartedAt}},'
           '"cmd":{{json .Config.Cmd}},"entrypoint":{{json .Config.Entrypoint}},'
@@ -35,7 +36,7 @@ def pins():
 
 
 def configuration(config):
-    data = i.command(config, 'inspect', '--type', 'container', '--format', FORMAT, i.host.TARGET)
+    data = diagnostics.command(config, 'inspect', '--type', 'container', '--format', FORMAT, i.host.TARGET)
     row = i.host.strict_json(data)
     i.check(type(row) is dict and set(row) == FIELDS, 'readiness-configuration-shape')
     i.check(isinstance(row['id'], str) and re.fullmatch('[a-f0-9]{64}', row['id']) and
@@ -90,7 +91,7 @@ def configuration(config):
 
 
 def census(config):
-    data = i.command(config, 'ps', '--no-trunc', '--format', '{{.ID}}')
+    data = diagnostics.command(config, 'ps', '--no-trunc', '--format', '{{.ID}}')
     values = data.decode('ascii').splitlines()
     i.check(len(values) <= 64 and len(set(values)) == len(values) and
             all(re.fullmatch('[a-f0-9]{64}', value) for value in values), 'readiness-container-census')
@@ -126,26 +127,34 @@ def dotenv_presence(pid):
         return {'observed': False, 'present': None, 'contents_read': False}
 
 
-def observe(config, storage_root):
-    before = pins(); started = i.stamp()
-    i.host.trusted_local_docker()
-    first = configuration(config); members = census(config)
-    context = i.observe(config)
+def observe(config, storage_root, *, trace=None, source=None):
+    trace = diagnostics.Trace() if trace is None else trace
+    before = trace.run('source-before', pins) if source is None else source
+    started = i.stamp()
+    trace.run('local-docker-path', i.host.trusted_local_docker)
+    first = trace.run('configuration-before', configuration, config)
+    members = trace.run('census-before', census, config)
+    context = trace.run('context-and-process', i.observe, config)
     identity = context['identity_observation']
-    dotenv = dotenv_presence(identity['main_process']['pid'])
-    capacity = storage(storage_root)
-    mount_capacity = [{'destination': m['destination'], 'sample': storage(m['source'])}
-                      for m in context['metadata']['mounts'] if m['destination'] == '/app/data']
-    second = configuration(config); after_members = census(config)
-    i.check(first == second and members == after_members, 'readiness-configuration-changed')
-    i.check(first['container_id'] == context['metadata']['id'] and first['image'] == context['metadata']['image'] and
-            first['started'] == context['metadata']['started'] and first['container_id'] in members,
-            'readiness-target-changed')
+    dotenv = trace.run('dotenv-metadata', dotenv_presence, identity['main_process']['pid'])
+    capacity = trace.run('proposed-storage', storage, storage_root)
+    mount_capacity = trace.run('data-mount-storage', lambda: [
+        {'destination': m['destination'], 'sample': storage(m['source'])}
+        for m in context['metadata']['mounts'] if m['destination'] == '/app/data'])
+    second = trace.run('configuration-after', configuration, config)
+    after_members = trace.run('census-after', census, config)
+    trace.run('configuration-consistency', i.check,
+              first == second and members == after_members, 'readiness-configuration-changed')
+    trace.run('target-consistency', lambda: i.check(
+        first['container_id'] == context['metadata']['id'] and first['image'] == context['metadata']['image'] and
+        first['started'] == context['metadata']['started'] and first['container_id'] in members,
+        'readiness-target-changed'))
     # Detect restart/PID reuse while filesystem observations were taken.
-    i.check(i.metadata(config) == context['metadata'] and
-            i.host.process_identity(identity['main_process']['pid']) == identity['main_process'],
-            'readiness-process-changed')
-    i.check(pins() == before, 'readiness-source-changed')
+    trace.run('process-consistency', lambda: i.check(
+        i.metadata(config) == context['metadata'] and
+        i.host.process_identity(identity['main_process']['pid']) == identity['main_process'],
+        'readiness-process-changed'))
+    trace.run('source-after', lambda: i.check(pins() == before, 'readiness-source-changed'))
     findings = []
     for field in ('command_is_node_scanner', 'entrypoint_is_standard_node', 'working_directory_is_app',
                   'data_directory_is_app_data', 'all_capabilities_dropped', 'no_new_privileges',
@@ -170,6 +179,30 @@ def observe(config, storage_root):
             'provider_connection_opened': False, 'activation_authorized': False}
 
 
+def collect(config, storage_root):
+    trace = diagnostics.Trace()
+    report = {'schema_version': 2, 'status': 'deployment-inputs-unavailable',
+              'observation_attempted': False, 'source_sha256': {},
+              'production_modified': False, 'provider_connection_opened': False,
+              'activation_authorized': False, 'automatic_resume_allowed': False,
+              'raw_diagnostics_exported': False, 'started_utc': i.stamp()}
+    try:
+        report['source_sha256'] = trace.run('source-before', pins)
+        report['observation_attempted'] = True
+        observation = observe(config, storage_root, trace=trace, source=report['source_sha256'])
+        report['observation'] = observation
+        report['status'] = 'deployment-inputs-observed-rollout-pending'
+    except Exception as exc:
+        # Preserve the original safe headline, with source-bound diagnostic detail.
+        # Never publish partial configuration/identity as a coherent observation.
+        report['error'] = 'deployment-inputs-observation-unavailable'
+        report['failure'] = trace.failure or {
+            'stage': 'report-assembly', 'code': diagnostics.code(exc), 'site': diagnostics.site(exc)}
+    report['stages'] = trace.rows
+    report['finished_utc'] = i.stamp()
+    return report
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True); parser.add_argument('--storage-root', required=True)
@@ -177,17 +210,19 @@ def main():
     out = Path(args.output).absolute()
     i.check(not out.exists() and all(not p.is_symlink() for p in (out, *out.parents)), 'readiness-output-exists')
     out.mkdir(mode=0o700)
-    report = {'status': 'deployment-inputs-unavailable', 'observation_attempted': False,
-              'source_sha256': pins(), 'production_modified': False, 'provider_connection_opened': False,
+    report = {'schema_version': 2, 'status': 'deployment-inputs-unavailable', 'observation_attempted': False,
+              'production_modified': False, 'provider_connection_opened': False,
               'activation_authorized': False, 'started_utc': i.stamp()}
     try:
         with tempfile.TemporaryDirectory(prefix='r1-readiness-empty-config-') as temporary:
-            report['observation_attempted'] = True
-            report['observation'] = observe(Path(temporary), Path(args.storage_root))
-        report['status'] = 'deployment-inputs-observed-rollout-pending'
-    except Exception:
+            report = collect(Path(temporary), Path(args.storage_root))
+    except Exception as exc:
         # Never serialize exception text: Docker/proc/config may contain secrets.
+        report.pop('observation', None)
+        report['status'] = 'deployment-inputs-unavailable'
         report['error'] = 'deployment-inputs-observation-unavailable'
+        report['failure'] = {'stage': 'private-client-configuration',
+                             'code': diagnostics.code(exc), 'site': diagnostics.site(exc)}
     report['finished_utc'] = i.stamp()
     i.host.write_report(out/'report.json', report)
     with zipfile.ZipFile(out/'production-readiness.zip', 'x', compression=zipfile.ZIP_STORED) as archive:

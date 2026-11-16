@@ -1,5 +1,31 @@
 # Read-only production-context intake
 
+**Current R1.A diagnostic repair:** the November 16 06:34:22 CET readiness
+attempt was unavailable and discarded its failure stage. The repaired readiness
+collector emits schema version 2 with a fixed `stages` ledger and safe `failure`
+stage/code/source-line data. It retains no raw exception or Docker diagnostic.
+Later stages are not-run; a stage marked completed means its function returned,
+not that optional storage or configuration findings passed. An unavailable result
+has no coherent `observation`, returns exit 1 and still produces the private ZIP.
+No automatic retry is performed. The accepted original context check below does
+not need another independent run. See the current disposition and exact changed
+host-check scope in the [engineering record](../docs/R1-ENGINEERING-TO-PILOT-20261116.md).
+
+The readiness-specific command runner reads at most 16 KiB stdout and 4 KiB stderr
+per request, within four seconds plus bounded child cleanup. Only fixed categories
+such as template-unavailable or permission-denied leave stderr handling; a missing
+template field may be identified only from the fixed source-owned field allowlist.
+These categories do not prove a root cause. Reports do not export stderr, stack locals,
+raw commands, environment values or credentials. The successful configuration
+projection is unchanged. The whole readiness path has at most eleven Docker
+requests; source/proc/filesystem metadata observations retain their existing
+read-only scope. The per-command deadline is not a whole-program filesystem
+deadline. No additional production request is added for diagnosis.
+
+Local changed-boundary validation:
+`python3 -B -W error::ResourceWarning -m unittest discover -s r1-production-review -p 'test_*.py'`.
+These tests use disposable executable fixtures, not Docker or the production host.
+
 **November 16:** the original context check has passed. The next host command is
 `scripts/r1-production-readiness-kali.sh`, which gathers missing deployment inputs
 without rerunning tests. Unlike the original intake below, it reads Docker

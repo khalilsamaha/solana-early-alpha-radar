@@ -1,5 +1,67 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
+## Current R1.A/B disposition: diagnostic repair, host result required
+
+The owner adopted the gate-map v1 and authorized continuation/publication on
+November 16. R1.A (deployment inputs) remains blocked; R1.B (production candidate)
+remains partial. This repair does not complete either gate or reopen accepted
+B0/B1, H1, C1 or native/component acceptance.
+
+The supplied readiness attempt at `dd31e745` ran November 16,
+05:34:21.958609–05:34:22.031502 UTC (06:34:21–06:34:22 CET). Its archive SHA-256 is
+`b2bc5283c2571ba805599272167bcea1011f22ff2f8e88d1aae15e36783a5339`.
+The standalone report is byte-identical to its ZIP member, and all twelve source
+fingerprints matched. The result is `deployment-inputs-unavailable`, with no
+retained observation. No current production configuration or host root cause can
+be inferred from that report. This is supplied evidence, not reviewer host access.
+
+**Diagnosed code defect:** the readiness entry point discarded every exception's
+stage and category. It was therefore impossible to distinguish a Docker request
+failure, malformed metadata, inaccessible process information or drift. The
+repair retains a fixed stage ledger, safe allowlisted error codes, and source-file
+line numbers. Later stages remain explicitly not-run. No partial configuration
+is promoted to a coherent observation, and failed reports still return nonzero.
+Missing optional filesystem facts remain unavailable inside an otherwise coherent
+observation; a completed collection stage is not an adequacy/activation pass.
+
+The two readiness configuration requests and two all-container censuses now drain
+bounded stderr in memory and publish only a constant diagnostic category, including
+a missing template field only when it matches the fixed source-owned allowlist. They
+retain the same trusted local endpoint, empty client configuration, read-only
+request shapes, four-second command deadline and 16 KiB stdout ceiling; stderr
+has a separate 4 KiB ceiling. No raw stderr, exception message, traceback locals,
+credentials or arbitrary command values are exported. A CLI diagnostic category
+is a clue, not proof of the underlying cause. The accepted context/identity
+collector and its request semantics are unchanged.
+
+Local validation: 42 production-review tests passed, including every collection
+stage failing in turn, source/config/process drift, secret-bearing exceptions,
+private failed archives, and actual disposable subprocess output-limit/timeout/
+cleanup cases. These run without Docker, Kali or provider access. Source hygiene
+also passed. Historical accepted results are not relabelled with the new source
+hashes, and the original failed artifact remains intact.
+
+**One changed Kali check is now needed:** run
+`scripts/r1-production-readiness-kali.sh` once from the newly published pinned
+checkout named `source`, under a fresh private review directory. It runs no unit
+suite, creates no containers, and performs at most eleven read-only Docker
+requests (four seconds each, plus bounded child cleanup), with the existing
+bounded process reads and metadata-only storage observations. Only private review
+files and a temporary empty Docker client directory are written. Do not use sudo,
+change permissions, restart services, rerun on failure, or delete old results.
+Return `results/production-readiness.zip` even when the command exits 1.
+
+The purpose is to obtain the missing coherent inputs **or identify the actual
+failed stage/category on Kali**. A diagnostic failure answers that narrower
+question but does not pass R1.A. After review, either use the verified inputs for
+R1.B, or fix the identified specific dependency; any further host request must
+name that change. No unchanged image/native rehearsal, deployment, signing,
+funding, journal mutation, provider/RPC request or E0 observation is included.
+Full phase consolidation/PR/CI remains after applicable acceptance. Prior effort
+is still unquantified; this record neither invents nor resets the historical cap.
+
+## Earlier corrective batch and accepted context
+
 The owner requested an end to fragmented test/publication cycles and directed
 work toward a bounded real-world measurement pilot. This corrective batch is
 based on `9c2f59f` on `research/r1-offline-capture-20261111`. It does not declare
@@ -48,7 +110,7 @@ production Docker or Kali observation was performed here. This workspace rejects
 Unix sockets and has no Docker. Full consolidation/PR/CI remains after applicable
 host acceptance.
 
-## One Kali input, not another rehearsal
+## Original input request (superseded by the diagnostic repair above)
 
 Run `scripts/r1-production-readiness-kali.sh` from a fresh pinned checkout named
 `source`; return `results/production-readiness.zip`. It runs no unit suite and

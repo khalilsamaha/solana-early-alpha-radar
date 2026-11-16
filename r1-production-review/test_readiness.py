@@ -19,7 +19,7 @@ def config():
 
 class ReadinessTests(unittest.TestCase):
     def project(self, row):
-        with patch.object(r.i, 'command', return_value=json.dumps(row).encode()):
+        with patch.object(r.diagnostics, 'command', return_value=json.dumps(row).encode()):
             return r.configuration(Path('/unused'))
 
     def test_secret_values_are_fingerprinted_but_never_exported(self):
@@ -50,7 +50,7 @@ class ReadinessTests(unittest.TestCase):
         self.assertFalse(result['dashboard_loopback_only']); self.assertFalse(result['all_capabilities_dropped'])
 
     def test_census_covers_all_running_containers_without_project_filter(self):
-        with patch.object(r.i, 'command', return_value=('a'*64+'\n'+'b'*64+'\n').encode()) as call:
+        with patch.object(r.diagnostics, 'command', return_value=('a'*64+'\n'+'b'*64+'\n').encode()) as call:
             self.assertEqual(len(r.census(Path('/unused'))), 2)
         self.assertNotIn('--filter', call.call_args.args)
 
