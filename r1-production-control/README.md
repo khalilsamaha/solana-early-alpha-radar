@@ -1,0 +1,84 @@
+# Retained-container control adapter — R1.B
+
+This adds an actual Docker command adapter for disable-restart, stop,
+start-the-original-container and restore-restart-policy. It retains the exact
+container ID rather than reconstructing it from partial Compose metadata. No
+production launcher, shared-owner start or production admission is implemented.
+This round trip is **direct-only**: it cannot be used as the rollback interface
+after starting a shared owner without the missing shared-shutdown integration.
+
+## Evidence and persistence
+
+The existing `r1-control.Control` journal writer now exposes contract hooks;
+its default isolated target/receipt/replay contract remains unchanged. This
+adapter subclasses it with a separate four-action claim scope and independent
+replay validator. The isolated reader rejects this scope. Intent is durable before
+any command; the target is checked before intent and again before dispatch.
+Missing acknowledgments or failed postconditions leave the attempt pending and
+poisoned, even if Docker performed the operation. Neither context-manager exit
+nor recovery starts or restores anything. Consumed registries cannot be reused.
+
+The private inspection projects complete Config, HostConfig and Mounts into a
+hash, excluding only the explicitly controlled restart policy name. Retry count
+must remain zero. Raw commands, environment values and mount paths are not written
+into receipts. The projection also binds exact container/image/name, engine start
+time, PID, configured stop timeout and state. Resource, environment, command,
+volume or other configuration drift blocks continuation. It does not hash volume
+contents, certify the Docker daemon, detect a privileged writer rewriting all
+records, or prove that no other process uses the provider.
+
+Only `unless-stopped` -> `no` -> `unless-stopped` is supported. The configured
+stop timeout must be explicitly available (1–60 seconds); the command timeout
+allows another five seconds. Unknown/non-TERM custom stop signals are rejected;
+an omitted signal is accepted as configuration input without claiming that this
+observes the effective production signal or shutdown behavior. The observed Kali
+35-second setting is supported by the adapter and unit test. The synthetic native
+fixture explicitly uses TERM and two seconds. Changing the manifest's separate
+30-second shutdown ceiling or approving a production duration is **not** done here.
+
+A clean local stop requires engine stopped/PID-zero/exit-zero state at the same
+container and configuration. Restoration requires a later engine start generation
+and the same ID/image/configuration. These are engine observations, not application
+health, provider TCP/billing closure or globally exclusive ownership. Docker offers
+no compare-and-swap transaction across inspect/update/start: an external controller
+can race these checks. Production admission must exclude competing controllers;
+this adapter alone does not establish that condition.
+
+## Native changed-boundary check
+
+Run `scripts/r1-retained-control-kali.sh` from a clean pinned checkout named
+`source`. It accepts only an output location, never a production selector. It uses
+the already accepted image and inert manifest-checking actor, with network none,
+read-only root, dropped capabilities, no new privileges, no mounts, fixed resource
+limits and a fresh random ownership label. It does not pull/build images, connect
+to a provider, read production credentials or control any existing container.
+
+Four cases each create and dispose of one owned container:
+
+1. Stop and explicitly restart the same original ID; restore restart policy.
+2. Perform stop but withhold its response; recovery stays pending, no restart.
+3. Perform start but withhold its response; recovery stays pending, no policy restore.
+4. Change the stopped fixture's memory limit; restoration refuses configuration drift.
+
+The last case deliberately changes a disposable test container only. Cleanup
+checks exact ID/image/label/isolation and the one expected memory change, and is
+not treated as a control confirmation. All four journals and claims are retained
+for independent replay. On failure keep the directory/archive; do not retry or
+change permissions. Expected status: `retained-control-offline-passed-live-blocked`,
+with four removal/client-reaping receipts. A passing isolated check does not
+validate the running scanner's volume contents, real provider behavior, production
+rollback or global ownership. No unchanged prior host suite is requested.
+
+Primary command semantics consulted 16 November 2026:
+- https://docs.docker.com/reference/cli/docker/container/create/
+- https://docs.docker.com/reference/cli/docker/container/stop/
+- https://docs.docker.com/reference/cli/docker/container/run/
+
+## Remaining before production
+
+Wire this adapter to the accepted observed-target binding and the production
+admission/preparation path; restrict restoration to independently confirmed shared
+owner shutdown; finish the actual shared scanner/worker/credentials integration,
+preservation/remote retention and explicit pilot terms. Original-container
+retention is the candidate restoration mechanism, not a claim those gates passed.
+R1.A global ownership and R1.B as a whole remain open. E0 is unchanged.

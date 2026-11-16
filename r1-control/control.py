@@ -113,13 +113,23 @@ def inspect(registry):
     return result
 
 class Control:
+    # Profile hooks retain the original isolated contract by default. Production
+    # adapters must supply a distinct claim/replay schema; never relabel fixtures.
+    scope = 'isolated-exact-target-control'
+    actions = ACTIONS
+    def replay(self, claim, data): return replay(claim, data)
+    def before(self, row, expected): return before(row, expected)
+    def after(self, action, row, prior): return after(action, row, prior)
+    def receipt(self, prior, observed):
+        return {'scope':'docker-local-state-only','before':prior,'after':observed,
+                'provider_connection_closed':False,'billing_cutoff_verified':False}
     def __init__(self,registry,target,source_sha256,backend):
         self.registry=Path(registry).absolute();self.backend=backend;self.fd=None;self.poisoned=False;self.mutex=threading.Lock()
         check(all(not p.is_symlink() for p in [self.registry,*self.registry.parents]),'registry-link')
         s=self.registry.stat();check(stat.S_ISDIR(s.st_mode) and s.st_uid==os.getuid() and not s.st_mode&0o077,'registry-mode')
-        self.claim={'schema':1,'scope':'isolated-exact-target-control','registry':str(self.registry),
+        self.claim={'schema':1,'scope':self.scope,'registry':str(self.registry),
             'target':target,'source_sha256':source_sha256,'created_utc':now()}
-        replay(self.claim,b'');self.data=b''
+        self.replay(self.claim,b'');self.data=b''
     def __enter__(self):
         self.lock=os.open(self.registry/'lock',os.O_RDWR|os.O_CREAT|os.O_NOFOLLOW,0o600)
         try:
@@ -134,9 +144,9 @@ class Control:
         if self.fd is not None:os.close(self.fd);self.fd=None
         os.close(self.lock)
     def append(self,kind,action,receipt):
-        state=replay(self.claim,self.data)
+        state=self.replay(self.claim,self.data)
         body={'seq':state['records']+1,'action':action,'kind':kind,'previous':state['last_hash'],'at':now(),'receipt':receipt}
-        line=raw({**body,'hash':digest(raw(body))});replay(self.claim,self.data+line)
+        line=raw({**body,'hash':digest(raw(body))});self.replay(self.claim,self.data+line)
         check(read(self.registry/'claim.json',16384)==raw(self.claim) and read(self.registry/'events.jsonl',65536)==self.data and
             (self.registry/'events.jsonl').stat().st_ino==self.inode and
             (self.registry/'lock').lstat().st_ino==self.lock_inode,'journal-changed')
@@ -145,16 +155,15 @@ class Control:
         check(self.fd is not None and not self.poisoned,'consumed-or-closed')
         check(self.mutex.acquire(blocking=False),'concurrent-operation')
         try:
-            state=replay(self.claim,self.data);index=state['records']//2
-            check(index<2 and state['pending_action'] is None and action==ACTIONS[index],'action-order')
-            expected=state['target'];observed=self.backend.observe(expected['id']);before(observed,expected)
+            state=self.replay(self.claim,self.data);index=state['records']//2
+            check(index<len(self.actions) and state['pending_action'] is None and action==self.actions[index],'action-order')
+            expected=state['target'];observed=self.backend.observe(expected['id']);self.before(observed,expected)
             self.append('intent',action,None)
             # Recheck exact identity after durable intent, immediately before mutation.
-            before(self.backend.observe(expected['id']),expected)
+            self.before(self.backend.observe(expected['id']),expected)
             ack=self.backend.mutate(action,expected['id']);check(ack==expected['id'],'command-ack')
-            observed_after=self.backend.observe(expected['id']);after(action,observed_after,expected)
-            self.append('confirmed',action,{'scope':'docker-local-state-only','before':expected,'after':observed_after,
-                'provider_connection_closed':False,'billing_cutoff_verified':False})
-            return replay(self.claim,self.data)
+            observed_after=self.backend.observe(expected['id']);self.after(action,observed_after,expected)
+            self.append('confirmed',action,self.receipt(expected,observed_after))
+            return self.replay(self.claim,self.data)
         except BaseException:self.poisoned=True;raise
         finally:self.mutex.release()

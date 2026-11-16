@@ -1,6 +1,16 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Current R1.A/B disposition: readiness accepted; ownership review remains
+## Latest: Docker ownership inventory accepted; retained-container adapter added
+
+The 11:23:54 CET supplied inventory is accepted within its Docker metadata scope.
+All 22 producer fingerprints match and all 19 container identities reconcile.
+See [the acceptance and next changed boundary](R1-RETAINED-CONTROL-20261116.md).
+The previous ownership command below is historical; do not rerun it unchanged.
+R1.A global exclusivity remains unresolved. R1.B now has a direct-only retained
+container control adapter, awaiting one isolated Kali check and remaining shared
+handoff/admission integration. No production action or E0 observation occurred.
+
+## Previous R1.A/B disposition: readiness accepted; ownership review remains
 
 The supplied readiness observation at `8eb329e1` ran November 16,
 09:01:36.080334–09:01:36.904135 UTC (10:01:36 CET). Archive SHA-256:
