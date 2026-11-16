@@ -39,7 +39,7 @@ def row(token,ipc,data,case):
             'Cmd':runtime.command(case),'StopSignal':'SIGTERM','StopTimeout':35},
         'host':{'RestartPolicy':{'Name':'no','MaximumRetryCount':0},'NetworkMode':'none',
             'ReadonlyRootfs':True,'Privileged':False,'Memory':512*1024**2,'MemorySwap':512*1024**2,
-            'NanoCpus':1000000000,'PidsLimit':64,'Init':True,'CapDrop':['ALL'],
+            'NanoCpus':1000000000,'PidsLimit':64,'Init':True,'CapDrop':['ALL'],'OomKillDisable':False,
             'SecurityOpt':['no-new-privileges:true'],'LogConfig':{'Type':'none'},'PortBindings':None},
         'mounts':[{'Type':'bind','Source':str(ipc),'Destination':'/r1-ipc','RW':False},
                   {'Type':'bind','Source':str(data),'Destination':'/r1-data','RW':True}],
@@ -80,7 +80,7 @@ class RuntimeTests(unittest.TestCase):
             with self.assertRaises(ValueError):runtime.validate_peer(changed,target)
         with self.assertRaises(ValueError):runtime.validate_peer(peer,{'running':False,'pid':0})
 
-    def exercise(self,name,*,foreign=False,lost_create=False,drift=False):
+    def exercise(self,name,*,foreign=False,lost_create=False,drift=False,oom_default_change=False):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);ipc=root/'ipc';ipc.mkdir(mode=0o700);calls=[];receipts=[];state={};sent=threading.Event();started=threading.Event()
             class Conn:
@@ -111,6 +111,7 @@ class RuntimeTests(unittest.TestCase):
                 if action=='start':
                     self.assertTrue((root/name/'start-intent.json').exists())
                     state['row'].update(running=True,pid=100)
+                    if oom_default_change:state['row']['host']['OomKillDisable']=None
                     if drift:state['row']['config']['AttachStdout']=True
                     started.set()
                     if name!='missing-endpoint':
@@ -171,6 +172,31 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(fields['/host/Memory']['value'],512*1024**2)
         self.assertEqual(fields['/config/Env/0']['sha256'],c.digest(c.raw(raw['config']['Env'][0])))
 
+    def test_only_explicit_false_and_null_oom_defaults_are_equivalent(self):
+        raw=row('token',Path('/tmp/ipc'),Path('/tmp/data'),'normal');before=runtime.configuration_fields(c.raw(raw))
+        changed=copy.deepcopy(raw);changed['host']['OomKillDisable']=None
+        after=runtime.configuration_fields(c.raw(changed));self.assertTrue(runtime.equivalent_configuration(before,after))
+        for value in (True,0,'false',[],{}):
+            invalid=copy.deepcopy(changed);invalid['host']['OomKillDisable']=value
+            fields=runtime.configuration_fields(c.raw(invalid));self.assertFalse(runtime.equivalent_configuration(before,fields))
+            with self.assertRaisesRegex(ValueError,'runtime-oom-policy'):
+                runtime.isolation(c.raw(invalid),'token',c.BASE,Path('/tmp/ipc'),Path('/tmp/data'),'normal')
+        missing=copy.deepcopy(raw);del missing['host']['OomKillDisable']
+        self.assertFalse(runtime.equivalent_configuration(before,runtime.configuration_fields(c.raw(missing))))
+        with self.assertRaisesRegex(ValueError,'runtime-oom-policy'):
+            runtime.isolation(c.raw(missing),'token',c.BASE,Path('/tmp/ipc'),Path('/tmp/data'),'normal')
+        changed['host']['Memory']=1
+        self.assertFalse(runtime.equivalent_configuration(before,runtime.configuration_fields(c.raw(changed))))
+        forged=copy.deepcopy(after);forged['/host/OomKillDisable']['sha256']='0'*64
+        self.assertFalse(runtime.equivalent_configuration(before,forged))
+
+    def test_reviewed_oom_representation_preserves_raw_hashes_and_allows_completed_case(self):
+        _,receipts=self.exercise('normal',oom_default_change=True);r=receipts[0]
+        self.assertTrue(r['removed']);self.assertTrue(r['result']['storage_closed'])
+        self.assertNotEqual(r['before']['config_sha256'],r['after']['config_sha256'])
+        self.assertEqual(set(r['after_changes_from_created']),{'/host/OomKillDisable'})
+        self.assertEqual(r['configuration_comparison'],'exact-fields-except-reviewed-oom-default-false-null')
+
     def test_diagnostic_candidate_requires_exact_previously_verified_packaged_bytes(self):
         with tempfile.TemporaryDirectory() as tmp:
             destination=Path(tmp)/'context';staged=c.stage(destination,clean=False)
@@ -182,11 +208,12 @@ class RuntimeTests(unittest.TestCase):
             with patch.object(c,'stage',return_value=changed),self.assertRaisesRegex(ValueError,'runtime-diagnostic-source-drift'):
                 runtime.diagnostic_candidate(destination)
 
-    def test_diagnostic_runs_only_normal_on_existing_image_without_build_or_candidate(self):
+    def exercise_existing_image_mode(self,remaining):
         with tempfile.TemporaryDirectory() as tmp:
             out=Path(tmp)/'results';suite=unittest.TestSuite([unittest.FunctionTestCase(lambda:None)])
             image_config={'id':runtime.DIAGNOSTIC_IMAGE,'user':'1000:1000','entrypoint':pc.c.ENTRY,'cmd':['/app/verify.mjs'],'workdir':'/app'}
-            with patch.object(runtime.sys,'argv',['check_runtime.py','--output-directory',str(out),'--diagnose-existing-image']),\
+            flag='--remaining-existing-image' if remaining else '--diagnose-existing-image'
+            with patch.object(runtime.sys,'argv',['check_runtime.py','--output-directory',str(out),flag]),\
                  patch.object(runtime,'pins',return_value={}),patch.object(c,'git',return_value=b''),\
                  patch.object(runtime.unittest.defaultTestLoader,'loadTestsFromModule',return_value=suite),\
                  patch.object(runtime,'diagnostic_candidate',return_value=expected()),\
@@ -196,11 +223,20 @@ class RuntimeTests(unittest.TestCase):
                  patch.object(runtime,'case') as app,patch.object(runtime.sys,'stdout',io.StringIO()):
                 self.assertEqual(runtime.main(),0)
             build.assert_not_called();verifier.assert_not_called();self.assertEqual(command.call_count,2)
-            self.assertEqual(app.call_count,1);self.assertEqual(app.call_args.args[4],'normal')
-            self.assertEqual(app.call_args.args[2],runtime.DIAGNOSTIC_IMAGE)
-            report=json.loads((out/'report.json').read_bytes());self.assertTrue(report['diagnostic_only'])
-            self.assertEqual(report['status'],'scanner-runtime-diagnostic-recorded-live-blocked')
+            self.assertEqual([call.args[4] for call in app.call_args_list],['sequence-gap','missing-endpoint'] if remaining else ['normal'])
+            self.assertTrue(all(call.args[2]==runtime.DIAGNOSTIC_IMAGE for call in app.call_args_list))
+            report=json.loads((out/'report.json').read_bytes());self.assertEqual(report['diagnostic_only'],not remaining)
+            self.assertEqual(report['remaining_only'],remaining)
+            self.assertEqual(report['status'],'scanner-runtime-remaining-cases-passed-live-blocked' if remaining else 'scanner-runtime-diagnostic-recorded-live-blocked')
+            if remaining:self.assertEqual(report['accepted_normal_evidence'],runtime.ACCEPTED_NORMAL)
+            else:self.assertNotIn('accepted_normal_evidence',report)
             self.assertFalse((out/'deployment-candidate.json').exists());self.assertFalse((out/'build-intent.json').exists())
+
+    def test_diagnostic_runs_only_normal_on_existing_image_without_build_or_candidate(self):
+        self.exercise_existing_image_mode(False)
+
+    def test_remaining_mode_runs_only_unobserved_cases_and_references_historical_normal(self):
+        self.exercise_existing_image_mode(True)
 
     def test_failed_preparation_still_exports_indexed_evidence_without_host_actions(self):
         with tempfile.TemporaryDirectory() as tmp:

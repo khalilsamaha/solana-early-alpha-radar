@@ -1,9 +1,9 @@
 # Solana Early Alpha Radar
 
 **R1 research branch — 16 November 2026:** the combined native handoff batch is
-[accepted](docs/R1-COMBINED-ACCEPTANCE-20261116.md). The full application attempt
-failed its closure check; the next step is a
-[single-container configuration diagnostic using its existing image](docs/R1-SCANNER-RUNTIME-20261116.md).
+[accepted](docs/R1-COMBINED-ACCEPTANCE-20261116.md). The normal full-application case
+is accepted after diagnosing one default-value representation mismatch; only
+[two previously unrun fault cases remain on the existing image](docs/R1-SCANNER-RUNTIME-20261116.md).
 Production activation remains blocked. E0 remains separate with holds preserved.
 
 **Current working agenda — 8 November 2026:** [independent review, priorities,

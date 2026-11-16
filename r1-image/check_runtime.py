@@ -27,6 +27,11 @@ DIAGNOSTIC_IMAGE='sha256:55d2f2369e0a03835441a02ad9a65568a9288c3753aa276a89ff252
 DIAGNOSTIC_REVISION='6270ada51ae04e1e0efbc6895286a327f764ee5c'
 DIAGNOSTIC_TREE='be15ea96816aaae67339cfe94539d6eca52a090a'
 DIAGNOSTIC_MANIFEST='bf330643bec5835413fbe85231f5bad876ecaf18a0b4c5e5618dcdddf8d7f694'
+ACCEPTED_NORMAL={'archive_sha256':'eee4d7500347aa6e9646698720339555c7fe87c00565b3baa302a02de51258ca',
+    'report_sha256':'e5291c7bc303c41bbdba2a15a2aa8a7bc8935fd56246b2b37c9bf607019a7986',
+    'checker_revision':'d627e365092aeacc234ac04065288bc0334d3d0a',
+    'observed_finished_utc':'2026-11-16T17:55:34.127411+00:00','image_id':DIAGNOSTIC_IMAGE,
+    'basis':'independently-reviewed-supplied-normal-case-not-rerun'}
 
 
 def run(command,**kwargs):return command_io.bounded(command,env=image.host.ENV,**kwargs)
@@ -36,7 +41,8 @@ def pins():
     return {**image.pins(),
         **{name:c.digest((c.REPO/name).read_bytes()) for name in
            ('r1-production-control/production_control.py','r1-production-control/command_io.py',
-            'r1-control/control.py','scripts/r1-scanner-runtime-kali.sh','scripts/r1-scanner-runtime-diagnostic-kali.sh')}}
+            'r1-control/control.py','scripts/r1-scanner-runtime-kali.sh','scripts/r1-scanner-runtime-diagnostic-kali.sh',
+            'scripts/r1-scanner-runtime-remaining-kali.sh')}}
 
 
 def configuration_fields(raw):
@@ -65,6 +71,22 @@ def configuration_changes(before,after):
             if before.get(key)!=after.get(key)}
 
 
+def equivalent_configuration(before,after):
+    """Only the reviewed OOM default false/null representation is equivalent.
+
+    Raw fingerprints and differences remain in receipts. No production-control
+    fingerprint or journal is rewritten by this fixture-specific comparison.
+    """
+    key='/host/OomKillDisable'
+    for fields in (before,after):
+        item=fields.get(key)
+        if not isinstance(item,dict) or 'value' not in item:return False
+        value=item['value']
+        if value is not False and value is not None:return False
+        if item!={'sha256':c.digest(c.raw(value)),'type':type(value).__name__,'value':value}:return False
+    return {k:v for k,v in before.items() if k!=key}=={k:v for k,v in after.items() if k!=key}
+
+
 def diagnostic_candidate(destination):
     expected=c.stage(destination)
     # Reconstruct only the already verified image identity. The full manifest
@@ -88,6 +110,7 @@ def isolation(raw,token,image_id,ipc,data,case):
     expected={'NetworkMode':'none','ReadonlyRootfs':True,'Privileged':False,'Memory':512*1024**2,
         'MemorySwap':512*1024**2,'NanoCpus':1000000000,'PidsLimit':64,'Init':True,'CapDrop':['ALL']}
     c.check(all(type(host.get(k)) is type(v) and host[k]==v for k,v in expected.items()),'runtime-isolation')
+    c.check('OomKillDisable' in host and (host['OomKillDisable'] is False or host['OomKillDisable'] is None),'runtime-oom-policy')
     c.check(host.get('SecurityOpt') in (['no-new-privileges'],['no-new-privileges:true']) and
             host.get('LogConfig',{}).get('Type')=='none' and not host.get('PortBindings'),'runtime-security')
     mounts=row['mounts'];c.check(len(mounts)==2,'runtime-mount-count')
@@ -195,7 +218,8 @@ def case(out,cli,image_id,expected,name,report):
         receipt['result']=result
         after=observe(cid,'after');receipt['after']=after
         c.check(not after['running'] and after['pid']==0 and after['exit_code']==0,'runtime-exit-unconfirmed')
-        c.check(after['config_sha256']==receipt['before']['config_sha256'],'runtime-configuration-changed')
+        c.check(equivalent_configuration(receipt['before_configuration'],receipt['after_configuration']),'runtime-configuration-changed')
+        receipt['configuration_comparison']='exact-fields-except-reviewed-oom-default-false-null'
         receipt.update(result=result,after=after,finished_utc=image.now())
     finally:
         abort.set();admitted.set()
@@ -226,13 +250,17 @@ def case(out,cli,image_id,expected,name,report):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output-directory',required=True)
-    parser.add_argument('--diagnose-existing-image',action='store_true')
+    modes=parser.add_mutually_exclusive_group()
+    modes.add_argument('--diagnose-existing-image',action='store_true')
+    modes.add_argument('--remaining-existing-image',action='store_true')
     args=parser.parse_args();os.umask(0o077);out=Path(args.output_directory).absolute()
+    existing=args.diagnose_existing_image or args.remaining_existing_image
     c.check(not out.exists() and all(not p.is_symlink() for p in (out,*out.parents)),'runtime-output')
     out.mkdir(mode=0o700);log=io.StringIO();stage='source'
     report={'schema':1,'status':'scanner-runtime-failed-live-blocked','started_utc':image.now(),
         'cases':[],'production_modified':False,'provider_connection_opened':False,'activation_authorized':False,
-        'diagnostic_only':args.diagnose_existing_image}
+        'diagnostic_only':args.diagnose_existing_image,'remaining_only':args.remaining_existing_image}
+    if args.remaining_existing_image:report['accepted_normal_evidence']=ACCEPTED_NORMAL
     try:
         report['source_sha256']=pins();c.check(not c.git('status','--porcelain').strip(),'dirty-source')
         stage='tests'
@@ -240,7 +268,7 @@ def main():
         result=unittest.TextTestRunner(stream=log,verbosity=2).run(unittest.defaultTestLoader.loadTestsFromModule(test_runtime))
         report['tests']={'run':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped)}
         c.check(result.wasSuccessful() and result.testsRun and not result.skipped,'runtime-tests')
-        if not args.diagnose_existing_image:
+        if not existing:
             node=shutil.which('node');c.check(node is not None,'runtime-node-unavailable')
             node_log=run([node,'--test','--test-reporter=tap',str(c.REPO/'scanner/test/shared-startup.test.js'),
                 str(c.REPO/'scanner/test/pumpportal-shared.test.js')],seconds=30,cap=262144).decode()
@@ -248,11 +276,11 @@ def main():
             counts={key:int(re.search(r'^# '+key+r' (\d+)$',node_log,re.M).group(1)) for key in ('tests','fail','cancelled','skipped')}
             c.check(counts['tests']>0 and not any(counts[k] for k in ('fail','cancelled','skipped')),'runtime-node-tests')
             report['node_tests']=counts
-        stage='context';expected=(diagnostic_candidate if args.diagnose_existing_image else c.stage)(out/'context');report['candidate']=expected
+        stage='context';expected=(diagnostic_candidate if existing else c.stage)(out/'context');report['candidate']=expected
         c.check(os.getuid()==os.geteuid()==os.getgid()==os.getegid()==1000,'runtime-uid')
         image.host.trusted_local_docker();config=out/'empty-docker-config';config.mkdir(mode=0o700)
         cli=[image.host.DOCKER,'--config',str(config),'--host','unix://'+image.host.SOCKET]
-        if args.diagnose_existing_image:
+        if existing:
             image_id=DIAGNOSTIC_IMAGE
             c.check(run(cli+['image','inspect','--format','{{.Id}}',image_id]).decode().strip()==image_id,'runtime-diagnostic-image-unavailable')
             pc.c.write_new(out/'image.id',(image_id+'\n').encode())
@@ -269,12 +297,15 @@ def main():
         c.check(image_config=={'id':image_id,'user':'1000:1000','entrypoint':pc.c.ENTRY,
             'cmd':['/app/verify.mjs'],'workdir':'/app'},'runtime-image-config')
         report['image_config']=image_config
-        if not args.diagnose_existing_image:
+        if not existing:
             stage='verify-image';image.run_case(cli,image_id,expected,'verify',report['cases'])
-        for name in (('normal',) if args.diagnose_existing_image else CASES):stage=name;case(out,cli,image_id,expected,name,report)
+        selected=('normal',) if args.diagnose_existing_image else CASES[1:] if args.remaining_existing_image else CASES
+        for name in selected:stage=name;case(out,cli,image_id,expected,name,report)
         c.check(pins()==report['source_sha256'] and not c.git('status','--porcelain').strip(),'runtime-source-changed')
         if args.diagnose_existing_image:
             report['status']='scanner-runtime-diagnostic-recorded-live-blocked'
+        elif args.remaining_existing_image:
+            report['status']='scanner-runtime-remaining-cases-passed-live-blocked'
         else:
             report['status']='scanner-runtime-offline-passed-live-blocked'
             pc.c.write_new(out/'deployment-candidate.json',c.raw({'schema':1,'image_id':image_id,
@@ -307,7 +338,8 @@ def main():
                     archive.writestr(name,raw)
             archive.writestr('members.json',c.raw({'schema':1,'members':members}))
     print(report['status']);print(out/'acceptance.zip')
-    return 0 if report['status'] in ('scanner-runtime-offline-passed-live-blocked','scanner-runtime-diagnostic-recorded-live-blocked') else 1
+    return 0 if report['status'] in ('scanner-runtime-offline-passed-live-blocked','scanner-runtime-diagnostic-recorded-live-blocked',
+        'scanner-runtime-remaining-cases-passed-live-blocked') else 1
 
 
 if __name__=='__main__':raise SystemExit(main())

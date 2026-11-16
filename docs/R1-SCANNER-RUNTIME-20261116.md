@@ -1,6 +1,62 @@
 # R1 full scanner runtime check — 16 November 2026
 
-## Current: supplied failure reviewed; narrow diagnostic required
+## Current: diagnostic resolved; normal application accepted on review
+
+The diagnostic at checker `d627e365092aeacc234ac04065288bc0334d3d0a` ran
+16 November, 17:55:31.690491–17:55:34.127411 UTC (**18:55:31–18:55:34 CET**).
+Archive SHA-256: `eee4d7500347aa6e9646698720339555c7fe87c00565b3baa302a02de51258ca`.
+Report SHA-256: `e5291c7bc303c41bbdba2a15a2aa8a7bc8935fd56246b2b37c9bf607019a7986`.
+All 73 source fingerprints and nine indexed members reconcile; twelve host tests
+pass. The retained application result independently verifies the same sixty-file
+image/manifest, three discoveries, one EOF gap, three persisted candidates, two
+launches, loopback health, successful statistics worker, stopped radar and closed
+storage. It records one blocked public-fetch attempt and zero public connections
+or upstream attempts; market readiness remains false.
+
+The exact owned container exited with PID 0, running false and exit code 0. Its
+final state equals the disposal observation; removal, attach completion and thread
+joins are confirmed. Kernel peer binding matches. Independent immutable SQLite
+replay returns integrity `ok` and the same three/two counts.
+
+Of 142 configuration fields, **only `/host/OomKillDisable` differs**, from explicit
+`false` before start to `null` while running, after exit and before disposal. The
+other 141 fields match, and all three later configurations are identical. The
+reported difference maps independently replay exactly. The old raw full-config
+hashes correctly differ; the old failed report and uploaded archive are preserved.
+
+[Docker's resource documentation](https://docs.docker.com/engine/containers/resource_constraints/)
+describes OOM killing as the default. [Moby's daemon defaulting](https://github.com/moby/moby/blob/master/daemon/daemon_unix.go)
+explicitly maps an unset `OomKillDisable` pointer to false. On that evidence, the
+fixture checker now treats only **present, correctly typed false/null** values as
+equivalent, requiring every other field to match. True, missing, numeric/string
+substitutes, malformed field fingerprints and unrelated drift fail. Raw fields,
+raw hashes and differences remain retained. Production-control fingerprints and
+journals are unchanged. This neither infers the host's cgroup version nor proves
+OOM/resource adequacy under load.
+
+The supplied normal case independently passes the corrected comparison and its
+original application receipt validates. **Accept that normal-case boundary at its
+recorded observation; do not rerun it or the diagnostic.** This is an explicit
+review disposition, not a rewritten historical producer status or a fresh host
+observation. The two remaining native scenarios are still unobserved.
+
+Run only **`scripts/r1-scanner-runtime-remaining-kali.sh` once** from the new pinned
+checkout named `source`, under a fresh private review directory. It uses the same
+fixed existing image and creates at most two owned containers: sequence-gap and
+missing-endpoint. It runs fifteen changed-checker tests, with no image build/pull,
+normal-case repeat, inert verifier repeat or unchanged Node-suite rerun. Each
+container retains the documented isolation and finite bounds. The report references
+the accepted normal archive/report hashes as historical evidence; it does not
+pretend the normal case ran again or create a deployment candidate.
+
+Return `results/acceptance.zip` even on failure; preserve previous results and do
+not retry. Expected success is `scanner-runtime-remaining-cases-passed-live-blocked`.
+Review of both missing cases is required before closing the full offline
+application boundary. Full production/R1.C readiness, live ownership/credentials,
+remote retention and pilot terms remain separate. E0 remains blocked with holds
+preserved; no RPC observation or balance was obtained.
+
+## Previous: supplied failure reviewed; narrow diagnostic required
 
 The supplied attempt at `6270ada51ae04e1e0efbc6895286a327f764ee5c` ran
 16 November, 17:45:41.191689–17:45:46.106080 UTC (**18:45:41–18:45:46 CET**).

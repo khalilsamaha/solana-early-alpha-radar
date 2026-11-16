@@ -1,6 +1,21 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Latest: application attempt failed; missing configuration evidence narrowed
+## Latest: normal application accepted; two unrun fault cases remain
+
+The supplied 18:55:31–18:55:34 CET diagnostic at `d627e36` reconciles all 73 source
+pins, nine indexed members, native peer/exit/removal evidence and the full normal
+application receipt. Only `OomKillDisable` changed false to null; all other 141
+configuration fields match. The corrected fixture comparison accepts only those
+two documented default representations, retaining all raw evidence and rejecting
+every other difference. Independent review accepts the historical normal case;
+neither it nor the diagnostic needs repeating.
+
+Only sequence-gap and missing-endpoint native cases remain for this offline
+application boundary. The new existing-image remaining-cases script runs exactly
+those two, without rebuilding. See [the accepted evidence and scoped next input](R1-SCANNER-RUNTIME-20261116.md).
+Production/R1.C readiness and E0 remain separate and blocked.
+
+## Previous: application attempt failed; missing configuration evidence narrowed
 
 The supplied 18:45:41–18:45:46 CET application attempt at `6270ada` verifies the new
 image, 72 source pins, eleven indexed members and cleanup of both owned containers.
