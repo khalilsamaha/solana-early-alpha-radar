@@ -1,6 +1,21 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Latest: normal application accepted; two unrun fault cases remain
+## Latest: offline full application boundary accepted
+
+The supplied 19:28:20–19:28:26 CET remaining-cases archive at `079530f` reconciles
+all 74 source pins, thirteen indexed members, both application results and both
+container cleanup receipts. Sequence-gap SQLite replay verifies zero records;
+missing-endpoint verifies refusal before storage or network work. Its remaining
+failure was positional comparison of unchanged mount records. Destination-keyed
+comparison preserves complete mount identity and replays all observations.
+
+Together with the accepted normal case and verified image, this closes the offline
+application boundary. **No unchanged Kali rerun is needed.** The correction passes
+38 image/runtime tests. See [the exact hashes, timestamps, limitations and disposition](R1-SCANNER-RUNTIME-20261116.md).
+The real application is not yet connected to the finite shared-owner/retained
+restoration path; full production/R1.C readiness and E0 remain separate and blocked.
+
+## Previous: normal application accepted; two unrun fault cases remain
 
 The supplied 18:55:31–18:55:34 CET diagnostic at `d627e36` reconciles all 73 source
 pins, nine indexed members, native peer/exit/removal evidence and the full normal

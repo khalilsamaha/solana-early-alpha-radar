@@ -1,6 +1,63 @@
 # R1 full scanner runtime check — 16 November 2026
 
-## Current: diagnostic resolved; normal application accepted on review
+## Current: all three offline application cases accepted on review
+
+The supplied remaining-cases run at `079530f84ffa15ebbc75f21739548ad2643cc230`
+ran 16 November, 18:28:20.581361–18:28:26.023307 UTC
+(**19:28:20–19:28:26 CET**).
+Archive SHA-256: `94c716209e0f2996e409e5ec79b3fa6bbf25afb3231b8aae404a7184e5dd9bd7`.
+Report SHA-256: `fba5c684f5917436347c66cef6d8c4161bdc77ea4b56aa030d784ce5af6df720`.
+All 74 source fingerprints, thirteen indexed members and the historical normal
+reference match. Fifteen host tests pass. Both application receipts verify the
+same sixty-file image/manifest, exact case expectations and authority flags.
+
+| Supplied case | Independently reviewed result |
+| --- | --- |
+| Sequence gap | Zero accepted discoveries/candidates/launches, one gap, successful statistics worker, loopback health, radar stopped and storage closed; immutable SQLite integrity `ok` and zero/zero counts match the producer replay hash |
+| Missing endpoint | Startup refused before the application entry point completed or storage was created; zero upstream and public HTTP attempts; no fixture index, dashboard or statistics worker started |
+
+Both distinct owned containers exited with PID 0, running false and exit code 0;
+their disposal states agree apart from raw configuration serialization hashes.
+Removal, attach completion and thread joins verify. Sequence-gap kernel peer
+binding verifies; missing-endpoint appropriately has no connected Unix peer.
+
+The remaining producer failure is a checker defect: it compares the two mount
+records by array position. The records switch order between some observations.
+Independent comparison by destination proves the complete IPC mount record and
+complete data mount record are unchanged, including source, read/write setting,
+type and propagation. Outside those array positions, only the already reviewed
+OOM default false/null representation differs. This is not a changed source path
+or a permission change. Every reported raw difference map replays exactly.
+
+The fixture comparison now keys exactly two unique mounts by their fixed
+destination fingerprints, preserving every field in each record. It rejects
+changed sources/permissions/metadata, duplicate or unknown destinations, missing
+or extra mounts and unrelated configuration changes. Other arrays remain ordered.
+Raw configuration hashes, indexed observations and the original failed report
+remain unchanged. **38 image/runtime tests pass**, including mount-order and
+negative identity tests; the corrected comparator also replays every supplied
+running/final/disposal observation successfully.
+
+Accept both supplied fault-case boundaries at their recorded time, together with
+the previously accepted normal case and image verification. **The offline full
+application boundary is complete; do not rerun the full, diagnostic or remaining
+case commands unchanged.** This is a review disposition across the preserved
+artifacts, not a rewritten producer success or fresh reviewer host observation.
+The old missing-endpoint failure skipped the host's later empty-directory assertion;
+no host directory-listing observation is claimed. The pinned application receipt
+and source validation before storage support the accepted startup-refusal result.
+
+The accepted image is still
+`sha256:55d2f2369e0a03835441a02ad9a65568a9288c3753aa276a89ff252c62eeac7f`.
+Its application sources were not rebuilt or changed by these host-checker fixes.
+This does not complete full R1.C or production readiness: the real application
+still needs integration with the finite shared-owner/retained-original path,
+followed by the remaining live runtime, global ownership, remote preservation and
+operating-term gates. No production launch, provider connection, engineering-cap
+reset or live confirmation clock is established. E0 remains independently blocked
+with holds preserved; no fresh RPC observation or balance was obtained.
+
+## Previous: diagnostic resolved; normal application accepted on review
 
 The diagnostic at checker `d627e365092aeacc234ac04065288bc0334d3d0a` ran
 16 November, 17:55:31.690491–17:55:34.127411 UTC (**18:55:31–18:55:34 CET**).

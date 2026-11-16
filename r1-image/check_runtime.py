@@ -72,7 +72,7 @@ def configuration_changes(before,after):
 
 
 def equivalent_configuration(before,after):
-    """Only the reviewed OOM default false/null representation is equivalent.
+    """Compare mount identities by destination and the reviewed OOM default.
 
     Raw fingerprints and differences remain in receipts. No production-control
     fingerprint or journal is rewritten by this fixture-specific comparison.
@@ -84,7 +84,25 @@ def equivalent_configuration(before,after):
         value=item['value']
         if value is not False and value is not None:return False
         if item!={'sha256':c.digest(c.raw(value)),'type':type(value).__name__,'value':value}:return False
-    return {k:v for k,v in before.items() if k!=key}=={k:v for k,v in after.items() if k!=key}
+    def canonical(fields):
+        rest={k:v for k,v in fields.items() if k!=key and not k.startswith('/mounts/')}
+        mounts={}
+        for path,item in fields.items():
+            if not path.startswith('/mounts/'):continue
+            match=re.fullmatch(r'/mounts/([01])/(.+)',path)
+            if not match:return None
+            mounts.setdefault(match[1],{})[match[2]]=item
+        if set(mounts)!={'0','1'}:return None
+        wanted={c.digest(c.raw(path)) for path in ('/r1-ipc','/r1-data')};keyed={}
+        for mount in mounts.values():
+            destination=mount.get('Destination',{})
+            digest=destination.get('sha256')
+            if digest not in wanted or destination!={'sha256':digest,'type':'str'} or digest in keyed:return None
+            keyed[digest]=mount
+        rest['/mounts']=keyed
+        return rest
+    left,right=canonical(before),canonical(after)
+    return left is not None and right is not None and left==right
 
 
 def diagnostic_candidate(destination):
@@ -219,7 +237,7 @@ def case(out,cli,image_id,expected,name,report):
         after=observe(cid,'after');receipt['after']=after
         c.check(not after['running'] and after['pid']==0 and after['exit_code']==0,'runtime-exit-unconfirmed')
         c.check(equivalent_configuration(receipt['before_configuration'],receipt['after_configuration']),'runtime-configuration-changed')
-        receipt['configuration_comparison']='exact-fields-except-reviewed-oom-default-false-null'
+        receipt['configuration_comparison']='destination-keyed-mounts-and-reviewed-oom-default'
         receipt.update(result=result,after=after,finished_utc=image.now())
     finally:
         abort.set();admitted.set()

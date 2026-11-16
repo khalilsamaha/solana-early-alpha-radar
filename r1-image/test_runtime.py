@@ -195,7 +195,20 @@ class RuntimeTests(unittest.TestCase):
         self.assertTrue(r['removed']);self.assertTrue(r['result']['storage_closed'])
         self.assertNotEqual(r['before']['config_sha256'],r['after']['config_sha256'])
         self.assertEqual(set(r['after_changes_from_created']),{'/host/OomKillDisable'})
-        self.assertEqual(r['configuration_comparison'],'exact-fields-except-reviewed-oom-default-false-null')
+        self.assertEqual(r['configuration_comparison'],'destination-keyed-mounts-and-reviewed-oom-default')
+
+    def test_mount_order_is_irrelevant_but_destination_source_and_permissions_are_exact(self):
+        raw=row('token',Path('/tmp/ipc'),Path('/tmp/data'),'normal');before=runtime.configuration_fields(c.raw(raw))
+        reordered=copy.deepcopy(raw);reordered['mounts'].reverse();reordered['host']['OomKillDisable']=None
+        self.assertTrue(runtime.equivalent_configuration(before,runtime.configuration_fields(c.raw(reordered))))
+        for mutate in (lambda r:r['mounts'][0].update(Source='/another-source'),
+            lambda r:r['mounts'][0].update(RW=False),lambda r:r['mounts'][0].update(Destination='/other'),
+            lambda r:r['mounts'][0].update(Destination=r['mounts'][1]['Destination']),
+            lambda r:r['mounts'].append(copy.deepcopy(r['mounts'][0])),lambda r:r['mounts'].pop(),
+            lambda r:r['config'].update(ArgsEscaped=True)):
+            changed=copy.deepcopy(reordered);mutate(changed)
+            with self.subTest(mutate=mutate):
+                self.assertFalse(runtime.equivalent_configuration(before,runtime.configuration_fields(c.raw(changed))))
 
     def test_diagnostic_candidate_requires_exact_previously_verified_packaged_bytes(self):
         with tempfile.TemporaryDirectory() as tmp:
