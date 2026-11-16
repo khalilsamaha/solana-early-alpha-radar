@@ -1,12 +1,35 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Latest: retained-control accepted; target/preparation integration added
+## Latest: target binding accepted; finite-session restoration gate integrated
+
+The supplied 12:01:22 CET exact-target binding is accepted at `332797e0`:
+32 matching source fingerprints, identical standalone/archive report, unchanged
+original identity and readiness projection, and a full retained configuration hash.
+No unchanged host check is needed. See [the evidence and integration limits](R1-TARGET-ADMISSION-20261116.md).
+
+The renewed instruction to start work authorizes this corrective integration; it
+does not supply a numeric remaining effort allowance or reset the historical cap.
+`shared_session.SharedPrepared` connects the retained controller to the existing
+finite supervisor and scanner session. Restoration requires that invocation's
+durable, independently validated shutdown result and in-process completion witness;
+old receipts, uncertain transitions and lost confirmations cannot authorize it.
+No new host runner, production launch path or separate rehearsal framework is added.
+
+Local validation covers real Python/Node children with a modeled Docker original,
+successful and aborted upstream cleanup, concurrent-operation exclusion, lost
+intent/completion writes, evidence/source/target drift, capacity loss and refusal
+to adopt historical completion. Production ownership, scanner/runtime/credential
+integration, remote preservation and exact operating terms remain open. The actual
+35-second original stop setting still conflicts with the manifest's separate
+30-second ceiling; no ceiling or host setting was changed.
+
+## Previous: retained-control accepted; target/preparation integration added
 
 The 11:50:08–11:50:18 CET isolated control run is accepted: 29 tests, 13 source
 hashes, four matching journal replays and four cleanup receipts. No unchanged
 native rerun is needed. See [the current integration and precise next input](R1-TARGET-ADMISSION-20261116.md).
-Target/preparation integration passes local validation; one read-only exact-ID
-binding observation is required. Full production/shared-handoff readiness and
+Target/preparation integration passed local validation; its read-only exact-ID
+binding request was subsequently satisfied. Full production/shared-handoff readiness and
 R1.A ownership remain open. E0 and production are unchanged.
 
 ## Previous: Docker ownership inventory accepted; retained-container adapter added

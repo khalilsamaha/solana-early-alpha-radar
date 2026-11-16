@@ -3,9 +3,9 @@
 This adds an actual Docker command adapter for disable-restart, stop,
 start-the-original-container and restore-restart-policy. It retains the exact
 container ID rather than reconstructing it from partial Compose metadata. No
-production launcher, shared-owner start or production admission is implemented.
-This round trip is **direct-only**: it cannot be used as the rollback interface
-after starting a shared owner without the missing shared-shutdown integration.
+production launcher is implemented. `admission.Prepared` is the direct-only
+round trip; `shared_session.SharedPrepared` adds the existing offline worker/scanner
+session and gates restoration on its confirmed shutdown.
 
 ## Current acceptance and admission integration
 
@@ -19,7 +19,32 @@ The separate `check_binding.py` entry point is read-only: one production inspect
 no control construction/mutation, unit suite or disposable actors. It supplies the
 full fingerprint needed for deployment-specific binding while retaining activation
 and ownership blockers. Raw configuration stays in memory. See
-[the acceptance and required input](../docs/R1-TARGET-ADMISSION-20261116.md).
+[the accepted evidence and remaining scope](../docs/R1-TARGET-ADMISSION-20261116.md).
+The supplied 12:01:22 CET binding report matches all 32 producer fingerprints;
+no unchanged binding check is needed.
+
+## Shared-session restoration gate
+
+`SharedPrepared` returns the existing retained controller. The caller explicitly
+performs disable-restart and stop, calls `run_shared()` within the open controller,
+then requests start-original and restore-restart. The session method runs the
+existing concrete finite supervisor with an owned scanner, never a caller-provided
+shutdown boolean. Its mutex excludes controller operations during the session.
+All bridge files are exclusive and durable; source, admission, manifest,
+preparation, stopped target and supervision bytes are bound to that attempt.
+
+Both restoration actions require the successful same-process completion witness,
+unchanged shutdown evidence and existing storage/target gates. Failed or lost
+results poison the controller, including after the children have actually exited.
+Recovery reads do not restore, rerun, repair or reconstruct a completion witness.
+No context-manager cleanup starts the original. Local abort is recorded as abort,
+never promoted to a provider acknowledgment or clean unsubscribe.
+
+The supported sessions are the existing offline pipe/native scanner fixtures.
+Local integration tests execute the actual Python worker and Node pipe scanner,
+with Docker modeled. Native mode retains its existing fixed image requirement;
+production-image compatibility is not established. This library has no new host
+entry point and confers no authority to stop or restore a production container.
 
 ## Evidence and persistence
 
@@ -102,9 +127,8 @@ Primary command semantics consulted 16 November 2026:
 
 ## Remaining before production
 
-Obtain supplied-host acceptance of the new observed-target binding and complete
-production admission; restrict restoration to independently confirmed shared
-owner shutdown; finish the actual shared scanner/worker/credentials integration,
+The observed-target binding is accepted. Complete production ownership/admission
+and apply the integrated shutdown gate to the actual shared scanner/worker/credentials,
 preservation/remote retention and explicit pilot terms. Original-container
 retention is the candidate restoration mechanism, not a claim those gates passed.
 R1.A global ownership and R1.B as a whole remain open. E0 is unchanged.

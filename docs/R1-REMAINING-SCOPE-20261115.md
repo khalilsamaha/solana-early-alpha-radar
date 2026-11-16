@@ -1,12 +1,15 @@
 # R1 remaining scope reconciliation — 15 November 2026
 
-**November 16 update:** the supplied production context is accepted. See the
+**November 16 update:** context, readiness, ownership metadata, isolated retained
+control and the 12:01:22 CET target binding are accepted within their stated scopes.
+The existing offline finite session now gates retained-original restoration.
+No unchanged host check is requested. See the
 [current corrective engineering and remaining delivery](R1-ENGINEERING-TO-PILOT-20261116.md).
 The earlier context-test request below is historical. Startup cancellation and
 variable-session local preservation have advanced; production deployment,
 finite live-worker integration and remote retention are still open.
 
-## Decision
+## Previous decision — subsequent accepted inputs are listed above
 
 Native and prepared offline handoff acceptance is complete. Full production/source
 readiness is not. Native supervised scanner acceptance at `cd28cb0` is complete:

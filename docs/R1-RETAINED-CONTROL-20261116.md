@@ -1,5 +1,12 @@
 # R1.A inventory acceptance and R1.B retained-container adapter
 
+## Current disposition
+
+The later 11:50:08–11:50:18 CET retained-control run and 12:01:22 CET target
+binding are accepted. The failed run and host requests below are historical;
+do not repeat them unchanged. The existing offline finite session now gates
+retained-original restoration. See [current evidence and remaining production work](R1-TARGET-ADMISSION-20261116.md).
+
 ## Supplied native failure and diagnostic/CLI repair
 
 The first retained-control host run on `f0f778af` was 16 November 2026,

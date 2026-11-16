@@ -1,5 +1,54 @@
 # R1.B target/preparation integration and retained-control acceptance
 
+## Current: target binding accepted; finite-session restoration integrated
+
+The supplied target-binding observation ran 16 November 2026,
+11:01:21.917845–11:01:22.002406 UTC (12:01:22 CET), at
+`332797e05a3165d03ec0e3d4b371204fd52a5e4b`. Its standalone report is identical
+to the archive member and all 32 source fingerprints match that revision.
+Report SHA-256: `2b8090d936c20387ff4fd218533c5ffa7b1224938fd7581a0266d95b23f4e336`.
+The exact original container, image, PID/start generation, restart policy and
+readiness configuration projection match the accepted baseline. The newly supplied
+full retained configuration SHA-256 is
+`b1d164ef7ae0fdfade8fe8ca515b3f1ab4d8e784eb9f2bdc8c8e7e6ccdf1bbf5`.
+
+This accepts the one-inspect target-binding boundary. **Do not repeat it unchanged.**
+It is supplied historical host evidence, not a fresh reviewer observation. The
+result remains `target-binding-observed-live-blocked`; process namespaces/global
+ownership were not reobserved. No activation, production modification or provider
+connection occurred.
+
+`shared_session.SharedPrepared` now connects the existing retained controller,
+manifest/storage admission and concrete finite supervisor. The original must be
+confirmed stopped, with no pending action, before a durable shared-session intent.
+The same open controller holds its lock and serializes its operations throughout
+the session. The supervisor owns and reaps both the worker and scanner, validates
+capture/journal and shutdown evidence, and retains its terminal result before
+the bridge can confirm completion. The original is checked again after shutdown.
+
+Explicit start-original and restore-restart operations require the successful
+in-process completion witness plus unchanged source, claims, terminal evidence,
+manifest/preparation, path identities and sufficient fresh capacity samples. A
+saved result cannot reconstruct the witness. Missing/failed writes, changed
+evidence, uncertain shutdown or target drift poison the attempt; nothing restores
+on exception or context exit. Historical inspection remains read-only.
+
+This integrates the **existing offline worker/scanner session**, not a live
+provider launcher. Local tests use real Python/Node child processes and a modeled
+Docker original. The native fixture path remains restricted to its fixed image;
+the actual scanner image is not silently substituted. Production scanner/runtime
+and credential delivery, global ownership, remote preservation and operating terms
+remain open. There is no new host script or request for another small rehearsal.
+Combine the remaining changed production boundaries for R1.C acceptance.
+
+Validation: 20 new shared-session tests and 45 existing production-control tests
+pass (65 total). The new cases exercise actual finite Python/Node children,
+including worker failure/reaping, abort cleanup, lost intent/completion durability,
+source/target/receipt changes, concurrent operation refusal, preexisting supervision,
+capacity loss and read-only recovery. Docker remains modeled locally; no fresh
+Kali, provider or E0 observation was obtained. Source hygiene and whitespace checks
+are required before publication.
+
 ## Supplied native acceptance
 
 Accepted the isolated retained-control run at source
@@ -52,8 +101,8 @@ insufficient headroom refuses dispatch. Storage pressure does not block the stop
 operation's sampling gate; existing journal writes still must succeed. No claim
 of shutdown under a full or broken journal filesystem is made.
 
-This remains a **direct-only** control integration. It cannot restore after a
-shared owner without the still-missing shared-shutdown admission. No production
+`admission.Prepared` remains a **direct-only** control integration. Shared offline
+sessions use the additional `SharedPrepared` gate described above. No production
 mutation entry point is supplied. The library dispatcher requires separately
 scoped caller authority; its tests use a state model and temporary directories.
 Unknown manifest/pilot decisions remain blockers, not approved values.
@@ -65,7 +114,7 @@ preparation absence, storage loss/replacement, durable intent/gate ordering,
 refusal to reuse a registry, read-only recovery and a one-inspect-only collector.
 No local Docker validation is claimed. Source hygiene and script syntax pass.
 
-## One remaining host input for this increment
+## Historical host request — satisfied at 12:01:22 CET
 
 `scripts/r1-production-binding-kali.sh` locates the retained readiness report by its
 previously accepted digest and independently retained producer pins. It performs
@@ -77,14 +126,15 @@ only in local memory; the returned report contains sanitized identity/fingerprin
 No credential values, mounted file contents, service modifications or provider/RPC
 calls are exported/performed. Original evidence is not overwritten.
 
-Return `results/production-binding.zip`, even for an unavailable/drift result.
+The returned `results/production-binding.zip` is accepted above. The original
+instructions were to return the archive even for an unavailable/drift result.
 Keep the prior evidence. Do not retry or change permissions. A match supplies the
 new full configuration fingerprint needed to prepare the actual controller target;
 it does not approve shutdown, rollback, capacity, global ownership or pilot terms.
 A mismatch must be reviewed, never accepted by silently replacing the baseline.
 
 R1.A overall ownership and R1.B overall production readiness remain open. Next:
-shared-owner shutdown/restoration integration, real scanner/finite worker/credential
+production shared-owner/scanner/finite worker/credential
 path, preservation/remote retention, and exact numeric pilot/rollout scope. R1.C
 combined acceptance and R1.D operating approval remain separate. No live pilot or
 confirmation clock has started. Historical engineering effort remains unquantified;
