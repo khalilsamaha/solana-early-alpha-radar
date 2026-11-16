@@ -1,6 +1,15 @@
 # Read-only production-context intake
 
-**Current R1.A diagnostic repair:** the November 16 06:34:22 CET readiness
+**Current R1.A optional-field repair:** the supplied November 16 09:47:20 CET
+report identified `docker-template-field-unavailable-StopSignal` at
+`configuration-before`; later observations were not-run. The template now indexes
+all allowlisted optional Config/HostConfig fields and guards missing labels;
+omitted leaves project null without exporting whole configuration objects.
+Missing stop settings remain unconfirmed. Forty-seven local tests pass; actual
+Docker template execution still requires Kali. The new pinned read-only check is
+scoped in the [engineering record](../docs/R1-ENGINEERING-TO-PILOT-20261116.md).
+
+**Previous R1.A diagnostic repair:** the November 16 06:34:22 CET readiness
 attempt was unavailable and discarded its failure stage. The repaired readiness
 collector emits schema version 2 with a fixed `stages` ledger and safe `failure`
 stage/code/source-line data. It retains no raw exception or Docker diagnostic.

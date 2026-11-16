@@ -1,6 +1,50 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Current R1.A/B disposition: diagnostic repair, host result required
+## Current R1.A/B disposition: omitted Docker field identified and repaired
+
+The next supplied Kali report at `b4f0d7e1` ran November 16,
+08:47:20.374329–08:47:20.449588 UTC (09:47:20 CET). Its archive SHA-256 is
+`b40e5d0efa9af08419bc4b7f6e1a3c55543ad2c830bb84c3e274cc7555c020a7`.
+All fourteen fingerprints match that revision; the separately uploaded JSON is
+byte-identical to the ZIP member. Source hashing and the local Docker path check
+completed. The first configuration request failed with
+`docker-template-field-unavailable-StopSignal`. Every subsequent observation stage
+was not-run. No coherent configuration, census, process or capacity observation
+was retained. This identifies the current checker failure; it does not retroactively
+prove the cause of the earlier generic error or show that the scanner is unhealthy.
+
+The readiness template incorrectly required optional Docker fields through dotted
+lookup. It now uses indexed lookup for every allowlisted optional Config and
+HostConfig leaf, and handles omitted/empty labels and mounts. This includes
+StopSignal and StopTimeout together. Required parent objects and exact identity
+remain required. No whole Config/HostConfig dump or additional Docker request is
+introduced. Missing stop signal/timeout values stay explicitly unconfirmed; no
+effective default or shutdown adequacy is inferred. Secret values stay in local
+memory and the existing output/deadline limits are retained.
+
+Implementation review used Docker CLI's
+[typed-to-raw inspect fallback](https://github.com/docker/cli/blob/v28.0.0/cli/command/inspect/inspector.go)
+and Go's [map-index implementation](https://github.com/golang/go/blob/go1.23.0/src/text/template/funcs.go).
+Those establish the template mechanism, not the installed Kali version. Local
+validation: **47 production-review tests passed**, including null optional fields,
+explicit stop settings, malformed lists, required identity and unconfirmed-setting
+findings, plus prior diagnostic/redaction/cleanup cases. Source hygiene passed.
+Docker and a Go compiler are unavailable in the reviewer workspace, so the actual
+Docker formatter has **not** been executed locally; mocked JSON projection tests
+are not claimed as formatter or host acceptance.
+
+**Required next input:** one read-only invocation of
+`scripts/r1-production-readiness-kali.sh` at the newly published repair, from a
+fresh private `source` checkout. Return `results/production-readiness.zip` even on
+exit 1, without repeating or changing permissions. This is justified by the exact
+observed StopSignal failure and changed optional-field handling. Its scope and
+eleven-request ceiling are unchanged from the diagnostic check below. On a
+coherent result, review the actual deployment inputs before advancing R1.A; on a
+failure, retain the named stage and not-run paths. R1.B remains partial pending
+the deployment inputs. No production change, provider/RPC request, funding,
+signing, journal write, E0 observation or confirmation clock is introduced.
+
+## Previous R1.A/B diagnostic repair and its host request
 
 The owner adopted the gate-map v1 and authorized continuation/publication on
 November 16. R1.A (deployment inputs) remains blocked; R1.B (production candidate)

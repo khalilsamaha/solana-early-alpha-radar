@@ -124,6 +124,15 @@ class ReadinessReportTests(unittest.TestCase):
         self.assertFalse(report['observation']['proposed_storage']['available'])
         self.assertIn('proposed-storage-filesystem-unavailable', report['observation']['findings'])
 
+    def test_missing_stop_settings_produce_findings_without_claiming_effective_defaults(self):
+        with fixture() as mocks:
+            mocks['configuration'].return_value.update(standard_term_signal=None, stop_timeout_seconds=None)
+            report = self.collect()
+        self.assertIn('observation', report)
+        self.assertIn('stop-signal-unconfirmed', report['observation']['findings'])
+        self.assertIn('stop-timeout-unconfirmed', report['observation']['findings'])
+        self.assertIs(report['activation_authorized'], False)
+
     def test_exception_messages_and_custom_stringification_never_escape(self):
         class SensitiveError(Exception):
             def __str__(self):

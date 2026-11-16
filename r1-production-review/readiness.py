@@ -14,15 +14,25 @@ import zipfile
 import intake as i
 import readiness_diagnostics as diagnostics
 
-FORMAT = ('{"id":{{json .Id}},"image":{{json .Image}},"started":{{json .State.StartedAt}},'
-          '"cmd":{{json .Config.Cmd}},"entrypoint":{{json .Config.Entrypoint}},'
-          '"environment":{{json .Config.Env}},"working_dir":{{json .Config.WorkingDir}},'
-          '"ports":{{json .HostConfig.PortBindings}},"tmpfs":{{json .HostConfig.Tmpfs}},'
-          '"caps_drop":{{json .HostConfig.CapDrop}},"caps_add":{{json .HostConfig.CapAdd}},'
-          '"security":{{json .HostConfig.SecurityOpt}},"stop_signal":{{json .Config.StopSignal}},'
-          '"stop_timeout":{{json .Config.StopTimeout}},"mounts":{{json .Mounts}},'
-          '"compose_directory":{{json (index .Config.Labels "com.docker.compose.project.working_dir")}},'
-          '"compose_files":{{json (index .Config.Labels "com.docker.compose.project.config_files")}}}')
+# Docker inspect retries typed-template failures against its raw JSON map with
+# missingkey=error. Optional leaf access must use index, not .Config.StopSignal:
+# an omitted key then projects null instead of aborting the entire observation.
+# Required parent objects and identity fields remain required. This projects the
+# same allowlisted fields; it never requests whole Config/HostConfig objects.
+CONFIG_FIELDS = {'cmd': 'Cmd', 'entrypoint': 'Entrypoint', 'environment': 'Env',
+                 'working_dir': 'WorkingDir', 'stop_signal': 'StopSignal',
+                 'stop_timeout': 'StopTimeout'}
+HOST_FIELDS = {'ports': 'PortBindings', 'tmpfs': 'Tmpfs', 'caps_drop': 'CapDrop',
+               'caps_add': 'CapAdd', 'security': 'SecurityOpt'}
+FORMAT = ('{"id":{{json .Id}},"image":{{json .Image}},"started":{{json .State.StartedAt}},' +
+          ','.join('"' + name + '":{{json (index .' + parent + ' "' + field + '")}}'
+                   for parent, fields in (('Config', CONFIG_FIELDS), ('HostConfig', HOST_FIELDS))
+                   for name, field in fields.items()) +
+          ',"mounts":{{json (index . "Mounts")}},' +
+          ','.join('"' + name + '":{{with (index .Config "Labels")}}{{json (index . "' + label +
+                   '")}}{{else}}null{{end}}' for name, label in (
+                       ('compose_directory', 'com.docker.compose.project.working_dir'),
+                       ('compose_files', 'com.docker.compose.project.config_files'))) + '}')
 FIELDS = {'id', 'image', 'started', 'cmd', 'entrypoint', 'environment', 'working_dir',
           'ports', 'tmpfs', 'caps_drop', 'caps_add', 'security', 'stop_signal', 'stop_timeout',
           'mounts', 'compose_directory', 'compose_files'}
@@ -42,7 +52,8 @@ def configuration(config):
     i.check(isinstance(row['id'], str) and re.fullmatch('[a-f0-9]{64}', row['id']) and
             isinstance(row['image'], str) and re.fullmatch('sha256:[a-f0-9]{64}', row['image']) and
             i.safe_text(row['started'], 40), 'readiness-configuration-identity')
-    env = row['environment']
+    # Omitted optional lists have no entries; malformed non-list values still fail.
+    env = [] if row['environment'] is None else row['environment']
     i.check(type(env) is list and len(env) <= 128, 'readiness-environment-bound')
     values = {}
     for item in env:
@@ -52,7 +63,7 @@ def configuration(config):
                 'readiness-environment-name')
         values[key] = value
     mode = values.get('PUMPPORTAL_SOURCE', '')
-    mounts = row['mounts']
+    mounts = [] if row['mounts'] is None else row['mounts']
     i.check(type(mounts) is list and len(mounts) <= 16 and all(type(m) is dict for m in mounts),
             'readiness-mounts')
     data_mounts = [m for m in mounts if m.get('Destination') == '/app/data']
@@ -78,7 +89,9 @@ def configuration(config):
               'compose_files': compose_files,
               'stop_timeout_seconds': row['stop_timeout'] if type(row['stop_timeout']) is int and
                                       1 <= row['stop_timeout'] <= 300 else None,
-              'standard_term_signal': row['stop_signal'] in (None, '', 'SIGTERM', '15'),
+              # Missing/empty signal does not verify the effective stop behavior.
+              'standard_term_signal': None if row['stop_signal'] in (None, '') else
+                                      row['stop_signal'] in ('SIGTERM', '15'),
               'all_capabilities_dropped': row['caps_drop'] == ['ALL'] and row['caps_add'] in (None, []),
               'no_new_privileges': row['security'] in (['no-new-privileges'], ['no-new-privileges:true']),
               'dashboard_loopback_only': False,
@@ -166,6 +179,8 @@ def observe(config, storage_root, *, trace=None, source=None):
     if first['data_volume_name'] is None: findings.append('existing-data-volume-name-unconfirmed')
     if first['compose_directory'] is None or not first['compose_files']:
         findings.append('original-compose-location-unconfirmed')
+    if first['standard_term_signal'] is not True: findings.append('stop-signal-unconfirmed')
+    if first['stop_timeout_seconds'] is None: findings.append('stop-timeout-unconfirmed')
     if not capacity['available']: findings.append('proposed-storage-filesystem-unavailable')
     if len(members) != 1: findings.append('other-running-containers-require-ownership-review')
     return {'kind': 'r1-production-deployment-inputs', 'started_utc': started, 'finished_utc': i.stamp(),

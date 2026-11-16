@@ -82,3 +82,44 @@ class ReadinessTests(unittest.TestCase):
         result = self.project(row)
         self.assertIsNone(result['data_volume_name']); self.assertIsNone(result['compose_directory'])
         self.assertEqual(result['compose_files'], [])
+
+    def test_omitted_optional_leaves_remain_unknown_without_losing_identity(self):
+        # JSON null is the projection of a missing map key; this exercises the
+        # Python adapter, not a substitute implementation of Go's template engine.
+        row = config()
+        for key in (*r.CONFIG_FIELDS, *r.HOST_FIELDS, 'mounts', 'compose_directory', 'compose_files'):
+            row[key] = None
+        result = self.project(row)
+        self.assertEqual(result['container_id'], 'a' * 64)
+        self.assertIsNone(result['standard_term_signal'])
+        self.assertIsNone(result['stop_timeout_seconds'])
+        self.assertIsNone(result['data_volume_name'])
+        self.assertIsNone(result['compose_directory'])
+        self.assertEqual(result['compose_files'], [])
+        self.assertEqual(result['environment_variable_names'], [])
+        for key in ('command_is_node_scanner', 'all_capabilities_dropped',
+                    'no_new_privileges', 'dashboard_loopback_only', 'tmpfs_tmp_configured'):
+            self.assertIs(result[key], False)
+
+    def test_missing_stop_signal_is_unknown_and_explicit_signals_are_compared(self):
+        for value, expected in ((None, None), ('', None), ('SIGTERM', True), ('15', True),
+                                ('SIGKILL', False), ('SECRET-UNKNOWN-SIGNAL', False)):
+            with self.subTest(value=value):
+                result = self.project({**config(), 'stop_signal': value})
+                self.assertIs(result['standard_term_signal'], expected)
+                self.assertNotIn('SECRET-UNKNOWN-SIGNAL', json.dumps(result))
+
+    def test_missing_or_unsupported_timeout_does_not_invent_default(self):
+        for value in (None, 0, -1, True, '30', 301):
+            with self.subTest(value=value):
+                result = self.project({**config(), 'stop_timeout': value})
+                self.assertIsNone(result['stop_timeout_seconds'])
+
+    def test_null_lists_are_supported_but_malformed_lists_and_missing_identity_refuse(self):
+        for field in ('environment', 'mounts'):
+            for value in ('not-a-list', {}, 7):
+                with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                    self.project({**config(), field: value})
+        for field in ('id', 'image', 'started'):
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                self.project({**config(), field: None})
