@@ -1,6 +1,15 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Latest: Docker ownership inventory accepted; retained-container adapter added
+## Latest: retained-control accepted; target/preparation integration added
+
+The 11:50:08–11:50:18 CET isolated control run is accepted: 29 tests, 13 source
+hashes, four matching journal replays and four cleanup receipts. No unchanged
+native rerun is needed. See [the current integration and precise next input](R1-TARGET-ADMISSION-20261116.md).
+Target/preparation integration passes local validation; one read-only exact-ID
+binding observation is required. Full production/shared-handoff readiness and
+R1.A ownership remain open. E0 and production are unchanged.
+
+## Previous: Docker ownership inventory accepted; retained-container adapter added
 
 The 11:23:54 CET supplied inventory is accepted within its Docker metadata scope.
 All 22 producer fingerprints match and all 19 container identities reconcile.

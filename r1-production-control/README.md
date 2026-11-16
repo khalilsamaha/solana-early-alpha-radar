@@ -7,6 +7,20 @@ production launcher, shared-owner start or production admission is implemented.
 This round trip is **direct-only**: it cannot be used as the rollback interface
 after starting a shared owner without the missing shared-shutdown integration.
 
+## Current acceptance and admission integration
+
+The supplied 11:50:08–11:50:18 CET run on `a858024b` passed the isolated boundary:
+29 tests, 13 producer hashes, four matching journal replays and four cleanup
+receipts. Do not repeat that unchanged native check.
+
+`admission.py` connects the reviewed readiness target to a single exact-ID Docker
+inspection and connects the retained controller to manifest/storage preparation.
+The separate `check_binding.py` entry point is read-only: one production inspect,
+no control construction/mutation, unit suite or disposable actors. It supplies the
+full fingerprint needed for deployment-specific binding while retaining activation
+and ownership blockers. Raw configuration stays in memory. See
+[the acceptance and required input](../docs/R1-TARGET-ADMISSION-20261116.md).
+
 ## Evidence and persistence
 
 The existing `r1-control.Control` journal writer now exposes contract hooks;
@@ -88,8 +102,8 @@ Primary command semantics consulted 16 November 2026:
 
 ## Remaining before production
 
-Wire this adapter to the accepted observed-target binding and the production
-admission/preparation path; restrict restoration to independently confirmed shared
+Obtain supplied-host acceptance of the new observed-target binding and complete
+production admission; restrict restoration to independently confirmed shared
 owner shutdown; finish the actual shared scanner/worker/credentials integration,
 preservation/remote retention and explicit pilot terms. Original-container
 retention is the candidate restoration mechanism, not a claim those gates passed.
