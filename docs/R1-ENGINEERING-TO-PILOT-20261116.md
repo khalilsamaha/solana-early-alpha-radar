@@ -1,6 +1,15 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Latest: offline full application boundary accepted
+## Latest: application/restoration integration ready for one native batch
+
+The accepted full application image now uses the finite shared owner and existing
+retained-original restoration gate. Missing application/bridge confirmation or
+changed SQLite bytes prevent original start. Local regression and model checks
+pass; Docker is unavailable here. One new combined Kali invocation is required.
+See [the four cases, bounds, evidence and remaining gates](R1-APPLICATION-HANDOFF-20261117.md).
+Earlier accepted boundaries need no unchanged rerun; E0 stays independent.
+
+## Previous: offline full application boundary accepted
 
 The supplied 19:28:20–19:28:26 CET remaining-cases archive at `079530f` reconciles
 all 74 source pins, thirteen indexed members, both application results and both

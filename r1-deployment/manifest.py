@@ -15,6 +15,7 @@ POLICY = {'research_seconds', 'service_seconds', 'setup_seconds', 'shutdown_seco
           'headroom_bytes', 'retention_seconds', 'funding_lamports',
           'data_fee_lamports', 'exposed_lamports', 'remaining_engineering_minutes'}
 CONFIG = {'scanner_image', 'scanner_config_sha256', 'rollback_config_sha256',
+          'shared_scanner_image', 'shared_scanner_manifest_sha256',
           'owner_source_sha256', 'registry_path', 'endpoint_path', 'capture_path',
           'remote_destination_sha256', 'credential_method'}
 
@@ -67,7 +68,7 @@ def validate(config, policy):
             continue
         if key.endswith('_sha256'):
             check(isinstance(value, str) and HEX.fullmatch(value), 'config-hash')
-        elif key == 'scanner_image':
+        elif key in ('scanner_image','shared_scanner_image'):
             check(isinstance(value, str) and value.startswith('sha256:') and
                   HEX.fullmatch(value[7:]), 'image-digest')
         elif key.endswith('_path'):

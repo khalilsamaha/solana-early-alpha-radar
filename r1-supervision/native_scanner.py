@@ -10,6 +10,7 @@ import subprocess
 import sys
 import time
 import runtime as r
+import application_scanner as application
 sys.path.insert(0,str(r.ROOT.parent/'r1-native-handoff'))
 import native as n
 m=r.m;p=r.preparation
@@ -66,7 +67,9 @@ def validate_identity(row,claim_bytes,manifest,development):
             all(type(v) is int and v>0 for v in proc.values()),'native-process-identity')
     if development:m.check(row['actor'] is None,'native-development-actor')
     else:
-        actor=row['actor'];n.consumer_isolation(actor,actor['label'],Path(manifest['config']['registry_path']))
+        actor=row['actor']
+        validator=application.isolation if application.enabled(manifest) else n.consumer_isolation
+        validator(actor,actor['label'],Path(manifest['config']['registry_path']))
         m.check(actor['running'] is True and actor['pid']==proc['pid'],'native-container-process')
 
 
@@ -163,10 +166,12 @@ class Scanner:
             m.check(os.getuid()==os.geteuid()==os.getgid()==os.getegid()==1000,'native-uid')
             config=self.registry/'native-docker-config';config.mkdir(mode=0o700)
             cli=[n.image.host.DOCKER,'--config',str(config),'--host','unix://'+n.image.host.SOCKET]
-            m.check(n.image.bounded(cli+['image','inspect','--format','{{.Id}}',n.c.IMAGE]).decode().strip()==n.c.IMAGE,'native-image-unavailable')
-            self.actor=n.Actor(cli,'consumer',self.registry)
+            full=application.enabled(self.manifest);image_id=application.IMAGE if full else n.c.IMAGE
+            m.check(n.image.bounded(cli+['image','inspect','--format','{{.Id}}',image_id]).decode().strip()==image_id,'native-image-unavailable')
+            self.actor=application.Actor(cli,self.registry) if full else n.Actor(cli,'consumer',self.registry)
             write(self.registry,INTENT,{'schema':1,'claim_sha256':m.digest(self.claim_bytes),'development':False,
-                'kind':'isolated-image-consumer','name':self.actor.name,'token':self.actor.token,'image':n.c.IMAGE})
+                'kind':'isolated-application-consumer' if full else 'isolated-image-consumer',
+                'name':self.actor.name,'token':self.actor.token,'image':image_id})
             self.actor.start();self.process=self.actor.process
             actor=self.actor.stable();self.initial=n.proc_identity(actor['pid'])
         m.check(time.monotonic()<deadline,'native-start-deadline')
@@ -175,6 +180,9 @@ class Scanner:
             'development':self.development,'actor':actor,'process_identity':self.initial})
 
     def finish(self,deadline,mode,collect):
+        if mode==application.MODE:
+            self.actor.finish(deadline,collect);self.result=self.actor.result
+            m.check(time.monotonic()<deadline,'native-terminal-deadline');return
         normal=mode=='session-native-normal';wanted=expected_result(mode,self.development)
         sources=wanted['tokens']
         if self.development:
@@ -219,12 +227,16 @@ def validate(row,mode,*,complete,registry):
     elif row['actor'] is not None:
         actor=row['actor'];m.check(actor['development'] is False and actor['removed'] is True
                                   and actor['client_reaped'] is True and actor['role']=='consumer','native-container-cleanup')
-        for observation in actor['observations']:
-            n.consumer_isolation(observation,actor['token'],Path(registry))
-            m.check(observation['id']==actor['id'],'native-container-id')
-        if actor['initial'] is not None:n.consumer_isolation(actor['initial'],actor['token'],Path(registry))
+        if mode==application.MODE:application.validate_actor_receipt(actor,Path(registry),complete=complete)
+        else:
+            for observation in actor['observations']:
+                n.consumer_isolation(observation,actor['token'],Path(registry))
+                m.check(observation['id']==actor['id'],'native-container-id')
+            if actor['initial'] is not None:n.consumer_isolation(actor['initial'],actor['token'],Path(registry))
     if row['result'] is not None:
-        m.check(row['started']==1 and row['returncode']==0 and m.raw(row['result'])==m.raw(expected_result(mode,row['development'])),'native-result')
+        m.check(row['started']==1 and row['returncode']==0,'native-result')
+        if mode==application.MODE:application.validate_result(row['result'])
+        else:m.check(m.raw(row['result'])==m.raw(expected_result(mode,row['development'])),'native-result')
     if complete:
         m.check(row['result'] is not None and (row['development'] or row['actor'] is not None
                 and row['actor']['created'] is True and row['actor']['ready'] is True

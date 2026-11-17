@@ -33,6 +33,7 @@ class SharedPrepared(a.Prepared):
         c.check(mode in supervisor.session.SCANNER_MODES,'shared-scanner-mode-required')
         c.check(type(native_development) is bool and
                 (mode in supervisor.session.NATIVE_MODES or not native_development),'shared-native-development')
+        c.check(mode!=supervisor.session.APPLICATION_MODE or not native_development,'application-native-only')
         plan,_=self.preparation()
         supervisor.session.validate_mode(plan,mode)
         self.mode=mode;self.development=native_development

@@ -20,6 +20,9 @@ def pins():
             for p in sorted(ROOT.iterdir()) if p.suffix in ('.py','.md','.mjs')}}
     script=ROOT.parent/'scripts/r1-native-supervision-kali.sh'
     result[str(script.relative_to(ROOT.parent))]=m.digest(script.read_bytes())
+    for name in ('r1-image/check_runtime.py','r1-image/test_runtime.py',
+                 'r1-production-control/command_io.py','r1-production-control/production_control.py'):
+        result[name]=m.digest((ROOT.parent/name).read_bytes())
     return result
 
 

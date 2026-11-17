@@ -74,6 +74,7 @@ def reap(process):
 def run(manifest_directory,sha,*,mode='complete',native_development=False):
     m.check(mode in MODES,'runtime-mode')
     m.check(type(native_development) is bool and (mode in session.NATIVE_MODES or not native_development),'runtime-native-development')
+    m.check(mode!=session.APPLICATION_MODE or not native_development,'application-native-only')
     manifest_directory=m.absolute(str(manifest_directory))
     manifest=m.inspect(manifest_directory,sha);profile=r.profile(manifest)
     if mode in session.MODES:session.validate_mode(manifest,mode)
@@ -227,6 +228,7 @@ def inspect(registry,sha):
         m.check(claim['activation_authorized'] is False and claim['automatic_resume_allowed'] is False,'runtime-claim-authority')
         m.check(type(claim['native_development']) is bool and (claim['mode'] in session.NATIVE_MODES
                 or not claim['native_development']),'runtime-native-development')
+        m.check(claim['mode']!=session.APPLICATION_MODE or not claim['native_development'],'application-native-only')
         m.check(claim['credential_handoff']==('sealed-synthetic-fd' if claim['mode'] in session.MODES else None),
                 'runtime-credential-binding')
         utc(claim['created_utc'])

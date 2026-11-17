@@ -1,5 +1,13 @@
 # Manifest-bound resource supervision candidate
 
+## Current full application integration
+
+The separate `session-application-normal` mode binds the accepted full application
+image to this supervisor and the existing retained-original restoration gate.
+[The combined handoff record](../docs/R1-APPLICATION-HANDOFF-20261117.md) describes
+the fixed image, new fixture storage, read-only SQLite validation and one pending
+native acceptance batch. It is not a production launcher or live-provider mode.
+
 ## Current credential integration
 
 Session modes now receive a generated synthetic credential through the existing

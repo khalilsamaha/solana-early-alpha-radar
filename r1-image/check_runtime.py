@@ -142,6 +142,11 @@ def isolation(raw,token,image_id,ipc,data,case):
 
 def verify_result(row,expected,case):
     image.c.verify_result(row.get('identity'),expected)
+    verify_runtime_fields(row,case)
+
+
+def verify_runtime_fields(row,case):
+    """Application receipt fields; caller separately binds packaged identity."""
     missing=case=='missing-endpoint';normal=case=='normal'
     fixed={'schema':1,'kind':'full-scanner-runtime-probe','case':case,
         'outcome':'startup-refused-before-storage' if missing else 'application-gap-and-shutdown-confirmed',

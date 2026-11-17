@@ -24,7 +24,7 @@ class ManifestTests(unittest.TestCase):
         config, policy = inputs()
         for k in config:
             config[k] = 'a'*64 if k.endswith('_sha256') else None
-        config.update(scanner_image='sha256:'+'b'*64, registry_path='/var/lib/radar-control',
+        config.update(scanner_image='sha256:'+'b'*64, shared_scanner_image='sha256:'+'c'*64, registry_path='/var/lib/radar-control',
                       endpoint_path='/var/lib/radar-control/discovery.sock', capture_path='/var/lib/radar-capture', credential_method='sealed-fd')
         policy.update({k: 1 for k in policy})
         row = m.build(config, policy)

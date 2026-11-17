@@ -17,24 +17,30 @@ from provider_wire import Wire,secret_variants
 from shared_discovery import deliver
 m=r.m;p=r.preparation
 PIPE_MODES={'session-scanner-normal','session-scanner-cleanup-failure'}
-NATIVE_MODES={'session-native-normal','session-native-cleanup-failure'}
+APPLICATION_MODE='session-application-normal'
+NATIVE_MODES={'session-native-normal','session-native-cleanup-failure',APPLICATION_MODE}
 SCANNER_MODES=PIPE_MODES|NATIVE_MODES
 MODES={'session-normal','session-cleanup-failure','session-operator-stop'}|SCANNER_MODES
 FILES=('admission.json','research-retired.json','stopped.json','session.jsonl','capture/ticks.db')
 
 
 def kind(mode):
-    return mode.replace('session-scanner-','session-').replace('session-native-','session-')
+    return mode.replace('session-scanner-','session-').replace('session-native-','session-').replace('session-application-','session-')
 
 
 def validate_mode(manifest,mode):
     limits(manifest)
+    m.check(mode==APPLICATION_MODE or all(manifest['config'].get(k) is None for k in
+            ('shared_scanner_image','shared_scanner_manifest_sha256')),'application-mode-binding')
     if mode in PIPE_MODES:
         m.check(manifest['policy']['research_seconds']<=3 and manifest['policy']['service_seconds']<=5
                 and r.profile(manifest)['wall_seconds']<=12,'scanner-fixture-duration')
     if mode in NATIVE_MODES:
         import native_scanner as native
-        m.check(manifest['config']['scanner_image']==native.n.c.IMAGE,'native-manifest-image')
+        if mode==APPLICATION_MODE:
+            import application_scanner
+            application_scanner.validate_profile(manifest)
+        else:m.check(manifest['config']['scanner_image']==native.n.c.IMAGE,'native-manifest-image')
         m.check(manifest['policy']['research_seconds']<=3 and manifest['policy']['service_seconds']<=5
                 and r.profile(manifest)['wall_seconds']<=30,'native-fixture-duration')
 
@@ -138,7 +144,11 @@ async def exercise(manifest,mode,pipe_fd=-1,native_development=False,*,secret=fi
         async def send(self,command):
             row=c.strict_json(command.encode());self.sent.append(row)
             if row['method']=='subscribeTokenTrade':
-                for event in ('buy','sell','migration'):self.frames.put_nowait(self.event(event))
+                for event in ('buy','sell','migration'):
+                    raw=self.event(event)
+                    if mode==APPLICATION_MODE and event=='migration':
+                        changed=c.strict_json(raw);changed['mint']='1'*31+'3';raw=c.canonical(changed).encode()
+                    self.frames.put_nowait(raw)
             if row['method']=='unsubscribeTokenTrade' and selected=='cleanup-failure':
                 raise RuntimeError(secret)
     peer=(ScannerUpstream if mode in SCANNER_MODES else fixtures.Peer)(selected,4)
@@ -195,8 +205,8 @@ async def exercise(manifest,mode,pipe_fd=-1,native_development=False,*,secret=fi
         await wait_event(started,manifest['policy']['setup_seconds'])
         if mode=='session-operator-stop':shutdown.set()
         await wait_event(retired,manifest['policy']['research_seconds']+manifest['policy']['shutdown_seconds'])
-        if mode in ('session-scanner-normal','session-native-normal'):
-            event=c.strict_json(peer.event('create',10));event['mint']='1'*31+'3'
+        if mode in ('session-scanner-normal','session-native-normal',APPLICATION_MODE):
+            event=c.strict_json(peer.event('create',10));event['mint']='1'*31+('4' if mode==APPLICATION_MODE else '3')
             peer.frames.put_nowait(c.canonical(event).encode())
             # Wait for delivery itself, not a timing rehearsal or arbitrary sleep.
             async with asyncio.timeout(manifest['policy']['shutdown_seconds']):
