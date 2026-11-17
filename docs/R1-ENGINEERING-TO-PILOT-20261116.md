@@ -1,13 +1,15 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Latest: application/restoration integration ready for one native batch
+## Latest: combined application/restoration native evidence accepted
 
-The accepted full application image now uses the finite shared owner and existing
-retained-original restoration gate. Missing application/bridge confirmation or
-changed SQLite bytes prevent original start. Local regression and model checks
-pass; Docker is unavailable here. One new combined Kali invocation is required.
-See [the four cases, bounds, evidence and remaining gates](R1-APPLICATION-HANDOFF-20261117.md).
-Earlier accepted boundaries need no unchanged rerun; E0 stays independent.
+The supplied November 17, 06:48:00–06:48:20 CET archive at `56647b5` reconciles
+238 source pins, 142 indexed members, four control journals, four capture archives,
+all application SQLite evidence and eight distinct owned cleanup receipts. Normal
+restoration succeeds; lost application confirmation, lost bridge confirmation and
+changed database bytes correctly prevent original start. No unchanged rerun is
+needed. See [the exact hashes, dispositions and remaining gates](R1-APPLICATION-HANDOFF-20261117.md).
+This is uploaded-artifact review, not a new live-host/RPC query. Production readiness
+and E0 closure remain separate and blocked.
 
 ## Previous: offline full application boundary accepted
 

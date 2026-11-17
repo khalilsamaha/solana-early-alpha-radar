@@ -1,8 +1,9 @@
 # Solana Early Alpha Radar
 
-**R1 research branch — 17 November 2026:** the full application is now connected to
-the finite owner and retained restoration gate. Local validation passes;
-[one new combined Kali batch is needed](docs/R1-APPLICATION-HANDOFF-20261117.md).
+**R1 research branch — 17 November 2026:** the full application/finite-owner/retained
+restoration integration is [accepted on supplied native evidence](docs/R1-APPLICATION-HANDOFF-20261117.md)
+from 06:48:00–06:48:20 CET. All four cases and eight owned cleanup receipts reconcile.
+No unchanged Kali rerun is needed. Production and E0 remain separately blocked.
 
 **Accepted earlier boundaries — 16 November 2026:** the combined native handoff batch is
 [accepted](docs/R1-COMBINED-ACCEPTANCE-20261116.md), and all three
