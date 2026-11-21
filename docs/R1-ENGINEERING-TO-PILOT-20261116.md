@@ -1,6 +1,14 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Current engineering: bounded production access-path review prepared
+## 21 November 2026 · R1B can proceed independently
+
+The owner placed R1A on hold pending an independently managed host. Earlier
+host-input requests below are historical. The six accepted guarded handoff cases
+are inputs for the [R1B local delivery and recovery checks](../r1-guarded-delivery/README.md).
+The next preservation boundary is independent off-machine delivery and retention
+under reviewed storage terms. E0 remains blocked with holds preserved.
+
+## 17 November 2026 · Bounded production access-path review prepared
 
 After acceptance of all six guarded offline cases, the remaining production
 ownership gap was narrowed to missing control/data access-path evidence.

@@ -1,9 +1,14 @@
 # Solana Early Alpha Radar
 
-**Next production input — 17 November 2026:** the existing read-only reviewer now
-includes [bounded Docker control/data access-path inspection](docs/R1-PRODUCTION-AUTHORITY-20261117.md).
-Local tests pass; one new metadata-only Kali observation is pending. No accepted
-handoff rerun or production mutation is requested, and no global exclusivity is claimed.
+**21 November 2026.** R1A is on hold pending an independently managed host.
+Candidate review covers administrators, console, storage and restore authority.
+Host-specific implementation can follow acceptance of that boundary. Target
+binding, runtime, provider ownership and pilot admission remain open.
+
+R1B now supports [single-attempt local delivery of guarded handoff evidence](r1-guarded-delivery/README.md).
+All six November 17 fixture verdicts survived local retrieval and independent
+inspection. The pre-existing [Docker authority review](docs/R1-PRODUCTION-AUTHORITY-20261117.md)
+remains historical evidence. E0 remains blocked with holds preserved.
 
 **New offline engineering — 17 November 2026:** [cooperating service ownership,
 separate phase budgets and full portable handoff evidence](docs/R1-GUARDED-HANDOFF-20261117.md)
