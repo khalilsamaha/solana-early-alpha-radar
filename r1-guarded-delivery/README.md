@@ -31,9 +31,9 @@ The command emits a single integrity receipt only after both batches pass. It op
 
 **Preservation disposition.** Independent recovery of these historical fixtures is verified at that observation. A transfer from the future pilot producer, access and retention policy at its destination, and recovery after the agreed retention interval remain open. A future bounded delivery needs a named private destination, a retention term, a permitted storage budget, and a receiving identity able to retrieve independently of the source. Retain failed or interrupted attempts for reconciliation. The current evidence supports no claim of continuous coverage, future availability or live pilot readiness.
 
-## Recommended pilot retention policy · 21 November 2026
+## Owner-approved pilot retention policy · 21 November 2026
 
-**Keep each complete or quarantined R1B evidence package for at least 90 days.** This gives the project a quarterly review window and time to repeat a restore after the pilot closes. The period is a design choice. The November 21 recovery of historical fixtures establishes a point-in-time result only.
+**Keep each complete or quarantined R1B evidence package for at least 90 days.** This gives the project a quarterly review window and time to repeat a restore after the pilot closes. The owner approved this term, the dedicated prefix, independent restores and zero incremental spend on November 21, 2026. The November 21 recovery of historical fixtures establishes a point-in-time result only.
 
 | Decision | Pilot policy |
 |---|---|
@@ -44,4 +44,6 @@ The command emits a single integrity receipt only after both batches pass. It op
 | Budget | Allow zero incremental spend. Before writing, calculate the batch size from the final manifest and verify headroom in the existing allowance for retained versions, pending uploads, operations and both retrievals. Retain local originals if capacity or charges are uncertain. The two historical archives totaled 4,019,855 bytes; live pilot sizing remains open. |
 | Activation evidence | Record the exact private bucket and prefix, effective lifecycle and retention rules, existing access for the writer and independent reader, and the available allowance. Review all rules that can match the prefix, including bucket-wide rules. Hold the transfer if current settings permit premature loss or prevent independent recovery. |
 
-B2 lifecycle rules can hide or delete versions. Bucket-level Object Lock enablement is irreversible. This recommendation leaves both mechanisms as configured and calls for reviewing the effective settings before the first pilot write. The 90-day target is an operating policy; evidence of enforced immutability requires separate verification. [B2 lifecycle rules](https://www.backblaze.com/docs/cloud-storage-lifecycle-rules) · [B2 Object Lock](https://www.backblaze.com/docs/cloud-storage-object-lock)
+B2 lifecycle rules can hide or delete versions. Bucket-level Object Lock enablement is irreversible. The approved policy requires review of the effective settings before the first pilot write. The 90-day target is an operating policy; evidence of enforced immutability requires separate verification. [B2 lifecycle rules](https://www.backblaze.com/docs/cloud-storage-lifecycle-rules) · [B2 Object Lock](https://www.backblaze.com/docs/cloud-storage-object-lock)
+
+**Destination review status at approval.** The [previous B2 rehearsal](../docs/R1-SESSION-BACKUP-20261111.md) identifies the intended bucket as `solana-radar-backups-redeye-2026`. That bounded round trip used `r1-rehearsal/`. The proposed pilot destination in the same bucket is `r1-pilot-evidence/`. Current bucket privacy, applicable lifecycle and Object Lock settings, writer and independent-reader access to the pilot prefix, and allowance for the final pilot manifest remain unverified. The first pilot upload is pending these checks. Its version-specific retention clock begins at upload.
