@@ -6,8 +6,8 @@ Host-specific implementation can follow acceptance of that boundary. Target
 binding, runtime, provider ownership and pilot admission remain open.
 
 R1B now supports [single-attempt local delivery of guarded handoff evidence](r1-guarded-delivery/README.md).
-All six November 17 fixture verdicts survived local retrieval and independent
-inspection. The pre-existing [Docker authority review](docs/R1-PRODUCTION-AUTHORITY-20261117.md)
+On November 21 a fresh off-machine retrieval of the two historical archives
+reproduced all six fixture verdicts. Pilot delivery and retention remain open. The pre-existing [Docker authority review](docs/R1-PRODUCTION-AUTHORITY-20261117.md)
 remains historical evidence. E0 remains blocked with holds preserved.
 
 **New offline engineering — 17 November 2026:** [cooperating service ownership,

@@ -5,8 +5,9 @@
 The owner placed R1A on hold pending an independently managed host. Earlier
 host-input requests below are historical. The six accepted guarded handoff cases
 are inputs for the [R1B local delivery and recovery checks](../r1-guarded-delivery/README.md).
-The next preservation boundary is independent off-machine delivery and retention
-under reviewed storage terms. E0 remains blocked with holds preserved.
+Independent restore of the six accepted historical fixtures from existing off-machine
+storage passed on November 21. Delivery from the future producer and the destination’s
+retention terms remain open. E0 remains blocked with holds preserved.
 
 ## 17 November 2026 · Bounded production access-path review prepared
 
