@@ -39,14 +39,16 @@ def socket_identity(path):
     return {'device':st.st_dev,'inode':st.st_ino,'uid':st.st_uid,'gid':st.st_gid,'mode':stat.S_IMODE(st.st_mode)}
 
 
-def validate_endpoint(row,claim_bytes,manifest,development):
+def validate_endpoint(row,claim_bytes,manifest,development,*,expected_uid=None,expected_gid=None):
+    uid=os.getuid() if expected_uid is None else expected_uid
+    gid=os.getgid() if expected_gid is None else expected_gid
     m.check(set(row)=={'schema','kind','claim_sha256','manifest_sha256','path','development','socket'}
             and type(row['schema']) is int and row['schema']==1 and row['kind']=='private-unix-endpoint'
             and row['claim_sha256']==m.digest(claim_bytes) and row['manifest_sha256']==m.digest(m.raw(manifest))
             and row['path']==manifest['config']['endpoint_path'] and row['development'] is development,'native-endpoint-binding')
     st=row['socket']
     m.check(set(st)=={'device','inode','uid','gid','mode'} and all(type(v) is int for v in st.values())
-            and st['device']>=0 and st['inode']>0 and st['uid']==os.getuid() and st['gid']==os.getgid()
+            and st['device']>=0 and st['inode']>0 and st['uid']==uid and st['gid']==gid
             and st['mode']==0o600,'native-endpoint-metadata')
 
 
@@ -73,7 +75,9 @@ def validate_identity(row,claim_bytes,manifest,development):
         m.check(actor['running'] is True and actor['pid']==proc['pid'],'native-container-process')
 
 
-def validate_peer(row,identity,identity_raw,endpoint_raw,claim_bytes,development):
+def validate_peer(row,identity,identity_raw,endpoint_raw,claim_bytes,development,*,expected_uid=None,expected_gid=None):
+    uid=os.getuid() if expected_uid is None else expected_uid
+    gid=os.getgid() if expected_gid is None else expected_gid
     m.check(set(row)=={'schema','kind','claim_sha256','identity_sha256','endpoint_sha256','pid','uid','gid','process_identity'}
             and type(row['schema']) is int and row['schema']==1 and row['kind']=='kernel-unix-peer'
             and row['claim_sha256']==m.digest(claim_bytes) and row['identity_sha256']==m.digest(identity_raw)
@@ -81,8 +85,8 @@ def validate_peer(row,identity,identity_raw,endpoint_raw,claim_bytes,development
     proc=row['process_identity']
     m.check(set(proc)=={'pid','ppid','start_ticks'} and all(type(v) is int and v>0 for v in proc.values())
             and type(row['pid']) is int and row['pid']==proc['pid']
-            and type(row['uid']) is int and row['uid']==os.getuid()
-            and type(row['gid']) is int and row['gid']==os.getgid(),'native-peer-credentials')
+            and type(row['uid']) is int and row['uid']==uid
+            and type(row['gid']) is int and row['gid']==gid,'native-peer-credentials')
     if development:m.check(proc==identity['process_identity'],'native-peer-process')
     else:m.check(proc['ppid']==identity['process_identity']['pid'],'native-peer-parent')
 
@@ -167,13 +171,18 @@ class Scanner:
             config=self.registry/'native-docker-config';config.mkdir(mode=0o700)
             cli=[n.image.host.DOCKER,'--config',str(config),'--host','unix://'+n.image.host.SOCKET]
             full=application.enabled(self.manifest);image_id=application.IMAGE if full else n.c.IMAGE
-            m.check(n.image.bounded(cli+['image','inspect','--format','{{.Id}}',image_id]).decode().strip()==image_id,'native-image-unavailable')
+            command=cli+['image','inspect','--format','{{.Id}}',image_id]
+            available=application.check.run(command,seconds=application.remaining(deadline,4)) if full else n.image.bounded(command)
+            m.check(available.decode().strip()==image_id,'native-image-unavailable')
             self.actor=application.Actor(cli,self.registry) if full else n.Actor(cli,'consumer',self.registry)
             write(self.registry,INTENT,{'schema':1,'claim_sha256':m.digest(self.claim_bytes),'development':False,
                 'kind':'isolated-application-consumer' if full else 'isolated-image-consumer',
                 'name':self.actor.name,'token':self.actor.token,'image':image_id})
-            self.actor.start();self.process=self.actor.process
-            actor=self.actor.stable();self.initial=n.proc_identity(actor['pid'])
+            if full:self.actor.start(deadline)
+            else:self.actor.start()
+            self.process=self.actor.process
+            actor=self.actor.stable(deadline) if full else self.actor.stable()
+            self.initial=n.proc_identity(actor['pid'])
         m.check(time.monotonic()<deadline,'native-start-deadline')
         write(self.registry,IDENTITY,{'schema':1,'kind':'isolated-native-scanner-identity',
             'claim_sha256':m.digest(self.claim_bytes),'manifest_sha256':m.digest(m.raw(self.manifest)),

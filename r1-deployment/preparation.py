@@ -169,8 +169,10 @@ def inspect(registry, expected_manifest_sha256):
         os.close(fd)
 
 
-def validate_observation(row, manifest, claim):
+def validate_observation(row, manifest, claim, *, expected_uid=None):
     """Replay recorded metadata without treating it as a fresh observation."""
+    uid=os.getuid() if expected_uid is None else expected_uid
+    m.check(type(uid) is int and uid>=0,'preparation-observation-uid')
     fields={'schema','kind','manifest_sha256','source_sha256','paths','before','after','started_utc',
             'finished_utc','elapsed_seconds','available_bytes','required_bytes','status','capacity_sample_sufficient',
             'remaining_blockers','space_reserved','retention_verified','writes_performed','activation_authorized','automatic_resume_allowed'}
@@ -193,7 +195,7 @@ def validate_observation(row, manifest, claim):
         for sample in (before,after):
             m.check(set(sample)=={'device','inode','uid','mode','available_bytes'} and
                     all(type(sample[k]) is int for k in sample) and sample['device']>=0 and sample['inode']>0
-                    and sample['uid']==os.getuid() and 0<=sample['mode']<=0o7777 and not sample['mode']&0o077,
+                    and sample['uid']==uid and 0<=sample['mode']<=0o7777 and not sample['mode']&0o077,
                     'preparation-observation-metadata')
             m.check(type(sample['available_bytes']) is int and sample['available_bytes']>=0, 'preparation-observation-space')
             values.append(sample['available_bytes'])

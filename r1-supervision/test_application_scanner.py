@@ -109,7 +109,7 @@ class ApplicationTests(unittest.TestCase):
 
     def test_receipt_rechecks_database_and_disposal(self):
         path=database(self.registry);actor=app.Actor([],self.registry);row=target(self.registry,actor.token)
-        receipt={**actor.receipt(),'removed':True,'client_reaped':True,'id':row['id'],'initial':row,
+        receipt={**actor.receipt(),'created':True,'ready':True,'removed':True,'client_reaped':True,'id':row['id'],'initial':row,
             'observations':[row,{**row,'running':False,'pid':0,'finished':'2026-11-17T10:00:01Z'}],'result':result(),'application_storage':app.storage_proof(self.registry),
             'application_capacity':{'available_bytes':4*app.MAX_STORAGE}}
         app.validate_actor_receipt(receipt,self.registry,complete=True)
@@ -118,6 +118,43 @@ class ApplicationTests(unittest.TestCase):
         with closing(sqlite3.connect(path)) as db:db.execute('UPDATE candidates SET id=9 WHERE id=1');db.commit()
         with self.assertRaisesRegex(ValueError,'application-storage-evidence'):
             app.validate_actor_receipt(receipt,self.registry,complete=True)
+
+    def test_full_storage_hash_detects_same_size_nonprimary_file_change(self):
+        database(self.registry);extra=self.registry/app.DATA/'statistics-cache';extra.write_bytes(b'abcd');extra.chmod(0o600)
+        before=app.storage_proof(self.registry);extra.write_bytes(b'abce');after=app.storage_proof(self.registry)
+        self.assertEqual(before['sha256'],after['sha256']);self.assertEqual(before['counts'],after['counts'])
+        self.assertEqual(before['storage_bytes'],after['storage_bytes']);self.assertNotEqual(before['file_sha256'],after['file_sha256'])
+
+    def test_expired_deadline_prevents_create_and_remaining_time_bounds_observation(self):
+        actor=app.Actor(['docker-model'],self.registry)
+        with patch.object(app.time,'monotonic',return_value=100),patch.object(app.check,'run',side_effect=AssertionError('dispatch')):
+            with self.assertRaisesRegex(ValueError,'application-deadline'):actor.start(99)
+        self.assertFalse(actor.attempted);self.assertFalse((self.registry/app.DATA).exists())
+        with patch.object(app.time,'monotonic',return_value=100),patch.object(app.check,'run',return_value=m.raw(target(self.registry,actor.token))) as run:
+            actor.observe(100.25)
+        self.assertEqual(run.call_args.kwargs['seconds'],.25)
+
+    def test_expired_run_deadline_does_not_disable_owned_cleanup(self):
+        actor=app.Actor(['docker-model'],self.registry);actor.attempted=True
+        with patch.object(app.time,'monotonic',return_value=100),patch.object(app.check,'run',return_value=m.raw(target(self.registry,actor.token))) as run,\
+             patch.object(app.n.image,'bounded',return_value=b'b'*64+b'\n'):
+            with self.assertRaisesRegex(ValueError,'application-deadline'):actor.observe(99)
+            actor.dispose()
+        self.assertTrue(actor.removed);self.assertEqual(run.call_args.kwargs['seconds'],4)
+
+    def test_expiry_during_create_blocks_attach_and_keeps_owned_disposal_available(self):
+        actor=app.Actor(['docker-model'],self.registry);now=[100.0];calls=[]
+        def command(args,**kwargs):
+            calls.append((args[1],kwargs['seconds']))
+            if args[1]=='create':now[0]=101;return b'b'*64+b'\n'
+            return m.raw({**target(self.registry,actor.token),'running':False,'pid':0})
+        with patch.object(app.time,'monotonic',side_effect=lambda:now[0]),patch.object(app.check,'run',side_effect=command),\
+             patch.object(app.subprocess,'Popen',side_effect=AssertionError('late attach')),\
+             patch.object(app.n.image,'bounded',return_value=b'b'*64+b'\n'):
+            with self.assertRaisesRegex(ValueError,'application-deadline'):actor.start(100.5)
+            self.assertTrue(actor.created);self.assertFalse(actor.ready);self.assertEqual(calls,[('create',.5)])
+            actor.dispose()
+        self.assertTrue(actor.removed);self.assertEqual(calls[-1],('inspect',4))
 
     def test_uncertain_create_uses_owned_name_for_cleanup(self):
         actor=app.Actor(['docker-model'],self.registry);calls=[]

@@ -18,7 +18,10 @@ RESULT='retained-shared-result.json'
 
 def pins():
     return {**a.pins(),**supervisor.r.pins(),
-            'r1-production-control/shared_session.py':c.digest(Path(__file__).read_bytes())}
+            **{name:c.digest((control.ROOT/name).read_bytes()) for name in
+               ('r1-production-control/shared_session.py','r1-production-control/service_registry.py',
+                'r1-production-control/handoff_budget.py','r1-production-control/guarded_session.py',
+                'r1-production-control/handoff_evidence.py')}}
 
 
 class SharedPrepared(a.Prepared):
@@ -89,6 +92,7 @@ class SharedPrepared(a.Prepared):
             control.before(self.backend.observe(state['target']['id']),state['target'])
             # This concrete supervisor owns, joins and reaps its worker and
             # scanner. A caller-supplied boolean or old result is never enough.
+            self.before_shared()
             result=supervisor.run(self.directory,self.sha,mode=self.mode,native_development=self.development)
             c.check(result['outcome']==supervisor.SUCCESS,'shared-shutdown-unconfirmed')
             c.check(supervisor.inspect(self.registry,self.sha)==result,'shared-supervision-changed')
@@ -111,6 +115,9 @@ class SharedPrepared(a.Prepared):
             ctrl.poisoned=True
             raise
         finally:ctrl.mutex.release()
+
+    def before_shared(self):
+        """Optional additional admission hook immediately before supervisor entry."""
 
     def closed(self):
         state=self.unchanged()

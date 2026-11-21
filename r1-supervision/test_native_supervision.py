@@ -89,6 +89,23 @@ class NativeAdmissionTests(unittest.TestCase):
     run_native=NativeUnixTests.run_native
     recover=NativeUnixTests.recover
 
+    def test_portable_peer_checks_use_fixed_recorded_credentials(self):
+        claim=b'claim';proc={'pid':123,'ppid':1,'start_ticks':456};identity={'process_identity':proc}
+        raw=m.raw(identity)
+        endpoint={'schema':1,'kind':'private-unix-endpoint','claim_sha256':m.digest(claim),
+            'manifest_sha256':self.sha,'path':self.manifest['config']['endpoint_path'],'development':False,
+            'socket':{'device':1,'inode':2,'uid':1000,'gid':1000,'mode':0o600}}
+        endpoint_raw=m.raw(endpoint)
+        peer={'schema':1,'kind':'kernel-unix-peer','claim_sha256':m.digest(claim),
+            'identity_sha256':m.digest(raw),'endpoint_sha256':m.digest(endpoint_raw),
+            'pid':124,'uid':1000,'gid':1000,'process_identity':{'pid':124,'ppid':123,'start_ticks':457}}
+        with patch.object(native.os,'getuid',side_effect=AssertionError('live uid')),\
+             patch.object(native.os,'getgid',side_effect=AssertionError('live gid')):
+            native.validate_endpoint(endpoint,claim,self.manifest,False,expected_uid=1000,expected_gid=1000)
+            native.validate_peer(peer,identity,raw,endpoint_raw,claim,False,expected_uid=1000,expected_gid=1000)
+            with self.assertRaises(ValueError):
+                native.validate_peer({**peer,'uid':1001},identity,raw,endpoint_raw,claim,False,expected_uid=1000,expected_gid=1000)
+
     def test_space_gate_prevents_owned_worker_and_native_consumer(self):
         original=s.sample
         with patch.object(s,'sample',side_effect=lambda fd:{**original(fd),'available_bytes':0}),\

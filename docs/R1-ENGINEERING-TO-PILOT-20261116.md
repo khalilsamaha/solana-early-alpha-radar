@@ -1,6 +1,19 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Latest: combined application/restoration native evidence accepted
+## Latest: guarded offline handoff implemented; one new native batch pending
+
+Continued November 17 engineering adds a pinned service registry across separate
+run directories, durable attempt consumption after process death, separate
+original/shared phase budgets and full portable handoff replay. Nonprimary
+application files are hash-bound alongside SQLite. Missing bridge or service
+completion remains quarantined even when capture or restoration facts reconcile.
+See [the exact scope, six cases and one deferred Kali command](R1-GUARDED-HANDOFF-20261117.md).
+There is no image rebuild, production access or fresh host/RPC observation.
+Global ownership, production profile/credentials, remote retention and pilot terms
+remain open. The separate 35-second original-stop representation does not change
+the manifest's shared shutdown ceiling or accept a production duration.
+
+## Previous: combined application/restoration native evidence accepted
 
 The supplied November 17, 06:48:00–06:48:20 CET archive at `56647b5` reconciles
 238 source pins, 142 indexed members, four control journals, four capture archives,

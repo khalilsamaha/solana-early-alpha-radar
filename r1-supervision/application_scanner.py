@@ -32,6 +32,12 @@ MAX_DATABASE=262144
 MAX_STORAGE=2*1024**2
 
 
+def remaining(deadline,cap):
+    left=deadline-time.monotonic()
+    m.check(left>0,'application-deadline')
+    return min(cap,left)
+
+
 def enabled(manifest):return manifest['config'].get('shared_scanner_image') is not None
 
 
@@ -80,7 +86,7 @@ def storage_proof(registry):
     directory=registry/DATA;fd=p.s.open_directory(directory)
     try:
         raw=p.read_at(fd,'radar.sqlite');m.check(len(raw)<=MAX_DATABASE,'application-database-bound')
-        total=0;files=0
+        total=0;files=0;file_sha256={}
         for count,path in enumerate(directory.rglob('*'),1):
             m.check(count<=64,'application-storage-nodes')
             info=path.lstat()
@@ -89,14 +95,22 @@ def storage_proof(registry):
             if stat.S_ISREG(info.st_mode):
                 files+=1;total+=info.st_size
                 m.check(files<=32 and total<=MAX_STORAGE,'application-storage-bound')
+                parent=p.s.open_directory(path.parent)
+                try:content=p.read_at(parent,path.name)
+                finally:os.close(parent)
+                file_sha256[str(path.relative_to(directory))]=m.digest(content)
         with closing(sqlite3.connect((directory/'radar.sqlite').as_uri()+'?mode=ro&immutable=1',uri=True)) as db:
             m.check(db.execute('PRAGMA integrity_check').fetchall()==[('ok',)],'application-database-integrity')
             counts={table:db.execute('SELECT count(*) FROM '+table).fetchone()[0] for table in ('candidates','launch_registry')}
         m.check(counts=={'candidates':3,'launch_registry':2} and p.read_at(fd,'radar.sqlite')==raw,
                 'application-database-replay')
+        for name,digest in file_sha256.items():
+            path=directory/name;parent=p.s.open_directory(path.parent)
+            try:m.check(m.digest(p.read_at(parent,path.name))==digest,'application-storage-changed')
+            finally:os.close(parent)
         p.same_directory(directory,fd)
         return {'schema':1,'sha256':m.digest(raw),'bytes':len(raw),'counts':counts,
-                'storage_bytes':total,'storage_files':files,'production_data_used':False}
+                'storage_bytes':total,'storage_files':files,'file_sha256':file_sha256,'production_data_used':False}
     finally:os.close(fd)
 
 
@@ -109,12 +123,17 @@ class Actor(n.Actor):
         isolation(row,self.token,self.registry)
         m.check(self.cid is None or row['id']==self.cid,'application-container-id')
 
-    def observe(self):
+    def observe(self,deadline=None):
         m.check(len(self.observations)<128,'application-observation-bound')
-        row=m.parse(check.run(self.cli+['inspect','--type','container','--format',n.c.FORMAT,self.cid or self.name],seconds=4))
+        row=m.parse(check.run(self.cli+['inspect','--type','container','--format',n.c.FORMAT,self.cid or self.name],
+                             seconds=4 if deadline is None else remaining(deadline,4)))
         self.validate(row);self.observations.append(row);return row
 
-    def start(self):
+    def start(self,deadline=None):
+        # Explicit default applies only to direct offline Actor tests. The actual
+        # supervisor always supplies its own remaining aggregate deadline.
+        if deadline is None:deadline=time.monotonic()+20
+        remaining(deadline,10)
         m.check(not self.attempted,'application-reuse')
         directory=self.registry/DATA;directory.mkdir(mode=0o700)
         fd=p.s.open_directory(directory)
@@ -129,23 +148,24 @@ class Actor(n.Actor):
             '--mount',f'type=bind,src={self.registry},dst=/r1-ipc,readonly',
             '--mount',f'type=bind,src={directory},dst=/r1-data',IMAGE,*COMMAND]
         self.attempted=True
-        candidate=check.run(self.cli+args,seconds=10).decode().strip()
+        candidate=check.run(self.cli+args,seconds=remaining(deadline,10)).decode().strip()
         m.check(re.fullmatch('[a-f0-9]{64}',candidate),'application-create-id')
         self.cid=candidate;self.created=True
-        m.check(not self.observe()['running'],'application-created-running')
+        m.check(not self.observe(deadline)['running'],'application-created-running')
+        remaining(deadline,1)
         self.process=subprocess.Popen(self.cli+['start','--attach',self.cid],stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,env=n.image.host.ENV,start_new_session=True,bufsize=0)
-        deadline=time.monotonic()+6
+        deadline=min(deadline,time.monotonic()+6)
         while True:
-            row=self.observe()
+            row=self.observe(deadline)
             if row['running'] and row['pid']>0:break
             m.check(self.process.poll() is None and time.monotonic()<deadline,'application-start-unconfirmed')
             time.sleep(.02)
         self.initial=row;self.ready=True
         return self
 
-    def stable(self):
-        row=self.observe();m.check(comparable(row)==comparable(self.initial),'application-generation-changed');return row
+    def stable(self,deadline=None):
+        row=self.observe(deadline);m.check(comparable(row)==comparable(self.initial),'application-generation-changed');return row
 
     def expect_stopped(self,row):
         expected={k:v for k,v in comparable(self.initial).items() if k not in ('running','pid','exit_code','finished')}
@@ -155,16 +175,22 @@ class Actor(n.Actor):
                 'application-stop-unconfirmed')
 
     def finish(self,deadline,collect):
-        raw,outcome=collect(self.process,max(.001,deadline-time.monotonic()))
+        raw,outcome=collect(self.process,remaining(deadline,30))
         m.check(outcome=='returned','application-client-unconfirmed')
         result=m.parse(raw);validate_result(result)
-        row=self.observe();self.expect_stopped(row)
+        row=self.observe(deadline);self.expect_stopped(row)
         self.database=storage_proof(self.registry);self.stopped_snapshot=row;self.result=result
 
     def receipt(self):return {**super().receipt(),'application_storage':self.database,'application_capacity':self.capacity}
 
 
 def validate_actor_receipt(actor,registry,*,complete):
+    return validate_actor_evidence(actor,registry,complete=complete,
+                                  storage=storage_proof(registry) if complete else None)
+
+
+def validate_actor_evidence(actor,registry,*,complete,storage):
+    """Pure receipt validation; portable readers must independently replay storage."""
     m.check(actor['development'] is False and actor['removed'] is True and actor['client_reaped'] is True,
             'application-disposal')
     for observation in actor['observations']:
@@ -173,7 +199,8 @@ def validate_actor_receipt(actor,registry,*,complete):
     if actor['initial'] is not None:isolation(actor['initial'],actor['token'],registry)
     if complete:
         initial=actor['initial'];observations=actor['observations']
-        m.check(initial is not None and initial['running'] is True and initial['pid']>0 and observations,
+        m.check(actor['created'] is True and actor['ready'] is True and actor['role']=='consumer' and
+                initial is not None and initial['id']==actor['id'] and initial['running'] is True and initial['pid']>0 and observations,
                 'application-running-evidence')
         expected={k:v for k,v in comparable(initial).items() if k not in ('running','pid','exit_code','finished')}
         final=comparable(observations[-1])
@@ -182,5 +209,5 @@ def validate_actor_receipt(actor,registry,*,complete):
                 'application-stopped-evidence')
         m.check(type(actor['application_capacity']['available_bytes']) is int and
                 actor['application_capacity']['available_bytes']>=4*MAX_STORAGE and
-                m.raw(actor['application_storage'])==m.raw(storage_proof(registry)),'application-storage-evidence')
+                m.raw(actor['application_storage'])==m.raw(storage),'application-storage-evidence')
         validate_result(actor['result'])

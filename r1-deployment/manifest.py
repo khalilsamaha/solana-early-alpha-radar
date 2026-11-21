@@ -16,6 +16,7 @@ POLICY = {'research_seconds', 'service_seconds', 'setup_seconds', 'shutdown_seco
           'data_fee_lamports', 'exposed_lamports', 'remaining_engineering_minutes'}
 CONFIG = {'scanner_image', 'scanner_config_sha256', 'rollback_config_sha256',
           'shared_scanner_image', 'shared_scanner_manifest_sha256',
+          'service_contract_sha256',
           'owner_source_sha256', 'registry_path', 'endpoint_path', 'capture_path',
           'remote_destination_sha256', 'credential_method'}
 

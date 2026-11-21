@@ -163,6 +163,9 @@ class Prepared:
 
     def observe(self,cid):return self.backend.observe(cid)
 
+    def before_dispatch(self,action,cid):
+        """Optional additional admission hook, after the last target observation."""
+
     def mutate(self,action,cid):
         state=control.inspect(self.registry)
         journal_claim=c.parse(c.read(self.registry/'claim.json',16384))
@@ -176,4 +179,5 @@ class Prepared:
         # promise shutdown on an actually full/broken journal filesystem.
         if action!='stop':self.gate(action)
         control.before(self.backend.observe(cid),state['target'])
+        self.before_dispatch(action,cid)
         return self.backend.mutate(action,cid)

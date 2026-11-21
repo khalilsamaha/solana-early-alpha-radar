@@ -1,9 +1,28 @@
 # Retained-container control adapter — R1.B
 
-The next host boundary is the [combined native acceptance batch](../docs/R1-COMBINED-ACCEPTANCE-20261116.md),
-including the retained gate, sealed synthetic credential handoff, shared scanner
-peer and independent capture restore. It uses only owned disposable actors;
-previous standalone host checks remain accepted and need no unchanged rerun.
+The next host boundary is the [guarded handoff batch](../docs/R1-GUARDED-HANDOFF-20261117.md):
+a fixed registry for cooperating coordinators, separate original/shared budgets
+and independently replayable full handoff evidence. The previous combined native
+and full application batches are accepted; do not repeat them unchanged.
+
+`guarded_session.GuardedSharedPrepared` accepts only a newly owned isolated
+fixture backend. Its externally pinned service contract survives changes of
+run/output directory. A kernel lock excludes concurrent cooperating coordinators;
+a durable consumed-attempt marker blocks rearm after process death. Replacing a
+lock, recreating a registry or selecting a different contract is not recovery.
+This does not fence unrelated Docker controllers, privileged users or other hosts.
+
+Original disable/stop/start/restore phases and the finite shared session have
+separate explicit budgets plus an aggregate deadline. Expiry prevents the next
+dispatch or confirmation; it does not undo a command already performed. Pending
+intents stay pending. Owned cleanup remains available after expiry. These checks
+are not hard real-time guarantees or approval of a production shutdown duration.
+
+Portable handoff export includes control, admission gates, supervision, bridge,
+service completion, phase timing, capture and every bounded application file.
+Replayed facts may show actual restoration while a missing service confirmation
+still quarantines the overall handoff. Historical replay grants no start authority,
+remote retention, current process observation or E0 closure.
 
 This adds an actual Docker command adapter for disable-restart, stop,
 start-the-original-container and restore-restart-policy. It retains the exact

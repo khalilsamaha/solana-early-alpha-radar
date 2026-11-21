@@ -36,6 +36,16 @@ class PreparationTests(unittest.TestCase):
         self.assertFalse(result['activation_authorized'])
         self.assertEqual(result['observation']['remaining_blockers'],self.manifest['blockers'])
 
+    def test_portable_metadata_uses_explicit_recorded_owner_without_live_uid_claim(self):
+        result=self.run_preparation();claim=m.parse((self.registry/p.CLAIM).read_bytes());uid=os.getuid()
+        with patch.object(p.os,'getuid',return_value=uid+123):
+            with self.assertRaisesRegex(ValueError,'preparation-observation-metadata'):
+                p.validate_observation(result['observation'],self.manifest,claim)
+            p.validate_observation(result['observation'],self.manifest,claim,expected_uid=uid)
+            for invalid in (True,-1,'1000'):
+                with self.assertRaises(ValueError):
+                    p.validate_observation(result['observation'],self.manifest,claim,expected_uid=invalid)
+
     def test_claim_durable_before_observation_and_no_rearm(self):
         original=s.observe
         def observe(*args):

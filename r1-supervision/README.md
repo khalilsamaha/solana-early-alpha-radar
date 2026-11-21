@@ -5,8 +5,16 @@
 The separate `session-application-normal` mode binds the accepted full application
 image to this supervisor and the existing retained-original restoration gate.
 [The combined handoff record](../docs/R1-APPLICATION-HANDOFF-20261117.md) describes
-the fixed image, new fixture storage, read-only SQLite validation and one pending
-native acceptance batch. It is not a production launcher or live-provider mode.
+the fixed image, fixture storage, read-only SQLite validation and accepted native
+evidence from November 17, 06:48:00–06:48:20 CET. No unchanged rerun is needed.
+The new [guarded handoff](../docs/R1-GUARDED-HANDOFF-20261117.md) adds separate
+control/session budgets and hashes of every bounded application file, including
+nonprimary caches. Application creation and inspection calls use the parent's
+remaining deadline; owned disposal remains available after expiry. Portable replay
+uses recorded UID/GID bindings without querying the original host. These additions
+await their own consolidated native batch; they do not reinterpret the earlier
+archive as evidence for the stronger contract. Neither mode is a production
+launcher or live-provider mode.
 
 ## Current credential integration
 
