@@ -47,3 +47,19 @@ The command emits a single integrity receipt only after both batches pass. It op
 B2 lifecycle rules can hide or delete versions. Bucket-level Object Lock enablement is irreversible. The approved policy requires review of the effective settings before the first pilot write. The 90-day target is an operating policy; evidence of enforced immutability requires separate verification. [B2 lifecycle rules](https://www.backblaze.com/docs/cloud-storage-lifecycle-rules) · [B2 Object Lock](https://www.backblaze.com/docs/cloud-storage-object-lock)
 
 **Destination review status at approval.** The [previous B2 rehearsal](../docs/R1-SESSION-BACKUP-20261111.md) identifies the intended bucket as `solana-radar-backups-redeye-2026`. That bounded round trip used `r1-rehearsal/`. The proposed pilot destination in the same bucket is `r1-pilot-evidence/`. Current bucket privacy, applicable lifecycle and Object Lock settings, writer and independent-reader access to the pilot prefix, and allowance for the final pilot manifest remain unverified. The first pilot upload is pending these checks. Its version-specific retention clock begins at upload.
+
+### Read-only destination preflight
+
+Run from a reviewed research checkout on Kali. The existing rehearsal configuration identifies the remote and bucket. This lookup reads bucket lifecycle metadata with the existing identity. Pass no backend options that set lifecycle parameters. The checker reads JSON from stdin and prints effective rule values without object names, bucket contents, or credentials.
+
+```bash
+set -o pipefail
+sudo /usr/bin/timeout 30s /usr/local/bin/rclone --config /etc/solana-radar/rclone.conf \
+  --retries 1 --low-level-retries 1 backend lifecycle \
+  radar-b2:solana-radar-backups-redeye-2026 |
+  python3 -I r1-guarded-delivery/retention_review.py
+```
+
+Exit 2 means hold. Missing metadata and denied access stay unknown. Keep the exact observation time and source privately. Match every bucket-wide, ancestor, exact and narrower prefix rule; the smallest matching non-null value for each action applies. A hide-only rule can leave the exact version readable by ID. A delete-after-hide rule also matters when a version is overwritten or manually hidden. A matching automatic hide-and-delete path requires owner review even beyond day 90 because a discrepancy can extend preservation. Unfinished-upload cancellation is reported separately from completed-version retention. Exceptions based on Object Lock require separate review of effective version protection. [B2 lifecycle semantics](https://www.backblaze.com/docs/cloud-storage-lifecycle-rules) · [Read-only rclone lookup](https://rclone.org/b2/#lifecycle)
+
+For a full desk review, pass `--review PRIVATE_REVIEW.json`. Supply only reviewed values. Omit unknowns. Use the exact `bucket` and `prefix`. The boolean fields are `bucket_private`, `object_lock_settings_reviewed`, `writer_can_create_unique_objects`, `independent_reader_can_restore_version_by_id`, `no_manual_hide_or_overwrite_before_owner_release`, and `zero_incremental_cost_for_operations_and_retention`. The last field covers operations, both restores, the retention term and any extension that would require renewed budget review. Supply integer `final_manifest_bytes`, `available_storage_bytes` net of existing commitments, and `included_retrieval_bytes` available for both full restores. Scope each value to this pilot destination and planned billing periods, and retain its supporting observation. A result of `reported-preflight-conditions-met` describes the supplied evidence only. The command has no B2 client and grants no upload or disposal authority.
