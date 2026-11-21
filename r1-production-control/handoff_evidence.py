@@ -187,7 +187,8 @@ def assess(data):
             native.validate_identity(identity,data['registry/'+v.CLAIM],plan,False)
             native.validate_peer(peer,identity,data['registry/'+native.IDENTITY],data['registry/'+native.ENDPOINT],
                 data['registry/'+v.CLAIM],False,expected_uid=1000,expected_gid=1000)
-            c.check(identity['actor']==actor['initial'] and identity['process_identity']==scanner['process_identity'],
+            c.check(native.same_actor_identity(identity['actor'],actor['initial'],claim['mode']) and
+                    identity['process_identity']==scanner['process_identity'],
                     'handoff-native-generation')
             disposal=row(data,'fixture-disposal.json');intent=row(data,'fixture-intent.json')
             c.check(disposal['removed'] is True and disposal['client_reaped'] is True and

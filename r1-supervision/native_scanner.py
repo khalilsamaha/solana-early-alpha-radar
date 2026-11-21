@@ -59,6 +59,15 @@ def expected_result(mode,development):
             'upstream_attempts':0,'fetch_attempts':0,'image_verified':not development,'development':development}
 
 
+def same_actor_identity(recorded,initial,mode):
+    # Docker's mount array order is not stable across inspect calls. Preserve
+    # every field and compare the application mounts by destination, as the
+    # running/stopped generation checks already do.
+    if mode==application.MODE:
+        return m.raw(application.comparable(recorded))==m.raw(application.comparable(initial))
+    return recorded==initial
+
+
 def validate_identity(row,claim_bytes,manifest,development):
     m.check(set(row)=={'schema','kind','claim_sha256','manifest_sha256','development','actor','process_identity'}
             and type(row['schema']) is int and row['schema']==1 and row['kind']=='isolated-native-scanner-identity'
@@ -253,4 +262,5 @@ def validate(row,mode,*,complete,registry):
                 and row['actor']['result']==row['result']),'native-completion-required')
         identity,_=read(registry,IDENTITY)
         m.check(identity['process_identity']==row['process_identity'] and
-                (row['development'] or identity['actor']==row['actor']['initial']),'native-receipt-identity')
+                (row['development'] or same_actor_identity(identity['actor'],row['actor']['initial'],mode)),
+                'native-receipt-identity')

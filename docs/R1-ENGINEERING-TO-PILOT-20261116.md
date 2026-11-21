@@ -1,6 +1,22 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Latest: guarded offline handoff implemented; one new native batch pending
+## Latest: two guarded native cases accepted; four remain after identity correction
+
+The November 17, 14:38:52–14:39:29 CET supplied archive at bundled source
+`90f52b9` reconciles 250 producer pins, 94 indexed members, three handoff packages
+and five owned container cleanup receipts. Normal service exclusion/restoration
+and expiry before shared entry are accepted. The next case stopped before its
+clock fault: identical Docker mounts arrived in a different array order, and a
+remaining positional native identity comparison rejected completion. The two
+comparison sites now use destination-keyed mount comparison with every field
+preserved. Missing completion is not invented retroactively.
+
+Only the four unaccepted native cases remain. Use the new remaining-only script
+and verified Git bundle; no GitHub publication, image rebuild or accepted-case
+rerun is required. See [the exact evidence and scoped continuation](R1-GUARDED-HANDOFF-20261117.md).
+Production and E0 remain blocked; no reviewer live-host/RPC observation occurred.
+
+## Previous: guarded offline handoff implemented; native batch pending
 
 Continued November 17 engineering adds a pinned service registry across separate
 run directories, durable attempt consumption after process death, separate

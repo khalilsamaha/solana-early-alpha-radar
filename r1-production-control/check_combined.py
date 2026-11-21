@@ -21,7 +21,8 @@ CASES=('normal','cleanup-failure','lost-shared-confirmation','lost-restore-respo
 def pins():
     return {**shared.pins(),**retained.pins(),
             **{name:c.digest((pc.ROOT/name).read_bytes()) for name in
-               ('scripts/r1-combined-control-kali.sh','scripts/r1-application-handoff-kali.sh','scripts/r1-guarded-handoff-kali.sh')}}
+               ('scripts/r1-combined-control-kali.sh','scripts/r1-application-handoff-kali.sh','scripts/r1-guarded-handoff-kali.sh',
+                'scripts/r1-guarded-remaining-kali.sh')}}
 
 
 def prepare(root,registry,backend,development,*,application=False,service_contract_sha256=None):
@@ -246,21 +247,24 @@ def main():
     mode=parser.add_mutually_exclusive_group()
     mode.add_argument('--application',action='store_true',help='Historical full-application cases; no rebuild')
     mode.add_argument('--guarded',action='store_true',help='New fixed-service, phase-budget and portable-evidence boundary')
+    mode.add_argument('--guarded-remaining',action='store_true',help='Only four unaccepted guarded cases after November 17 review')
     args=parser.parse_args();os.umask(0o077);out=Path(args.output_directory).absolute()
     c.check(not out.exists() and all(not p.is_symlink() for p in (out,*out.parents)),'combined-output')
     out.mkdir(mode=0o700);log=io.StringIO();stage='source'
-    application=args.application or args.guarded
-    if args.guarded:
+    guarded=args.guarded or args.guarded_remaining
+    application=args.application or guarded
+    if guarded:
         import guarded_acceptance
-        cases=guarded_acceptance.CASES
+        cases=guarded_acceptance.REMAINING_CASES if args.guarded_remaining else guarded_acceptance.CASES
     else:cases=APPLICATION_CASES if application else CASES
     report={'schema':1,'status':'combined-control-failed-live-blocked','started_utc':c.now(),
-            'application':application,'guarded':args.guarded,'cases':[],'production_modified':False,'provider_connection_opened':False,'activation_authorized':False}
+            'application':application,'guarded':guarded,'remaining_only':args.guarded_remaining,
+            'cases':[],'production_modified':False,'provider_connection_opened':False,'activation_authorized':False}
     try:
         report['source_sha256']=pins()
         c.check(not retained.image.c.git('status','--porcelain').strip(),'dirty-source')
         stage='local-regressions'
-        if args.guarded:import test_guarded_acceptance as selected_tests
+        if guarded:import test_guarded_acceptance as selected_tests
         elif args.application:import test_application_combined as selected_tests
         else:import test_combined as selected_tests
         suite=unittest.defaultTestLoader.loadTestsFromModule(selected_tests)
@@ -283,19 +287,19 @@ def main():
             original=owned_fixture.Original(cli,root)
             try:
                 backend=original.start()
-                case=guarded_acceptance.exercise(root,registry,backend,name) if args.guarded else exercise(root,registry,backend,name,application=application)
+                case=guarded_acceptance.exercise(root,registry,backend,name) if guarded else exercise(root,registry,backend,name,application=application)
                 report['cases'].append(case)
             finally:
                 try:original.close()
                 finally:c.write_new(root/'fixture-disposal.json',c.raw(original.receipt))
             c.check(original.receipt['removed'] and original.receipt['client_reaped'],'combined-original-disposal')
-            if args.guarded:case['handoff_evidence']=guarded_acceptance.preserve(root,registry)
+            if guarded:case['handoff_evidence']=guarded_acceptance.preserve(root,registry)
         c.check(pins()==report['source_sha256'] and not retained.image.c.git('status','--porcelain').strip(),'source-change')
         report['status']='combined-control-offline-passed-live-blocked'
     except BaseException as exc:
         report.update(failure_stage=stage,failure_type=type(exc).__name__,failure_code=retained.diagnostic(exc))
     finally:
-        if args.guarded:report['partial_handoff_preservation']=guarded_acceptance.preserve_partial(out)
+        if guarded:report['partial_handoff_preservation']=guarded_acceptance.preserve_partial(out)
         report['finished_utc']=c.now()
         c.write_new(out/'report.json',c.raw(report));c.write_new(out/'validation.log',log.getvalue().encode());bundle(out,application=application,cases=cases)
     print(report['status']);print(out/'acceptance.zip')

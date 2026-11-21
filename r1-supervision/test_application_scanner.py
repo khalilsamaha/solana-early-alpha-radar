@@ -77,6 +77,29 @@ class ApplicationTests(unittest.TestCase):
         changed['mounts'][0]['Propagation']='shared'
         self.assertNotEqual(app.comparable(row),app.comparable(changed))
 
+    def test_native_completion_accepts_reordered_mounts_but_no_identity_changes(self):
+        database(self.registry);actor=app.Actor([],self.registry);initial=target(self.registry,actor.token)
+        stopped={**initial,'running':False,'pid':0,'finished':'2026-11-17T10:00:01Z'}
+        receipt={**actor.receipt(),'created':True,'ready':True,'removed':True,'client_reaped':True,
+            'id':initial['id'],'initial':initial,'observations':[initial,stopped],'result':result(),
+            'application_storage':app.storage_proof(self.registry),'application_capacity':{'available_bytes':4*app.MAX_STORAGE}}
+        proc={'pid':123,'ppid':122,'start_ticks':456}
+        row={'kind':'isolated-native-scanner','development':False,'started':1,'reaped':True,'returncode':0,
+            'result':result(),'actor':receipt,'removed':True,'process_identity':proc,'activation_authorized':False}
+        recorded=copy.deepcopy(initial);recorded['mounts'].reverse()
+        identity={'actor':recorded,'process_identity':proc}
+        with patch.object(native,'read',return_value=(identity,m.raw(identity))):
+            native.validate(row,app.MODE,complete=True,registry=self.registry)
+        self.assertTrue(native.same_actor_identity(recorded,initial,app.MODE))
+        self.assertFalse(native.same_actor_identity(recorded,initial,'session-native-normal'))
+        for mutate in (lambda x:x.update(pid=124),lambda x:x.update(image=app.n.c.IMAGE),
+                       lambda x:x.update(memory=x['memory']+1),lambda x:x['mounts'][0].update(RW=False),
+                       lambda x:x['mounts'][0].update(Source='/other'),lambda x:x['mounts'][0].update(Propagation='shared')):
+            changed=copy.deepcopy(recorded);mutate(changed);bad={'actor':changed,'process_identity':proc}
+            with patch.object(native,'read',return_value=(bad,m.raw(bad))):
+                with self.assertRaisesRegex(ValueError,'native-receipt-identity'):
+                    native.validate(row,app.MODE,complete=True,registry=self.registry)
+
     def test_exact_sqlite_replay_is_read_only_and_detects_changes(self):
         path=database(self.registry);before=path.read_bytes();proof=app.storage_proof(self.registry)
         self.assertEqual(path.read_bytes(),before);self.assertEqual(proof['sha256'],m.digest(before))

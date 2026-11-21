@@ -64,10 +64,16 @@ class GuardedAcceptanceTests(unittest.TestCase):
             runner.exercise(root,registry,backend,'changed-application-storage',development=True)
         self.assertEqual(model.calls,[]);self.assertFalse((root/'service').exists())
 
+    def test_remaining_batch_excludes_the_two_accepted_cases(self):
+        self.assertEqual(runner.REMAINING_CASES,('deadline-after-shared','service-lock-replaced',
+            'lost-service-completion','changed-application-storage'))
+
 
 def load_tests(loader,tests,pattern):
     return unittest.TestSuite((tests,loader.loadTestsFromTestCase(service_tests.RegistryTests),
-                              loader.loadTestsFromTestCase(budget_tests.BudgetTests)))
+                              loader.loadTestsFromTestCase(budget_tests.BudgetTests),
+                              loader.loadTestsFromName('test_application_scanner.ApplicationTests.'
+                                  'test_native_completion_accepts_reordered_mounts_but_no_identity_changes')))
 
 
 if __name__=='__main__':unittest.main()

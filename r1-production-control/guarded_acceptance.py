@@ -10,6 +10,7 @@ import check_combined as combined
 c=combined.c;v=combined.v;app=v.native_scanner.application
 CASES=('normal-service-exclusion','deadline-before-shared','deadline-after-shared',
        'service-lock-replaced','lost-service-completion','changed-application-storage')
+REMAINING_CASES=CASES[2:]
 PHASE_SECONDS={'disable_restart':30,'stop':30,'shared':60,'start_original':30,'restore_restart':30}
 
 

@@ -1,11 +1,60 @@
 # R1 cooperating ownership, budgets and portable evidence — 17 November 2026
 
+## Supplied native review: two accepted cases, four remain
+
+The uploaded `acceptance(20261117-134657).zip` records **November 17,
+14:38:52–14:39:29 CET** (`13:38:52.636389–13:39:29.213830 UTC`) at local/bundled
+source `90f52b9803ed0573a8efdb2c64372ed2ed52bb67`. This is historical artifact
+review, not a new reviewer connection to Kali or RPC. GitHub publication of that
+source was rejected by automatic approval review; the verified Git bundle supplied
+the checkout used for this test.
+
+| Evidence | SHA-256 |
+| --- | --- |
+| Uploaded archive | `8f9e6b570f534366fe93bc85c44b250c6d02cdaaf10b6bf0d26eb2f2b1e68d12` |
+| Report | `2fa8b252d0f3cf590f3f4645b5fb2e483ab362a673bb901a8c51ab3f774e1de0` |
+| Member index | `4912aa509ca635c3f89b845087d11293d964187481a2fa2004e95b2d690a9c94` |
+
+All **250 producer pins**, **94 indexed members**, three portable handoff archives,
+three control journals and five distinct owned disposal/client-reaping receipts
+reconcile. The host's 24 local regression tests passed. Both application storage
+snapshots independently replay with five hash-bound files, three candidates and
+two launch records. The normal capture export and the interrupted case's raw
+capture snapshot replay cleanly; that does not promote missing handoff completion.
+
+| Native case | Review disposition |
+| --- | --- |
+| Normal service exclusion | Accepted: second coordinator refused, exact original restoration confirmed, attempt remains consumed, full portable handoff replays complete |
+| Deadline before shared entry | Accepted: injected expiry blocks shared startup/restoration; stopped original and consumed attempt remain explicit; portable archive quarantined |
+| Deadline after shared shutdown | Not accepted: application closed and was disposed, but supervision confirmation failed before the intended clock fault was reached; original was not restarted |
+| Service lock replaced; lost service completion; changed auxiliary storage | Not attempted because the batch stopped at the previous case |
+
+The interrupted application identity differs only in the order of the two mount
+entries between Docker inspections. Existing application running/stopped checks
+already normalize that order, but native completion and portable generation
+binding still compared arrays positionally. The correction uses the same
+destination-keyed comparison at those two sites and preserves every field. It
+rejects changes to source, destination, writability, propagation, image, resources
+and process identity. The recorded interrupted receipt passes the corrected pure
+validator, but no missing supervisor/bridge/service receipt is reconstructed.
+Its `fault_reached` and `clock_offset_injected` remain false.
+
+**Do not repeat the first two native cases or the full six-case batch.** The new
+`scripts/r1-guarded-remaining-kali.sh` runs only the four remaining cases on fresh
+owned fixtures, at most **seven containers** (four originals and three application
+consumers), with the same accepted images and no build/pull. It reports
+`remaining_only: true`; a passing remaining batch requires all four intended
+refusals and four quarantined packages. Combine it with the two accepted cases
+above when reviewing the whole boundary. Preserve failures and never retry the
+same consumed registry/output directory.
+
 ## Disposition
 
 This is a new offline engineering increment under the continuing authorization.
 The user requested a four-hour engineering window while unavailable for tests;
 that request is not evidence of four hours elapsed, native acceptance or production
-authority. One consolidated new Kali batch is prepared for the user's return.
+authority. The original six-case batch was prepared for the user's return;
+the partial native review above now narrows the next invocation to four cases.
 No unchanged accepted batch is requested.
 
 The previous application handoff remains accepted at its supplied **November 17,
@@ -89,13 +138,13 @@ files, 64 nodes, 256 KiB per file and 2 MiB total. The outer acceptance archive 
 capped at 32 MiB of members. Failed export never repairs or retries a partial
 handoff directory; retain originals if a bounded archive cannot be produced.
 
-## One new Kali batch, after the user returns
+## Current remaining-only Kali invocation
 
-Use a clean checkout of the published commit named `source`, beneath a fresh
+Use a clean checkout of the corrected bundled commit named `source`, beneath a fresh
 private review directory. From that checkout run once:
 
 ```bash
-bash scripts/r1-guarded-handoff-kali.sh
+bash scripts/r1-guarded-remaining-kali.sh
 ```
 
 The runner has no production selector, credential input, provider endpoint, image
@@ -104,7 +153,10 @@ in the application handoff record. **No build or pull is needed.** Every actual
 container has network none and is newly owned; existing production containers,
 volumes, credentials and services are not controlled.
 
-| New case | Required outcome |
+The original case design is retained below; the first two are already accepted
+and excluded from this remaining-only invocation.
+
+| Case | Required outcome |
 | --- | --- |
 | Normal with service exclusion | Active second coordinator rejected; full shared closure and exact original restoration; later different-output attempt remains consumed; portable evidence complete |
 | Deadline before shared entry | Original stopped, no shared actor starts, restoration withheld; portable evidence quarantined |
@@ -113,12 +165,12 @@ volumes, credentials and services are not controlled.
 | Lost service completion | Actual original restoration remains visible, but missing service completion leaves attempt consumed and package quarantined |
 | Nonprimary storage changed | Change one byte without changing file size or primary SQLite; original start refused with pending intent; quarantine |
 
-The six cases create at most **ten containers**: six inert originals and four
-application consumers, never more than two concurrently. Every owned original
-and every started application must have disposal/client-reaping evidence. The
-runner stops on unexpected failure and retains partial artifacts. Expected batch
-status is `combined-control-offline-passed-live-blocked`, with one complete and
-five quarantined handoff packages. Fault cases passing means their refusal worked;
+The remaining-only batch creates at most **seven containers**, never more than
+two concurrently. Every owned original and every started application must have
+disposal/client-reaping evidence. The runner stops on unexpected failure and
+retains partial artifacts. Expected remaining-batch status is
+`combined-control-offline-passed-live-blocked`, with four quarantined handoff
+packages. Fault cases passing means their refusal worked;
 it does not mean their handoff completed. Keep `results/acceptance.zip` and the
 original directories on failure; do not rerun or change permissions.
 
@@ -135,6 +187,12 @@ exit 1 means invalid or unavailable input. The reader writes only disposable
 scratch replay files and never contacts the source host or changes the input.
 
 ## Validation and remaining gates
+
+The mount-order correction passes **23 application/native admission tests** and
+**39 combined-runner/portable-evidence tests**, including replay of the supplied
+interrupted application's exact receipt against the corrected validator. The
+remaining-only runner also includes that identity regression before Docker work.
+No missing historical completion receipt is created by these checks.
 
 The completed local suites passed: **169 control tests, 52 deployment tests,
 73 supervision tests and 38 image/runtime tests**. These are executed suite
