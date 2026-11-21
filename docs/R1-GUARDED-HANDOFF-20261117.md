@@ -1,6 +1,48 @@
 # R1 cooperating ownership, budgets and portable evidence — 17 November 2026
 
-## Supplied native review: two accepted cases, four remain
+## Current disposition: all six guarded offline cases accepted
+
+The uploaded `acceptance(20261117-135516).zip` records **November 17,
+14:53:52–14:54:37 CET** (`13:53:52.474380–13:54:37.629613 UTC`) at bundled source
+`53128da5e38aecebd8f723c5bf4eb6a5a0757285`. Its remaining-only batch passes the
+four cases left open by the earlier archive. Together with the two accepted cases
+below, the six-case guarded offline handoff boundary is accepted. **No unchanged
+Kali rerun, image rebuild or additional test of this boundary is needed.**
+
+| Evidence | SHA-256 |
+| --- | --- |
+| Remaining-only archive | `e9976b068f7c91c2fab51020d2a8659ad18fbaba1741cc8a51820e7bfa766d27` |
+| Report | `68e62206305d5c57709ea2156774ab36ba098b496d0b13564a5de9742a75e040` |
+| Member index | `a05df2ea97001e22b248c23bce927e4cc0c4daa1abaffb149f1924c92b71dbb1` |
+
+Independent review reconciles all **251 producer pins**, **138 indexed members**,
+four control journal replays, four portable handoff packages, three nested clean
+capture archives, three full application storage replays and **seven distinct
+owned removal/client-reaping receipts**. The host's 26 regression tests passed.
+All four intended fault stages were reached. Native endpoint/peer/container
+generation and exact storage bindings were checked from supplied records; no
+original host path was opened and no current host/process state was inferred.
+
+| Remaining native case | Accepted required result |
+| --- | --- |
+| Deadline after actual shared shutdown | Application and supervisor close successfully; injected expiry prevents bridge confirmation and original restoration |
+| Service lock replaced | Refusal before any control mutation or application start |
+| Lost service completion | Same original is actually restored, but missing service completion leaves the attempt consumed and the full package quarantined |
+| Nonprimary storage changed | One byte changes in `radar.sqlite-shm`; file length, primary SQLite bytes and counts stay unchanged; original start is refused with its pending intent retained |
+
+Every remaining package is correctly quarantined. Passing a fault test establishes
+that its refusal worked, not that its interrupted handoff completed. For the
+storage case, independently replaying a disposable copy with the archived
+pre-change sidecar reproduces the exact recorded storage proof; the supplied
+changed bytes and pending journal remain untouched. No completion is synthesized.
+
+This accepts an offline fixture boundary only. R1 global ownership, production
+resource/stop behavior and credential integration, remote preservation/retention
+and exact pilot terms remain open. E0 remains blocked with holds preserved and
+its last accepted operational/RPC observation remains November 9, 18:50:41 CET.
+This is newly supplied historical evidence, not a fresh reviewer host/RPC check.
+
+## Earlier supplied review: two accepted cases, four remained
 
 The uploaded `acceptance(20261117-134657).zip` records **November 17,
 14:38:52–14:39:29 CET** (`13:38:52.636389–13:39:29.213830 UTC`) at local/bundled
@@ -138,7 +180,7 @@ files, 64 nodes, 256 KiB per file and 2 MiB total. The outer acceptance archive 
 capped at 32 MiB of members. Failed export never repairs or retries a partial
 handoff directory; retain originals if a bounded archive cannot be produced.
 
-## Current remaining-only Kali invocation
+## Historical remaining-only Kali invocation — accepted; do not repeat unchanged
 
 Use a clean checkout of the corrected bundled commit named `source`, beneath a fresh
 private review directory. From that checkout run once:

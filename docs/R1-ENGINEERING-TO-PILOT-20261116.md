@@ -1,6 +1,23 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
-## Latest: two guarded native cases accepted; four remain after identity correction
+## Latest: all six guarded offline handoff cases accepted
+
+The November 17, 14:53:52–14:54:37 CET remaining-only archive at bundled source
+`53128da` reconciles 251 producer pins, 138 indexed members, four portable handoff
+packages, three capture replays and seven distinct owned cleanup receipts. All
+four intended refusal stages were reached. The auxiliary-file case changes one
+byte in `radar.sqlite-shm` while primary SQLite and counts remain unchanged;
+restoration refuses and preserves its pending intent. Lost service completion
+retains actual restoration as a fact without promoting overall completion.
+
+Together with the earlier two accepted cases, the guarded offline boundary is
+accepted. No unchanged Kali rerun or image rebuild is needed. See
+[the full evidence review and exact dispositions](R1-GUARDED-HANDOFF-20261117.md).
+Production global ownership, resources/stop behavior, credentials, remote
+preservation/retention and pilot terms remain open. This uploaded-artifact review
+does not establish current host state or E0 closure. Holds remain preserved.
+
+## Previous: two guarded native cases accepted; four remained after identity correction
 
 The November 17, 14:38:52–14:39:29 CET supplied archive at bundled source
 `90f52b9` reconciles 250 producer pins, 94 indexed members, three handoff packages

@@ -2,10 +2,10 @@
 
 **New offline engineering — 17 November 2026:** [cooperating service ownership,
 separate phase budgets and full portable handoff evidence](docs/R1-GUARDED-HANDOFF-20261117.md)
-are implemented. Supplied 14:38:52–14:39:29 CET native evidence accepts the first
-two cases. A mount-order comparison correction leaves four cases for the
-remaining-only Kali batch; no image rebuild or accepted-case rerun is needed.
-Production activation and E0 remain blocked.
+are accepted across the supplied 14:38:52–14:39:29 and 14:53:52–14:54:37 CET
+native archives. All six required cases reconcile; no unchanged Kali rerun is
+needed. This accepts the guarded offline boundary only. Global production
+ownership, deployment/pilot gates and E0 remain blocked.
 
 **R1 research branch — 17 November 2026:** the full application/finite-owner/retained
 restoration integration is [accepted on supplied native evidence](docs/R1-APPLICATION-HANDOFF-20261117.md)
