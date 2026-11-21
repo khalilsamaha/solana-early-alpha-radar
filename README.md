@@ -1,5 +1,10 @@
 # Solana Early Alpha Radar
 
+**Next production input — 17 November 2026:** the existing read-only reviewer now
+includes [bounded Docker control/data access-path inspection](docs/R1-PRODUCTION-AUTHORITY-20261117.md).
+Local tests pass; one new metadata-only Kali observation is pending. No accepted
+handoff rerun or production mutation is requested, and no global exclusivity is claimed.
+
 **New offline engineering — 17 November 2026:** [cooperating service ownership,
 separate phase budgets and full portable handoff evidence](docs/R1-GUARDED-HANDOFF-20261117.md)
 are accepted across the supplied 14:38:52–14:39:29 and 14:53:52–14:54:37 CET

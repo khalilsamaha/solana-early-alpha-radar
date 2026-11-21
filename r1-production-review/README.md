@@ -1,11 +1,23 @@
 # Read-only production-context intake
 
-**Current:** the November 16 10:01:36 CET readiness report at `8eb329e1` completed
+**Current — November 17:** guarded offline handoff is accepted. The next input is
+the [bounded Docker access-path review](../docs/R1-PRODUCTION-AUTHORITY-20261117.md).
+`authority.py` uses fixed ps/inspect requests to examine declared socket/data
+mounts and broader container privileges, including stopped containers. Paths and
+arbitrary configuration text are redacted. Two metadata snapshots must agree;
+mount order alone is normalized. No finding means unclassified, not exclusive.
+It performs no exec, container mutation, provider call or effective-access test.
+The new `scripts/r1-production-authority-kali.sh` produces one read-only report;
+the accepted readiness/inventory and native handoff cases are not rerun.
+
+**Accepted earlier:** the November 16 10:01:36 CET readiness report at `8eb329e1` completed
 every stage, with fourteen matching source fingerprints. That observation is
 accepted; no unchanged rerun is requested. It identifies nineteen running
 containers but gives no workload attribution for the eighteen other containers.
 
-`ownership.py` and `scripts/r1-production-ownership-kali.sh` collect that specific
+The November 16 11:23:54 CET ownership inventory supplied that workload attribution
+and is accepted within its metadata scope. Do not rerun it unchanged.
+Historically, `ownership.py` and `scripts/r1-production-ownership-kali.sh` collected that specific
 missing input. They anchor to the accepted report digest, locate only prior
 private readiness artifacts, and read fixed names/images/Compose labels/network
 and running/PID metadata for exact currently enumerated IDs in groups of eight.

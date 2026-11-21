@@ -1,5 +1,23 @@
 # R1 corrective engineering and next host input — 16 November 2026
 
+## Current engineering: bounded production access-path review prepared
+
+After acceptance of all six guarded offline cases, the remaining production
+ownership gap was narrowed to missing control/data access-path evidence.
+The existing read-only reviewer now has a bounded extension for declared Docker
+socket/ancestor mounts, scanner-data overlap, privilege/capability declarations
+and host namespace indicators. It includes stopped containers, redacts raw paths
+and arbitrary configuration text, and treats no findings as unclassified.
+Two fixed metadata snapshots and two censuses must agree; drift or inaccessible
+input stops without retry. It has no mutation/exec/provider interface.
+
+Local validation passes 79 production-review and 52 deployment tests. The new
+Docker template and current metadata require one bounded read-only Kali input,
+described in [the exact scope, bounds and interpretation](R1-PRODUCTION-AUTHORITY-20261117.md).
+No accepted handoff/readiness/inventory rerun is requested. Host-process/account/
+other-machine ownership, production runtime/credentials, remote retention and
+pilot terms remain open. No fresh host/RPC evidence or E0 closure was obtained.
+
 ## Latest: all six guarded offline handoff cases accepted
 
 The November 17, 14:53:52–14:54:37 CET remaining-only archive at bundled source
